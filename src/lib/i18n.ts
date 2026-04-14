@@ -1,0 +1,153 @@
+import type { Lang } from '../types'
+export type { Lang }
+
+export const translations = {
+  he: {
+    appTitle: 'מעקב קלוריות',
+    today: 'היום',
+    history: 'היסטוריה',
+    goals: 'יעדים',
+    connected: 'מחובר',
+    disconnected: 'מנותק',
+    foodName: 'שם המאכל',
+    grams: 'גרמים',
+    mealType: 'ארוחה',
+    breakfast: 'בוקר',
+    lunch: 'צהריים',
+    dinner: 'ערב',
+    snack: 'חטיף',
+    calculate: 'חשב',
+    calculating: 'מחשב...',
+    add: 'הוסף',
+    cancel: 'ביטול',
+    edit: 'עריכה',
+    delete: 'מחק',
+    duplicate: 'שכפל',
+    save: 'שמור',
+    calories: 'קלוריות',
+    protein: 'חלבון',
+    caloriesUnit: 'kcal',
+    proteinUnit: 'ג׳',
+    goal: 'יעד',
+    consumed: 'נצרך',
+    quantity: 'כמות',
+    totalGrams: 'סה״כ גרמים',
+    defaultGoals: 'יעדי ברירת מחדל',
+    weeklyOverrides: 'עקיפות שבועיות',
+    resetToDefault: 'אפס לברירת מחדל',
+    saveGoals: 'שמור יעדים',
+    noMealsToday: 'לא נוספו ארוחות היום',
+    noHistory: 'אין היסטוריה עדיין',
+    items: 'פריטים',
+    signIn: 'התחבר',
+    signUp: 'הרשם',
+    signOut: 'התנתק',
+    email: 'דוא"ל',
+    password: 'סיסמה',
+    magicLink: 'קישור קסם',
+    checkEmail: 'בדוק את הדוא"ל שלך לקישור כניסה',
+    sunday: 'ראשון',
+    monday: 'שני',
+    tuesday: 'שלישי',
+    wednesday: 'רביעי',
+    thursday: 'חמישי',
+    friday: 'שישי',
+    saturday: 'שבת',
+    aiError: 'שגיאה בחישוב AI — הזן ידנית',
+    confirmNutrition: 'אשר ערכי תזונה',
+    unitLabel: 'יח׳',
+    totalUnits: 'סה״כ יחידות',
+  },
+  en: {
+    appTitle: 'Calorie Tracker',
+    today: 'Today',
+    history: 'History',
+    goals: 'Goals',
+    connected: 'Connected',
+    disconnected: 'Disconnected',
+    foodName: 'Food name',
+    grams: 'Grams',
+    mealType: 'Meal type',
+    breakfast: 'Breakfast',
+    lunch: 'Lunch',
+    dinner: 'Dinner',
+    snack: 'Snack',
+    calculate: 'Calculate',
+    calculating: 'Calculating...',
+    add: 'Add',
+    cancel: 'Cancel',
+    edit: 'Edit',
+    delete: 'Delete',
+    duplicate: 'Duplicate',
+    save: 'Save',
+    calories: 'Calories',
+    protein: 'Protein',
+    caloriesUnit: 'kcal',
+    proteinUnit: 'g',
+    goal: 'Goal',
+    consumed: 'Consumed',
+    quantity: 'Quantity',
+    totalGrams: 'Total grams',
+    defaultGoals: 'Default Goals',
+    weeklyOverrides: 'Weekly Overrides',
+    resetToDefault: 'Reset to default',
+    saveGoals: 'Save Goals',
+    noMealsToday: 'No meals logged today',
+    noHistory: 'No history yet',
+    items: 'items',
+    signIn: 'Sign In',
+    signUp: 'Sign Up',
+    signOut: 'Sign Out',
+    email: 'Email',
+    password: 'Password',
+    magicLink: 'Magic Link',
+    checkEmail: 'Check your email for a sign-in link',
+    sunday: 'Sunday',
+    monday: 'Monday',
+    tuesday: 'Tuesday',
+    wednesday: 'Wednesday',
+    thursday: 'Thursday',
+    friday: 'Friday',
+    saturday: 'Saturday',
+    aiError: 'AI calculation failed — enter manually',
+    confirmNutrition: 'Confirm Nutrition',
+    unitLabel: 'unit(s)',
+    totalUnits: 'Total units',
+  },
+} as const
+
+export type TranslationKey = keyof typeof translations.he
+
+export function t(lang: Lang, key: TranslationKey): string {
+  return translations[lang][key]
+}
+
+const hebrewDays = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת']
+const hebrewMonths = ['ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני', 'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר']
+
+export function formatDate(dateStr: string, lang: Lang): string {
+  const [year, month, day] = dateStr.split('-').map(Number)
+  const date = new Date(year, month - 1, day)
+  const dow = date.getDay()
+
+  if (lang === 'he') {
+    return `יום ${hebrewDays[dow]}, ${day} ב${hebrewMonths[month - 1]} ${year}`
+  }
+  return date.toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+}
+
+export function today(): string {
+  const now = new Date()
+  const y = now.getFullYear()
+  const m = String(now.getMonth() + 1).padStart(2, '0')
+  const d = String(now.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
+
+export function currentTime(): string {
+  const now = new Date()
+  return now.toTimeString().slice(0, 8)
+}
+
+export const DAY_KEYS = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'] as const
+export type DayKey = typeof DAY_KEYS[number]
