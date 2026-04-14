@@ -4,7 +4,7 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  console.warn('Supabase env vars not set. App will run in demo mode.')
+  if (import.meta.env.DEV) console.warn('Supabase env vars not set. App will run in demo mode.')
 }
 
 export const supabase = createClient(

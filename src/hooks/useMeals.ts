@@ -45,19 +45,19 @@ export function useMeals(userId: string | null) {
       user_id: userId,
       date: meal.date || today(),
     })
-    if (error) console.error('Add meal error:', error)
+    if (error) import.meta.env.DEV && console.error('Add meal error:', error)
     else fetchMeals()
   }, [userId, fetchMeals])
 
   const updateMeal = useCallback(async (id: string, updates: Partial<Meal>) => {
     const { error } = await supabase.from('meals').update(updates).eq('id', id)
-    if (error) console.error('Update meal error:', error)
+    if (error) import.meta.env.DEV && console.error('Update meal error:', error)
     else fetchMeals()
   }, [fetchMeals])
 
   const deleteMeal = useCallback(async (id: string) => {
     const { error } = await supabase.from('meals').delete().eq('id', id)
-    if (error) console.error('Delete meal error:', error)
+    if (error) import.meta.env.DEV && console.error('Delete meal error:', error)
     else fetchMeals()
   }, [fetchMeals])
 
@@ -73,7 +73,7 @@ export function useMeals(userId: string | null) {
       protein: meal.protein,
       time_logged: new Date().toTimeString().slice(0, 8),
     })
-    if (error) console.error('Duplicate meal error:', error)
+    if (error) import.meta.env.DEV && console.error('Duplicate meal error:', error)
     else fetchMeals()
   }, [userId, fetchMeals])
 

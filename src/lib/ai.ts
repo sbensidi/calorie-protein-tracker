@@ -29,7 +29,7 @@ export async function calculateNutrition(
       const result = await callGroq(foodName, amount, amountType)
       if (result) return result
     } catch (err) {
-      console.error('Groq AI error:', err)
+      if (import.meta.env.DEV) console.error('Groq AI error:', err)
     }
   }
 
@@ -39,7 +39,7 @@ export async function calculateNutrition(
       const result = await callUSDA(foodName, amount)
       if (result) return result
     } catch (err) {
-      console.error('USDA fallback error:', err)
+      if (import.meta.env.DEV) console.error('USDA fallback error:', err)
     }
   }
 
@@ -110,7 +110,7 @@ async function callGroq(
         },
         {
           role: 'user',
-          content: `Food: "${foodName}", ${amountText}. What are the total calories and protein?`,
+          content: `Food: "${foodName.slice(0, 100).replace(/"/g, '')}", ${amountText}. What are the total calories and protein?`,
         },
       ],
       temperature: 0,

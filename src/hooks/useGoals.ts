@@ -52,7 +52,7 @@ export function useGoals(userId: string | null) {
     const { error } = await supabase
       .from('goals')
       .upsert({ ...updates, user_id: userId, updated_at: new Date().toISOString() }, { onConflict: 'user_id' })
-    if (error) console.error('Save goals error:', error)
+    if (error && import.meta.env.DEV) console.error('Save goals error:', error)
     else fetchGoals()
   }, [userId, fetchGoals])
 
