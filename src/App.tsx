@@ -172,7 +172,10 @@ function AuthPage({ lang, onToggleLang }: { lang: Lang; onToggleLang: () => void
     setMessage('')
     try {
       if (mode === 'magic') {
-        const { error } = await supabase.auth.signInWithOtp({ email })
+        const { error } = await supabase.auth.signInWithOtp({
+          email,
+          options: { emailRedirectTo: window.location.origin },
+        })
         if (error) throw error
         setMessage(t(lang, 'checkEmail'))
       } else if (mode === 'signup') {
