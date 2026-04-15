@@ -103,11 +103,16 @@ export function FoodEntryForm({ lang, history, getSuggestions, onAdd, onUpsertHi
   }, [foodName, numericAmount, history, amountMode])
 
   const handleCancelNutrition = () => {
+    setFoodName('')
+    setGramsStr('')
+    setUnitsStr('')
     setNutrition(null)
     setEditCalories('')
     setEditProtein('')
     setAiError(false)
     setQty(1)
+    setDropdownOpen(false)
+    setSuggestions([])
   }
 
   const numCalories = Number(editCalories) || 0
@@ -244,36 +249,50 @@ export function FoodEntryForm({ lang, history, getSuggestions, onAdd, onUpsertHi
         </div>
 
         {/* Row 1 col 2 — grams field; disabled when units filled */}
-        <input
-          type="number"
-          className="inp"
-          style={{
-            textAlign: 'center',
-            opacity: unitsStr ? 0.35 : 1,
-            transition: 'opacity .2s',
-          }}
-          placeholder={t(lang, 'grams')}
-          value={gramsStr}
-          disabled={Boolean(unitsStr)}
-          onFocus={e => e.target.select()}
-          onChange={e => { setGramsStr(e.target.value); setNutrition(null) }}
-        />
+        <div style={{ position: 'relative' }}>
+          <input
+            type="number"
+            className="inp"
+            style={{ textAlign: 'center', opacity: unitsStr ? 0.35 : 1, transition: 'opacity .2s' }}
+            placeholder={t(lang, 'grams')}
+            value={gramsStr}
+            disabled={Boolean(unitsStr)}
+            onFocus={e => e.target.select()}
+            onChange={e => { setGramsStr(e.target.value); setNutrition(null) }}
+          />
+          {gramsStr && !unitsStr && (
+            <button
+              onMouseDown={e => { e.preventDefault(); setGramsStr(''); setNutrition(null) }}
+              tabIndex={-1}
+              style={{ position: 'absolute', top: 4, right: 4, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 2, lineHeight: 1, display: 'flex' }}
+            >
+              <span className="icon" style={{ fontSize: 12 }}>close</span>
+            </button>
+          )}
+        </div>
 
         {/* Row 1 col 3 — units field; disabled when grams filled */}
-        <input
-          type="number"
-          className="inp"
-          style={{
-            textAlign: 'center',
-            opacity: gramsStr ? 0.35 : 1,
-            transition: 'opacity .2s',
-          }}
-          placeholder={unitPlaceholder}
-          value={unitsStr}
-          disabled={Boolean(gramsStr)}
-          onFocus={e => e.target.select()}
-          onChange={e => { setUnitsStr(e.target.value); setNutrition(null) }}
-        />
+        <div style={{ position: 'relative' }}>
+          <input
+            type="number"
+            className="inp"
+            style={{ textAlign: 'center', opacity: gramsStr ? 0.35 : 1, transition: 'opacity .2s' }}
+            placeholder={unitPlaceholder}
+            value={unitsStr}
+            disabled={Boolean(gramsStr)}
+            onFocus={e => e.target.select()}
+            onChange={e => { setUnitsStr(e.target.value); setNutrition(null) }}
+          />
+          {unitsStr && !gramsStr && (
+            <button
+              onMouseDown={e => { e.preventDefault(); setUnitsStr(''); setNutrition(null) }}
+              tabIndex={-1}
+              style={{ position: 'absolute', top: 4, right: 4, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 2, lineHeight: 1, display: 'flex' }}
+            >
+              <span className="icon" style={{ fontSize: 12 }}>close</span>
+            </button>
+          )}
+        </div>
 
         {/* Row 2 col 1 — meal type */}
         <select

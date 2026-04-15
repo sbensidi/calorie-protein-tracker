@@ -48,23 +48,17 @@ export default async function handler(req: Request): Promise<Response> {
       messages: [
         {
           role: 'system',
-          content:
-            'You are a precise nutrition calculator with knowledge of foods from all languages including Hebrew.\n' +
-            'Return ONLY a JSON object — no markdown, no explanation, no extra text.\n' +
-            'Format: {"calories": number, "protein": number}\n' +
-            'calories = total kilocalories for the exact quantity given.\n' +
-            'protein = total grams of protein for the exact quantity given.\n' +
-            'NEVER return per-100g values. Calculate for the specific amount requested.',
+          content: 'You are a nutrition expert. Answer with JSON only: {"calories": number, "protein": number}. No other text.',
         },
         {
           role: 'user',
           content: amountType === 'unit'
-            ? `Food: ${safeName}\nQuantity: ${amount} ${amount === 1 ? 'piece' : 'pieces'}\nCalculate total calories (kcal) and protein (g) for this exact quantity.`
-            : `Food: ${safeName}\nWeight: ${amount} grams\nCalculate total calories (kcal) and protein (g) for exactly ${amount} grams of this food.`,
+            ? `How many calories (kcal) and grams of protein are in ${amount} ${amount === 1 ? 'piece' : 'pieces'} of ${safeName}? JSON only.`
+            : `How many calories (kcal) and grams of protein are in ${amount}g of ${safeName}? JSON only.`,
         },
       ],
-      temperature: 0,
-      max_tokens: 100,
+      temperature: 0.1,
+      max_tokens: 60,
     }),
   })
 
