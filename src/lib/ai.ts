@@ -2,7 +2,7 @@ import type { NutritionResult, FoodHistory } from '../types'
 
 const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY
 const GROQ_ENDPOINT = 'https://api.groq.com/openai/v1/chat/completions'
-const GROQ_MODEL    = 'llama-3.1-8b-instant'
+const GROQ_MODEL    = 'llama-3.3-70b-versatile'
 
 /**
  * Fallback chain:
@@ -106,10 +106,6 @@ async function callGroqDirect(
 ): Promise<NutritionResult | null> {
   if (!GROQ_API_KEY) return null
 
-  const amountText = amountType === 'unit'
-    ? `Quantity: ${amount} item${amount !== 1 ? 's' : ''}`
-    : `Amount: ${amount}g`
-
   const safeName = foodName.slice(0, 100).replace(/"/g, '')
 
   const response = await fetch(GROQ_ENDPOINT, {
@@ -124,11 +120,18 @@ async function callGroqDirect(
         {
           role: 'system',
           content:
-            'You are a nutrition calculator. Return ONLY valid JSON — no markdown, no text, no explanation.\nFormat: {"calories": number, "protein": number}\nCALCULATE FOR THE EXACT QUANTITY GIVEN. Never return per-100g values.',
+            'You are a precise nutrition calculator with knowledge of foods from all languages including Hebrew.\n' +
+            'Return ONLY a JSON object — no markdown, no explanation, no extra text.\n' +
+            'Format: {"calories": number, "protein": number}\n' +
+            'calories = total kilocalories for the exact quantity given.\n' +
+            'protein = total grams of protein for the exact quantity given.\n' +
+            'NEVER return per-100g values. Calculate for the specific amount requested.',
         },
         {
           role: 'user',
-          content: `Food: ${safeName}\n${amountText}\nReturn total calories (kcal) and protein (g) for this exact amount only.`,
+          content: amountType === 'unit'
+            ? `Food: ${safeName}\nQuantity: ${amount} ${amount === 1 ? 'piece' : 'pieces'}\nCalculate total calories (kcal) and protein (g) for this exact quantity.`
+            : `Food: ${safeName}\nWeight: ${amount} grams\nCalculate total calories (kcal) and protein (g) for exactly ${amount} grams of this food.`,
         },
       ],
       temperature: 0,
