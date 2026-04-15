@@ -42,7 +42,7 @@ interface TodayTabProps {
 // Stored as a slot index: 0 = before first group, 1 = after first group, etc.
 function loadSummarySlot(): number {
   const v = localStorage.getItem('summary-slot')
-  return v !== null ? Number(v) : 999 // default: bottom
+  return v !== null ? Number(v) : 0 // default: top
 }
 function saveSummarySlot(n: number) {
   localStorage.setItem('summary-slot', String(n))

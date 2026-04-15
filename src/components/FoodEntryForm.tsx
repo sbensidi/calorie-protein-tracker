@@ -163,6 +163,18 @@ export function FoodEntryForm({ lang, history, getSuggestions, onAdd, onUpsertHi
 
   const unitPlaceholder = lang === 'he' ? 'יח׳' : 'pcs'
   const unitLabel       = lang === 'he' ? 'יח׳' : 'pcs'
+  const isRTL           = lang === 'he'
+
+  // Clear button positioned at the END of the field (left in Hebrew, right in English)
+  const clearBtnStyle = (small = false): React.CSSProperties => ({
+    position: 'absolute',
+    ...(isRTL ? { left: small ? 4 : 8 } : { right: small ? 4 : 8 }),
+    top: small ? 4 : '50%',
+    transform: small ? 'none' : 'translateY(-50%)',
+    background: 'none', border: 'none', cursor: 'pointer',
+    color: 'var(--text-3)', padding: small ? 2 : 4, lineHeight: 1,
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+  })
 
   return (
     <div className="card" style={{ padding: 16, marginBottom: 20 }}>
@@ -184,17 +196,14 @@ export function FoodEntryForm({ lang, history, getSuggestions, onAdd, onUpsertHi
             onFocus={handleFocus}
             onBlur={handleBlur}
             dir={lang === 'he' ? 'rtl' : 'ltr'}
-            style={{ paddingRight: foodName ? 36 : 12 }}
+            style={isRTL
+              ? { paddingLeft:  foodName ? 36 : 12 }
+              : { paddingRight: foodName ? 36 : 12 }}
           />
           {foodName && (
             <button
               onMouseDown={e => { e.preventDefault(); handleFoodNameChange(''); setNutrition(null); inputRef.current?.focus() }}
-              style={{
-                position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)',
-                background: 'none', border: 'none', cursor: 'pointer',
-                color: 'var(--text-3)', padding: 4, lineHeight: 1,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}
+              style={clearBtnStyle()}
               tabIndex={-1}
             >
               <span className="icon icon-sm">close</span>
@@ -261,11 +270,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, onAdd, onUpsertHi
             onChange={e => { setGramsStr(e.target.value); setNutrition(null) }}
           />
           {gramsStr && !unitsStr && (
-            <button
-              onMouseDown={e => { e.preventDefault(); setGramsStr(''); setNutrition(null) }}
-              tabIndex={-1}
-              style={{ position: 'absolute', top: 4, right: 4, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 2, lineHeight: 1, display: 'flex' }}
-            >
+            <button onMouseDown={e => { e.preventDefault(); setGramsStr(''); setNutrition(null) }} tabIndex={-1} style={clearBtnStyle(true)}>
               <span className="icon" style={{ fontSize: 12 }}>close</span>
             </button>
           )}
@@ -284,11 +289,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, onAdd, onUpsertHi
             onChange={e => { setUnitsStr(e.target.value); setNutrition(null) }}
           />
           {unitsStr && !gramsStr && (
-            <button
-              onMouseDown={e => { e.preventDefault(); setUnitsStr(''); setNutrition(null) }}
-              tabIndex={-1}
-              style={{ position: 'absolute', top: 4, right: 4, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 2, lineHeight: 1, display: 'flex' }}
-            >
+            <button onMouseDown={e => { e.preventDefault(); setUnitsStr(''); setNutrition(null) }} tabIndex={-1} style={clearBtnStyle(true)}>
               <span className="icon" style={{ fontSize: 12 }}>close</span>
             </button>
           )}
@@ -335,23 +336,28 @@ export function FoodEntryForm({ lang, history, getSuggestions, onAdd, onUpsertHi
 
           <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end', marginBottom: 12 }}>
             {/* Calories */}
-            <div style={{ flex: 1 }}>
+            <div style={{ flex: 1, position: 'relative' }}>
               <label style={{ fontSize: 11, color: 'var(--blue-hi)', fontWeight: 600, display: 'block', marginBottom: 4 }}>
                 {t(lang, 'calories')}{qty !== 1 ? ` → ${effectiveCalories}` : ''}
               </label>
               <input
                 type="number"
                 className="inp"
-                style={{ borderColor: 'rgba(59,130,246,0.25)' }}
+                style={{ borderColor: 'rgba(59,130,246,0.25)', ...(isRTL ? { paddingLeft: editCalories !== '' ? 32 : 12 } : { paddingRight: editCalories !== '' ? 32 : 12 }) }}
                 value={editCalories}
                 placeholder="0"
                 onChange={e => setEditCalories(e.target.value === '' ? '' : Number(e.target.value))}
                 onFocus={e => { if (editCalories === 0) setEditCalories(''); else e.target.select() }}
               />
+              {editCalories !== '' && (
+                <button onMouseDown={e => { e.preventDefault(); setEditCalories('') }} tabIndex={-1} style={clearBtnStyle()}>
+                  <span className="icon icon-sm">close</span>
+                </button>
+              )}
             </div>
 
             {/* Protein */}
-            <div style={{ flex: 1 }}>
+            <div style={{ flex: 1, position: 'relative' }}>
               <label style={{ fontSize: 11, color: 'var(--green-hi)', fontWeight: 600, display: 'block', marginBottom: 4 }}>
                 {t(lang, 'protein')}{qty !== 1 ? ` → ${effectiveProtein}g` : ''}
               </label>
@@ -359,12 +365,17 @@ export function FoodEntryForm({ lang, history, getSuggestions, onAdd, onUpsertHi
                 type="number"
                 step="0.1"
                 className="inp inp-green"
-                style={{ borderColor: 'rgba(16,185,129,0.25)' }}
+                style={{ borderColor: 'rgba(16,185,129,0.25)', ...(isRTL ? { paddingLeft: editProtein !== '' ? 32 : 12 } : { paddingRight: editProtein !== '' ? 32 : 12 }) }}
                 value={editProtein}
                 placeholder="0"
                 onChange={e => setEditProtein(e.target.value === '' ? '' : Number(e.target.value))}
                 onFocus={e => { if (editProtein === 0) setEditProtein(''); else e.target.select() }}
               />
+              {editProtein !== '' && (
+                <button onMouseDown={e => { e.preventDefault(); setEditProtein('') }} tabIndex={-1} style={clearBtnStyle()}>
+                  <span className="icon icon-sm">close</span>
+                </button>
+              )}
             </div>
 
             {/* Quantity stepper */}

@@ -53,8 +53,8 @@ export default async function handler(req: Request): Promise<Response> {
         {
           role: 'user',
           content: amountType === 'unit'
-            ? `How many calories (kcal) and grams of protein are in ${amount} ${amount === 1 ? 'piece' : 'pieces'} of ${safeName}? JSON only.`
-            : `How many calories (kcal) and grams of protein are in ${amount}g of ${safeName}? JSON only.`,
+            ? `Calories (kcal) and protein (g) per 1 piece of ${safeName}? JSON only.`
+            : `Calories (kcal) and protein (g) per 100g of ${safeName}? JSON only.`,
         },
       ],
       temperature: 0.1,
@@ -82,10 +82,12 @@ export default async function handler(req: Request): Promise<Response> {
     return new Response(JSON.stringify({ error: 'Invalid nutrition data' }), { status: 502 })
   }
 
+  // Model returns per-100g (grams mode) or per-1-piece (unit mode) — scale to actual amount
+  const scale = amountType === 'unit' ? amount : amount / 100
   return new Response(
     JSON.stringify({
-      calories: Math.round(parsed.calories),
-      protein:  Math.round(parsed.protein * 10) / 10,
+      calories: Math.round(parsed.calories * scale),
+      protein:  Math.round(parsed.protein  * scale * 10) / 10,
     }),
     { headers: { 'Content-Type': 'application/json' } }
   )
