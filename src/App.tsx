@@ -179,9 +179,10 @@ function AuthPage({ lang, onToggleLang }: { lang: Lang; onToggleLang: () => void
         if (error) throw error
         setMessage(t(lang, 'checkEmail'))
       } else if (mode === 'signup') {
-        const { error } = await supabase.auth.signUp({ email, password })
+        const { data, error } = await supabase.auth.signUp({ email, password })
         if (error) throw error
-        setMessage(t(lang, 'checkEmail'))
+        // If auto-confirm is on, session is returned immediately — no email needed
+        if (!data.session) setMessage(t(lang, 'checkEmail'))
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password })
         if (error) throw error
