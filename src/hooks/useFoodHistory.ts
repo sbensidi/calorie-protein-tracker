@@ -2,6 +2,17 @@ import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import type { FoodHistory } from '../types'
 
+function isFoodHistory(x: unknown): x is FoodHistory {
+  return (
+    typeof x === 'object' && x !== null &&
+    typeof (x as FoodHistory).id       === 'string' &&
+    typeof (x as FoodHistory).name     === 'string' &&
+    typeof (x as FoodHistory).grams    === 'number' &&
+    typeof (x as FoodHistory).calories === 'number' &&
+    typeof (x as FoodHistory).protein  === 'number'
+  )
+}
+
 export function useFoodHistory(userId: string | null) {
   const [history, setHistory] = useState<FoodHistory[]>([])
 
@@ -13,7 +24,7 @@ export function useFoodHistory(userId: string | null) {
       .eq('user_id', userId)
       .order('use_count', { ascending: false })
       .order('last_used', { ascending: false })
-    if (!error && data) setHistory(data as FoodHistory[])
+    if (!error && data) setHistory((data as unknown[]).filter(isFoodHistory))
   }, [userId])
 
   useEffect(() => {

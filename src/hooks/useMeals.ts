@@ -3,6 +3,19 @@ import { supabase } from '../lib/supabase'
 import type { Meal } from '../types'
 import { today } from '../lib/i18n'
 
+function isMeal(x: unknown): x is Meal {
+  return (
+    typeof x === 'object' && x !== null &&
+    typeof (x as Meal).id         === 'string' &&
+    typeof (x as Meal).user_id    === 'string' &&
+    typeof (x as Meal).name       === 'string' &&
+    typeof (x as Meal).calories   === 'number' &&
+    typeof (x as Meal).protein    === 'number' &&
+    typeof (x as Meal).grams      === 'number' &&
+    typeof (x as Meal).date       === 'string'
+  )
+}
+
 export function useMeals(userId: string | null) {
   const [meals, setMeals] = useState<Meal[]>([])
   const [loading, setLoading] = useState(false)
@@ -16,7 +29,7 @@ export function useMeals(userId: string | null) {
       .eq('user_id', userId)
       .order('date', { ascending: false })
       .order('time_logged', { ascending: true })
-    if (!error && data) setMeals(data as Meal[])
+    if (!error && data) setMeals((data as unknown[]).filter(isMeal))
     setLoading(false)
   }, [userId])
 

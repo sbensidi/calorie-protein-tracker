@@ -29,8 +29,9 @@ export function FoodEntryForm({ lang, history, getSuggestions, onAdd, onUpsertHi
   // Dropdown
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [suggestions,  setSuggestions]  = useState<FoodHistory[]>([])
-  const inputRef    = useRef<HTMLInputElement>(null)
-  const dropdownRef = useRef<HTMLDivElement>(null)
+  const inputRef       = useRef<HTMLInputElement>(null)
+  const dropdownRef    = useRef<HTMLDivElement>(null)
+  const lastCalcRef    = useRef(0)  // debounce: timestamp of last calculate call
 
   // Derived mode — whichever field has a value wins; both empty = grams mode (AI guesses portion)
   const amountMode: 'g' | 'unit' = unitsStr ? 'unit' : 'g'
@@ -79,6 +80,10 @@ export function FoodEntryForm({ lang, history, getSuggestions, onAdd, onUpsertHi
 
   const handleCalculate = useCallback(async () => {
     if (!foodName.trim()) return
+    // Debounce: ignore if called within 3 seconds of last successful call
+    const now = Date.now()
+    if (now - lastCalcRef.current < 3000) return
+    lastCalcRef.current = now
     setCalculating(true)
     setAiError(false)
     setDropdownOpen(false)

@@ -2,6 +2,14 @@ import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import type { Goal } from '../types'
 
+function isGoal(x: unknown): x is Goal {
+  return (
+    typeof x === 'object' && x !== null &&
+    typeof (x as Goal).default_calories === 'number' &&
+    typeof (x as Goal).default_protein  === 'number'
+  )
+}
+
 const DEFAULT_GOAL: Omit<Goal, 'id' | 'user_id' | 'updated_at'> = {
   default_calories: 1700,
   default_protein: 160,
@@ -20,7 +28,7 @@ export function useGoals(userId: string | null) {
       .select('*')
       .eq('user_id', userId)
       .single()
-    if (!error && data) {
+    if (!error && isGoal(data)) {
       setGoals(data as Goal)
     } else {
       // New user — auto-save defaults to DB so they have something to start with

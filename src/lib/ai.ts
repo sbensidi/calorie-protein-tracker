@@ -2,16 +2,14 @@ import type { NutritionResult, FoodHistory } from '../types'
 
 const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY
 const GROQ_ENDPOINT = 'https://api.groq.com/openai/v1/chat/completions'
-const GROQ_MODEL = 'llama-3.1-8b-instant'
+const GROQ_MODEL    = 'llama-3.1-8b-instant'
 
 /**
  * Fallback chain:
- * 1. Check food_history cache (exact name + amount ±5%)
- * 2. Call Groq AI
- * 3. Return {0,0} and let user fill manually
- *
- * amountType: 'g' = weight in grams, 'unit' = discrete items (e.g. 1 egg)
- * Convention: unit-based entries are stored with grams < 0 (negative = unit count)
+ * 1. History cache
+ * 2. Groq AI — via Edge Function proxy in production, direct in dev
+ * 3. USDA (weight-based only)
+ * 4. Manual entry {0,0}
  */
 export async function calculateNutrition(
   foodName: string,
@@ -19,21 +17,20 @@ export async function calculateNutrition(
   history: FoodHistory[],
   amountType: 'g' | 'unit' = 'g'
 ): Promise<NutritionResult> {
-  // Step 1: check history cache
   const cached = findInHistory(foodName, amount, history, amountType)
   if (cached) return cached
 
-  // Step 2: Groq AI
-  if (GROQ_API_KEY) {
-    try {
-      const result = await callGroq(foodName, amount, amountType)
-      if (result) return result
-    } catch (err) {
-      if (import.meta.env.DEV) console.error('Groq AI error:', err)
-    }
+  try {
+    // Production: proxy keeps API key server-side
+    // Dev: direct call (key in local .env, never committed)
+    const result = import.meta.env.DEV
+      ? await callGroqDirect(foodName, amount, amountType)
+      : await callGroqProxy(foodName, amount, amountType)
+    if (result) return result
+  } catch (err) {
+    if (import.meta.env.DEV) console.error('Groq error:', err)
   }
 
-  // Step 3: USDA fallback (weight-based only)
   if (amountType === 'g') {
     try {
       const result = await callUSDA(foodName, amount)
@@ -43,7 +40,6 @@ export async function calculateNutrition(
     }
   }
 
-  // Step 4: manual entry
   return { calories: 0, protein: 0 }
 }
 
@@ -56,7 +52,6 @@ function findInHistory(
   const nameLower = name.toLowerCase().trim()
 
   if (amountType === 'unit') {
-    // Unit entries stored as negative grams
     const match = history.find(h => {
       if (h.grams >= 0) return false
       const storedUnits = Math.abs(h.grams)
@@ -71,7 +66,6 @@ function findInHistory(
     }
   }
 
-  // Grams mode — only consider positive-grams entries
   const match = history.find(h => {
     if (h.grams <= 0) return false
     const ratio = Math.abs(h.grams - amount) / Math.max(h.grams, amount)
@@ -85,14 +79,38 @@ function findInHistory(
   }
 }
 
-async function callGroq(
+// Production path — key stays on server
+async function callGroqProxy(
   foodName: string,
   amount: number,
   amountType: 'g' | 'unit'
 ): Promise<NutritionResult | null> {
+  const res = await fetch('/api/nutrition', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ foodName, amount, amountType }),
+  })
+  if (!res.ok) return null
+  const data = await res.json()
+  if (typeof data.calories === 'number' && typeof data.protein === 'number') {
+    return { calories: data.calories, protein: data.protein }
+  }
+  return null
+}
+
+// Dev path — direct call using local VITE_GROQ_API_KEY
+async function callGroqDirect(
+  foodName: string,
+  amount: number,
+  amountType: 'g' | 'unit'
+): Promise<NutritionResult | null> {
+  if (!GROQ_API_KEY) return null
+
   const amountText = amountType === 'unit'
     ? `Quantity: ${amount} item${amount !== 1 ? 's' : ''}`
     : `Amount: ${amount}g`
+
+  const safeName = foodName.slice(0, 100).replace(/"/g, '')
 
   const response = await fetch(GROQ_ENDPOINT, {
     method: 'POST',
@@ -110,7 +128,7 @@ async function callGroq(
         },
         {
           role: 'user',
-          content: `Food: "${foodName.slice(0, 100).replace(/"/g, '')}", ${amountText}. What are the total calories and protein?`,
+          content: `Food: "${safeName}", ${amountText}. What are the total calories and protein?`,
         },
       ],
       temperature: 0,
@@ -123,7 +141,6 @@ async function callGroq(
   const text = data.choices?.[0]?.message?.content?.trim()
   if (!text) return null
 
-  // Extract JSON object from anywhere in the response (model may add extra text)
   const match = text.match(/\{[^{}]*"calories"[^{}]*"protein"[^{}]*\}|\{[^{}]*"protein"[^{}]*"calories"[^{}]*\}/)
   if (!match) return null
   const parsed = JSON.parse(match[0])
@@ -142,14 +159,13 @@ async function callUSDA(foodName: string, grams: number): Promise<NutritionResul
   if (!food) return null
 
   const nutrients = food.foodNutrients as Array<{ nutrientName: string; value: number }>
-  const energyNutrient = nutrients.find(n =>
+  const energyNutrient  = nutrients.find(n =>
     n.nutrientName.toLowerCase().includes('energy') && !n.nutrientName.toLowerCase().includes('kj')
   )
   const proteinNutrient = nutrients.find(n => n.nutrientName.toLowerCase() === 'protein')
 
-  // USDA values are per 100g
-  const scale = grams / 100
-  const calories = energyNutrient ? Math.round(energyNutrient.value * scale) : 0
+  const scale    = grams / 100
+  const calories = energyNutrient  ? Math.round(energyNutrient.value  * scale) : 0
   const protein  = proteinNutrient ? Math.round(proteinNutrient.value * scale * 10) / 10 : 0
 
   return { calories, protein }
