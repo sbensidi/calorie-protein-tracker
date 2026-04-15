@@ -179,7 +179,22 @@ export function FoodEntryForm({ lang, history, getSuggestions, onAdd, onUpsertHi
             onFocus={handleFocus}
             onBlur={handleBlur}
             dir={lang === 'he' ? 'rtl' : 'ltr'}
+            style={{ paddingRight: foodName ? 36 : 12 }}
           />
+          {foodName && (
+            <button
+              onMouseDown={e => { e.preventDefault(); handleFoodNameChange(''); setNutrition(null); inputRef.current?.focus() }}
+              style={{
+                position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)',
+                background: 'none', border: 'none', cursor: 'pointer',
+                color: 'var(--text-3)', padding: 4, lineHeight: 1,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}
+              tabIndex={-1}
+            >
+              <span className="icon icon-sm">close</span>
+            </button>
+          )}
           {dropdownOpen && suggestions.length > 0 && (
             <div
               ref={dropdownRef}
@@ -240,6 +255,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, onAdd, onUpsertHi
           placeholder={t(lang, 'grams')}
           value={gramsStr}
           disabled={Boolean(unitsStr)}
+          onFocus={e => e.target.select()}
           onChange={e => { setGramsStr(e.target.value); setNutrition(null) }}
         />
 
@@ -255,6 +271,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, onAdd, onUpsertHi
           placeholder={unitPlaceholder}
           value={unitsStr}
           disabled={Boolean(gramsStr)}
+          onFocus={e => e.target.select()}
           onChange={e => { setUnitsStr(e.target.value); setNutrition(null) }}
         />
 
@@ -310,7 +327,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, onAdd, onUpsertHi
                 value={editCalories}
                 placeholder="0"
                 onChange={e => setEditCalories(e.target.value === '' ? '' : Number(e.target.value))}
-                onFocus={() => { if (editCalories === 0) setEditCalories('') }}
+                onFocus={e => { if (editCalories === 0) setEditCalories(''); else e.target.select() }}
               />
             </div>
 
@@ -327,7 +344,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, onAdd, onUpsertHi
                 value={editProtein}
                 placeholder="0"
                 onChange={e => setEditProtein(e.target.value === '' ? '' : Number(e.target.value))}
-                onFocus={() => { if (editProtein === 0) setEditProtein('') }}
+                onFocus={e => { if (editProtein === 0) setEditProtein(''); else e.target.select() }}
               />
             </div>
 

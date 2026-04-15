@@ -124,11 +124,11 @@ async function callGroqDirect(
         {
           role: 'system',
           content:
-            'You are a nutrition calculator. Return ONLY valid JSON with no markdown, no explanation.\nFormat: {"calories": number, "protein": number}\nCalories in kcal, protein in grams, for the exact amount specified.',
+            'You are a nutrition calculator. Return ONLY valid JSON — no markdown, no text, no explanation.\nFormat: {"calories": number, "protein": number}\nCALCULATE FOR THE EXACT QUANTITY GIVEN. Never return per-100g values.',
         },
         {
           role: 'user',
-          content: `Food: "${safeName}", ${amountText}. What are the total calories and protein?`,
+          content: `Food: ${safeName}\n${amountText}\nReturn total calories (kcal) and protein (g) for this exact amount only.`,
         },
       ],
       temperature: 0,
