@@ -419,7 +419,7 @@ function AuthPage({ lang, onToggleLang }: { lang: Lang; onToggleLang: () => void
           <button
             className="btn-primary"
             onClick={handleAuth}
-            disabled={loading || !email || (showPassword && !password && mode !== 'magic')}
+            disabled={loading || !email || (showPassword && !password)}
             style={{ width: '100%', marginTop: 4 }}
           >
             {loading ? '...'
