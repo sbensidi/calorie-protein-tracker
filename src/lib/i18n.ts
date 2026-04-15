@@ -57,6 +57,13 @@ export const translations = {
     confirmNutrition: 'אשר ערכי תזונה',
     unitLabel: 'יח׳',
     totalUnits: 'סה״כ יחידות',
+    forgotPassword: 'שכחתי סיסמה',
+    sendResetLink: 'שלח קישור לאיפוס',
+    newPassword: 'סיסמה חדשה',
+    updatePassword: 'עדכן סיסמה',
+    passwordUpdated: 'הסיסמה עודכנה — אפשר להתחבר',
+    signInWithGoogle: 'כניסה עם Google',
+    orDivider: 'או',
   },
   en: {
     appTitle: 'Calorie Tracker',
@@ -113,6 +120,13 @@ export const translations = {
     confirmNutrition: 'Confirm Nutrition',
     unitLabel: 'unit(s)',
     totalUnits: 'Total units',
+    forgotPassword: 'Forgot password',
+    sendResetLink: 'Send Reset Link',
+    newPassword: 'New password',
+    updatePassword: 'Update Password',
+    passwordUpdated: 'Password updated — you can sign in',
+    signInWithGoogle: 'Continue with Google',
+    orDivider: 'or',
   },
 } as const
 

@@ -23,8 +23,10 @@ export function useGoals(userId: string | null) {
     if (!error && data) {
       setGoals(data as Goal)
     } else {
-      // Return default if none exists
-      setGoals({ id: '', user_id: userId, updated_at: '', ...DEFAULT_GOAL })
+      // New user — auto-save defaults to DB so they have something to start with
+      const defaults = { ...DEFAULT_GOAL, user_id: userId, updated_at: new Date().toISOString() }
+      await supabase.from('goals').upsert(defaults, { onConflict: 'user_id' })
+      setGoals({ id: '', ...defaults })
     }
     setLoading(false)
   }, [userId])
