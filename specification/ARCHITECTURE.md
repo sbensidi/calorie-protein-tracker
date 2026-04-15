@@ -266,9 +266,9 @@ console.log('user:', session.access_token)
 | Prompt injection ב-AI | שם מאכל מוגבל ל-100 תווים, גרשיים מסוננות |
 | CSP חסר | נוסף `Content-Security-Policy` header ב-index.html |
 
-### ⚠️ ידוע ומנוהל (לא קריטי לשלב זה)
-| ממצא | הסבר | המלצה לעתיד |
-|------|-------|-------------|
-| Groq key גלוי בדפדפן | ראה סעיף "מה בטוח ומה לא" | Vercel Edge Function |
-| אין rate limiting על חישוב | משתמש יכול לשלוח בקשות רבות | Debounce + server-side |
-| אין validation על תגובות Supabase | TypeScript cast ללא runtime check | הוסף zod/validation |
+### ✅ תוקנו בגרסה 2 (2026-04-15)
+| ממצא | פעולה |
+|------|--------|
+| Groq key גלוי בדפדפן | `api/nutrition.ts` — Vercel Edge Function משמש כ-proxy, המפתח שרת-side בלבד (`GROQ_API_KEY` ללא VITE_) |
+| אין rate limiting על חישוב | Debounce 3 שניות ב-`FoodEntryForm` — לחיצות כפולות מתעלמות |
+| אין validation על תגובות Supabase | Type guards ב-`useMeals`, `useFoodHistory`, `useGoals` — שורות פגומות מסוננות |
