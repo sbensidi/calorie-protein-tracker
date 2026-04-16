@@ -335,46 +335,50 @@ export function FoodEntryForm({ lang, history, getSuggestions, onAdd, onUpsertHi
 
           <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end', marginBottom: 12 }}>
             {/* Calories */}
-            <div style={{ flex: 1, position: 'relative' }}>
+            <div style={{ flex: 1 }}>
               <label style={{ fontSize: 11, color: 'var(--blue-hi)', fontWeight: 600, display: 'block', marginBottom: 4 }}>
                 {t(lang, 'calories')}{qty !== 1 ? ` → ${effectiveCalories}` : ''}
               </label>
-              <input
-                type="number"
-                className="inp"
-                style={{ borderColor: 'rgba(59,130,246,0.25)', ...(isRTL ? { paddingLeft: editCalories !== '' ? 32 : 12 } : { paddingRight: editCalories !== '' ? 32 : 12 }) }}
-                value={editCalories}
-                placeholder="0"
-                onChange={e => setEditCalories(e.target.value === '' ? '' : Number(e.target.value))}
-                onFocus={e => { if (editCalories === 0) setEditCalories(''); else e.target.select() }}
-              />
-              {editCalories !== '' && (
-                <button onMouseDown={e => { e.preventDefault(); setEditCalories('') }} tabIndex={-1} style={clearBtnStyle()}>
-                  <span className="icon icon-sm">close</span>
-                </button>
-              )}
+              <div style={{ position: 'relative' }}>
+                <input
+                  type="number"
+                  className="inp"
+                  style={{ borderColor: 'rgba(59,130,246,0.25)', ...(isRTL ? { paddingLeft: editCalories !== '' ? 32 : 12 } : { paddingRight: editCalories !== '' ? 32 : 12 }) }}
+                  value={editCalories}
+                  placeholder="0"
+                  onChange={e => setEditCalories(e.target.value === '' ? '' : Number(e.target.value))}
+                  onFocus={e => { if (editCalories === 0) setEditCalories(''); else e.target.select() }}
+                />
+                {editCalories !== '' && (
+                  <button onMouseDown={e => { e.preventDefault(); setEditCalories('') }} tabIndex={-1} style={clearBtnStyle()}>
+                    <span className="icon icon-sm">close</span>
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* Protein */}
-            <div style={{ flex: 1, position: 'relative' }}>
+            <div style={{ flex: 1 }}>
               <label style={{ fontSize: 11, color: 'var(--green-hi)', fontWeight: 600, display: 'block', marginBottom: 4 }}>
                 {t(lang, 'protein')}{qty !== 1 ? ` → ${effectiveProtein}g` : ''}
               </label>
-              <input
-                type="number"
-                step="0.1"
-                className="inp inp-green"
-                style={{ borderColor: 'rgba(16,185,129,0.25)', ...(isRTL ? { paddingLeft: editProtein !== '' ? 32 : 12 } : { paddingRight: editProtein !== '' ? 32 : 12 }) }}
-                value={editProtein}
-                placeholder="0"
-                onChange={e => setEditProtein(e.target.value === '' ? '' : Number(e.target.value))}
-                onFocus={e => { if (editProtein === 0) setEditProtein(''); else e.target.select() }}
-              />
-              {editProtein !== '' && (
-                <button onMouseDown={e => { e.preventDefault(); setEditProtein('') }} tabIndex={-1} style={clearBtnStyle()}>
-                  <span className="icon icon-sm">close</span>
-                </button>
-              )}
+              <div style={{ position: 'relative' }}>
+                <input
+                  type="number"
+                  step="0.1"
+                  className="inp inp-green"
+                  style={{ borderColor: 'rgba(16,185,129,0.25)', ...(isRTL ? { paddingLeft: editProtein !== '' ? 32 : 12 } : { paddingRight: editProtein !== '' ? 32 : 12 }) }}
+                  value={editProtein}
+                  placeholder="0"
+                  onChange={e => setEditProtein(e.target.value === '' ? '' : Number(e.target.value))}
+                  onFocus={e => { if (editProtein === 0) setEditProtein(''); else e.target.select() }}
+                />
+                {editProtein !== '' && (
+                  <button onMouseDown={e => { e.preventDefault(); setEditProtein('') }} tabIndex={-1} style={clearBtnStyle()}>
+                    <span className="icon icon-sm">close</span>
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* Quantity stepper */}
