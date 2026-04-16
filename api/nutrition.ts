@@ -5,6 +5,50 @@ export const config = { runtime: 'edge' }
 const GROQ_ENDPOINT = 'https://api.groq.com/openai/v1/chat/completions'
 const GROQ_MODEL    = 'llama-3.3-70b-versatile'
 
+// Hebrew → English food lookup (longest key first to prefer specific matches)
+const HE_EN: [string, string][] = [
+  ['חזה עוף','chicken breast'],['כרעי עוף','chicken drumstick'],['שוקי עוף','chicken drumstick'],
+  ['כנפי עוף','chicken wings'],['עוף שלם','whole chicken'],['ירך עוף','chicken thigh'],
+  ['פרגית','chicken thigh'],['עוף','chicken'],
+  ['בשר טחון','ground beef'],['אנטריקוט','ribeye steak'],['פילה בקר','beef tenderloin'],
+  ['שניצל','schnitzel chicken'],['בשר בקר','beef'],['סטייק','beef steak'],
+  ['כבש','lamb'],['הודו','turkey breast'],['נקניק','sausage'],['נקניקייה','hot dog'],
+  ['טונה בשמן','canned tuna in oil'],['טונה במים','canned tuna in water'],
+  ['סלמון','salmon'],['טונה','tuna'],['דניס','sea bass'],['לוקוס','grouper'],
+  ['אמנון','tilapia'],['פורל','trout'],['שרימפס','shrimp'],
+  ['חלבון ביצה','egg white'],['חלמון ביצה','egg yolk'],['ביצה קשה','hard boiled egg'],
+  ['ביצה','egg'],['ביצים','eggs'],
+  ['גבינת קוטג','cottage cheese'],['גבינה לבנה','white cheese'],['גבינה צהובה','yellow cheese'],
+  ['גבינה בולגרית','bulgarian feta cheese'],['גבינת שמנת','cream cheese'],['גבינה','cheese'],
+  ['יוגורט יווני','greek yogurt'],['יוגורט','yogurt'],
+  ['חלב מלא','whole milk'],['חלב דל שומן','low fat milk'],['חלב','milk'],
+  ['שמנת חמוצה','sour cream'],['שמנת','cream'],['חמאה','butter'],
+  ['לחם מחיטה מלאה','whole wheat bread'],['לחם שיפון','rye bread'],['לחם לבן','white bread'],
+  ['לחם','bread'],['פיתה מלאה','whole wheat pita'],['פיתה','pita bread'],
+  ['אורז לבן','white rice'],['אורז חום','brown rice'],['אורז','rice'],
+  ['פסטה מלאה','whole wheat pasta'],['פסטה','pasta'],
+  ['קינואה','quinoa'],['שיבולת שועל','oatmeal'],['גרנולה','granola'],
+  ['עדשים כתומות','red lentils'],['עדשים','lentils'],
+  ['שעועית','kidney beans'],['גרגרי חומוס','chickpeas'],['חומוס','hummus'],['אפונה','green peas'],
+  ['תפוח אדמה','potato'],['בטטה','sweet potato'],['ברוקולי','broccoli'],
+  ['כרובית','cauliflower'],['עגבניה','tomato'],['מלפפון','cucumber'],['גזר','carrot'],
+  ['חסה','lettuce'],['תרד','spinach'],['בצל ירוק','green onion'],['בצל','onion'],
+  ['שום','garlic'],['פטריות','mushrooms'],['פטרייה','mushroom'],['פלפל','bell pepper'],
+  ['חציל','eggplant'],['קישוא','zucchini'],['תירס','corn'],['אבוקדו','avocado'],['זית','olive'],
+  ['תפוח','apple'],['בננה','banana'],['תפוז','orange'],['ענבים','grapes'],
+  ['תות','strawberry'],['אבטיח','watermelon'],['מנגו','mango'],['תמר','date'],
+  ['שמן זית','olive oil'],['שמן','vegetable oil'],['טחינה','tahini'],
+  ['חמאת בוטנים','peanut butter'],['שקדים','almonds'],['אגוזי מלך','walnuts'],
+  ['טופו','tofu'],['שוקולד מריר','dark chocolate'],['שוקולד','chocolate'],['דבש','honey'],
+]
+
+function lookupHebrew(name: string): string | null {
+  if (!/[^\x00-\x7F]/.test(name)) return null
+  const t = name.trim()
+  const m = HE_EN.find(([k]) => t === k || t.startsWith(k + ' ') || t.includes(' ' + k) || t.includes(k))
+  return m ? m[1] : null
+}
+
 async function groqCall(apiKey: string, messages: { role: string; content: string }[], maxTokens = 80): Promise<string | null> {
   const res = await fetch(GROQ_ENDPOINT, {
     method: 'POST',
@@ -43,17 +87,16 @@ export default async function handler(req: Request): Promise<Response> {
 
   const safeName = String(foodName).slice(0, 100).replace(/"/g, '')
 
-  // Step 1 — if non-ASCII (Hebrew / Arabic / etc.), translate to English first
-  const hasNonAscii = /[^\x00-\x7F]/.test(safeName)
-  let queryName = safeName
+  // Step 1 — resolve Hebrew food name to English (dictionary first, AI fallback)
+  let queryName = lookupHebrew(safeName) ?? safeName
 
-  if (hasNonAscii) {
+  if (queryName === safeName && /[^\x00-\x7F]/.test(safeName)) {
+    // Not in dictionary — try AI translation
     const translated = await groqCall(
       apiKey,
       [{ role: 'user', content: `Translate this food name to English (2-4 words max, no punctuation): ${safeName}` }],
       20
     )
-    // Accept only clean ASCII responses
     if (translated && /^[a-zA-Z\s\-']+$/.test(translated) && translated.length < 60) {
       queryName = translated
     }

@@ -1,0 +1,171 @@
+/**
+ * Lookup table: common Israeli Hebrew food names → English
+ * Sorted longest-key-first so "חזה עוף" matches before "עוף"
+ */
+const DICT: [string, string][] = [
+  // ── עוף ──────────────────────────────────────────────────────
+  ['חזה עוף',           'chicken breast'],
+  ['כרעי עוף',          'chicken drumstick'],
+  ['שוקי עוף',          'chicken drumstick'],
+  ['כנפי עוף',          'chicken wings'],
+  ['עוף שלם',           'whole chicken'],
+  ['ירך עוף',           'chicken thigh'],
+  ['פרגית',             'chicken thigh'],
+  ['עוף',               'chicken'],
+  // ── בשר ──────────────────────────────────────────────────────
+  ['בשר טחון',          'ground beef'],
+  ['אנטריקוט',          'ribeye steak'],
+  ['פילה בקר',          'beef tenderloin'],
+  ['צלעות בקר',         'beef ribs'],
+  ['שניצל',             'schnitzel chicken'],
+  ['בשר בקר',           'beef'],
+  ['סטייק',             'beef steak'],
+  ['כבש',               'lamb'],
+  ['הודו',              'turkey breast'],
+  ['נקניק',             'sausage'],
+  ['נקניקייה',          'hot dog'],
+  // ── דגים ──────────────────────────────────────────────────────
+  ['טונה בשמן',         'canned tuna in oil'],
+  ['טונה במים',         'canned tuna in water'],
+  ['סלמון',             'salmon'],
+  ['טונה',              'tuna'],
+  ['דניס',              'sea bass'],
+  ['לוקוס',             'grouper'],
+  ['אמנון',             'tilapia'],
+  ['פורל',              'trout'],
+  ['בורי',              'mullet fish'],
+  ['קלמרי',             'squid'],
+  ['שרימפס',            'shrimp'],
+  // ── ביצים ודיירי ──────────────────────────────────────────────
+  ['חלבון ביצה',        'egg white'],
+  ['חלמון ביצה',        'egg yolk'],
+  ['ביצה קשה',          'hard boiled egg'],
+  ['ביצה',              'egg'],
+  ['ביצים',             'eggs'],
+  ['גבינת קוטג',        'cottage cheese'],
+  ['גבינה לבנה',        'white cheese'],
+  ['גבינה צהובה',       'yellow cheese'],
+  ['גבינה בולגרית',     'bulgarian feta cheese'],
+  ['גבינת שמנת',        'cream cheese'],
+  ['גבינה',             'cheese'],
+  ['יוגורט יווני',      'greek yogurt'],
+  ['יוגורט',            'yogurt'],
+  ['חלב מלא',           'whole milk'],
+  ['חלב דל שומן',       'low fat milk'],
+  ['חלב',               'milk'],
+  ['שמנת חמוצה',        'sour cream'],
+  ['שמנת',              'cream'],
+  ['חמאה',              'butter'],
+  // ── פחמימות ───────────────────────────────────────────────────
+  ['לחם מחיטה מלאה',   'whole wheat bread'],
+  ['לחם שיפון',         'rye bread'],
+  ['לחם לבן',           'white bread'],
+  ['לחם',               'bread'],
+  ['פיתה מלאה',         'whole wheat pita'],
+  ['פיתה',              'pita bread'],
+  ['אורז לבן',          'white rice'],
+  ['אורז חום',          'brown rice'],
+  ['אורז',              'rice'],
+  ['פסטה מלאה',         'whole wheat pasta'],
+  ['פסטה',              'pasta'],
+  ['קינואה',            'quinoa'],
+  ['כוסמת',             'buckwheat'],
+  ['שיבולת שועל',       'oatmeal'],
+  ['גרנולה',            'granola'],
+  ['קורנפלקס',          'cornflakes'],
+  // ── קטניות ───────────────────────────────────────────────────
+  ['עדשים כתומות',      'red lentils'],
+  ['עדשים שחורות',      'black lentils'],
+  ['עדשים',             'lentils'],
+  ['שעועית לבנה',       'white beans'],
+  ['שעועית שחורה',      'black beans'],
+  ['שעועית',            'kidney beans'],
+  ['גרגרי חומוס',       'chickpeas'],
+  ['חומוס',             'hummus'],
+  ['פול',               'fava beans'],
+  ['אפונה',             'green peas'],
+  // ── ירקות ────────────────────────────────────────────────────
+  ['תפוח אדמה',         'potato'],
+  ['בטטה',              'sweet potato'],
+  ['ברוקולי',           'broccoli'],
+  ['כרובית',            'cauliflower'],
+  ['עגבניה',            'tomato'],
+  ['מלפפון',            'cucumber'],
+  ['גזר',               'carrot'],
+  ['חסה',               'lettuce'],
+  ['תרד',               'spinach'],
+  ['בצל ירוק',          'green onion'],
+  ['בצל סגול',          'red onion'],
+  ['בצל',               'onion'],
+  ['שום',               'garlic'],
+  ['פטרייה',            'mushroom'],
+  ['פטריות',            'mushrooms'],
+  ['פלפל',              'bell pepper'],
+  ['חציל',              'eggplant'],
+  ['קישוא',             'zucchini'],
+  ['כרוב',              'cabbage'],
+  ['סלרי',              'celery'],
+  ['אספרגוס',           'asparagus'],
+  ['תירס',              'corn'],
+  ['אבוקדו',            'avocado'],
+  ['זית',               'olive'],
+  // ── פירות ────────────────────────────────────────────────────
+  ['תפוח ירוק',         'green apple'],
+  ['תפוח',              'apple'],
+  ['בננה',              'banana'],
+  ['תפוז',              'orange'],
+  ['מנדרינה',           'mandarin'],
+  ['לימון',             'lemon'],
+  ['ענב',               'grape'],
+  ['ענבים',             'grapes'],
+  ['תות',               'strawberry'],
+  ['אבטיח',             'watermelon'],
+  ['מלון',              'melon'],
+  ['אננס',              'pineapple'],
+  ['מנגו',              'mango'],
+  ['אפרסק',             'peach'],
+  ['שזיף',              'plum'],
+  ['תמר',               'date'],
+  ['אגס',               'pear'],
+  ['קיווי',             'kiwi'],
+  // ── שומנים ───────────────────────────────────────────────────
+  ['שמן זית',           'olive oil'],
+  ['שמן קוקוס',         'coconut oil'],
+  ['שמן',               'vegetable oil'],
+  ['טחינה',             'tahini'],
+  ['חמאת בוטנים',       'peanut butter'],
+  ['בוטנים',            'peanuts'],
+  ['שקדים',             'almonds'],
+  ['אגוזי מלך',         'walnuts'],
+  ['קשיו',              'cashews'],
+  ['גרעיני חמנייה',     'sunflower seeds'],
+  ['גרעיני דלעת',       'pumpkin seeds'],
+  // ── מוצרי סויה ───────────────────────────────────────────────
+  ['טופו',              'tofu'],
+  ['אדממה',             'edamame'],
+  ['חלב סויה',          'soy milk'],
+  // ── אחר ──────────────────────────────────────────────────────
+  ['שוקולד מריר',       'dark chocolate'],
+  ['שוקולד',            'chocolate'],
+  ['דבש',               'honey'],
+  ['ריבה',              'jam'],
+  ['מיונז',             'mayonnaise'],
+  ['קטשופ',             'ketchup'],
+  ['חרדל',              'mustard'],
+]
+
+/**
+ * If the food name contains Hebrew, return the best English match.
+ * Returns null if not found (caller should then use AI translation).
+ */
+export function lookupHebrew(foodName: string): string | null {
+  if (!/[^\x00-\x7F]/.test(foodName)) return null  // no non-ASCII → skip
+  const lower = foodName.trim()
+  const match = DICT.find(([key]) =>
+    lower === key ||
+    lower.startsWith(key + ' ') ||
+    lower.includes(' ' + key) ||
+    lower.includes(key)
+  )
+  return match ? match[1] : null
+}

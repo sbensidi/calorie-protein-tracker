@@ -1,4 +1,5 @@
 import type { NutritionResult, FoodHistory } from '../types'
+import { lookupHebrew } from './hebrewFoods'
 
 const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY
 const GROQ_ENDPOINT = 'https://api.groq.com/openai/v1/chat/completions'
@@ -119,11 +120,11 @@ async function callGroqDirect(
     return d.choices?.[0]?.message?.content?.trim() ?? null
   }
 
-  // Step 1 — translate non-ASCII food names to English first
-  const hasNonAscii = /[^\x00-\x7F]/.test(safeName)
-  let queryName = safeName
+  // Step 1 — resolve Hebrew food name to English (dictionary first, AI fallback)
+  let queryName = lookupHebrew(safeName) ?? safeName
 
-  if (hasNonAscii) {
+  if (queryName === safeName && /[^\x00-\x7F]/.test(safeName)) {
+    // Not in dictionary — try AI translation
     const translated = await groqCall(
       [{ role: 'user', content: `Translate this food name to English (2-4 words max, no punctuation): ${safeName}` }],
       20
