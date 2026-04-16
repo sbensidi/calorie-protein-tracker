@@ -2,6 +2,9 @@
 // GROQ_API_KEY lives server-side only (no VITE_ prefix → never bundled to browser)
 export const config = { runtime: 'edge' }
 
+// Edge Runtime exposes process.env but TS doesn't know about it without @types/node
+declare const process: { env: Record<string, string | undefined> }
+
 // ── Rate limiting (in-memory per edge instance) ───────────────────────────────
 const _rl = new Map<string, { count: number; resetAt: number }>()
 const RL_MAX    = 10       // requests
