@@ -165,14 +165,14 @@ export function FoodEntryForm({ lang, history, getSuggestions, onAdd, onUpsertHi
   const unitLabel       = lang === 'he' ? 'יח׳' : 'pcs'
   const isRTL           = lang === 'he'
 
-  // Clear button positioned at the END of the field (left in Hebrew, right in English)
-  const clearBtnStyle = (small = false): React.CSSProperties => ({
+  // Clear button — vertically centered, at the logical END of the field
+  const clearBtnStyle = (): React.CSSProperties => ({
     position: 'absolute',
-    ...(isRTL ? { left: small ? 4 : 8 } : { right: small ? 4 : 8 }),
-    top: small ? 4 : '50%',
-    transform: small ? 'none' : 'translateY(-50%)',
+    ...(isRTL ? { left: 6 } : { right: 6 }),
+    top: '50%',
+    transform: 'translateY(-50%)',
     background: 'none', border: 'none', cursor: 'pointer',
-    color: 'var(--text-3)', padding: small ? 2 : 4, lineHeight: 1,
+    color: 'var(--text-3)', padding: 4, lineHeight: 1,
     display: 'flex', alignItems: 'center', justifyContent: 'center',
   })
 
@@ -270,7 +270,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, onAdd, onUpsertHi
             onChange={e => { setGramsStr(e.target.value); setNutrition(null) }}
           />
           {gramsStr && !unitsStr && (
-            <button onMouseDown={e => { e.preventDefault(); setGramsStr(''); setNutrition(null) }} tabIndex={-1} style={clearBtnStyle(true)}>
+            <button onMouseDown={e => { e.preventDefault(); setGramsStr(''); setNutrition(null) }} tabIndex={-1} style={clearBtnStyle()}>
               <span className="icon" style={{ fontSize: 12 }}>close</span>
             </button>
           )}
@@ -289,7 +289,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, onAdd, onUpsertHi
             onChange={e => { setUnitsStr(e.target.value); setNutrition(null) }}
           />
           {unitsStr && !gramsStr && (
-            <button onMouseDown={e => { e.preventDefault(); setUnitsStr(''); setNutrition(null) }} tabIndex={-1} style={clearBtnStyle(true)}>
+            <button onMouseDown={e => { e.preventDefault(); setUnitsStr(''); setNutrition(null) }} tabIndex={-1} style={clearBtnStyle()}>
               <span className="icon" style={{ fontSize: 12 }}>close</span>
             </button>
           )}

@@ -48,17 +48,19 @@ export default async function handler(req: Request): Promise<Response> {
       messages: [
         {
           role: 'system',
-          content: 'You are a nutrition expert. Answer with JSON only: {"calories": number, "protein": number}. No other text.',
+          content:
+            'You are a nutrition expert. Identify the food (translate if needed), then provide accurate USDA nutritional values. ' +
+            'Return JSON only: {"food_en": "english name", "calories": number, "protein": number}. No other text.',
         },
         {
           role: 'user',
           content: amountType === 'unit'
-            ? `Calories (kcal) and protein (g) per 1 piece of ${safeName}? JSON only.`
-            : `Calories (kcal) and protein (g) per 100g of ${safeName}? JSON only.`,
+            ? `Per 1 piece of ${safeName}?`
+            : `Per 100g of ${safeName}?`,
         },
       ],
-      temperature: 0.1,
-      max_tokens: 60,
+      temperature: 0,
+      max_tokens: 80,
     }),
   })
 
