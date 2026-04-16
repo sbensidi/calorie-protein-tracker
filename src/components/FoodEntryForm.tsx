@@ -270,7 +270,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, onAdd, onUpsertHi
           />
           {gramsStr && !unitsStr && (
             <button onMouseDown={e => { e.preventDefault(); setGramsStr(''); setNutrition(null) }} tabIndex={-1} style={clearBtnStyle()}>
-              <span className="icon" style={{ fontSize: 12 }}>close</span>
+              <span className="icon icon-sm">close</span>
             </button>
           )}
         </div>
@@ -289,7 +289,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, onAdd, onUpsertHi
           />
           {unitsStr && !gramsStr && (
             <button onMouseDown={e => { e.preventDefault(); setUnitsStr(''); setNutrition(null) }} tabIndex={-1} style={clearBtnStyle()}>
-              <span className="icon" style={{ fontSize: 12 }}>close</span>
+              <span className="icon icon-sm">close</span>
             </button>
           )}
         </div>
