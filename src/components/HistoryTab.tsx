@@ -329,7 +329,7 @@ export function HistoryTab({ lang, meals, getGoalForDate }: HistoryTabProps) {
           {data && (
             <div
               className="card"
-              style={{ borderInlineEnd: `3px solid ${STATUS_COLOR[data.status].border}`, overflow: 'hidden' }}
+              style={{ borderInlineStart: `3px solid ${STATUS_COLOR[data.status].border}`, overflow: 'hidden' }}
             >
               <div style={{ padding: '14px 14px 12px' }}>
                 <DayCardContent date={selectedDate} data={data} />
@@ -479,7 +479,7 @@ export function HistoryTab({ lang, meals, getGoalForDate }: HistoryTabProps) {
               className="card fade-up"
               style={{
                 animationDelay: `${i * 0.04}s`,
-                borderInlineEnd: `3px solid ${STATUS_COLOR[data.status].border}`,
+                borderInlineStart: `3px solid ${STATUS_COLOR[data.status].border}`,
                 overflow: 'hidden',
               }}
             >
