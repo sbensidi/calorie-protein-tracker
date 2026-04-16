@@ -278,7 +278,7 @@ export function HistoryTab({ lang, meals, getGoalForDate }: HistoryTabProps) {
 
   // ── View toggle ────────────────────────────────────────────────────
   const ViewToggle = () => (
-    <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+    <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
       <div style={{
         display: 'flex', background: 'var(--bg-card)',
         border: '1px solid var(--border)', borderRadius: 10, padding: 3, gap: 2,
