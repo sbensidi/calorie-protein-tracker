@@ -1,21 +1,37 @@
 @import "tailwindcss";
 
 :root {
+  /* ── Backgrounds & borders ─────────────────────────────── */
   --bg:        #090d14;
   --bg-card:   #0f1521;
   --bg-card2:  #141c2d;
   --border:    rgba(255,255,255,0.07);
   --border-hi: rgba(255,255,255,0.12);
+
+  /* ── Text ──────────────────────────────────────────────── */
   --text:      #dde4f0;
   --text-2:    #94a8be;
   --text-3:    #6b7f96;
+
+  /* ── Core colors ───────────────────────────────────────── */
   --blue:      #3b82f6;
   --blue-hi:   #60a5fa;
   --green:     #10b981;
   --green-hi:  #34d399;
   --red:       #f43f5e;
+  --red-hi:    #f87171;
   --amber:     #f59e0b;
   --purple:    #8b5cf6;
+  --indigo:    #6366f1;
+  --indigo-hi: #a5b4fc;
+
+  /* ── Tints (subtle bg for badges, highlights) ──────────── */
+  --blue-tint:   rgba(59,130,246,0.10);
+  --green-tint:  rgba(16,185,129,0.10);
+  --red-tint:    rgba(244,63,94,0.10);
+  --amber-tint:  rgba(245,158,11,0.10);
+  --indigo-tint: rgba(99,102,241,0.12);
+  --purple-tint: rgba(139,92,246,0.10);
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -258,3 +274,7 @@ select.inp {
 /* Details */
 details summary { list-style: none; cursor: pointer; user-select: none; }
 details summary::-webkit-details-marker { display: none; }
+
+/* History chevron */
+.details-chevron { transition: transform .2s; }
+details[open] .details-chevron { transform: rotate(180deg); }

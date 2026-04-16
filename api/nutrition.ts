@@ -2,6 +2,23 @@
 // GROQ_API_KEY lives server-side only (no VITE_ prefix → never bundled to browser)
 export const config = { runtime: 'edge' }
 
+// ── Rate limiting (in-memory per edge instance) ───────────────────────────────
+const _rl = new Map<string, { count: number; resetAt: number }>()
+const RL_MAX    = 10       // requests
+const RL_WINDOW = 60_000   // per 60 seconds
+
+function checkRateLimit(ip: string): boolean {
+  const now = Date.now()
+  const entry = _rl.get(ip)
+  if (!entry || now > entry.resetAt) {
+    _rl.set(ip, { count: 1, resetAt: now + RL_WINDOW })
+    return true
+  }
+  if (entry.count >= RL_MAX) return false
+  entry.count++
+  return true
+}
+
 const GROQ_ENDPOINT = 'https://api.groq.com/openai/v1/chat/completions'
 const GROQ_MODEL    = 'llama-3.3-70b-versatile'
 
@@ -65,6 +82,14 @@ export default async function handler(req: Request): Promise<Response> {
     return new Response('Method not allowed', { status: 405 })
   }
 
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown'
+  if (!checkRateLimit(ip)) {
+    return new Response(JSON.stringify({ error: 'Rate limit exceeded' }), {
+      status: 429,
+      headers: { 'Content-Type': 'application/json', 'Retry-After': '60' },
+    })
+  }
+
   const apiKey = process.env.GROQ_API_KEY
   if (!apiKey) {
     return new Response(JSON.stringify({ error: 'Groq not configured' }), {
@@ -87,18 +112,43 @@ export default async function handler(req: Request): Promise<Response> {
 
   const safeName = String(foodName).slice(0, 100).replace(/"/g, '')
 
-  // Step 1 — resolve Hebrew food name to English (dictionary first, AI fallback)
+  // Step 1 — resolve Hebrew food name to English
+  // Priority: dictionary → Google Translate → AI fallback
   let queryName = lookupHebrew(safeName) ?? safeName
 
   if (queryName === safeName && /[^\x00-\x7F]/.test(safeName)) {
-    // Not in dictionary — try AI translation
-    const translated = await groqCall(
-      apiKey,
-      [{ role: 'user', content: `Translate this food name to English (2-4 words max, no punctuation): ${safeName}` }],
-      20
-    )
-    if (translated && /^[a-zA-Z\s\-']+$/.test(translated) && translated.length < 60) {
-      queryName = translated
+    // Not in dictionary — try Google Translate first
+    const googleKey = process.env.GOOGLE_TRANSLATE_API_KEY
+    if (googleKey) {
+      try {
+        const trRes = await fetch(
+          `https://translation.googleapis.com/language/translate/v2?key=${googleKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ q: safeName, source: 'he', target: 'en', format: 'text' }),
+          }
+        )
+        if (trRes.ok) {
+          const trData = await trRes.json()
+          const gTranslated = trData.data?.translations?.[0]?.translatedText?.trim()
+          if (gTranslated && /^[a-zA-Z\s\-']+$/.test(gTranslated) && gTranslated.length < 80) {
+            queryName = gTranslated
+          }
+        }
+      } catch { /* fall through to AI */ }
+    }
+
+    // AI fallback if Google Translate unavailable or failed
+    if (queryName === safeName) {
+      const translated = await groqCall(
+        apiKey,
+        [{ role: 'user', content: `Translate this food name to English (2-4 words max, no punctuation): ${safeName}` }],
+        20
+      )
+      if (translated && /^[a-zA-Z\s\-']+$/.test(translated) && translated.length < 60) {
+        queryName = translated
+      }
     }
   }
 

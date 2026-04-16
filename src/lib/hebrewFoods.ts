@@ -156,7 +156,7 @@ const DICT: [string, string][] = [
 
 /**
  * If the food name contains Hebrew, return the best English match.
- * Returns null if not found (caller should then use AI translation).
+ * Returns null if not found (caller should then try Google Translate, then AI translation as fallback).
  */
 export function lookupHebrew(foodName: string): string | null {
   if (!/[^\x00-\x7F]/.test(foodName)) return null  // no non-ASCII → skip

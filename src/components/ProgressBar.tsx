@@ -10,10 +10,10 @@ export function ProgressBar({ value, goal, color }: ProgressBarProps) {
 
   const badgeStyle =
     realPct >= 100
-      ? { background: 'rgba(244,63,94,0.12)', color: '#f43f5e' }
+      ? { background: 'var(--red-tint)',   color: 'var(--red)' }
       : realPct >= 80
-      ? { background: 'rgba(245,158,11,0.12)', color: '#f59e0b' }
-      : { background: 'rgba(255,255,255,0.06)', color: 'var(--text-2)' }
+      ? { background: 'var(--amber-tint)', color: 'var(--amber)' }
+      : { background: 'var(--border)',     color: 'var(--text-2)' }
 
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>

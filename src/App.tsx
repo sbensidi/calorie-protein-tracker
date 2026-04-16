@@ -36,9 +36,15 @@ export default function App() {
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    const channel = supabase.channel('connection-check')
-    channel.subscribe(status => setConnected(status === 'SUBSCRIBED'))
-    return () => { supabase.removeChannel(channel) }
+    setConnected(navigator.onLine)
+    const handleOnline  = () => setConnected(true)
+    const handleOffline = () => setConnected(false)
+    window.addEventListener('online',  handleOnline)
+    window.addEventListener('offline', handleOffline)
+    return () => {
+      window.removeEventListener('online',  handleOnline)
+      window.removeEventListener('offline', handleOffline)
+    }
   }, [])
 
   const userId = session?.user?.id || null

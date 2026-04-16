@@ -11,10 +11,10 @@ type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack'
 const MEAL_TYPES: MealType[] = ['breakfast', 'lunch', 'dinner', 'snack']
 
 const MEAL_COLORS: Record<MealType, string> = {
-  breakfast: '#f59e0b',
-  lunch:     '#10b981',
-  dinner:    '#8b5cf6',
-  snack:     '#f43f5e',
+  breakfast: 'var(--amber)',
+  lunch:     'var(--green)',
+  dinner:    'var(--purple)',
+  snack:     'var(--red)',
 }
 
 const MEAL_ICONS: Record<MealType, string> = {
