@@ -165,14 +165,13 @@ export function FoodEntryForm({ lang, history, getSuggestions, onAdd, onUpsertHi
   const unitLabel       = lang === 'he' ? 'יח׳' : 'pcs'
   const isRTL           = lang === 'he'
 
-  // Clear button — vertically centered, at the logical END of the field
+  // Clear button — spans full height of wrapper, icon centered via flexbox
   const clearBtnStyle = (): React.CSSProperties => ({
     position: 'absolute',
-    ...(isRTL ? { left: 6 } : { right: 6 }),
-    top: '50%',
-    transform: 'translateY(-50%)',
+    ...(isRTL ? { left: 0 } : { right: 0 }),
+    top: 0, bottom: 0, width: 32,
     background: 'none', border: 'none', cursor: 'pointer',
-    color: 'var(--text-3)', padding: 4, lineHeight: 1,
+    color: 'var(--text-3)', padding: 0,
     display: 'flex', alignItems: 'center', justifyContent: 'center',
   })
 

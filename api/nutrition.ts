@@ -5,6 +5,17 @@ export const config = { runtime: 'edge' }
 const GROQ_ENDPOINT = 'https://api.groq.com/openai/v1/chat/completions'
 const GROQ_MODEL    = 'llama-3.3-70b-versatile'
 
+async function groqCall(apiKey: string, messages: { role: string; content: string }[], maxTokens = 80): Promise<string | null> {
+  const res = await fetch(GROQ_ENDPOINT, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
+    body: JSON.stringify({ model: GROQ_MODEL, messages, temperature: 0, max_tokens: maxTokens }),
+  })
+  if (!res.ok) return null
+  const data = await res.json()
+  return data.choices?.[0]?.message?.content?.trim() ?? null
+}
+
 export default async function handler(req: Request): Promise<Response> {
   if (req.method !== 'POST') {
     return new Response('Method not allowed', { status: 405 })
@@ -30,46 +41,34 @@ export default async function handler(req: Request): Promise<Response> {
     return new Response(JSON.stringify({ error: 'Missing fields' }), { status: 400 })
   }
 
-  const amountText = amountType === 'unit'
-    ? `Quantity: ${amount} item${amount !== 1 ? 's' : ''}`
-    : `Amount: ${amount}g`
-
-  // Sanitize food name
   const safeName = String(foodName).slice(0, 100).replace(/"/g, '')
 
-  const groqRes = await fetch(GROQ_ENDPOINT, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model: GROQ_MODEL,
-      messages: [
-        {
-          role: 'system',
-          content:
-            'You are a nutrition expert. Identify the food (translate if needed), then provide accurate USDA nutritional values. ' +
-            'Return JSON only: {"food_en": "english name", "calories": number, "protein": number}. No other text.',
-        },
-        {
-          role: 'user',
-          content: amountType === 'unit'
-            ? `Per 1 piece of ${safeName}?`
-            : `Per 100g of ${safeName}?`,
-        },
-      ],
-      temperature: 0,
-      max_tokens: 80,
-    }),
-  })
+  // Step 1 — if non-ASCII (Hebrew / Arabic / etc.), translate to English first
+  const hasNonAscii = /[^\x00-\x7F]/.test(safeName)
+  let queryName = safeName
 
-  if (!groqRes.ok) {
-    return new Response(JSON.stringify({ error: `Groq error: ${groqRes.status}` }), { status: 502 })
+  if (hasNonAscii) {
+    const translated = await groqCall(
+      apiKey,
+      [{ role: 'user', content: `Translate this food name to English (2-4 words max, no punctuation): ${safeName}` }],
+      20
+    )
+    // Accept only clean ASCII responses
+    if (translated && /^[a-zA-Z\s\-']+$/.test(translated) && translated.length < 60) {
+      queryName = translated
+    }
   }
 
-  const data = await groqRes.json()
-  const text = data.choices?.[0]?.message?.content?.trim()
+  // Step 2 — nutrition lookup using English name
+  const userMsg = amountType === 'unit'
+    ? `Per 1 piece of ${queryName}? JSON only: {"calories": number, "protein": number}`
+    : `Per 100g of ${queryName}? JSON only: {"calories": number, "protein": number}`
+
+  const text = await groqCall(apiKey, [
+    { role: 'system', content: 'You are a nutrition database. Return USDA values as JSON only: {"calories": number, "protein": number}. No other text.' },
+    { role: 'user', content: userMsg },
+  ])
+
   if (!text) {
     return new Response(JSON.stringify({ error: 'Empty response' }), { status: 502 })
   }

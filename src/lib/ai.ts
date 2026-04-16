@@ -108,43 +108,46 @@ async function callGroqDirect(
 
   const safeName = foodName.slice(0, 100).replace(/"/g, '')
 
-  const response = await fetch(GROQ_ENDPOINT, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${GROQ_API_KEY}`,
-    },
-    body: JSON.stringify({
-      model: GROQ_MODEL,
-      messages: [
-        {
-          role: 'system',
-          content:
-            'You are a nutrition expert. Identify the food (translate if needed), then provide accurate USDA nutritional values. ' +
-            'Return JSON only: {"food_en": "english name", "calories": number, "protein": number}. No other text.',
-        },
-        {
-          role: 'user',
-          content: amountType === 'unit'
-            ? `Per 1 piece of ${safeName}?`
-            : `Per 100g of ${safeName}?`,
-        },
-      ],
-      temperature: 0,
-      max_tokens: 80,
-    }),
-  })
+  const groqCall = async (messages: { role: string; content: string }[], maxTokens = 80) => {
+    const res = await fetch(GROQ_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${GROQ_API_KEY}` },
+      body: JSON.stringify({ model: GROQ_MODEL, messages, temperature: 0, max_tokens: maxTokens }),
+    })
+    if (!res.ok) return null
+    const d = await res.json()
+    return d.choices?.[0]?.message?.content?.trim() ?? null
+  }
 
-  if (!response.ok) throw new Error(`Groq API error: ${response.status}`)
-  const data = await response.json()
-  const text = data.choices?.[0]?.message?.content?.trim()
+  // Step 1 — translate non-ASCII food names to English first
+  const hasNonAscii = /[^\x00-\x7F]/.test(safeName)
+  let queryName = safeName
+
+  if (hasNonAscii) {
+    const translated = await groqCall(
+      [{ role: 'user', content: `Translate this food name to English (2-4 words max, no punctuation): ${safeName}` }],
+      20
+    )
+    if (translated && /^[a-zA-Z\s\-']+$/.test(translated) && translated.length < 60) {
+      queryName = translated
+    }
+  }
+
+  // Step 2 — nutrition lookup with English name
+  const userMsg = amountType === 'unit'
+    ? `Per 1 piece of ${queryName}? JSON only: {"calories": number, "protein": number}`
+    : `Per 100g of ${queryName}? JSON only: {"calories": number, "protein": number}`
+
+  const text = await groqCall([
+    { role: 'system', content: 'You are a nutrition database. Return USDA values as JSON only: {"calories": number, "protein": number}. No other text.' },
+    { role: 'user', content: userMsg },
+  ])
+
   if (!text) return null
-
   const match = text.match(/\{[^{}]*"calories"[^{}]*"protein"[^{}]*\}|\{[^{}]*"protein"[^{}]*"calories"[^{}]*\}/)
   if (!match) return null
   const parsed = JSON.parse(match[0])
   if (typeof parsed.calories === 'number' && typeof parsed.protein === 'number') {
-    // Model returns per-100g (grams mode) or per-1-piece (unit mode) — scale to actual amount
     const scale = amountType === 'unit' ? amount : amount / 100
     return {
       calories: Math.round(parsed.calories * scale),
