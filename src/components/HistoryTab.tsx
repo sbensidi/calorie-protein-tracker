@@ -322,7 +322,7 @@ export function HistoryTab({ lang, meals, getGoalForDate }: HistoryTabProps) {
               cursor: 'pointer', padding: '2px 0',
             }}
           >
-            <span className="icon icon-sm">arrow_forward</span>
+            <span className="icon icon-sm">{lang === 'he' ? 'arrow_forward' : 'arrow_back'}</span>
             {t(lang, 'calView')}
           </button>
 
