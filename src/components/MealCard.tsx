@@ -6,14 +6,15 @@ import { t } from '../lib/i18n'
 interface MealCardProps {
   meal: Meal
   lang: Lang
+  showCheckbox: boolean
+  selected: boolean
+  onToggleSelect: () => void
   onEdit: (id: string, updates: Partial<Meal>) => void
-  onDelete: (id: string) => void
-  onDuplicate: (meal: Meal) => void
 }
 
 type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack'
 
-export function MealCard({ meal, lang, onEdit, onDelete, onDuplicate }: MealCardProps) {
+export function MealCard({ meal, lang, showCheckbox, selected, onToggleSelect, onEdit }: MealCardProps) {
   const [editing, setEditing] = useState(false)
   const [editName,     setEditName]     = useState(meal.name)
   const [editMealType, setEditMealType] = useState<MealType>(meal.meal_type as MealType)
@@ -48,6 +49,7 @@ export function MealCard({ meal, lang, onEdit, onDelete, onDuplicate }: MealCard
             onChange={e => setEditName(e.target.value)}
             placeholder={t(lang, 'foodName')}
             dir={lang === 'he' ? 'rtl' : 'ltr'}
+            autoFocus
           />
           <select
             className="inp"
@@ -99,8 +101,25 @@ export function MealCard({ meal, lang, onEdit, onDelete, onDuplicate }: MealCard
   }
 
   return (
-    <div className="meal-row" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-      <div style={{ flex: 1, minWidth: 0 }}>
+    <div
+      className="meal-row"
+      style={{
+        display: 'flex', alignItems: 'center', gap: 10,
+        ...(selected ? { borderColor: 'rgba(139,92,246,0.3)', background: 'rgba(139,92,246,0.05)' } : {}),
+      }}
+    >
+      {/* Checkbox — only shown when group is open */}
+      {showCheckbox && (
+        <div
+          className={`cb${selected ? ' cb-on' : ''}`}
+          onClick={e => { e.stopPropagation(); onToggleSelect() }}
+        >
+          {selected && <span className="icon icon-sm" style={{ color: 'var(--purple)', fontSize: 13 }}>check</span>}
+        </div>
+      )}
+
+      {/* Food name + grams — shrinks to make room for numbers */}
+      <div style={{ minWidth: 0, flexShrink: 1 }}>
         <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {meal.name}
         </p>
@@ -111,26 +130,37 @@ export function MealCard({ meal, lang, onEdit, onDelete, onDuplicate }: MealCard
         </p>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2, flexShrink: 0 }}>
-        <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--blue-hi)', lineHeight: 1 }}>
-          {Math.round(meal.calories)}<span style={{ fontSize: 11, fontWeight: 500, opacity: 0.7, marginInlineStart: 2 }}>{t(lang, 'caloriesUnit')}</span>
-        </span>
-        <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--green-hi)', lineHeight: 1 }}>
-          {Math.round(meal.protein * 10) / 10}<span style={{ fontSize: 11, fontWeight: 500, opacity: 0.7, marginInlineStart: 1 }}>g</span>
-        </span>
+      {/* Numbers — cal/protein with units */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 4, flexShrink: 0 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 3 }}>
+          <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--blue-hi)', lineHeight: 1 }}>
+            {Math.round(meal.calories)}
+          </span>
+          <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--green-hi)', lineHeight: 1 }}>
+            {Math.round(meal.protein * 10) / 10}
+          </span>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 3 }}>
+          <span style={{ fontSize: 11, fontWeight: 500, opacity: 0.7, lineHeight: 1.4 }}>
+            {t(lang, 'caloriesUnit')}
+          </span>
+          <span style={{ fontSize: 11, fontWeight: 500, opacity: 0.7, lineHeight: 1.4 }}>
+            {t(lang, 'proteinUnit')}
+          </span>
+        </div>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0 }}>
-        <button className="icon-btn" onClick={() => onDuplicate(meal)} title={t(lang, 'duplicate')}>
-          <span className="icon icon-sm">content_copy</span>
-        </button>
-        <button className="icon-btn" onClick={() => setEditing(true)} title={t(lang, 'edit')}>
-          <span className="icon icon-sm">edit</span>
-        </button>
-        <button className="icon-btn danger" onClick={() => onDelete(meal.id)} title={t(lang, 'delete')}>
-          <span className="icon icon-sm">delete</span>
-        </button>
-      </div>
+      {/* Spacer */}
+      <span style={{ flex: 1 }} />
+
+      {/* Edit button — always visible */}
+      <button
+        className="icon-btn"
+        onClick={e => { e.stopPropagation(); setEditing(true) }}
+        title={t(lang, 'edit')}
+      >
+        <span className="icon icon-sm">edit</span>
+      </button>
     </div>
   )
 }

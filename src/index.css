@@ -275,6 +275,252 @@ select.inp {
 details summary { list-style: none; cursor: pointer; user-select: none; }
 details summary::-webkit-details-marker { display: none; }
 
-/* History chevron */
-.details-chevron { transition: transform .2s; }
-details[open] .details-chevron { transform: rotate(180deg); }
+/* Chevron badge — shared between History list cards and Today meal groups */
+.chevron-badge {
+  width: 24px; height: 24px;
+  border-radius: 7px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--border);
+  display: inline-flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.chevron-badge .icon { transition: transform .2s; }
+
+/* History details chevron via CSS selector */
+details[open] .chevron-badge .icon { transform: rotate(180deg); }
+
+/* ── Checkbox (meal selection) ─────────────────────────────────── */
+.cb {
+  width: 20px; height: 20px;
+  border-radius: 6px;
+  border: 1.5px solid var(--border-hi);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; cursor: pointer;
+  background: transparent;
+  transition: background .12s, border-color .12s;
+  user-select: none;
+}
+.cb:hover { border-color: rgba(139,92,246,0.45); }
+.cb.cb-on {
+  background: var(--purple-tint);
+  border-color: rgba(139,92,246,0.55);
+}
+
+/* ── Group type-picker (inline panel under group header) ────────── */
+.type-picker {
+  border-top: 1px solid var(--border);
+  background: var(--bg-card2);
+}
+.type-picker-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--border);
+  transition: background .12s;
+}
+.type-picker-row:last-child { border-bottom: none; }
+.type-picker-row:hover { background: rgba(255,255,255,0.03); }
+.type-picker-row.current { background: rgba(255,255,255,0.02); }
+.type-picker-ico {
+  width: 28px; height: 28px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.type-picker-radio {
+  width: 17px; height: 17px; border-radius: 50%;
+  border: 1.5px solid var(--border-hi);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.type-picker-radio.on {
+  background: rgba(245,158,11,0.15);
+  border-color: rgba(245,158,11,0.55);
+}
+
+/* ── Group action bar (below meal list, on selection) ───────────── */
+.group-action-bar {
+  border: 1px solid rgba(139,92,246,0.2);
+  border-radius: 11px;
+  overflow: hidden;
+  margin-top: 6px;
+}
+.group-action-bar-header {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 12px;
+  background: rgba(139,92,246,0.07);
+  border-bottom: 1px solid rgba(139,92,246,0.12);
+}
+.group-action-bar-btns {
+  display: flex;
+}
+.group-action-btn {
+  flex: 1;
+  display: flex; flex-direction: column; align-items: center; gap: 5px;
+  padding: 10px 4px;
+  background: none; border: none; border-inline-start: 1px solid rgba(255,255,255,0.05);
+  font-family: inherit; font-size: 10px; font-weight: 700;
+  cursor: pointer; transition: background .12s;
+}
+.group-action-btn:first-child { border-inline-start: none; }
+.group-action-btn:hover { background: rgba(255,255,255,0.03); }
+.group-action-btn-ico {
+  width: 32px; height: 32px; border-radius: 9px;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* ── Composed meal card ─────────────────────────────────────────── */
+.composed-card {
+  background: rgba(0,0,0,0.12);
+  border: 1px solid rgba(139,92,246,0.15);
+  border-radius: 11px;
+  overflow: hidden;
+  margin-bottom: 4px;
+}
+.composed-children {
+  border-top: 1px solid rgba(139,92,246,0.1);
+  background: rgba(0,0,0,0.1);
+  padding: 6px 8px 8px;
+  display: flex; flex-direction: column; gap: 3px;
+}
+.child-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 10px; border-radius: 8px;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.05);
+}
+
+/* ── Compose-meal modal ─────────────────────────────────────────── */
+.compose-modal-backdrop {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.65);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 200; padding: 20px;
+}
+.compose-modal {
+  background: var(--bg-card2);
+  border: 1px solid var(--border-hi);
+  border-radius: 18px;
+  padding: 20px;
+  width: 100%; max-width: 400px;
+  display: flex; flex-direction: column; gap: 14px;
+}
+.compose-modal-summary {
+  display: flex; align-items: center; gap: 10px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--border);
+  border-radius: 10px; padding: 10px 13px;
+}
+.compose-modal-items {
+  display: flex; flex-direction: column; gap: 4px;
+  max-height: 180px; overflow-y: auto;
+}
+.compose-modal-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 10px; border-radius: 8px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--border);
+  font-size: 12px; color: var(--text-2);
+}
+
+/* ── Segmented control (manual / scan toggle) ──────────────────── */
+.seg-control {
+  display: flex;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 3px;
+  gap: 2px;
+}
+.seg-btn {
+  flex: 1;
+  display: flex; align-items: center; justify-content: center; gap: 5px;
+  padding: 8px 0;
+  border-radius: 9px;
+  font-family: inherit;
+  font-size: 12px; font-weight: 700;
+  border: none; cursor: pointer;
+  background: transparent;
+  color: var(--text-3);
+  transition: background .15s, color .15s, border-color .15s;
+}
+.seg-btn--manual {
+  background: rgba(59,130,246,0.14);
+  color: var(--blue-hi);
+  border: 1px solid rgba(59,130,246,0.28);
+}
+.seg-btn--scan {
+  background: rgba(16,185,129,0.14);
+  color: var(--green-hi);
+  border: 1px solid rgba(16,185,129,0.28);
+}
+
+/* ── Barcode scanner viewfinder ─────────────────────────────────── */
+.scanner-wrap {
+  display: flex; flex-direction: column; gap: 10px;
+}
+.scanner-vf {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  background: #04060a;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+.scanner-video {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.scanner-vignette {
+  position: absolute; inset: 0; pointer-events: none;
+  background:
+    linear-gradient(to right,  rgba(4,6,10,0.6) 0%, transparent 18%),
+    linear-gradient(to left,   rgba(4,6,10,0.6) 0%, transparent 18%),
+    linear-gradient(to bottom, rgba(4,6,10,0.5) 0%, transparent 16%),
+    linear-gradient(to top,    rgba(4,6,10,0.5) 0%, transparent 16%);
+}
+.scanner-frame {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -52%);
+  width: 66%; height: 52%;
+  pointer-events: none;
+}
+.sc-corner {
+  position: absolute;
+  width: 20px; height: 20px;
+  border-color: var(--green-hi);
+  border-style: solid;
+  border-width: 0;
+  opacity: 0.9;
+}
+.sc-corner.sc-tl { top: 0; right: 0; border-top-width: 2.5px; border-right-width: 2.5px; border-radius: 0 5px 0 0; }
+.sc-corner.sc-tr { top: 0; left:  0; border-top-width: 2.5px; border-left-width:  2.5px; border-radius: 5px 0 0 0; }
+.sc-corner.sc-bl { bottom: 0; right: 0; border-bottom-width: 2.5px; border-right-width: 2.5px; border-radius: 0 0 5px 0; }
+.sc-corner.sc-br { bottom: 0; left:  0; border-bottom-width: 2.5px; border-left-width:  2.5px; border-radius: 0 0 0 5px; }
+.sc-line {
+  position: absolute;
+  left: 6%; right: 6%; top: 30%;
+  height: 1.5px;
+  background: linear-gradient(to right, transparent, var(--green-hi) 20%, var(--green-hi) 80%, transparent);
+  opacity: 0.75;
+  animation: sc-sweep 2s ease-in-out infinite;
+}
+@keyframes sc-sweep {
+  0%, 100% { top: 12% }
+  50%       { top: 82% }
+}
+.scanner-hint {
+  font-size: 12px; font-weight: 500;
+  color: var(--text-3);
+  text-align: center;
+  display: flex; align-items: center; justify-content: center;
+  gap: 4px;
+  min-height: 20px;
+}
+.scanner-error {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 32px 16px; gap: 8px;
+}

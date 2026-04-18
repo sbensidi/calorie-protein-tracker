@@ -44,3 +44,10 @@ export interface NutritionResult {
   calories: number
   protein: number
 }
+
+/** Client-side only — persisted in localStorage, not Supabase */
+export interface ComposedGroup {
+  id: string
+  name: string
+  mealIds: string[]  // ordered list of Meal.id values that belong to this group
+}
