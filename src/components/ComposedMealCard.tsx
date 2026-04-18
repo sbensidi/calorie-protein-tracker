@@ -1,22 +1,19 @@
 import { useState } from 'react'
 import type { Meal, ComposedGroup } from '../types'
 import type { Lang } from '../lib/i18n'
-import { t, today } from '../lib/i18n'
-
-type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack'
+import { t } from '../lib/i18n'
 
 interface ComposedMealCardProps {
   group: ComposedGroup
   meals: Meal[]           // the actual Meal records for this group's mealIds
   lang: Lang
-  mealType: MealType
   selected: boolean
   onToggleSelect: () => void
   onEditMeal: (id: string, updates: Partial<Meal>) => void
   onDeleteMeal: (id: string) => void
   onRename: (name: string) => void
   onDeleteGroup: () => void  // dissolves the group (meals remain as standalones)
-  onAddIngredient: (meal: Omit<Meal, 'id' | 'user_id' | 'created_at'>) => Promise<void>
+  onAddIngredient: () => void  // signals TodayTab to open the FoodEntryForm modal
 }
 
 interface ChildEditState {
@@ -25,17 +22,8 @@ interface ChildEditState {
   protein: number | ''
 }
 
-interface AddState {
-  name: string
-  calories: number | ''
-  protein: number | ''
-  grams: number | ''
-}
-
-const EMPTY_ADD: AddState = { name: '', calories: '', protein: '', grams: '' }
-
 export function ComposedMealCard({
-  group, meals, lang, mealType, selected, onToggleSelect,
+  group, meals, lang, selected, onToggleSelect,
   onEditMeal, onDeleteMeal, onRename, onDeleteGroup, onAddIngredient,
 }: ComposedMealCardProps) {
   const [open, setOpen] = useState(true)
@@ -43,9 +31,6 @@ export function ComposedMealCard({
   const [nameInput, setNameInput] = useState(group.name)
   const [editingChildId, setEditingChildId] = useState<string | null>(null)
   const [childEdit, setChildEdit] = useState<ChildEditState>({ name: '', calories: '', protein: '' })
-  const [addingIngredient, setAddingIngredient] = useState(false)
-  const [addState, setAddState] = useState<AddState>(EMPTY_ADD)
-  const [saving, setSaving] = useState(false)
 
   const totalCal  = Math.round(meals.reduce((s, m) => s + m.calories, 0))
   const totalProt = Math.round(meals.reduce((s, m) => s + m.protein, 0) * 10) / 10
@@ -69,24 +54,6 @@ export function ComposedMealCard({
       protein:  Number(childEdit.protein)  || 0,
     })
     setEditingChildId(null)
-  }
-
-  const handleAddIngredient = async () => {
-    const name = addState.name.trim()
-    if (!name) return
-    setSaving(true)
-    await onAddIngredient({
-      date: today(),
-      meal_type: mealType,
-      name,
-      grams: Number(addState.grams) || 0,
-      calories: Number(addState.calories) || 0,
-      protein: Number(addState.protein) || 0,
-      time_logged: new Date().toTimeString().slice(0, 8),
-    })
-    setAddState(EMPTY_ADD)
-    setAddingIngredient(false)
-    setSaving(false)
   }
 
   return (
@@ -286,99 +253,20 @@ export function ComposedMealCard({
             </div>
           ))}
 
-          {/* ── Add ingredient form ── */}
-          {addingIngredient ? (
-            <div style={{
-              background: 'rgba(139,92,246,0.04)', border: '1px solid rgba(139,92,246,0.2)',
-              borderRadius: 8, padding: '10px', display: 'flex', flexDirection: 'column', gap: 8,
-              marginTop: 4,
-            }}>
-              <input
-                className="inp"
-                style={{ height: 36, fontSize: 13 }}
-                value={addState.name}
-                placeholder={t(lang, 'foodName')}
-                onChange={e => setAddState(s => ({ ...s, name: e.target.value }))}
-                autoFocus
-                dir={lang === 'he' ? 'rtl' : 'ltr'}
-                onKeyDown={e => { if (e.key === 'Enter') handleAddIngredient() }}
-              />
-              <div style={{ display: 'flex', gap: 8 }}>
-                <div style={{ flex: 1 }}>
-                  <label style={{ fontSize: 10, color: 'var(--text-3)', fontWeight: 700, display: 'block', marginBottom: 3 }}>
-                    {lang === 'he' ? 'גרמים' : 'Grams'}
-                  </label>
-                  <input
-                    type="number"
-                    className="inp"
-                    style={{ height: 36, fontSize: 13 }}
-                    value={addState.grams}
-                    placeholder="0"
-                    onChange={e => setAddState(s => ({ ...s, grams: e.target.value === '' ? '' : Number(e.target.value) }))}
-                  />
-                </div>
-                <div style={{ flex: 1 }}>
-                  <label style={{ fontSize: 10, color: 'var(--blue-hi)', fontWeight: 700, display: 'block', marginBottom: 3 }}>
-                    {t(lang, 'caloriesUnit')}
-                  </label>
-                  <input
-                    type="number"
-                    className="inp"
-                    style={{ height: 36, fontSize: 13 }}
-                    value={addState.calories}
-                    placeholder="0"
-                    onChange={e => setAddState(s => ({ ...s, calories: e.target.value === '' ? '' : Number(e.target.value) }))}
-                  />
-                </div>
-                <div style={{ flex: 1 }}>
-                  <label style={{ fontSize: 10, color: 'var(--green-hi)', fontWeight: 700, display: 'block', marginBottom: 3 }}>
-                    {t(lang, 'proteinUnit')}
-                  </label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    className="inp inp-green"
-                    style={{ height: 36, fontSize: 13 }}
-                    value={addState.protein}
-                    placeholder="0"
-                    onChange={e => setAddState(s => ({ ...s, protein: e.target.value === '' ? '' : Number(e.target.value) }))}
-                  />
-                </div>
-              </div>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button
-                  className="btn-confirm"
-                  style={{ flex: 1, height: 36, fontSize: 12 }}
-                  onClick={handleAddIngredient}
-                  disabled={saving || !addState.name.trim()}
-                >
-                  {saving ? '...' : t(lang, 'save')}
-                </button>
-                <button
-                  className="btn-ghost"
-                  style={{ flex: 1, height: 36, fontSize: 12 }}
-                  onClick={() => { setAddingIngredient(false); setAddState(EMPTY_ADD) }}
-                >
-                  {t(lang, 'cancel')}
-                </button>
-              </div>
-            </div>
-          ) : (
-            /* ── Add ingredient button ── */
-            <button
-              onClick={() => setAddingIngredient(true)}
-              style={{
-                marginTop: 4, width: '100%', background: 'transparent',
-                border: '1px dashed rgba(139,92,246,0.3)', borderRadius: 8,
-                padding: '6px 10px', fontFamily: 'inherit',
-                fontSize: 11, fontWeight: 600, color: 'var(--purple)',
-                cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5,
-              }}
-            >
-              <span className="icon" style={{ fontSize: 14 }}>add</span>
-              {t(lang, 'addIngredient')}
-            </button>
-          )}
+          {/* ── Add ingredient button ── */}
+          <button
+            onClick={onAddIngredient}
+            style={{
+              marginTop: 4, width: '100%', background: 'transparent',
+              border: '1px dashed rgba(139,92,246,0.3)', borderRadius: 8,
+              padding: '6px 10px', fontFamily: 'inherit',
+              fontSize: 11, fontWeight: 600, color: 'var(--purple)',
+              cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5,
+            }}
+          >
+            <span className="icon" style={{ fontSize: 14 }}>add</span>
+            {t(lang, 'addIngredient')}
+          </button>
 
           {/* Dissolve group link */}
           <button

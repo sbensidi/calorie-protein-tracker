@@ -3,6 +3,10 @@ import type { FoodHistory, Meal, NutritionResult } from '../types'
 import type { Lang } from '../lib/i18n'
 import { t, currentTime, today } from '../lib/i18n'
 import { calculateNutrition } from '../lib/ai'
+import { BarcodeScanner } from './BarcodeScanner'
+import type { BarcodeProduct } from '../lib/barcodeApi'
+
+type EntryMode = 'manual' | 'scan'
 
 type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack'
 
@@ -12,13 +16,23 @@ interface FoodEntryFormProps {
   getSuggestions: (q: string) => FoodHistory[]
   onAdd: (meal: Omit<Meal, 'id' | 'user_id' | 'created_at'>) => void
   onUpsertHistory: (item: Pick<FoodHistory, 'name' | 'grams' | 'calories' | 'protein'>) => void
+  defaultMealType?: MealType
 }
 
-export function FoodEntryForm({ lang, history, getSuggestions, onAdd, onUpsertHistory }: FoodEntryFormProps) {
+export function FoodEntryForm({ lang, history, getSuggestions, onAdd, onUpsertHistory, defaultMealType }: FoodEntryFormProps) {
+  const [mode, setMode]               = useState<EntryMode>(
+    () => (localStorage.getItem('entry-mode') as EntryMode) ?? 'scan'
+  )
+  const [scanKey,      setScanKey]    = useState(0)   // increment to remount BarcodeScanner
+  const [scanProduct,  setScanProduct]  = useState<BarcodeProduct | null>(null)
+  const [scanNotFound, setScanNotFound] = useState<string | null>(null) // barcode that wasn't found
+  const [scanGrams,    setScanGrams]  = useState('100')
+  const [scanMealType, setScanMealType] = useState<MealType>('lunch')
+
   const [foodName, setFoodName]       = useState('')
   const [gramsStr, setGramsStr]       = useState('')
   const [unitsStr, setUnitsStr]       = useState('')
-  const [mealType, setMealType]       = useState<MealType>('lunch')
+  const [mealType, setMealType]       = useState<MealType>(defaultMealType ?? 'lunch')
   const [calculating, setCalculating] = useState(false)
   const [nutrition, setNutrition]     = useState<NutritionResult | null>(null)
   const [editCalories, setEditCalories] = useState<number | ''>('')
@@ -115,6 +129,52 @@ export function FoodEntryForm({ lang, history, getSuggestions, onAdd, onUpsertHi
     setSuggestions([])
   }
 
+  // ── Barcode scan handlers ─────────────────────────────────────
+  const handleScanResult = useCallback((product: BarcodeProduct) => {
+    setScanProduct(product)
+    setScanGrams('100')
+  }, [])
+
+  const handleScanNotFound = useCallback((barcode: string) => {
+    setScanProduct(null)
+    setScanNotFound(barcode)
+  }, [])
+
+  const handleScanAdd = () => {
+    if (!scanProduct) return
+    const grams = Number(scanGrams) || 100
+    const calories = Math.round(scanProduct.caloriesPer100g * grams / 100)
+    const protein  = Math.round(scanProduct.proteinPer100g  * grams / 100 * 10) / 10
+    onAdd({
+      date:        today(),
+      meal_type:   scanMealType,
+      name:        scanProduct.name,
+      grams,
+      calories,
+      protein,
+      time_logged: currentTime(),
+    })
+    onUpsertHistory({ name: scanProduct.name, grams, calories, protein })
+    // Reset scan state
+    setScanProduct(null)
+    setScanGrams('100')
+    setMode('manual')
+  }
+
+  const handleScanAgain = () => {
+    setScanProduct(null)
+    setScanNotFound(null)
+    setScanKey(k => k + 1)  // remount BarcodeScanner → fresh camera stream
+  }
+
+  const switchMode = (m: EntryMode) => {
+    setMode(m)
+    localStorage.setItem('entry-mode', m)
+    setScanProduct(null)
+    setScanNotFound(null)
+    setScanGrams('100')
+  }
+
   const numCalories = Number(editCalories) || 0
   const numProtein  = Number(editProtein)  || 0
   const effectiveCalories = Math.round(numCalories * qty)
@@ -175,13 +235,178 @@ export function FoodEntryForm({ lang, history, getSuggestions, onAdd, onUpsertHi
     display: 'flex', alignItems: 'center', justifyContent: 'center',
   })
 
+  // Scan product computed totals
+  const scanG    = Number(scanGrams) || 0
+  const scanCal  = scanProduct ? Math.round(scanProduct.caloriesPer100g * scanG / 100) : 0
+  const scanProt = scanProduct ? Math.round(scanProduct.proteinPer100g  * scanG / 100 * 10) / 10 : 0
+
   return (
     <div className="card" style={{ padding: 16, marginBottom: 20 }}>
 
-      {/*
-        Row 1: [food name (1fr)] [grams (72px)] [units (72px)]
-        Row 2: [meal type (col 1)]  [calculate (cols 2+3, same total width as grams+units+gap)]
-      */}
+      {/* ── Segmented control ─────────────────────────────────── */}
+      <div className="seg-control" style={{ marginBottom: 14 }}>
+        <button
+          className={`seg-btn ${mode === 'scan' ? 'seg-btn--scan' : ''}`}
+          onClick={() => switchMode('scan')}
+        >
+          <span className="icon icon-sm">barcode_scanner</span>
+          {t(lang, 'scanBarcode')}
+        </button>
+        <button
+          className={`seg-btn ${mode === 'manual' ? 'seg-btn--manual' : ''}`}
+          onClick={() => switchMode('manual')}
+        >
+          <span className="icon icon-sm">edit</span>
+          {t(lang, 'manualEntry')}
+        </button>
+      </div>
+
+      {/* ── Scan mode: camera ─────────────────────────────────── */}
+      {mode === 'scan' && !scanProduct && !scanNotFound && (
+        <BarcodeScanner
+          key={scanKey}
+          lang={lang}
+          onResult={handleScanResult}
+          onNotFound={handleScanNotFound}
+        />
+      )}
+
+      {/* ── Scan mode: not found ──────────────────────────────── */}
+      {mode === 'scan' && !scanProduct && scanNotFound && (
+        <div className="scanner-error" dir={isRTL ? 'rtl' : 'ltr'}>
+          <span className="icon" style={{ fontSize: 32, color: 'var(--text-3)', marginBottom: 8 }}>barcode_scanner</span>
+          <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-2)', textAlign: 'center', marginBottom: 4 }}>
+            {t(lang, 'productNotFound')}
+          </p>
+          <p dir="ltr" style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 14, fontFamily: 'monospace' }}>
+            {scanNotFound}
+          </p>
+          <button className="btn-ghost" onClick={handleScanAgain}
+            style={{ fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span className="icon icon-sm">refresh</span>
+            {t(lang, 'scanAgain')}
+          </button>
+        </div>
+      )}
+
+      {/* ── Post-scan confirmation ────────────────────────────── */}
+      {mode === 'scan' && scanProduct && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+
+          {/* Product found badge */}
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 7,
+            background: 'rgba(16,185,129,0.08)',
+            border: '1px solid rgba(16,185,129,0.18)',
+            borderRadius: 10, padding: '8px 11px',
+          }}>
+            <span className="icon icon-sm" style={{ color: 'var(--green-hi)' }}>check_circle</span>
+            <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--green-hi)', flex: 1 }}>
+              {t(lang, 'productFound')}
+            </span>
+            <span style={{ fontSize: 10, color: 'var(--text-3)', fontWeight: 500 }}>
+              {scanProduct.source === 'openfoodfacts' ? 'Open Food Facts' : 'USDA'}
+            </span>
+          </div>
+
+          {/* Product name + brand */}
+          <div>
+            <p style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', margin: 0 }}
+              dir={isRTL ? 'rtl' : 'ltr'}>
+              {scanProduct.name}
+            </p>
+            {scanProduct.brand && (
+              <p style={{ fontSize: 11, color: 'var(--text-3)', margin: '2px 0 0' }}>
+                {scanProduct.brand} · {scanProduct.barcode}
+              </p>
+            )}
+          </div>
+
+          {/* Per-100g nutrition chips */}
+          <div>
+            <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 6 }}>
+              {t(lang, 'per100g')}
+            </p>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <div style={{ flex: 1, background: 'rgba(59,130,246,0.07)', border: '1px solid rgba(59,130,246,0.14)', borderRadius: 10, padding: '10px 12px' }}>
+                <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--blue-hi)', letterSpacing: '0.04em', marginBottom: 3 }}>{t(lang, 'calories').toUpperCase()}</p>
+                <p style={{ fontSize: 20, fontWeight: 800, color: 'var(--text)', margin: 0, lineHeight: 1 }}>{scanProduct.caloriesPer100g}</p>
+                <p style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 2 }}>{t(lang, 'caloriesUnit')}</p>
+              </div>
+              <div style={{ flex: 1, background: 'rgba(16,185,129,0.07)', border: '1px solid rgba(16,185,129,0.14)', borderRadius: 10, padding: '10px 12px' }}>
+                <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--green-hi)', letterSpacing: '0.04em', marginBottom: 3 }}>{t(lang, 'protein').toUpperCase()}</p>
+                <p style={{ fontSize: 20, fontWeight: 800, color: 'var(--text)', margin: 0, lineHeight: 1 }}>{scanProduct.proteinPer100g}</p>
+                <p style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 2 }}>{t(lang, 'proteinUnit')}</p>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ height: 1, background: 'var(--border)' }} />
+
+          {/* Grams + meal type */}
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-2)', flexShrink: 0 }}>
+              {t(lang, 'grams')}
+            </span>
+            <input
+              type="number"
+              className="inp"
+              style={{ flex: '0 0 80px', textAlign: 'center' }}
+              value={scanGrams}
+              onFocus={e => e.target.select()}
+              onChange={e => setScanGrams(e.target.value)}
+            />
+            <select
+              className="inp"
+              style={{ flex: 1 }}
+              value={scanMealType}
+              onChange={e => setScanMealType(e.target.value as MealType)}
+            >
+              {mealTypeOptions.map(o => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Calculated total */}
+          {scanG > 0 && (
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 10,
+              background: 'rgba(255,255,255,0.03)',
+              border: '1px solid var(--border)',
+              borderRadius: 10, padding: '9px 12px',
+            }}>
+              <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-3)', flex: 1 }}>
+                {t(lang, 'totalGrams').replace('גרמים', '').replace('grams', '').trim() || 'סה״כ'}
+              </span>
+              <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 2, fontSize: 15, fontWeight: 800, color: 'var(--blue-hi)' }}>
+                {scanCal}
+                <span style={{ fontSize: 10, fontWeight: 600, opacity: 0.7 }}>{t(lang, 'caloriesUnit')}</span>
+              </span>
+              <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 2, fontSize: 15, fontWeight: 800, color: 'var(--green-hi)', marginInlineStart: 8 }}>
+                {scanProt}
+                <span style={{ fontSize: 10, fontWeight: 600, opacity: 0.7 }}>{t(lang, 'proteinUnit')}</span>
+              </span>
+            </div>
+          )}
+
+          {/* Actions */}
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button className="btn-confirm" onClick={handleScanAdd} style={{ flex: 1 }} disabled={scanG <= 0}>
+              {t(lang, 'add')}
+            </button>
+            <button className="btn-ghost" onClick={handleScanAgain} style={{ flexShrink: 0, paddingInline: 14 }}>
+              <span className="icon icon-sm">barcode_scanner</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Manual mode ───────────────────────────────────────── */}
+      {mode === 'manual' && (
+      <div>
+      {/* Row 1: [food name (1fr)] [grams (72px)] [units (72px)]
+          Row 2: [meal type (col 1)]  [calculate (cols 2+3, same total width as grams+units+gap)] */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 72px 72px', gap: 8 }}>
 
         {/* Row 1 col 1 — food name + dropdown */}
@@ -406,6 +631,8 @@ export function FoodEntryForm({ lang, history, getSuggestions, onAdd, onUpsertHi
             </button>
           </div>
         </div>
+      )}
+      </div>
       )}
     </div>
   )

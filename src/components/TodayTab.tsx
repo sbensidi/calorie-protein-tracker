@@ -140,12 +140,17 @@ export function TodayTab({
     updateComposed(composedGroups.filter(g => g.id !== groupId))
   }
 
-  const addIngredientToGroup = async (groupId: string, meal: Omit<Meal, 'id' | 'user_id' | 'created_at'>) => {
-    const id = await onAddMealWithId(meal)
+  // ── Add ingredient modal ─────────────────────────────────────
+  const [addIngredientModal, setAddIngredientModal] = useState<{ groupId: string; mealType: MealType } | null>(null)
+
+  const handleAddIngredientSubmit = async (meal: Omit<Meal, 'id' | 'user_id' | 'created_at'>) => {
+    if (!addIngredientModal) return
+    const id = await onAddMealWithId({ ...meal, meal_type: addIngredientModal.mealType })
     if (!id) return
     updateComposed(composedGroups.map(g =>
-      g.id === groupId ? { ...g, mealIds: [...g.mealIds, id] } : g
+      g.id === addIngredientModal.groupId ? { ...g, mealIds: [...g.mealIds, id] } : g
     ))
+    setAddIngredientModal(null)
   }
 
   const renameGroup = (groupId: string, name: string) => {
@@ -412,8 +417,7 @@ export function TodayTab({
                   onDeleteMeal={onDeleteMeal}
                   onRename={name => renameGroup(group.id, name)}
                   onDeleteGroup={() => dissolveGroup(group.id)}
-                  onAddIngredient={(meal) => addIngredientToGroup(group.id, meal)}
-                  mealType={type}
+                  onAddIngredient={() => setAddIngredientModal({ groupId: group.id, mealType: type })}
                 />
               )
             })}
@@ -607,6 +611,23 @@ export function TodayTab({
       )}
 
       {composeModalEl}
+
+      {/* ── Add ingredient modal ──────────────────────────────── */}
+      {addIngredientModal && (
+        <div className="compose-modal-backdrop" onClick={() => setAddIngredientModal(null)}>
+          <div className="compose-modal" style={{ maxWidth: 420, padding: 0, overflow: 'hidden' }} onClick={e => e.stopPropagation()}>
+            <FoodEntryForm
+              key={addIngredientModal.groupId}
+              lang={lang}
+              history={history}
+              getSuggestions={getSuggestions}
+              defaultMealType={addIngredientModal.mealType}
+              onAdd={handleAddIngredientSubmit}
+              onUpsertHistory={onUpsertHistory}
+            />
+          </div>
+        </div>
+      )}
     </div>
   )
 }
