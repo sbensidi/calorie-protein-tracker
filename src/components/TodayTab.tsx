@@ -63,6 +63,7 @@ interface TodayTabProps {
   goalProtein: number
   getSuggestions: (q: string) => FoodHistory[]
   onAddMeal: (meal: Omit<Meal, 'id' | 'user_id' | 'created_at'>) => void
+  onAddMealWithId: (meal: Omit<Meal, 'id' | 'user_id' | 'created_at'>) => Promise<string | null>
   onEditMeal: (id: string, updates: Partial<Meal>) => void
   onDeleteMeal: (id: string) => void
   onDuplicateMeal: (meal: Meal) => void
@@ -71,7 +72,7 @@ interface TodayTabProps {
 
 export function TodayTab({
   lang, meals, history, goalCalories, goalProtein,
-  getSuggestions, onAddMeal, onEditMeal, onDeleteMeal, onDuplicateMeal, onUpsertHistory,
+  getSuggestions, onAddMeal, onAddMealWithId, onEditMeal, onDeleteMeal, onDuplicateMeal, onUpsertHistory,
 }: TodayTabProps) {
   const todayMeals = useMemo(() => meals.filter(m => m.date === today()), [meals])
 
@@ -137,6 +138,14 @@ export function TodayTab({
 
   const dissolveGroup = (groupId: string) => {
     updateComposed(composedGroups.filter(g => g.id !== groupId))
+  }
+
+  const addIngredientToGroup = async (groupId: string, meal: Omit<Meal, 'id' | 'user_id' | 'created_at'>) => {
+    const id = await onAddMealWithId(meal)
+    if (!id) return
+    updateComposed(composedGroups.map(g =>
+      g.id === groupId ? { ...g, mealIds: [...g.mealIds, id] } : g
+    ))
   }
 
   const renameGroup = (groupId: string, name: string) => {
@@ -403,6 +412,8 @@ export function TodayTab({
                   onDeleteMeal={onDeleteMeal}
                   onRename={name => renameGroup(group.id, name)}
                   onDeleteGroup={() => dissolveGroup(group.id)}
+                  onAddIngredient={(meal) => addIngredientToGroup(group.id, meal)}
+                  mealType={type}
                 />
               )
             })}

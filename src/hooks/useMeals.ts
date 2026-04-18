@@ -62,6 +62,20 @@ export function useMeals(userId: string | null) {
     else fetchMeals()
   }, [userId, fetchMeals])
 
+  const addMealWithId = useCallback(async (meal: Omit<Meal, 'id' | 'user_id' | 'created_at'>): Promise<string | null> => {
+    if (!userId) return null
+    const id = crypto.randomUUID()
+    const { error } = await supabase.from('meals').insert({
+      ...meal,
+      id,
+      user_id: userId,
+      date: meal.date || today(),
+    })
+    if (error) { import.meta.env.DEV && console.error('Add meal error:', error); return null }
+    fetchMeals()
+    return id
+  }, [userId, fetchMeals])
+
   const updateMeal = useCallback(async (id: string, updates: Partial<Meal>) => {
     const { error } = await supabase.from('meals').update(updates).eq('id', id)
     if (error) import.meta.env.DEV && console.error('Update meal error:', error)
@@ -90,5 +104,5 @@ export function useMeals(userId: string | null) {
     else fetchMeals()
   }, [userId, fetchMeals])
 
-  return { meals, loading, addMeal, updateMeal, deleteMeal, duplicateMeal, refetch: fetchMeals }
+  return { meals, loading, addMeal, addMealWithId, updateMeal, deleteMeal, duplicateMeal, refetch: fetchMeals }
 }

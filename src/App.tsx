@@ -49,7 +49,7 @@ export default function App() {
 
   const userId = session?.user?.id || null
 
-  const { meals, addMeal, updateMeal, deleteMeal, duplicateMeal } = useMeals(userId)
+  const { meals, addMeal, addMealWithId, updateMeal, deleteMeal, duplicateMeal } = useMeals(userId)
   const { goals, saveGoals, getGoalForDate } = useGoals(userId)
   const { history, upsertHistory, getSuggestions } = useFoodHistory(userId)
 
@@ -151,6 +151,7 @@ export default function App() {
             goalProtein={todayGoal.protein}
             getSuggestions={getSuggestions}
             onAddMeal={addMeal}
+            onAddMealWithId={addMealWithId}
             onEditMeal={updateMeal}
             onDeleteMeal={deleteMeal}
             onDuplicateMeal={duplicateMeal}
