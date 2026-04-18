@@ -440,17 +440,17 @@ export function FoodEntryForm({ lang, history, getSuggestions, onAdd, onUpsertHi
             onBlur={handleBlur}
             dir={lang === 'he' ? 'rtl' : 'ltr'}
             style={isRTL
-              ? { paddingLeft: foodName ? 36 : 12, paddingRight: 36 }
-              : { paddingRight: foodName ? 36 : 12, paddingLeft: 36 }}
+              ? { paddingLeft: foodName ? 68 : 36, paddingRight: 12 }
+              : { paddingRight: foodName ? 68 : 36, paddingLeft: 12 }}
           />
-          {/* History browse button — inline-start side */}
+          {/* History browse button — inline-end side (left in RTL, right in LTR) */}
           <button
             onMouseDown={e => { e.preventDefault(); openHistoryModal() }}
             tabIndex={-1}
             title={lang === 'he' ? 'היסטוריית מזונות' : 'Food history'}
             style={{
               position: 'absolute',
-              ...(isRTL ? { right: 0 } : { left: 0 }),
+              ...(isRTL ? { left: 0 } : { right: 0 }),
               top: 0, bottom: 0, width: 32,
               background: 'none', border: 'none', cursor: 'pointer',
               color: 'var(--text-3)', padding: 0,
@@ -459,11 +459,18 @@ export function FoodEntryForm({ lang, history, getSuggestions, onAdd, onUpsertHi
           >
             <span className="icon icon-sm">manage_search</span>
           </button>
-          {/* Clear button — inline-end side */}
+          {/* Clear button — next to history button when text present */}
           {foodName && (
             <button
               onMouseDown={e => { e.preventDefault(); handleFoodNameChange(''); setNutrition(null); inputRef.current?.focus() }}
-              style={clearBtnStyle()}
+              style={{
+                position: 'absolute',
+                ...(isRTL ? { left: 32 } : { right: 32 }),
+                top: 0, bottom: 0, width: 32,
+                background: 'none', border: 'none', cursor: 'pointer',
+                color: 'var(--text-3)', padding: 0,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}
               tabIndex={-1}
             >
               <span className="icon icon-sm">close</span>
