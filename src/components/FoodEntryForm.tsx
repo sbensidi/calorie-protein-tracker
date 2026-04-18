@@ -440,8 +440,8 @@ export function FoodEntryForm({ lang, history, getSuggestions, onAdd, onUpsertHi
             onBlur={handleBlur}
             dir={lang === 'he' ? 'rtl' : 'ltr'}
             style={isRTL
-              ? { paddingLeft: foodName ? 68 : 36, paddingRight: 12 }
-              : { paddingRight: foodName ? 68 : 36, paddingLeft: 12 }}
+              ? { paddingLeft: foodName ? 78 : 46, paddingRight: 12 }
+              : { paddingRight: foodName ? 78 : 46, paddingLeft: 12 }}
           />
           {/* History browse button — inline-end side (left in RTL, right in LTR) */}
           <button
@@ -451,10 +451,13 @@ export function FoodEntryForm({ lang, history, getSuggestions, onAdd, onUpsertHi
             style={{
               position: 'absolute',
               ...(isRTL ? { left: 0 } : { right: 0 }),
-              top: 0, bottom: 0, width: 32,
+              top: 0, bottom: 0, width: 42,
               background: 'none', border: 'none', cursor: 'pointer',
               color: 'var(--text-3)', padding: 0,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
+              ...(isRTL
+                ? { borderRight: '1px solid var(--border)' }
+                : { borderLeft:  '1px solid var(--border)' }),
             }}
           >
             <span className="icon icon-sm">manage_search</span>
@@ -465,7 +468,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, onAdd, onUpsertHi
               onMouseDown={e => { e.preventDefault(); handleFoodNameChange(''); setNutrition(null); inputRef.current?.focus() }}
               style={{
                 position: 'absolute',
-                ...(isRTL ? { left: 32 } : { right: 32 }),
+                ...(isRTL ? { left: 42 } : { right: 42 }),
                 top: 0, bottom: 0, width: 32,
                 background: 'none', border: 'none', cursor: 'pointer',
                 color: 'var(--text-3)', padding: 0,
