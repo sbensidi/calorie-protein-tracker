@@ -145,6 +145,7 @@ export default function App() {
         {tab === 'today' && (
           <TodayTab
             lang={lang}
+            userId={userId}
             meals={meals}
             history={history}
             goalCalories={todayGoal.calories}

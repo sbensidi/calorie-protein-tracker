@@ -7,6 +7,7 @@ import type { ComposedEntry } from './FoodEntryForm'
 import { MealCard } from './MealCard'
 import { ComposedMealCard } from './ComposedMealCard'
 import { DailySummary } from './DailySummary'
+import { useComposedGroups } from '../hooks/useComposedGroups'
 
 type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack'
 
@@ -45,19 +46,11 @@ function saveSummarySlot(n: number) {
   localStorage.setItem('summary-slot', String(n))
 }
 
-function loadComposedGroups(): ComposedGroup[] {
-  try {
-    const v = localStorage.getItem('composed-groups')
-    return v ? JSON.parse(v) : []
-  } catch { return [] }
-}
-function saveComposedGroups(groups: ComposedGroup[]) {
-  localStorage.setItem('composed-groups', JSON.stringify(groups))
-}
 
 // ── Props ────────────────────────────────────────────────────────
 interface TodayTabProps {
   lang: Lang
+  userId: string | null
   meals: Meal[]
   history: FoodHistory[]
   goalCalories: number
@@ -72,7 +65,7 @@ interface TodayTabProps {
 }
 
 export function TodayTab({
-  lang, meals, history, goalCalories, goalProtein,
+  lang, userId, meals, history, goalCalories, goalProtein,
   getSuggestions, onAddMeal, onAddMealWithId, onEditMeal, onDeleteMeal, onDuplicateMeal, onUpsertHistory,
 }: TodayTabProps) {
   const todayMeals = useMemo(() => meals.filter(m => m.date === today()), [meals])
@@ -129,8 +122,8 @@ export function TodayTab({
     setSelectedIds(prev => { const n = { ...prev }; delete n[type]; return n })
   }
 
-  // ── Composed groups ──────────────────────────────────────────
-  const [composedGroups, setComposedGroups] = useState<ComposedGroup[]>(loadComposedGroups)
+  // ── Composed groups (Supabase-backed) ───────────────────────
+  const { groups: composedGroups, upsert: upsertGroup, remove: removeGroup } = useComposedGroups(userId)
 
   const composedEntries = useMemo<ComposedEntry[]>(() =>
     composedGroups.map(g => {
@@ -144,14 +137,7 @@ export function TodayTab({
     }).filter(e => e.name),
   [composedGroups, meals])
 
-  const updateComposed = (next: ComposedGroup[]) => {
-    setComposedGroups(next)
-    saveComposedGroups(next)
-  }
-
-  const dissolveGroup = (groupId: string) => {
-    updateComposed(composedGroups.filter(g => g.id !== groupId))
-  }
+  const dissolveGroup = (groupId: string) => removeGroup(groupId)
 
   // ── Add ingredient modal ─────────────────────────────────────
   const [addIngredientModal, setAddIngredientModal] = useState<{ groupId: string; mealType: MealType } | null>(null)
@@ -160,14 +146,14 @@ export function TodayTab({
     if (!addIngredientModal) return
     const id = await onAddMealWithId({ ...meal, meal_type: addIngredientModal.mealType })
     if (!id) return
-    updateComposed(composedGroups.map(g =>
-      g.id === addIngredientModal.groupId ? { ...g, mealIds: [...g.mealIds, id] } : g
-    ))
+    const group = composedGroups.find(g => g.id === addIngredientModal.groupId)
+    if (group) upsertGroup({ ...group, mealIds: [...group.mealIds, id] })
     setAddIngredientModal(null)
   }
 
   const renameGroup = (groupId: string, name: string) => {
-    updateComposed(composedGroups.map(g => g.id === groupId ? { ...g, name } : g))
+    const group = composedGroups.find(g => g.id === groupId)
+    if (group) upsertGroup({ ...group, name })
   }
 
   // ── Compose modal ────────────────────────────────────────────
@@ -191,7 +177,7 @@ export function TodayTab({
       name,
       mealIds: [...sel],
     }
-    updateComposed([...composedGroups, newGroup])
+    upsertGroup(newGroup)
     clearSelection(mealType)
     setComposeModal(null)
   }

@@ -774,12 +774,12 @@ export function FoodEntryForm({ lang, history, getSuggestions, onAdd, onUpsertHi
             <div style={{ overflowY: 'auto', flex: 1, borderTop: '1px solid var(--border)' }}>
 
               {/* Composed dishes section */}
-              {!q && composedEntries && composedEntries.length > 0 && (
+              {composedEntries && composedEntries.filter(e => !q || e.name.toLowerCase().includes(q)).length > 0 && (
                 <>
                   <div style={{ padding: '8px 14px 4px', fontSize: 10, fontWeight: 700, color: 'var(--text-3)', letterSpacing: '0.07em', textTransform: 'uppercase' }}>
                     {lang === 'he' ? 'מנות שהרכבתי' : 'My composed dishes'}
                   </div>
-                  {composedEntries.map((entry) => (
+                  {composedEntries.filter(e => !q || e.name.toLowerCase().includes(q)).map((entry) => (
                     <button
                       key={entry.id}
                       onClick={() => handleComposedSelect(entry)}

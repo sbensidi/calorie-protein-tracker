@@ -55,7 +55,10 @@ export function DailySummary({ meals, date, goalCalories, goalProtein, lang }: D
             {totalCalories}
           </p>
           <p style={{ fontSize: 11, color: 'var(--text-2)', marginTop: 3, marginBottom: 6 }}>
-            / {goalCalories} {t(lang, 'caloriesUnit')}
+            / <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 2 }}>
+              <span>{goalCalories}</span>
+              <span>{t(lang, 'caloriesUnit')}</span>
+            </span>
           </p>
           <span style={{
             display: 'inline-flex', alignItems: 'center', gap: 3,
@@ -77,10 +80,16 @@ export function DailySummary({ meals, date, goalCalories, goalProtein, lang }: D
             {t(lang, 'protein').toUpperCase()}
           </p>
           <p style={{ fontSize: 28, fontWeight: 800, color: 'var(--text)', margin: 0, lineHeight: 1 }}>
-            {totalProtein}<span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-2)' }}>{t(lang, 'proteinUnit')}</span>
+            <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 2 }}>
+              <span>{totalProtein}</span>
+              <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-2)' }}>{t(lang, 'proteinUnit')}</span>
+            </span>
           </p>
           <p style={{ fontSize: 11, color: 'var(--text-2)', marginTop: 3, marginBottom: 6 }}>
-            / {goalProtein} {t(lang, 'proteinUnit')}
+            / <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 2 }}>
+              <span>{goalProtein}</span>
+              <span>{t(lang, 'proteinUnit')}</span>
+            </span>
           </p>
           <span style={{
             display: 'inline-flex', alignItems: 'center', gap: 3,

@@ -72,6 +72,27 @@ create policy "Users can manage their own food history"
 create index if not exists food_history_user_idx on food_history (user_id, use_count desc, last_used desc);
 
 -- ─────────────────────────────────────────────────────────────
+-- composed_groups table (merged dishes)
+-- ─────────────────────────────────────────────────────────────
+create table if not exists composed_groups (
+  id          uuid primary key,
+  user_id     uuid references auth.users not null,
+  name        text not null,
+  meal_ids    uuid[] not null default '{}',
+  created_at  timestamptz default now(),
+  updated_at  timestamptz default now()
+);
+
+alter table composed_groups enable row level security;
+
+create policy "Users can manage their own composed groups"
+  on composed_groups for all
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
+create index if not exists composed_groups_user_idx on composed_groups (user_id);
+
+-- ─────────────────────────────────────────────────────────────
 -- Enable Realtime for all tables
 -- ─────────────────────────────────────────────────────────────
 -- Run in Supabase Dashboard → Database → Replication → enable for meals, goals, food_history
@@ -79,3 +100,4 @@ create index if not exists food_history_user_idx on food_history (user_id, use_c
 alter publication supabase_realtime add table meals;
 alter publication supabase_realtime add table goals;
 alter publication supabase_realtime add table food_history;
+alter publication supabase_realtime add table composed_groups;
