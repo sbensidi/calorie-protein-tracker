@@ -567,52 +567,83 @@ export function FoodEntryForm({ lang, history, getSuggestions, onAdd, onUpsertHi
       </div>
 
       {/* History dropdown — full container width */}
-      {dropdownOpen && suggestions.length > 0 && (
-        <div
-          ref={dropdownRef}
-          style={{
-            position: 'absolute',
-            top: 'calc(46px + 4px)',
-            left: 0, right: 0,
-            background: 'var(--bg-card2)',
-            border: '1px solid var(--border-hi)',
-            borderRadius: 10,
-            overflow: 'hidden',
-            zIndex: 50,
-            boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
-          }}
-        >
-          {suggestions.map((item, i) => {
-            const itemIsUnit = item.grams < 0
-            const amtDisplay = itemIsUnit
-              ? `${Math.abs(item.grams)} ${unitLabel}`
-              : `${item.grams}g`
-            return (
+      {dropdownOpen && (() => {
+        const q = foodName.trim().toLowerCase()
+        const matchedComposed = composedEntries
+          ? composedEntries.filter(e => !q || e.name.toLowerCase().includes(q))
+          : []
+        if (suggestions.length === 0 && matchedComposed.length === 0) return null
+        return (
+          <div
+            ref={dropdownRef}
+            style={{
+              position: 'absolute',
+              top: 'calc(46px + 4px)',
+              left: 0, right: 0,
+              background: 'var(--bg-card2)',
+              border: '1px solid var(--border-hi)',
+              borderRadius: 10,
+              overflow: 'hidden',
+              zIndex: 50,
+              boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+            }}
+          >
+            {/* Composed dishes at top */}
+            {matchedComposed.map(entry => (
               <button
-                key={item.id}
-                onMouseDown={() => handleSuggestionSelect(item)}
+                key={entry.id}
+                onMouseDown={() => handleComposedSelect(entry)}
                 style={{
                   display: 'flex', alignItems: 'center', width: '100%',
                   padding: '9px 12px', background: 'transparent', border: 'none',
-                  borderBottom: i < suggestions.length - 1 ? '1px solid var(--border)' : 'none',
+                  borderBottom: '1px solid var(--border)',
                   cursor: 'pointer', gap: 10, textAlign: 'start', fontFamily: 'inherit',
                   transition: 'background .12s',
                 }}
-                onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')}
+                onMouseEnter={e => (e.currentTarget.style.background = 'rgba(139,92,246,0.05)')}
                 onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
               >
-                <span className="icon icon-sm" style={{ color: 'var(--text-2)', flexShrink: 0 }}>history</span>
+                <span className="icon icon-sm" style={{ color: 'var(--purple)', flexShrink: 0 }}>restaurant</span>
                 <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {item.name}
+                  {entry.name}
                 </span>
-                <span style={{ fontSize: 11, color: 'var(--text-2)', flexShrink: 0 }}>{amtDisplay}</span>
-                <span style={{ fontSize: 11, color: 'var(--blue-hi)', flexShrink: 0, fontWeight: 600 }}>{Math.round(item.calories)}</span>
-                <span style={{ fontSize: 11, color: 'var(--green-hi)', flexShrink: 0, fontWeight: 600 }}>{Math.round(item.protein * 10) / 10}g</span>
+                <span style={{ fontSize: 11, color: 'var(--blue-hi)', flexShrink: 0, fontWeight: 600 }}>{entry.calories}</span>
+                <span style={{ fontSize: 11, color: 'var(--green-hi)', flexShrink: 0, fontWeight: 600 }}>{entry.protein}g</span>
               </button>
-            )
-          })}
-        </div>
-      )}
+            ))}
+            {/* Food history items */}
+            {suggestions.map((item, i) => {
+              const itemIsUnit = item.grams < 0
+              const amtDisplay = itemIsUnit
+                ? `${Math.abs(item.grams)} ${unitLabel}`
+                : `${item.grams}g`
+              return (
+                <button
+                  key={item.id}
+                  onMouseDown={() => handleSuggestionSelect(item)}
+                  style={{
+                    display: 'flex', alignItems: 'center', width: '100%',
+                    padding: '9px 12px', background: 'transparent', border: 'none',
+                    borderBottom: i < suggestions.length - 1 ? '1px solid var(--border)' : 'none',
+                    cursor: 'pointer', gap: 10, textAlign: 'start', fontFamily: 'inherit',
+                    transition: 'background .12s',
+                  }}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                >
+                  <span className="icon icon-sm" style={{ color: 'var(--text-2)', flexShrink: 0 }}>history</span>
+                  <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {item.name}
+                  </span>
+                  <span style={{ fontSize: 11, color: 'var(--text-2)', flexShrink: 0 }}>{amtDisplay}</span>
+                  <span style={{ fontSize: 11, color: 'var(--blue-hi)', flexShrink: 0, fontWeight: 600 }}>{Math.round(item.calories)}</span>
+                  <span style={{ fontSize: 11, color: 'var(--green-hi)', flexShrink: 0, fontWeight: 600 }}>{Math.round(item.protein * 10) / 10}g</span>
+                </button>
+              )
+            })}
+          </div>
+        )
+      })()}
 
       {aiError && (
         <p style={{ fontSize: 12, color: 'var(--red)', marginTop: 8, display: 'flex', alignItems: 'center', gap: 4 }}>

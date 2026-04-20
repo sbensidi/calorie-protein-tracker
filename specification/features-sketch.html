@@ -1,0 +1,940 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>פרוטוטייפ אינטראקטיבי</title>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20,400,0,0" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0 }
+
+:root {
+  --bg:       #090d14;
+  --surface:  #0f1521;
+  --surface2: #131c2b;
+  --border:   rgba(255,255,255,0.07);
+  --border2:  rgba(255,255,255,0.11);
+  --text:     #dde4f0;
+  --text-2:   #8fa8c0;
+  --text-3:   #4a6080;
+  --blue-hi:  #60a5fa;
+  --green-hi: #34d399;
+  --amber:    #fb923c;
+  --purple:   #818cf8;
+  --red:      #f87171;
+}
+
+body {
+  font-family: 'Heebo', sans-serif;
+  background: var(--bg); color: var(--text);
+  min-height: 100vh;
+  display: flex; flex-direction: column; align-items: center;
+  padding: 24px 16px 80px;
+}
+
+.icon {
+  font-family: 'Material Symbols Rounded';
+  font-style: normal; line-height: 1;
+  user-select: none; display: inline-block;
+  direction: ltr; vertical-align: middle;
+}
+
+/* ── Page chrome ────────────────────────────────────────────── */
+.proto-label {
+  font-size: 10px; font-weight: 700; color: var(--text-3);
+  text-transform: uppercase; letter-spacing: .12em;
+  margin-bottom: 20px; text-align: center;
+}
+
+/* ── Phone frame ────────────────────────────────────────────── */
+.phone {
+  width: 100%; max-width: 420px;
+  background: var(--bg);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 28px;
+  padding: 20px 16px 32px;
+  display: flex; flex-direction: column; gap: 10px;
+}
+
+/* ── Card ───────────────────────────────────────────────────── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px; overflow: hidden;
+}
+
+/* ── Group header ───────────────────────────────────────────── */
+.group-hd {
+  display: flex; align-items: center; gap: 8px;
+  padding: 12px 14px;
+  cursor: pointer; user-select: none;
+}
+.group-hd:hover { background: rgba(255,255,255,0.02) }
+.group-label {
+  font-size: 11px; font-weight: 700; color: var(--text-2);
+  text-transform: uppercase; letter-spacing: .08em;
+}
+.group-totals {
+  display: inline-flex; align-items: center; gap: 8px;
+  margin-inline-start: 6px;
+}
+.g-num   { display: inline-flex; align-items: baseline; gap: 2px; font-size: 11px; font-weight: 700 }
+.g-unit  { font-size: 9px; font-weight: 600; opacity: .75 }
+.spacer  { flex: 1 }
+
+.chevron-badge {
+  width: 26px; height: 26px; border-radius: 8px;
+  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; cursor: pointer; transition: background .15s;
+}
+.chevron-badge:hover { background: rgba(255,255,255,0.08) }
+
+.edit-group-btn {
+  width: 26px; height: 26px; border-radius: 8px;
+  background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; cursor: pointer; transition: all .15s;
+}
+.edit-group-btn:hover { background: rgba(251,146,60,0.1); border-color: rgba(251,146,60,0.25) }
+.edit-group-btn .icon { font-size: 14px; color: var(--text-3) }
+.edit-group-btn.active { background: rgba(251,146,60,0.12); border-color: rgba(251,146,60,0.35) }
+.edit-group-btn.active .icon { color: var(--amber) }
+
+/* ── Type picker ────────────────────────────────────────────── */
+.type-picker {
+  border-top: 1px solid var(--border);
+  background: var(--surface2);
+}
+.type-opt {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px; cursor: pointer;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  transition: background .12s;
+}
+.type-opt:last-child { border-bottom: none }
+.type-opt:hover { background: rgba(255,255,255,0.03) }
+.type-opt.current { background: rgba(251,146,60,0.04) }
+.type-ico {
+  width: 28px; height: 28px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.type-name  { font-size: 13px; font-weight: 700; color: var(--text-2); flex: 1 }
+.type-radio {
+  width: 18px; height: 18px; border-radius: 50%;
+  border: 1.5px solid rgba(255,255,255,0.12);
+  display: flex; align-items: center; justify-content: center;
+}
+.type-radio.on { background: rgba(251,146,60,0.15); border-color: rgba(251,146,60,0.5) }
+.type-radio.on .icon { font-size: 12px; color: var(--amber) }
+
+/* ── Meal area ──────────────────────────────────────────────── */
+.meal-area {
+  border-top: 1px solid var(--border);
+  padding: 8px 10px 10px;
+  display: flex; flex-direction: column; gap: 2px;
+}
+
+/* ── Meal row ───────────────────────────────────────────────── */
+.meal-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 10px; border-radius: 10px;
+  cursor: default; transition: background .1s;
+}
+.meal-row.sel { background: rgba(139,92,246,0.07) }
+.meal-name  { font-size: 14px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.meal-grams { font-size: 12px; color: var(--text-3); margin-top: 2px }
+.meal-nums  { display: flex; align-items: flex-start; gap: 4px; flex-shrink: 0 }
+.num-col    { display: flex; flex-direction: column; gap: 2px }
+.num-val    { font-size: 15px; font-weight: 700; line-height: 1 }
+.num-unit   { font-size: 11px; font-weight: 500; opacity: .6; line-height: 1.4 }
+
+/* ── Checkbox ───────────────────────────────────────────────── */
+.cb {
+  width: 20px; height: 20px; border-radius: 6px;
+  border: 1.5px solid rgba(255,255,255,0.13);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; cursor: pointer; transition: all .12s;
+}
+.cb:hover  { border-color: rgba(139,92,246,0.4) }
+.cb.on { background: rgba(139,92,246,0.22); border-color: rgba(139,92,246,0.55) }
+.cb.on .icon { font-size: 13px; color: #a78bfa }
+
+/* ── Edit form (inline) ─────────────────────────────────────── */
+.edit-form {
+  background: var(--surface2);
+  border: 1px solid rgba(96,165,250,0.2);
+  border-radius: 12px; padding: 12px;
+  display: flex; flex-direction: column; gap: 8px;
+  margin: 2px 0;
+}
+.edit-form-row { display: flex; gap: 8px }
+.field { display: flex; flex-direction: column; gap: 4px; flex: 1 }
+.field-label { font-size: 10px; font-weight: 700 }
+input.inp {
+  height: 36px; background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 9px; padding: 0 10px;
+  font-family: 'Heebo', sans-serif; font-size: 13px; color: var(--text);
+  width: 100%; outline: none; transition: border-color .15s;
+}
+input.inp:focus { border-color: rgba(96,165,250,0.5) }
+.edit-form-btns { display: flex; gap: 7px }
+.btn-save {
+  flex: 1; height: 34px; border-radius: 8px;
+  background: rgba(96,165,250,0.15); border: 1px solid rgba(96,165,250,0.35);
+  color: var(--blue-hi); font-family: inherit; font-size: 12px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center; gap: 4px;
+  cursor: pointer; transition: background .12s;
+}
+.btn-save:hover { background: rgba(96,165,250,0.25) }
+.btn-ghost {
+  flex: 1; height: 34px; border-radius: 8px;
+  background: transparent; border: 1px solid rgba(255,255,255,0.08);
+  color: var(--text-3); font-family: inherit; font-size: 12px; font-weight: 600;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+}
+
+/* ── Action bar ─────────────────────────────────────────────── */
+.action-bar {
+  border: 1px solid rgba(139,92,246,0.2);
+  border-radius: 12px; overflow: hidden;
+  margin-top: 6px;
+}
+.ab-header {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 12px;
+  background: rgba(139,92,246,0.07);
+  border-bottom: 1px solid rgba(139,92,246,0.12);
+}
+.ab-count  { font-size: 11px; font-weight: 700; color: #a78bfa; flex: 1 }
+.ab-totals { font-size: 11px; font-weight: 600; color: var(--text-3) }
+.ab-cancel {
+  font-family: inherit; font-size: 10px; font-weight: 700;
+  color: var(--text-3); background: none; border: none; cursor: pointer; padding: 2px 4px;
+}
+.ab-cancel:hover { color: var(--text-2) }
+.ab-btns { display: flex }
+.ab-btn {
+  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 5px;
+  padding: 10px 4px; background: none; border: none;
+  border-left: 1px solid rgba(255,255,255,0.05);
+  font-family: inherit; cursor: pointer; transition: background .12s;
+}
+.ab-btn:last-child { border-left: none }
+.ab-btn:hover { background: rgba(255,255,255,0.03) }
+.ab-ico {
+  width: 32px; height: 32px; border-radius: 9px;
+  display: flex; align-items: center; justify-content: center;
+}
+.ab-lbl { font-size: 10px; font-weight: 700 }
+
+/* ── Compose modal ──────────────────────────────────────────── */
+.modal-backdrop {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.7);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 100; padding: 20px;
+}
+.modal-box {
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 20px; padding: 20px;
+  width: 100%; max-width: 380px;
+  display: flex; flex-direction: column; gap: 12px;
+}
+.modal-title { font-size: 15px; font-weight: 800; text-align: center }
+.modal-sub   { font-size: 11px; color: var(--text-3); text-align: center; margin-top: -6px }
+.modal-summary {
+  display: flex; gap: 10px; align-items: center;
+  background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 10px; padding: 10px 13px;
+}
+.ms-label { font-size: 10px; font-weight: 700; color: var(--text-3); flex: 1 }
+.ms-chip  { display: flex; align-items: baseline; gap: 2px; font-size: 14px; font-weight: 700 }
+.ms-unit  { font-size: 10px; opacity: .65 }
+.modal-items {
+  display: flex; flex-direction: column; gap: 4px;
+  max-height: 160px; overflow-y: auto;
+}
+.modal-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 10px; border-radius: 8px;
+  background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05);
+  font-size: 12px; color: var(--text-2);
+}
+.modal-item-dot { width: 4px; height: 4px; border-radius: 50%; background: rgba(139,92,246,0.5); flex-shrink:0 }
+.modal-item-name { flex: 1; font-weight: 600 }
+.modal-item-nums { font-size: 11px; font-weight: 700; color: var(--text-3) }
+input.inp-purple {
+  height: 40px; background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(139,92,246,0.4);
+  border-radius: 10px; padding: 0 13px;
+  font-family: 'Heebo', sans-serif; font-size: 14px; color: #a78bfa;
+  width: 100%; outline: none;
+}
+.btn-merge {
+  height: 40px; border-radius: 10px;
+  background: rgba(139,92,246,0.18); border: 1px solid rgba(139,92,246,0.4);
+  color: #a78bfa; font-family: inherit; font-size: 13px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  cursor: pointer; transition: background .12s;
+}
+.btn-merge:hover { background: rgba(139,92,246,0.28) }
+.btn-close-modal {
+  height: 36px; border-radius: 10px;
+  background: transparent; border: 1px solid rgba(255,255,255,0.08);
+  color: var(--text-3); font-family: inherit; font-size: 12px; font-weight: 600;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+}
+
+/* ── Composed meal card ─────────────────────────────────────── */
+.composed-wrap {
+  background: rgba(0,0,0,0.15);
+  border: 1px solid rgba(139,92,246,0.18);
+  border-radius: 11px; overflow: hidden;
+  margin: 1px 0;
+}
+.composed-hd {
+  display: flex; align-items: center; gap: 9px;
+  padding: 10px 12px;
+}
+.composed-ico {
+  width: 28px; height: 28px; border-radius: 8px;
+  background: rgba(139,92,246,0.12); border: 1px solid rgba(139,92,246,0.22);
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.composed-ico .icon { font-size: 15px; color: #a78bfa }
+.comp-title { font-size: 13px; font-weight: 700; color: var(--text) }
+.comp-sub   { font-size: 10px; color: var(--text-3); margin-top: 1px }
+.comp-chevron {
+  width: 22px; height: 22px; border-radius: 6px;
+  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; flex-shrink: 0;
+}
+
+/* edit name input for composed header */
+input.comp-name-inp {
+  font-size: 13px; font-weight: 700; color: var(--text);
+  background: rgba(255,255,255,0.06); border: 1px solid rgba(96,165,250,0.4);
+  border-radius: 7px; padding: 3px 8px; font-family: inherit;
+  flex: 1; outline: none; min-width: 0;
+}
+.comp-edit-name-btn {
+  width: 22px; height: 22px; border-radius: 6px;
+  background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; flex-shrink: 0;
+}
+.comp-edit-name-btn .icon { font-size: 13px; color: var(--text-3) }
+
+/* ── Children ───────────────────────────────────────────────── */
+.children {
+  border-top: 1px solid rgba(139,92,246,0.12);
+  background: rgba(0,0,0,0.14);
+  padding: 5px 8px 8px;
+  display: flex; flex-direction: column; gap: 3px;
+}
+.child-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 9px; border-radius: 8px;
+  background: rgba(255,255,255,0.025); border: 1px solid rgba(255,255,255,0.05);
+}
+.child-dot  { width: 4px; height: 4px; border-radius: 50%; background: rgba(139,92,246,0.5); flex-shrink:0 }
+.child-name { font-size: 12px; font-weight: 600; color: #c4cfe0; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap }
+.child-g    { font-size: 10px; color: var(--text-3) }
+.child-nums { display: flex; gap: 8px; flex-shrink:0 }
+.child-num  { font-size: 12px; font-weight: 700 }
+.child-edit-btn {
+  width: 22px; height: 22px; border-radius: 5px;
+  background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; flex-shrink: 0; transition: all .12s;
+}
+.child-edit-btn:hover { background: rgba(96,165,250,0.1); border-color: rgba(96,165,250,0.3) }
+.child-edit-btn .icon { font-size: 12px; color: var(--text-3) }
+.child-del-btn {
+  width: 22px; height: 22px; border-radius: 5px;
+  background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; flex-shrink: 0;
+}
+.child-del-btn .icon { font-size: 12px; color: var(--text-3) }
+.child-del-btn:hover { background: rgba(248,113,113,0.1); border-color: rgba(248,113,113,0.3) }
+.child-del-btn:hover .icon { color: var(--red) }
+
+/* child edit form */
+.child-edit-form {
+  background: rgba(96,165,250,0.04); border: 1px solid rgba(96,165,250,0.18);
+  border-radius: 8px; padding: 9px 10px;
+  display: flex; flex-direction: column; gap: 7px;
+}
+.child-edit-row { display: flex; gap: 7px }
+input.child-inp {
+  height: 32px; background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1); border-radius: 7px;
+  padding: 0 8px; font-family: inherit; font-size: 12px; color: var(--text);
+  flex: 1; outline: none; min-width: 0;
+}
+input.child-inp:focus { border-color: rgba(96,165,250,0.45) }
+.child-save-btn {
+  height: 30px; border-radius: 7px; padding: 0 10px;
+  background: rgba(96,165,250,0.15); border: 1px solid rgba(96,165,250,0.35);
+  color: var(--blue-hi); font-family: inherit; font-size: 11px; font-weight: 700;
+  display: flex; align-items: center; gap: 3px; cursor: pointer;
+}
+.child-cancel-btn {
+  height: 30px; border-radius: 7px; padding: 0 10px;
+  background: transparent; border: 1px solid rgba(255,255,255,0.08);
+  color: var(--text-3); font-family: inherit; font-size: 11px; font-weight: 600;
+  cursor: pointer;
+}
+
+/* add child button */
+.add-child-btn {
+  display: flex; align-items: center; gap: 5px;
+  width: 100%; background: transparent; border: 1px dashed rgba(255,255,255,0.08);
+  border-radius: 8px; padding: 6px 9px; font-family: inherit;
+  font-size: 11px; font-weight: 600; color: var(--text-3);
+  cursor: pointer; margin-top: 1px; transition: all .12s;
+}
+.add-child-btn:hover { border-color: rgba(139,92,246,0.3); color: #a78bfa }
+</style>
+</head>
+<body>
+
+<div class="proto-label">פרוטוטייפ אינטראקטיבי — לחץ על הרכיבים לניסוי</div>
+
+<div class="phone" id="app"></div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     SCRIPT
+═══════════════════════════════════════════════════════════ -->
+<script>
+'use strict'
+
+// ── Constants ───────────────────────────────────────────────
+const TYPES = {
+  breakfast: { label: 'ארוחת בוקר',    icon: 'wb_sunny',     color: '#fb923c' },
+  lunch:     { label: 'ארוחת צהריים',  icon: 'lunch_dining', color: '#34d399' },
+  dinner:    { label: 'ארוחת ערב',     icon: 'nights_stay',  color: '#818cf8' },
+  snack:     { label: 'נשנוש',         icon: 'nutrition',    color: '#f87171' },
+}
+const TYPE_ORDER = ['breakfast','lunch','dinner','snack']
+
+let _id = 1
+const uid = () => 'i' + (_id++)
+
+// ── State ────────────────────────────────────────────────────
+let state = {
+  groups: [
+    {
+      id:'g1', type:'dinner', open:true, editingType:false,
+      items:[
+        { id:'m1', kind:'meal', name:'פסטה בולונז',   grams:250, cal:410, protein:18,  selected:false, editing:false },
+        { id:'m2', kind:'meal', name:'לחם שיפון',      grams:40,  cal:92,  protein:3.2, selected:false, editing:false },
+        { id:'m3', kind:'meal', name:'גבינה צהובה',    grams:30,  cal:112, protein:7,   selected:false, editing:false },
+      ]
+    },
+    {
+      id:'g2', type:'breakfast', open:false, editingType:false,
+      items:[
+        { id:'m4', kind:'meal', name:'ביצים מקושקשות', grams:150, cal:210, protein:14,  selected:false, editing:false },
+        { id:'m5', kind:'meal', name:'אבוקדו',          grams:80,  cal:128, protein:1.6, selected:false, editing:false },
+      ]
+    }
+  ],
+  modal: null   // { groupId, name }
+}
+
+// ── Helpers ──────────────────────────────────────────────────
+const findGroup = id => state.groups.find(g => g.id === id)
+const findItem  = (g, id) => g.items.find(i => i.id === id)
+const findChild = (item, id) => item.children?.find(c => c.id === id)
+
+function itemCal(item) {
+  if (item.kind === 'composed') return item.children.reduce((s,c)=>s+c.cal,0)
+  return item.cal
+}
+function itemProtein(item) {
+  if (item.kind === 'composed') return item.children.reduce((s,c)=>s+c.protein,0)
+  return item.protein
+}
+function groupCal(g)     { return Math.round(g.items.reduce((s,i)=>s+itemCal(i),0)) }
+function groupProtein(g) { return +(g.items.reduce((s,i)=>s+itemProtein(i),0).toFixed(1)) }
+function selected(g)     { return g.items.filter(i=>i.selected) }
+
+function r(n) { return Math.round(n*10)/10 }
+
+// ── Actions ──────────────────────────────────────────────────
+
+function toggleGroup(gid) {
+  const g = findGroup(gid)
+  g.open = !g.open
+  if (!g.open) { g.editingType = false; g.items.forEach(i=>i.selected=false) }
+  render()
+}
+
+function toggleTypeEditor(gid, e) {
+  e.stopPropagation()
+  const g = findGroup(gid)
+  g.editingType = !g.editingType
+  render()
+}
+
+function changeType(gid, type) {
+  const g = findGroup(gid)
+  g.type = type; g.editingType = false
+  render()
+}
+
+function toggleSelect(gid, iid) {
+  const g = findGroup(gid)
+  const item = findItem(g, iid)
+  item.selected = !item.selected
+  // close any open edit forms when selection changes
+  g.items.forEach(i => { if(i.editing && !i.selected) i.editing = false })
+  render()
+}
+
+function cancelSelection(gid) {
+  const g = findGroup(gid)
+  g.items.forEach(i => { i.selected = false; i.editing = false })
+  render()
+}
+
+// ── Edit (single meal) ───────────────────────────────────────
+function startEdit(gid, iid) {
+  const g = findGroup(gid)
+  const item = findItem(g, iid)
+  item.editing = true
+  render()
+}
+
+function saveEdit(gid, iid) {
+  const g = findGroup(gid)
+  const item = findItem(g, iid)
+  const name    = document.getElementById('e-name-'+iid)?.value
+  const cal     = parseFloat(document.getElementById('e-cal-'+iid)?.value)
+  const protein = parseFloat(document.getElementById('e-prot-'+iid)?.value)
+  const grams   = parseFloat(document.getElementById('e-grams-'+iid)?.value)
+  if (name)    item.name    = name
+  if (!isNaN(cal))     item.cal     = cal
+  if (!isNaN(protein)) item.protein = protein
+  if (!isNaN(grams))   item.grams   = grams
+  item.editing = false; item.selected = false
+  render()
+}
+
+function cancelEdit(gid, iid) {
+  const g = findGroup(gid)
+  const item = findItem(g, iid)
+  item.editing = false; item.selected = false
+  render()
+}
+
+// ── Duplicate ────────────────────────────────────────────────
+function duplicateSelected(gid) {
+  const g = findGroup(gid)
+  const copies = selected(g).map(item => {
+    const copy = JSON.parse(JSON.stringify(item))
+    copy.id = uid(); copy.selected = false; copy.editing = false
+    if (copy.children) copy.children = copy.children.map(c=>({...c,id:uid(),editing:false}))
+    return copy
+  })
+  g.items.forEach(i => i.selected = false)
+  g.items.push(...copies)
+  render()
+}
+
+// ── Delete ───────────────────────────────────────────────────
+function deleteSelected(gid) {
+  const g = findGroup(gid)
+  g.items = g.items.filter(i => !i.selected)
+  render()
+}
+
+// ── Compose modal ────────────────────────────────────────────
+function openCompose(gid) {
+  state.modal = { groupId: gid, name: '' }
+  render()
+  setTimeout(() => document.getElementById('compose-input')?.focus(), 50)
+}
+
+function closeModal() {
+  state.modal = null
+  render()
+}
+
+function composeMeal() {
+  const { groupId } = state.modal
+  const g = findGroup(groupId)
+  const sel = selected(g)
+  const name = (document.getElementById('compose-input')?.value || '').trim() || 'מנה חדשה'
+
+  // Flatten children of any selected composed meals
+  const children = sel.flatMap(item => {
+    if (item.kind === 'meal') return [{ id:uid(), name:item.name, grams:item.grams, cal:item.cal, protein:item.protein, editing:false }]
+    return item.children.map(c => ({ ...c, id:uid(), editing:false }))
+  })
+
+  const composed = { id:uid(), kind:'composed', name, open:true, selected:false, editingName:false, children }
+  g.items = g.items.filter(i => !i.selected)
+  g.items.push(composed)
+  state.modal = null
+  render()
+}
+
+// ── Composed meal ─────────────────────────────────────────────
+function toggleComposed(gid, iid) {
+  const item = findItem(findGroup(gid), iid)
+  item.open = !item.open
+  render()
+}
+
+function startEditComposedName(gid, iid, e) {
+  e.stopPropagation()
+  const item = findItem(findGroup(gid), iid)
+  item.editingName = true
+  render()
+  setTimeout(() => document.getElementById('cname-'+iid)?.focus(), 30)
+}
+
+function saveComposedName(gid, iid) {
+  const item = findItem(findGroup(gid), iid)
+  const v = document.getElementById('cname-'+iid)?.value?.trim()
+  if (v) item.name = v
+  item.editingName = false
+  render()
+}
+
+// ── Child editing ────────────────────────────────────────────
+function startEditChild(gid, iid, cid) {
+  const item = findItem(findGroup(gid), iid)
+  item.children.forEach(c => c.editing = false)
+  findChild(item, cid).editing = true
+  render()
+  setTimeout(() => document.getElementById('cn-'+cid)?.focus(), 30)
+}
+
+function saveChild(gid, iid, cid) {
+  const item = findItem(findGroup(gid), iid)
+  const child = findChild(item, cid)
+  const name    = document.getElementById('cn-'+cid)?.value
+  const grams   = parseFloat(document.getElementById('cg-'+cid)?.value)
+  const cal     = parseFloat(document.getElementById('cc-'+cid)?.value)
+  const protein = parseFloat(document.getElementById('cp-'+cid)?.value)
+  if (name) child.name = name
+  if (!isNaN(grams))   child.grams   = grams
+  if (!isNaN(cal))     child.cal     = cal
+  if (!isNaN(protein)) child.protein = protein
+  child.editing = false
+  render()
+}
+
+function cancelChildEdit(gid, iid, cid) {
+  findChild(findItem(findGroup(gid), iid), cid).editing = false
+  render()
+}
+
+function deleteChild(gid, iid, cid) {
+  const item = findItem(findGroup(gid), iid)
+  item.children = item.children.filter(c => c.id !== cid)
+  // if no children left, dissolve composed meal
+  if (item.children.length === 0) {
+    findGroup(gid).items = findGroup(gid).items.filter(i => i.id !== iid)
+  }
+  render()
+}
+
+// ── Render helpers ───────────────────────────────────────────
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')
+}
+
+function renderTypePicker(g) {
+  return `<div class="type-picker">${TYPE_ORDER.map(t=>{
+    const def = TYPES[t]
+    const cur = t === g.type
+    return `<div class="type-opt${cur?' current':''}" onclick="changeType('${g.id}','${t}')">
+      <div class="type-ico" style="background:${def.color}18;border:1px solid ${def.color}30">
+        <span class="icon" style="font-size:16px;color:${def.color}">${def.icon}</span>
+      </div>
+      <span class="type-name"${cur?` style="color:${def.color}"`:''}">${def.label}</span>
+      <div class="type-radio${cur?' on':''}">
+        ${cur?'<span class="icon">check</span>':''}
+      </div>
+    </div>`
+  }).join('')}</div>`
+}
+
+function renderChildRow(gid, iid, child) {
+  if (child.editing) {
+    return `<div class="child-edit-form">
+      <div class="child-edit-row">
+        <input class="child-inp" id="cn-${child.id}" value="${esc(child.name)}" placeholder="שם" style="flex:2">
+        <input class="child-inp" id="cg-${child.id}" type="number" value="${child.grams}" placeholder="גרם" style="width:64px;flex:none">
+      </div>
+      <div class="child-edit-row">
+        <input class="child-inp" id="cc-${child.id}" type="number" value="${child.cal}"     placeholder="קק״ל" style="flex:1">
+        <input class="child-inp" id="cp-${child.id}" type="number" step="0.1" value="${child.protein}" placeholder="ג׳ חלבון" style="flex:1">
+      </div>
+      <div class="child-edit-row">
+        <button class="child-save-btn" onclick="saveChild('${gid}','${iid}','${child.id}')">
+          <span class="icon" style="font-size:13px">check</span>שמור
+        </button>
+        <button class="child-cancel-btn" onclick="cancelChildEdit('${gid}','${iid}','${child.id}')">ביטול</button>
+      </div>
+    </div>`
+  }
+  return `<div class="child-row">
+    <div class="child-dot"></div>
+    <div style="flex:1;min-width:0">
+      <div class="child-name">${esc(child.name)}</div>
+      <div class="child-g">${child.grams} גרם</div>
+    </div>
+    <div class="child-nums">
+      <span class="child-num" style="color:#60a5fa">${Math.round(child.cal)}</span>
+      <span class="child-num" style="color:#34d399">${r(child.protein)}</span>
+    </div>
+    <button class="child-edit-btn" onclick="startEditChild('${gid}','${iid}','${child.id}')">
+      <span class="icon">edit</span>
+    </button>
+    <button class="child-del-btn" onclick="deleteChild('${gid}','${iid}','${child.id}')">
+      <span class="icon">delete</span>
+    </button>
+  </div>`
+}
+
+function renderComposed(gid, item) {
+  const totalCal  = Math.round(item.children.reduce((s,c)=>s+c.cal,0))
+  const totalProt = r(item.children.reduce((s,c)=>s+c.protein,0))
+  const open = item.open
+
+  const nameSection = item.editingName
+    ? `<input class="comp-name-inp" id="cname-${item.id}" value="${esc(item.name)}"
+         onkeydown="if(event.key==='Enter')saveComposedName('${gid}','${item.id}')"
+         onblur="saveComposedName('${gid}','${item.id}')">`
+    : `<div style="flex:1;min-width:0">
+        <div class="comp-title">${esc(item.name)}</div>
+        <div class="comp-sub">${item.children.length} רכיבים</div>
+      </div>`
+
+  return `<div class="composed-wrap">
+    <!-- composed header -->
+    <div class="composed-hd">
+      <div class="cb${item.selected?' on':''}" onclick="toggleSelect('${gid}','${item.id}')">
+        ${item.selected?'<span class="icon">check</span>':''}
+      </div>
+      <div class="composed-ico"><span class="icon">restaurant</span></div>
+      ${nameSection}
+      ${!item.editingName ? `
+      <div class="meal-nums" style="flex-shrink:0;gap:4px">
+        <div class="num-col">
+          <span class="num-val" style="color:#60a5fa;font-size:13px">${totalCal}</span>
+          <span class="num-val" style="color:#34d399;font-size:13px">${totalProt}</span>
+        </div>
+        <div class="num-col">
+          <span class="num-unit">קק״ל</span>
+          <span class="num-unit">ג׳</span>
+        </div>
+      </div>
+      <button class="comp-edit-name-btn" onclick="startEditComposedName('${gid}','${item.id}',event)" title="ערוך שם">
+        <span class="icon">edit</span>
+      </button>
+      <div class="comp-chevron" onclick="toggleComposed('${gid}','${item.id}')">
+        <span class="icon" style="font-size:14px;color:#4a6080;transition:transform .2s;${open?'transform:rotate(180deg)':''}">expand_more</span>
+      </div>` : ''}
+    </div>
+    <!-- children -->
+    ${open ? `<div class="children">
+      ${item.children.map(c=>renderChildRow(gid,item.id,c)).join('')}
+      <button class="add-child-btn" onclick="alert('הוספת רכיב — לא ממומש בפרוטוטייפ')">
+        <span class="icon" style="font-size:14px">add</span>הוסף רכיב
+      </button>
+    </div>` : ''}
+  </div>`
+}
+
+function renderMealRow(gid, item) {
+  if (item.editing) {
+    return `<div class="edit-form">
+      <div class="field">
+        <div class="field-label" style="color:var(--text-2)">שם המזון</div>
+        <input class="inp" id="e-name-${item.id}" value="${esc(item.name)}">
+      </div>
+      <div class="edit-form-row">
+        <div class="field">
+          <div class="field-label" style="color:var(--text-3)">גרמים</div>
+          <input class="inp" type="number" id="e-grams-${item.id}" value="${item.grams}">
+        </div>
+      </div>
+      <div class="edit-form-row">
+        <div class="field">
+          <div class="field-label" style="color:#60a5fa">קלוריות</div>
+          <input class="inp" type="number" id="e-cal-${item.id}" value="${item.cal}">
+        </div>
+        <div class="field">
+          <div class="field-label" style="color:#34d399">חלבון (ג׳)</div>
+          <input class="inp" type="number" step="0.1" id="e-prot-${item.id}" value="${item.protein}">
+        </div>
+      </div>
+      <div class="edit-form-btns">
+        <button class="btn-save" onclick="saveEdit('${gid}','${item.id}')">
+          <span class="icon" style="font-size:14px">check</span>שמור
+        </button>
+        <button class="btn-ghost" onclick="cancelEdit('${gid}','${item.id}')">ביטול</button>
+      </div>
+    </div>`
+  }
+
+  return `<div class="meal-row${item.selected?' sel':''}">
+    <div class="cb${item.selected?' on':''}" onclick="toggleSelect('${gid}','${item.id}')">
+      ${item.selected?'<span class="icon">check</span>':''}
+    </div>
+    <div style="flex:1;min-width:0">
+      <div class="meal-name">${esc(item.name)}</div>
+      <div class="meal-grams">${item.grams} גרם</div>
+    </div>
+    <div class="meal-nums">
+      <div class="num-col">
+        <span class="num-val" style="color:#60a5fa">${Math.round(item.cal)}</span>
+        <span class="num-val" style="color:#34d399">${r(item.protein)}</span>
+      </div>
+      <div class="num-col">
+        <span class="num-unit">קק״ל</span>
+        <span class="num-unit">ג׳</span>
+      </div>
+    </div>
+    <button class="child-edit-btn" onclick="startEdit('${gid}','${item.id}')" title="ערוך">
+      <span class="icon">edit</span>
+    </button>
+  </div>`
+}
+
+function renderActionBar(g) {
+  const sel = selected(g)
+  if (sel.length === 0) return ''
+
+  const selCal  = Math.round(sel.reduce((s,i)=>s+itemCal(i),0))
+  const selProt = r(sel.reduce((s,i)=>s+itemProtein(i),0))
+  return `<div class="action-bar">
+    <div class="ab-header">
+      <span class="icon" style="font-size:14px;color:#a78bfa">check_circle</span>
+      <span class="ab-count">${sel.length} נבחרו</span>
+      <span class="ab-totals">${selCal} קק״ל · ${selProt} ג׳</span>
+      <button class="ab-cancel" onclick="cancelSelection('${g.id}')">ביטול</button>
+    </div>
+    <div class="ab-btns">
+      <button class="ab-btn" onclick="duplicateSelected('${g.id}')">
+        <div class="ab-ico" style="background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.18)">
+          <span class="icon" style="font-size:18px;color:#34d399">content_copy</span>
+        </div>
+        <span class="ab-lbl" style="color:#34d399">שכפל</span>
+      </button>
+      <button class="ab-btn" onclick="openCompose('${g.id}')">
+        <div class="ab-ico" style="background:rgba(139,92,246,0.1);border:1px solid rgba(139,92,246,0.22)">
+          <span class="icon" style="font-size:18px;color:#a78bfa">restaurant</span>
+        </div>
+        <span class="ab-lbl" style="color:#a78bfa">צור מנה</span>
+      </button>
+      <button class="ab-btn" onclick="deleteSelected('${g.id}')">
+        <div class="ab-ico" style="background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.18)">
+          <span class="icon" style="font-size:18px;color:#f87171">delete</span>
+        </div>
+        <span class="ab-lbl" style="color:#f87171">מחק</span>
+      </button>
+    </div>
+  </div>`
+}
+
+function renderGroup(g) {
+  const def  = TYPES[g.type]
+  const open = g.open
+  const cal  = groupCal(g)
+  const prot = groupProtein(g)
+
+  const header = `<div class="group-hd" onclick="toggleGroup('${g.id}')">
+    <span class="icon" style="font-size:18px;color:${def.color}">${def.icon}</span>
+    <span class="group-label">${def.label}</span>
+    ${!open ? `<span class="group-totals">
+      <span class="g-num" style="color:#60a5fa">${cal}<span class="g-unit">קק״ל</span></span>
+      <span class="g-num" style="color:#34d399">${prot}<span class="g-unit">ג׳</span></span>
+    </span>` : ''}
+    <span class="spacer"></span>
+    <button class="edit-group-btn${g.editingType?' active':''}" onclick="toggleTypeEditor('${g.id}',event)" title="שנה קבוצה">
+      <span class="icon">edit</span>
+    </button>
+    <span style="width:6px"></span>
+    <div class="chevron-badge" onclick="event.stopPropagation();toggleGroup('${g.id}')">
+      <span class="icon" style="font-size:18px;color:#4a6080;transition:transform .2s;${open?'transform:rotate(180deg)':''}">expand_more</span>
+    </div>
+  </div>`
+
+  const typePicker = g.editingType ? renderTypePicker(g) : ''
+
+  const body = open ? `<div class="meal-area">
+    ${g.items.map(item => item.kind==='composed'
+      ? renderComposed(g.id, item)
+      : renderMealRow(g.id, item)
+    ).join('')}
+    ${renderActionBar(g)}
+  </div>` : ''
+
+  return `<div class="card">${header}${typePicker}${body}</div>`
+}
+
+function renderModal() {
+  if (!state.modal) return ''
+  const g = findGroup(state.modal.groupId)
+  const sel = selected(g)
+  const selCal  = Math.round(sel.reduce((s,i)=>s+itemCal(i),0))
+  const selProt = r(sel.reduce((s,i)=>s+itemProtein(i),0))
+
+  const items = sel.map(i => {
+    if (i.kind === 'meal') return `<div class="modal-item">
+      <div class="modal-item-dot"></div>
+      <span class="modal-item-name">${esc(i.name)}</span>
+      <span class="modal-item-nums">${Math.round(i.cal)} קק״ל · ${r(i.protein)} ג׳</span>
+    </div>`
+    return `<div class="modal-item">
+      <div class="modal-item-dot"></div>
+      <span class="modal-item-name">${esc(i.name)} <span style="opacity:.5;font-size:10px">(${i.children.length} רכיבים)</span></span>
+      <span class="modal-item-nums">${Math.round(itemCal(i))} קק״ל · ${r(itemProtein(i))} ג׳</span>
+    </div>`
+  }).join('')
+
+  return `<div class="modal-backdrop" onclick="closeModal()">
+    <div class="modal-box" onclick="event.stopPropagation()">
+      <div class="modal-title">שם המנה</div>
+      <div class="modal-sub">הנתונים יסוכמו מ-${sel.length} הפריטים הנבחרים</div>
+      <div class="modal-summary">
+        <span class="ms-label">סה״כ</span>
+        <span class="ms-chip" style="color:#60a5fa">${selCal} <span class="ms-unit">קק״ל</span></span>
+        <span class="ms-chip" style="color:#34d399;margin-right:8px">${selProt} <span class="ms-unit">ג׳</span></span>
+      </div>
+      <div class="modal-items">${items}</div>
+      <input class="inp-purple" id="compose-input" placeholder="שם המנה החדשה..."
+        onkeydown="if(event.key==='Enter')composeMeal()">
+      <button class="btn-merge" onclick="composeMeal()">
+        <span class="icon" style="font-size:16px">merge</span>מזג למנה
+      </button>
+      <button class="btn-close-modal" onclick="closeModal()">ביטול</button>
+    </div>
+  </div>`
+}
+
+// ── Main render ──────────────────────────────────────────────
+function render() {
+  const app = document.getElementById('app')
+  app.innerHTML = state.groups.map(renderGroup).join('') + renderModal()
+}
+
+render()
+</script>
+</body>
+</html>

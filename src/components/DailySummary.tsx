@@ -1,14 +1,14 @@
 import type { Meal } from '../types'
 import type { Lang } from '../lib/i18n'
 import { t, formatDate } from '../lib/i18n'
-import { ProgressBar } from './ProgressBar'
+import { DonutProgress } from './DonutProgress'
 
 interface DailySummaryProps {
-  meals: Meal[]
-  date: string
+  meals:        Meal[]
+  date:         string
   goalCalories: number
-  goalProtein: number
-  lang: Lang
+  goalProtein:  number
+  lang:         Lang
 }
 
 function remainingLabel(remaining: number, unit: string, lang: Lang): { text: string; over: boolean } {
@@ -39,77 +39,70 @@ export function DailySummary({ meals, date, goalCalories, goalProtein, lang }: D
       className="fade-up"
       style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, padding: 16, marginTop: 8 }}
     >
-      <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-2)', marginBottom: 14 }}>
+      <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-2)', marginBottom: 12 }}>
         {formatDate(date, lang)}
       </p>
 
-      {/* Stats row */}
-      <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
+      <div style={{ display: 'flex', gap: 10 }}>
 
-        {/* Calories */}
-        <div style={{ flex: 1, background: 'rgba(59,130,246,0.07)', border: '1px solid rgba(59,130,246,0.14)', borderRadius: 10, padding: 12 }}>
-          <p style={{ fontSize: 11, fontWeight: 600, color: 'var(--blue-hi)', marginBottom: 4, letterSpacing: '0.04em' }}>
-            {t(lang, 'calories').toUpperCase()}
-          </p>
-          <p style={{ fontSize: 28, fontWeight: 800, color: 'var(--text)', margin: 0, lineHeight: 1 }}>
-            {totalCalories}
-          </p>
-          <p style={{ fontSize: 11, color: 'var(--text-2)', marginTop: 3, marginBottom: 6 }}>
-            / <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 2 }}>
-              <span>{goalCalories}</span>
-              <span>{t(lang, 'caloriesUnit')}</span>
+        {/* ── Calories card ── */}
+        <div style={{ flex: 1, background: 'rgba(59,130,246,0.07)', border: '1px solid rgba(59,130,246,0.14)', borderRadius: 10, padding: '10px 12px', display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--blue-hi)', marginBottom: 3, letterSpacing: '0.05em' }}>
+              {t(lang, 'calories').toUpperCase()}
+            </p>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 2 }}>
+              <span style={{ fontSize: 26, fontWeight: 800, color: 'var(--text)', lineHeight: 1 }}>{totalCalories}</span>
+              <span style={{ fontSize: 11, color: 'var(--text-2)' }}>{t(lang, 'caloriesUnit')}</span>
+            </div>
+            <p style={{ fontSize: 10, color: 'var(--text-3)', margin: '2px 0 6px' }}>
+              / {goalCalories} {t(lang, 'caloriesUnit')}
+            </p>
+            <span style={{
+              display: 'inline-flex', alignItems: 'center', gap: 3,
+              fontSize: 10, fontWeight: 700,
+              padding: '2px 6px', borderRadius: 999,
+              background: calLabel.over ? 'rgba(244,63,94,0.15)' : 'rgba(255,255,255,0.07)',
+              color: calLabel.over ? 'var(--red)' : 'var(--text-2)',
+            }}>
+              <span className="icon icon-sm" style={{ fontSize: 11 }}>
+                {calLabel.over ? 'arrow_upward' : 'arrow_downward'}
+              </span>
+              {calLabel.text}
             </span>
-          </p>
-          <span style={{
-            display: 'inline-flex', alignItems: 'center', gap: 3,
-            fontSize: 11, fontWeight: 700,
-            padding: '3px 7px', borderRadius: 999,
-            background: calLabel.over ? 'rgba(244,63,94,0.15)' : 'rgba(255,255,255,0.07)',
-            color: calLabel.over ? 'var(--red)' : 'var(--text-2)',
-          }}>
-            <span className="icon icon-sm" style={{ fontSize: 12 }}>
-              {calLabel.over ? 'arrow_upward' : 'arrow_downward'}
-            </span>
-            {calLabel.text}
-          </span>
+          </div>
+          <DonutProgress value={totalCalories} goal={goalCalories} color="blue" size={58} strokeWidth={5} />
         </div>
 
-        {/* Protein */}
-        <div style={{ flex: 1, background: 'rgba(16,185,129,0.07)', border: '1px solid rgba(16,185,129,0.14)', borderRadius: 10, padding: 12 }}>
-          <p style={{ fontSize: 11, fontWeight: 600, color: 'var(--green-hi)', marginBottom: 4, letterSpacing: '0.04em' }}>
-            {t(lang, 'protein').toUpperCase()}
-          </p>
-          <p style={{ fontSize: 28, fontWeight: 800, color: 'var(--text)', margin: 0, lineHeight: 1 }}>
-            <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 2 }}>
-              <span>{totalProtein}</span>
-              <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-2)' }}>{t(lang, 'proteinUnit')}</span>
+        {/* ── Protein card ── */}
+        <div style={{ flex: 1, background: 'rgba(16,185,129,0.07)', border: '1px solid rgba(16,185,129,0.14)', borderRadius: 10, padding: '10px 12px', display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--green-hi)', marginBottom: 3, letterSpacing: '0.05em' }}>
+              {t(lang, 'protein').toUpperCase()}
+            </p>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 2 }}>
+              <span style={{ fontSize: 26, fontWeight: 800, color: 'var(--text)', lineHeight: 1 }}>{totalProtein}</span>
+              <span style={{ fontSize: 11, color: 'var(--text-2)' }}>{t(lang, 'proteinUnit')}</span>
+            </div>
+            <p style={{ fontSize: 10, color: 'var(--text-3)', margin: '2px 0 6px' }}>
+              / {goalProtein} {t(lang, 'proteinUnit')}
+            </p>
+            <span style={{
+              display: 'inline-flex', alignItems: 'center', gap: 3,
+              fontSize: 10, fontWeight: 700,
+              padding: '2px 6px', borderRadius: 999,
+              background: protLabel.over ? 'rgba(244,63,94,0.15)' : 'rgba(255,255,255,0.07)',
+              color: protLabel.over ? 'var(--red)' : 'var(--text-2)',
+            }}>
+              <span className="icon icon-sm" style={{ fontSize: 11 }}>
+                {protLabel.over ? 'arrow_upward' : 'arrow_downward'}
+              </span>
+              {protLabel.text}
             </span>
-          </p>
-          <p style={{ fontSize: 11, color: 'var(--text-2)', marginTop: 3, marginBottom: 6 }}>
-            / <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 2 }}>
-              <span>{goalProtein}</span>
-              <span>{t(lang, 'proteinUnit')}</span>
-            </span>
-          </p>
-          <span style={{
-            display: 'inline-flex', alignItems: 'center', gap: 3,
-            fontSize: 11, fontWeight: 700,
-            padding: '3px 7px', borderRadius: 999,
-            background: protLabel.over ? 'rgba(244,63,94,0.15)' : 'rgba(255,255,255,0.07)',
-            color: protLabel.over ? 'var(--red)' : 'var(--text-2)',
-          }}>
-            <span className="icon icon-sm" style={{ fontSize: 12 }}>
-              {protLabel.over ? 'arrow_upward' : 'arrow_downward'}
-            </span>
-            {protLabel.text}
-          </span>
+          </div>
+          <DonutProgress value={totalProtein} goal={goalProtein} color="green" size={58} strokeWidth={5} />
         </div>
 
-      </div>
-
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        <ProgressBar value={totalCalories} goal={goalCalories} color="blue" />
-        <ProgressBar value={totalProtein}  goal={goalProtein}  color="green" />
       </div>
     </div>
   )

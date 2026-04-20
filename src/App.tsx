@@ -3,9 +3,11 @@ import type { Session } from '@supabase/supabase-js'
 import { supabase } from './lib/supabase'
 import type { Lang } from './lib/i18n'
 import { t } from './lib/i18n'
+import { useMemo } from 'react'
 import { useMeals } from './hooks/useMeals'
 import { useGoals } from './hooks/useGoals'
 import { useFoodHistory } from './hooks/useFoodHistory'
+import { useComposedGroups } from './hooks/useComposedGroups'
 import { TodayTab } from './components/TodayTab'
 import { HistoryTab } from './components/HistoryTab'
 import { GoalsTab } from './components/GoalsTab'
@@ -52,6 +54,19 @@ export default function App() {
   const { meals, addMeal, addMealWithId, updateMeal, deleteMeal, duplicateMeal } = useMeals(userId)
   const { goals, saveGoals, getGoalForDate } = useGoals(userId)
   const { history, upsertHistory, getSuggestions } = useFoodHistory(userId)
+  const { groups: composedGroups, upsert: upsertGroup, remove: removeGroup } = useComposedGroups(userId)
+
+  const composedEntries = useMemo(() =>
+    composedGroups.map(g => {
+      const gMeals = meals.filter(m => g.mealIds.includes(m.id))
+      return {
+        id: g.id,
+        name: g.name,
+        calories: Math.round(gMeals.reduce((s, m) => s + m.calories, 0)),
+        protein: Math.round(gMeals.reduce((s, m) => s + m.protein, 0) * 10) / 10,
+      }
+    }).filter(e => e.name),
+  [composedGroups, meals])
 
   const todayGoal = getGoalForDate(new Date().toISOString().slice(0, 10))
 
@@ -145,7 +160,6 @@ export default function App() {
         {tab === 'today' && (
           <TodayTab
             lang={lang}
-            userId={userId}
             meals={meals}
             history={history}
             goalCalories={todayGoal.calories}
@@ -157,10 +171,21 @@ export default function App() {
             onDeleteMeal={deleteMeal}
             onDuplicateMeal={duplicateMeal}
             onUpsertHistory={upsertHistory}
+            composedEntries={composedEntries}
+            composedGroups={composedGroups}
+            onUpsertGroup={upsertGroup}
+            onRemoveGroup={removeGroup}
           />
         )}
         {tab === 'history' && (
-          <HistoryTab lang={lang} meals={meals} history={history} getSuggestions={getSuggestions} getGoalForDate={getGoalForDate} />
+          <HistoryTab
+            lang={lang}
+            meals={meals}
+            history={history}
+            getSuggestions={getSuggestions}
+            getGoalForDate={getGoalForDate}
+            composedEntries={composedEntries}
+          />
         )}
         {tab === 'goals' && (
           <GoalsTab lang={lang} goals={goals} onSave={saveGoals} />

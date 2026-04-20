@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>סורק ברקוד — סקיצת ממשק</title>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20,400,0,0" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0 }
+
+  body {
+    font-family: 'Heebo', sans-serif;
+    background: #07090f;
+    color: #dde4f0;
+    padding: 32px 20px 64px;
+    min-height: 100vh;
+  }
+
+  .icon {
+    font-family: 'Material Symbols Rounded';
+    font-style: normal; line-height: 1;
+    user-select: none; display: inline-block;
+    direction: ltr; vertical-align: middle;
+  }
+
+  /* ── Layout ──────────────────────────────────────────────────── */
+  h1 {
+    font-size: 13px; font-weight: 700; color: #4a6080;
+    text-transform: uppercase; letter-spacing: .1em;
+    text-align: center; margin-bottom: 32px;
+  }
+
+  .screens {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 28px;
+    max-width: 1080px;
+    margin: 0 auto;
+    align-items: start;
+  }
+
+  .col { display: flex; flex-direction: column; gap: 0 }
+
+  .col-label {
+    font-size: 10px; font-weight: 700; color: #3b566e;
+    text-transform: uppercase; letter-spacing: .1em;
+    text-align: center; margin-bottom: 14px;
+  }
+
+  /* ── Phone shell ─────────────────────────────────────────────── */
+  .phone {
+    background: #0b1018;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 24px;
+    padding: 20px 14px;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+
+  /* ── Segmented control ──────────────────────────────────────── */
+  .seg {
+    display: flex;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 12px;
+    padding: 3px;
+    gap: 2px;
+  }
+  .seg-btn {
+    flex: 1;
+    display: flex; align-items: center; justify-content: center; gap: 5px;
+    padding: 8px 0;
+    border-radius: 9px;
+    font-family: 'Heebo', sans-serif;
+    font-size: 12px; font-weight: 700;
+    border: none; cursor: pointer;
+    transition: all .18s;
+  }
+  .seg-btn.inactive {
+    background: transparent;
+    color: #56708a;
+  }
+  .seg-btn.active-manual {
+    background: rgba(59,130,246,0.15);
+    color: #60a5fa;
+    border: 1px solid rgba(59,130,246,0.25);
+  }
+  .seg-btn.active-scan {
+    background: rgba(16,185,129,0.15);
+    color: #34d399;
+    border: 1px solid rgba(16,185,129,0.25);
+  }
+  .seg-btn .icon { font-size: 16px }
+
+  /* ── Shared card ─────────────────────────────────────────────── */
+  .card {
+    background: #0f1521;
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+
+  /* ── Manual form ─────────────────────────────────────────────── */
+  .form-body { padding: 14px; display: flex; flex-direction: column; gap: 10px }
+
+  .inp-row { display: flex; gap: 8px }
+
+  .inp-mock {
+    flex: 1;
+    height: 40px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.09);
+    border-radius: 10px;
+    padding: 0 12px;
+    font-family: 'Heebo', sans-serif;
+    font-size: 13px; color: #56708a;
+    display: flex; align-items: center;
+  }
+  .inp-mock.active {
+    border-color: rgba(59,130,246,0.4);
+    color: #dde4f0;
+  }
+  .inp-mock-sm { flex: 0 0 80px }
+
+  .select-mock {
+    height: 40px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.09);
+    border-radius: 10px;
+    padding: 0 10px;
+    font-family: 'Heebo', sans-serif;
+    font-size: 12px; color: #56708a;
+    display: flex; align-items: center; gap: 4px;
+    flex: 0 0 96px;
+  }
+  .select-mock .icon { font-size: 14px; margin-inline-start: auto }
+
+  .btn-calc {
+    height: 40px;
+    background: rgba(59,130,246,0.15);
+    border: 1px solid rgba(59,130,246,0.3);
+    border-radius: 10px;
+    color: #60a5fa;
+    font-family: 'Heebo', sans-serif;
+    font-size: 13px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center; gap: 5px;
+    cursor: pointer;
+  }
+  .btn-add {
+    height: 40px;
+    background: rgba(16,185,129,0.15);
+    border: 1px solid rgba(16,185,129,0.3);
+    border-radius: 10px;
+    color: #34d399;
+    font-family: 'Heebo', sans-serif;
+    font-size: 13px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center; gap: 5px;
+    cursor: pointer;
+  }
+
+  /* ── Scanner module ──────────────────────────────────────────── */
+  .scanner-body { padding: 14px; display: flex; flex-direction: column; gap: 12px }
+
+  .viewfinder {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1 / 0.72;
+    background: #060a10;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+
+  /* Fake camera grain */
+  .viewfinder::before {
+    content: '';
+    position: absolute; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    opacity: 0.4;
+    pointer-events: none;
+  }
+
+  /* Scanning frame corners */
+  .scan-frame {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -52%);
+    width: 68%; height: 54%;
+  }
+  .corner {
+    position: absolute;
+    width: 18px; height: 18px;
+    border-color: #34d399;
+    border-style: solid;
+    border-width: 0;
+  }
+  .corner.tl { top: 0; right: 0; border-top-width: 2.5px; border-right-width: 2.5px; border-radius: 0 4px 0 0 }
+  .corner.tr { top: 0; left: 0; border-top-width: 2.5px; border-left-width: 2.5px; border-radius: 4px 0 0 0 }
+  .corner.bl { bottom: 0; right: 0; border-bottom-width: 2.5px; border-right-width: 2.5px; border-radius: 0 0 4px 0 }
+  .corner.br { bottom: 0; left: 0; border-bottom-width: 2.5px; border-left-width: 2.5px; border-radius: 0 0 0 4px }
+
+  /* Scan line */
+  .scan-line {
+    position: absolute;
+    left: 8%; right: 8%;
+    top: 40%;
+    height: 1.5px;
+    background: linear-gradient(to left, transparent, #34d399 20%, #34d399 80%, transparent);
+    opacity: 0.7;
+    animation: scanMove 2s ease-in-out infinite;
+  }
+  @keyframes scanMove {
+    0%, 100% { top: 20% }
+    50% { top: 78% }
+  }
+
+  /* Dark overlay sides */
+  .vf-overlay {
+    position: absolute; inset: 0;
+    background:
+      linear-gradient(to right, rgba(6,10,16,0.55) 0%, transparent 22%),
+      linear-gradient(to left,  rgba(6,10,16,0.55) 0%, transparent 22%),
+      linear-gradient(to bottom, rgba(6,10,16,0.45) 0%, transparent 20%),
+      linear-gradient(to top,   rgba(6,10,16,0.45) 0%, transparent 20%);
+    pointer-events: none;
+  }
+
+  .scan-hint {
+    font-size: 11px; color: #4a6080; text-align: center; font-weight: 500;
+  }
+
+  /* ── After-scan: populated form ─────────────────────────────── */
+  .result-badge {
+    display: flex; align-items: center; gap: 7px;
+    background: rgba(16,185,129,0.08);
+    border: 1px solid rgba(16,185,129,0.2);
+    border-radius: 10px;
+    padding: 8px 11px;
+    font-size: 11px; color: #34d399; font-weight: 600;
+  }
+  .result-badge .icon { font-size: 15px }
+
+  .product-name {
+    font-size: 13px; font-weight: 700; color: #dde4f0;
+  }
+  .product-brand {
+    font-size: 11px; color: #4a6080; margin-top: 1px;
+  }
+
+  .nutrition-row {
+    display: flex; gap: 8px;
+  }
+  .nut-chip {
+    flex: 1;
+    background: rgba(255,255,255,0.04);
+    border-radius: 10px;
+    padding: 10px;
+    border: 1px solid rgba(255,255,255,0.07);
+  }
+  .nut-chip-label {
+    font-size: 10px; font-weight: 700; letter-spacing: .05em; margin-bottom: 3px;
+  }
+  .nut-chip-label.cal { color: #60a5fa }
+  .nut-chip-label.prot { color: #34d399 }
+  .nut-chip-val {
+    font-size: 20px; font-weight: 800; color: #dde4f0; line-height: 1;
+  }
+  .nut-chip-unit {
+    font-size: 10px; color: #4a6080; margin-top: 2px;
+  }
+
+  .divider {
+    height: 1px; background: rgba(255,255,255,0.06); margin: 2px 0;
+  }
+
+  .gram-row {
+    display: flex; gap: 8px; align-items: center;
+  }
+  .gram-label {
+    font-size: 11px; color: #4a6080; font-weight: 600;
+  }
+
+  /* ── Arrow annotation ────────────────────────────────────────── */
+  .annotation {
+    font-size: 10px; color: #3b566e; font-weight: 600;
+    text-align: center; letter-spacing: .03em;
+    padding: 6px 0;
+  }
+</style>
+</head>
+<body>
+
+<h1>סורק ברקוד — סקיצת ממשק</h1>
+
+<div class="screens">
+
+  <!-- ── Col 1: מצב הזנה ידנית ────────────────────────────────── -->
+  <div class="col">
+    <div class="col-label">הזנה ידנית (מצב נוכחי)</div>
+    <div class="phone">
+
+      <!-- Segmented control — manual active -->
+      <div class="seg">
+        <button class="seg-btn active-manual">
+          <span class="icon">edit</span>
+          הזנה ידנית
+        </button>
+        <button class="seg-btn inactive">
+          <span class="icon">barcode_scanner</span>
+          סריקה
+        </button>
+      </div>
+
+      <!-- Existing form — unchanged -->
+      <div class="card">
+        <div class="form-body">
+          <div class="inp-row">
+            <div class="inp-mock" style="flex:1">שם המאכל</div>
+            <div class="select-mock">
+              בוקר
+              <span class="icon" style="font-size:14px;color:#3b566e">expand_more</span>
+            </div>
+          </div>
+
+          <div class="inp-row">
+            <div class="inp-mock inp-mock-sm">100</div>
+            <div class="select-mock" style="flex:0 0 74px">
+              גרם
+              <span class="icon" style="font-size:14px;color:#3b566e">expand_more</span>
+            </div>
+            <div class="btn-calc" style="flex:1">
+              <span class="icon" style="font-size:15px">bolt</span>
+              חשב
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="annotation">← הטופס הקיים, ללא שינוי</div>
+
+    </div>
+  </div>
+
+  <!-- ── Col 2: מצב סריקה — מצלמה פעילה ────────────────────── -->
+  <div class="col">
+    <div class="col-label">מצב סריקה — מצלמה פעילה</div>
+    <div class="phone">
+
+      <!-- Segmented control — scan active -->
+      <div class="seg">
+        <button class="seg-btn inactive">
+          <span class="icon">edit</span>
+          הזנה ידנית
+        </button>
+        <button class="seg-btn active-scan">
+          <span class="icon">barcode_scanner</span>
+          סריקה
+        </button>
+      </div>
+
+      <!-- Scanner card -->
+      <div class="card">
+        <div class="scanner-body">
+
+          <!-- Viewfinder -->
+          <div class="viewfinder">
+            <div class="vf-overlay"></div>
+            <div class="scan-frame">
+              <div class="corner tl"></div>
+              <div class="corner tr"></div>
+              <div class="corner bl"></div>
+              <div class="corner br"></div>
+            </div>
+            <div class="scan-line"></div>
+          </div>
+
+          <p class="scan-hint">כוון את הברקוד למסגרת הירוקה</p>
+
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── Col 3: אחרי סריקה מוצלחת ────────────────────────────── -->
+  <div class="col">
+    <div class="col-label">אחרי סריקה — אישור וכמות</div>
+    <div class="phone">
+
+      <!-- Segmented control — scan active (post-scan) -->
+      <div class="seg">
+        <button class="seg-btn inactive">
+          <span class="icon">edit</span>
+          הזנה ידנית
+        </button>
+        <button class="seg-btn active-scan">
+          <span class="icon">barcode_scanner</span>
+          סריקה
+        </button>
+      </div>
+
+      <!-- Result card -->
+      <div class="card">
+        <div class="form-body">
+
+          <!-- Success badge -->
+          <div class="result-badge">
+            <span class="icon">check_circle</span>
+            מוצר זוהה
+            <span style="margin-inline-start:auto;font-size:10px;color:#4a6080;font-weight:500">Open Food Facts</span>
+          </div>
+
+          <!-- Product info -->
+          <div>
+            <div class="product-name">גבינה לבנה 5%</div>
+            <div class="product-brand">תנובה · 7290000066639</div>
+          </div>
+
+          <div class="divider"></div>
+
+          <!-- Nutrition per 100g -->
+          <div style="font-size:10px;color:#3b566e;font-weight:700;letter-spacing:.05em">לכל 100 גרם</div>
+          <div class="nutrition-row">
+            <div class="nut-chip">
+              <div class="nut-chip-label cal">קלוריות</div>
+              <div class="nut-chip-val">82</div>
+              <div class="nut-chip-unit">קק״ל</div>
+            </div>
+            <div class="nut-chip">
+              <div class="nut-chip-label prot">חלבון</div>
+              <div class="nut-chip-val">7.2</div>
+              <div class="nut-chip-unit">ג׳</div>
+            </div>
+          </div>
+
+          <div class="divider"></div>
+
+          <!-- Amount + meal type -->
+          <div class="gram-row">
+            <span class="gram-label">כמות</span>
+            <div class="inp-mock inp-mock-sm active" style="font-size:14px;font-weight:700;color:#dde4f0">200</div>
+            <div class="select-mock" style="flex:0 0 58px;font-size:11px">גרם<span class="icon" style="font-size:13px;color:#3b566e">expand_more</span></div>
+            <div class="select-mock" style="flex:1;font-size:11px">בוקר<span class="icon" style="font-size:13px;color:#3b566e">expand_more</span></div>
+          </div>
+
+          <!-- Calculated total -->
+          <div style="display:flex;gap:8px;padding:8px 10px;background:rgba(255,255,255,0.03);border-radius:9px;border:1px solid rgba(255,255,255,0.06)">
+            <span style="font-size:11px;color:#4a6080;font-weight:600;flex:1">סה״כ</span>
+            <span style="font-size:13px;font-weight:800;color:#60a5fa">164 <span style="font-size:10px;font-weight:600;opacity:.7">קק״ל</span></span>
+            <span style="font-size:13px;font-weight:800;color:#34d399;margin-inline-start:10px">14.4 <span style="font-size:10px;font-weight:600;opacity:.7">ג׳</span></span>
+          </div>
+
+          <!-- Add button -->
+          <div class="btn-add">
+            <span class="icon" style="font-size:16px">add_circle</span>
+            הוסף ארוחה
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

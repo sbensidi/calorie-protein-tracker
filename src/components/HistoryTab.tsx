@@ -2,7 +2,8 @@ import { useState, useMemo, useRef } from 'react'
 import type { Meal, FoodHistory } from '../types'
 import type { Lang } from '../lib/i18n'
 import { t, formatDate, today } from '../lib/i18n'
-import { ProgressBar } from './ProgressBar'
+import { DonutProgress } from './DonutProgress'
+import type { ComposedEntry } from './FoodEntryForm'
 
 // ── Constants ────────────────────────────────────────────────────────
 
@@ -31,11 +32,12 @@ interface DayData {
 }
 
 interface HistoryTabProps {
-  lang:            Lang
-  meals:           Meal[]
-  history:         FoodHistory[]
-  getSuggestions:  (q: string) => FoodHistory[]
-  getGoalForDate:  (date: string) => { calories: number; protein: number }
+  lang:             Lang
+  meals:            Meal[]
+  history:          FoodHistory[]
+  getSuggestions:   (q: string) => FoodHistory[]
+  getGoalForDate:   (date: string) => { calories: number; protein: number }
+  composedEntries?: ComposedEntry[]
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────
@@ -60,7 +62,7 @@ const STATUS_COLOR: Record<DayData['status'], { border: string; badge: string; t
 
 // ── Component ────────────────────────────────────────────────────────
 
-export function HistoryTab({ lang, meals, history, getGoalForDate }: HistoryTabProps) {
+export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntries = [] }: HistoryTabProps) {
   const todayKey = today()
 
   const [view, setView] = useState<'cal' | 'list'>(
@@ -73,9 +75,12 @@ export function HistoryTab({ lang, meals, history, getGoalForDate }: HistoryTabP
     () => (localStorage.getItem('history-filter') as StatusFilter) ?? 'all'
   )
   const [search, setSearch] = useState('')
+  const [dropdownOpen, setDropdownOpen] = useState(false)
   const [historyModalOpen, setHistoryModalOpen] = useState(false)
   const [historySearch,    setHistorySearch]    = useState('')
   const historySearchRef = useRef<HTMLInputElement>(null)
+  const searchInputRef   = useRef<HTMLInputElement>(null)
+  const searchDropdownRef = useRef<HTMLDivElement>(null)
   const isRTL = lang === 'he'
   const unitLabel = lang === 'he' ? 'יח׳' : 'pcs'
 
@@ -229,36 +234,43 @@ export function HistoryTab({ lang, meals, history, getGoalForDate }: HistoryTabP
           </div>
         </div>
 
-        {/* Totals */}
-        <div style={{ display: 'flex', gap: 16, marginBottom: 10 }}>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 3 }}>
-              <span style={{ fontSize: 20, fontWeight: 800, color: 'var(--blue-hi)' }}>
-                {Math.round(data.totalCalories)}
-              </span>
-              <span style={{ fontSize: 11, color: 'var(--text-2)' }}>{t(lang, 'caloriesUnit')}</span>
-            </div>
-            <div style={{ fontSize: 10, color: data.calOk ? 'var(--text-3)' : 'var(--amber)', marginTop: 1 }}>
-              {calHint}
-            </div>
-          </div>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 3 }}>
-              <span style={{ fontSize: 20, fontWeight: 800, color: 'var(--green-hi)' }}>
-                {Math.round(data.totalProtein * 10) / 10}
-              </span>
-              <span style={{ fontSize: 11, color: 'var(--text-2)' }}>{protUnit}</span>
-            </div>
-            <div style={{ fontSize: 10, color: data.protOk ? 'var(--text-3)' : 'var(--indigo-hi)', marginTop: 1 }}>
-              {protHint}
-            </div>
-          </div>
-        </div>
+        {/* Totals with inline donuts */}
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
 
-        {/* Progress bars */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-          <ProgressBar value={data.totalCalories} goal={data.goal.calories} color="blue" />
-          <ProgressBar value={data.totalProtein}  goal={data.goal.protein}  color="green" />
+          {/* Calories */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1 }}>
+            <DonutProgress value={data.totalCalories} goal={data.goal.calories} color="blue" size={46} strokeWidth={4} />
+            <div>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 2 }}>
+                <span style={{ fontSize: 18, fontWeight: 800, color: 'var(--blue-hi)', lineHeight: 1 }}>
+                  {Math.round(data.totalCalories)}
+                </span>
+                <span style={{ fontSize: 10, color: 'var(--text-2)' }}>{t(lang, 'caloriesUnit')}</span>
+              </div>
+              <div style={{ fontSize: 10, color: data.calOk ? 'var(--text-3)' : 'var(--amber)', marginTop: 2 }}>
+                {calHint}
+              </div>
+            </div>
+          </div>
+
+          <div style={{ width: 1, height: 36, background: 'var(--border)', flexShrink: 0 }} />
+
+          {/* Protein */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1 }}>
+            <DonutProgress value={data.totalProtein} goal={data.goal.protein} color="green" size={46} strokeWidth={4} />
+            <div>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 2 }}>
+                <span style={{ fontSize: 18, fontWeight: 800, color: 'var(--green-hi)', lineHeight: 1 }}>
+                  {Math.round(data.totalProtein * 10) / 10}
+                </span>
+                <span style={{ fontSize: 10, color: 'var(--text-2)' }}>{protUnit}</span>
+              </div>
+              <div style={{ fontSize: 10, color: data.protOk ? 'var(--text-3)' : 'var(--indigo-hi)', marginTop: 2 }}>
+                {protHint}
+              </div>
+            </div>
+          </div>
+
         </div>
       </>
     )
@@ -486,6 +498,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate }: HistoryTabP
             e.preventDefault()
             setHistorySearch('')
             setHistoryModalOpen(true)
+            setDropdownOpen(false)
             setTimeout(() => historySearchRef.current?.focus(), 50)
           }}
           tabIndex={-1}
@@ -510,23 +523,28 @@ export function HistoryTab({ lang, meals, history, getGoalForDate }: HistoryTabP
           color: 'var(--text-3)', fontSize: 18, pointerEvents: 'none',
         }}>search</span>
         <input
+          ref={searchInputRef}
           type="text"
           className="inp"
           dir={lang === 'he' ? 'rtl' : 'ltr'}
           value={search}
-          onChange={e => setSearch(e.target.value)}
+          onChange={e => { setSearch(e.target.value); setDropdownOpen(true) }}
+          onFocus={() => setDropdownOpen(true)}
+          onBlur={() => setTimeout(() => {
+            if (!searchDropdownRef.current?.contains(document.activeElement)) setDropdownOpen(false)
+          }, 150)}
           placeholder={t(lang, 'searchFood')}
           style={isRTL
-            ? { paddingRight: 36, paddingLeft: 46 }
-            : { paddingLeft: 78, paddingRight: 46 }}
+            ? { paddingRight: 36, paddingLeft: search ? 78 : 46 }
+            : { paddingLeft: 78, paddingRight: search ? 78 : 46 }}
         />
-        {/* Clear button */}
+        {/* Clear button — same side as manage_search */}
         {search && (
           <button
-            onClick={() => setSearch('')}
+            onMouseDown={e => { e.preventDefault(); setSearch(''); setDropdownOpen(false); searchInputRef.current?.focus() }}
             style={{
               position: 'absolute',
-              ...(isRTL ? { right: 8 } : { left: 46 }),
+              ...(isRTL ? { left: 42 } : { right: 42 }),
               top: '50%', transform: 'translateY(-50%)',
               background: 'none', border: 'none', cursor: 'pointer',
               color: 'var(--text-3)', padding: 2, display: 'flex',
@@ -535,6 +553,77 @@ export function HistoryTab({ lang, meals, history, getGoalForDate }: HistoryTabP
             <span className="icon icon-sm">close</span>
           </button>
         )}
+
+        {/* Inline recent items dropdown */}
+        {dropdownOpen && (() => {
+          const q = search.trim().toLowerCase()
+          const recentItems = q
+            ? history.filter(h => h.name.toLowerCase().includes(q)).slice(0, 6)
+            : [...history].sort((a, b) => b.use_count - a.use_count).slice(0, 6)
+          const matchedComposed = composedEntries.filter(e => !q || e.name.toLowerCase().includes(q))
+          if (recentItems.length === 0 && matchedComposed.length === 0) return null
+          return (
+            <div
+              ref={searchDropdownRef}
+              style={{
+                position: 'absolute',
+                top: 'calc(46px + 4px)',
+                left: 0, right: 0,
+                background: 'var(--bg-card2)',
+                border: '1px solid var(--border-hi)',
+                borderRadius: 10,
+                overflow: 'hidden',
+                zIndex: 50,
+                boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+              }}
+            >
+              {matchedComposed.map(entry => (
+                <button
+                  key={entry.id}
+                  onMouseDown={() => { setSearch(entry.name); setDropdownOpen(false) }}
+                  style={{
+                    display: 'flex', alignItems: 'center', width: '100%',
+                    padding: '9px 12px', background: 'transparent', border: 'none',
+                    borderBottom: '1px solid var(--border)',
+                    cursor: 'pointer', gap: 10, textAlign: 'start', fontFamily: 'inherit',
+                    transition: 'background .12s',
+                  }}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'rgba(139,92,246,0.05)')}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                >
+                  <span className="icon icon-sm" style={{ color: 'var(--purple)', flexShrink: 0 }}>restaurant</span>
+                  <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {entry.name}
+                  </span>
+                  <span style={{ fontSize: 11, color: 'var(--blue-hi)', fontWeight: 600 }}>{entry.calories}</span>
+                  <span style={{ fontSize: 11, color: 'var(--green-hi)', fontWeight: 600, marginInlineStart: 6 }}>{entry.protein}g</span>
+                </button>
+              ))}
+              {recentItems.map((item, i) => (
+                <button
+                  key={item.id}
+                  onMouseDown={() => { setSearch(item.name); setDropdownOpen(false) }}
+                  style={{
+                    display: 'flex', alignItems: 'center', width: '100%',
+                    padding: '9px 12px', background: 'transparent', border: 'none',
+                    borderBottom: i < recentItems.length - 1 ? '1px solid var(--border)' : 'none',
+                    cursor: 'pointer', gap: 10, textAlign: 'start', fontFamily: 'inherit',
+                    transition: 'background .12s',
+                  }}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                >
+                  <span className="icon icon-sm" style={{ color: 'var(--text-2)', flexShrink: 0 }}>history</span>
+                  <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {item.name}
+                  </span>
+                  <span style={{ fontSize: 11, color: 'var(--blue-hi)', fontWeight: 600 }}>{Math.round(item.calories)}</span>
+                  <span style={{ fontSize: 11, color: 'var(--green-hi)', fontWeight: 600, marginInlineStart: 6 }}>{Math.round(item.protein * 10) / 10}g</span>
+                </button>
+              ))}
+            </div>
+          )
+        })()}
       </div>
 
       {filteredDates.length === 0 ? (
@@ -620,7 +709,48 @@ export function HistoryTab({ lang, meals, history, getGoalForDate }: HistoryTabP
 
             {/* List */}
             <div style={{ overflowY: 'auto', flex: 1, borderTop: '1px solid var(--border)' }}>
-              {filtered.length === 0 ? (
+
+              {/* Composed dishes section */}
+              {composedEntries.filter(e => !q || e.name.toLowerCase().includes(q)).length > 0 && (
+                <>
+                  <div style={{ padding: '8px 14px 4px', fontSize: 10, fontWeight: 700, color: 'var(--text-3)', letterSpacing: '0.07em', textTransform: 'uppercase' }}>
+                    {lang === 'he' ? 'מנות שהרכבתי' : 'My composed dishes'}
+                  </div>
+                  {composedEntries.filter(e => !q || e.name.toLowerCase().includes(q)).map(entry => (
+                    <button
+                      key={entry.id}
+                      onClick={() => { setSearch(entry.name); setHistoryModalOpen(false); setHistorySearch('') }}
+                      style={{
+                        display: 'flex', alignItems: 'center', width: '100%',
+                        padding: '10px 14px', background: 'transparent', border: 'none',
+                        borderBottom: '1px solid var(--border)',
+                        cursor: 'pointer', gap: 10, textAlign: 'start', fontFamily: 'inherit',
+                        transition: 'background .12s',
+                      }}
+                      onMouseEnter={e => (e.currentTarget.style.background = 'rgba(139,92,246,0.05)')}
+                      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                    >
+                      <span className="icon icon-sm" style={{ color: 'var(--purple)', flexShrink: 0 }}>restaurant</span>
+                      <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {entry.name}
+                      </span>
+                      <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--blue-hi)' }}>{entry.calories}</span>
+                        <span style={{ fontSize: 11, color: 'var(--text-3)' }}>{t(lang, 'caloriesUnit')}</span>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--green-hi)', marginInlineStart: 4 }}>{entry.protein}</span>
+                        <span style={{ fontSize: 11, color: 'var(--text-3)' }}>{t(lang, 'proteinUnit')}</span>
+                      </div>
+                    </button>
+                  ))}
+                  {filtered.length > 0 && (
+                    <div style={{ padding: '8px 14px 4px', fontSize: 10, fontWeight: 700, color: 'var(--text-3)', letterSpacing: '0.07em', textTransform: 'uppercase' }}>
+                      {lang === 'he' ? 'היסטוריה' : 'History'}
+                    </div>
+                  )}
+                </>
+              )}
+
+              {filtered.length === 0 && composedEntries.filter(e => !q || e.name.toLowerCase().includes(q)).length === 0 ? (
                 <div style={{ padding: '32px 0', textAlign: 'center', color: 'var(--text-3)', fontSize: 13 }}>
                   {lang === 'he' ? 'לא נמצאו תוצאות' : 'No results found'}
                 </div>

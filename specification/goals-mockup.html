@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Goals Tab — אפשרות ג׳</title>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0 }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #0f1117;
+    color: #e2e8f0;
+    padding: 24px 16px;
+    min-height: 100vh;
+  }
+  .icon {
+    font-family: 'Material Icons';
+    font-style: normal;
+    font-size: 16px;
+    line-height: 1;
+    vertical-align: middle;
+  }
+  .icon-sm { font-size: 14px }
+
+  .screen { max-width: 380px; margin: 0 auto }
+
+  h1 {
+    text-align: center; font-size: 11px; color: #64748b;
+    margin-bottom: 20px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
+  }
+
+  .card {
+    background: #1a1f2e; border: 1px solid #2a3040;
+    border-radius: 16px; padding: 16px; margin-bottom: 12px;
+  }
+  .section-label {
+    font-size: 10px; font-weight: 700; color: #64748b;
+    text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 14px;
+  }
+  .default-row { display: flex; gap: 10px }
+  .default-row > div { flex: 1 }
+  .lbl-blue  { font-size: 11px; font-weight: 600; color: #60a5fa; margin-bottom: 5px; display: block }
+  .lbl-green { font-size: 11px; font-weight: 600; color: #34d399; margin-bottom: 5px; display: block }
+
+  /* Input with inline diff */
+  .inp-wrap { position: relative }
+  .inp {
+    background: #0f1117; border: 1px solid #2a3040; border-radius: 10px;
+    color: #e2e8f0; font-size: 13px; padding: 8px 10px;
+    width: 100%; outline: none; font-family: inherit;
+  }
+  .inp-blue  { border-color: rgba(59,130,246,0.35) }
+  .inp-green { border-color: rgba(16,185,129,0.35) }
+  .inp-diff {
+    position: absolute; top: 50%; transform: translateY(-50%);
+    left: 8px; font-size: 10px; font-weight: 600;
+    color: #34d399; pointer-events: none;
+  }
+  .inp-diff.neg { color: #f87171 }
+  /* push input text right to make room for diff */
+  .inp.has-diff { padding-left: 52px }
+
+  /* ── Week grid ── */
+  .week-grid {
+    display: grid; grid-template-columns: repeat(7, 1fr);
+    gap: 5px; margin-bottom: 14px;
+  }
+  .day-chip {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 5px; padding: 8px 2px 6px; border-radius: 10px;
+    border: 1.5px solid #2a3040; background: transparent;
+    cursor: pointer; transition: all .15s; position: relative;
+  }
+  .day-chip.today   { border-color: rgba(59,130,246,0.5); background: rgba(59,130,246,0.07) }
+  .day-chip.custom  { border-color: rgba(99,102,241,0.45); background: rgba(99,102,241,0.06) }
+  .day-chip.selected {
+    border-color: #6366f1; background: rgba(99,102,241,0.15);
+    box-shadow: 0 0 0 3px rgba(99,102,241,0.2);
+  }
+  .day-name { font-size: 10px; font-weight: 700; color: #64748b }
+  .day-chip.today   .day-name { color: #60a5fa }
+  .day-chip.custom  .day-name { color: #a5b4fc }
+  .day-chip.selected .day-name { color: #c7d2fe }
+  .day-dot { width: 5px; height: 5px; border-radius: 50%; background: #2a3040 }
+  .day-chip.custom .day-dot { background: #6366f1 }
+  .day-chip.today  .day-dot { background: #3b82f6 }
+  .today-badge {
+    position: absolute; top: -6px; left: 50%; transform: translateX(-50%);
+    background: #3b82f6; color: #fff; font-size: 7px; font-weight: 700;
+    padding: 1px 4px; border-radius: 4px; white-space: nowrap;
+  }
+
+  /* ── Detail panel (single day) ── */
+  .detail-panel {
+    border: 1.5px solid rgba(99,102,241,0.35); background: rgba(99,102,241,0.05);
+    border-radius: 12px; padding: 12px; animation: fadeIn .15s ease;
+  }
+  .detail-header {
+    display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;
+  }
+  .detail-name  { font-size: 13px; font-weight: 700; color: #a5b4fc; display: flex; align-items: center; gap: 5px }
+  .reset-btn    { font-size: 11px; color: #6366f1; background: none; border: none; cursor: pointer; font-family: inherit }
+  .detail-inputs { display: flex; gap: 8px }
+  .detail-inputs > div { flex: 1 }
+
+  /* ── Expand toggle ── */
+  .expand-row { display: flex; align-items: center; gap: 10px; margin-top: 14px }
+  .expand-line { flex: 1; height: 1px; background: #2a3040 }
+  .expand-btn {
+    font-size: 11px; font-weight: 600; color: #6366f1;
+    background: rgba(99,102,241,0.08); border: 1px solid rgba(99,102,241,0.25);
+    border-radius: 20px; padding: 4px 12px; cursor: pointer;
+    font-family: inherit; white-space: nowrap; transition: background .15s;
+    display: flex; align-items: center; gap: 4px;
+  }
+  .expand-btn:hover { background: rgba(99,102,241,0.15) }
+
+  /* ── Expanded all-days — same chip style as grid but vertical ── */
+  .all-days { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; animation: fadeIn .2s ease }
+
+  .day-exp {
+    border: 1.5px solid #2a3040; border-radius: 12px;
+    padding: 10px 12px; transition: all .15s;
+  }
+  .day-exp.today-exp  { border-color: rgba(59,130,246,0.5); background: rgba(59,130,246,0.05) }
+  .day-exp.custom-exp { border-color: rgba(99,102,241,0.45); background: rgba(99,102,241,0.06) }
+
+  .day-exp-header {
+    display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;
+  }
+  .day-exp-name {
+    font-size: 12px; font-weight: 700; color: #64748b;
+    display: flex; align-items: center; gap: 5px;
+  }
+  .day-exp.today-exp  .day-exp-name { color: #60a5fa }
+  .day-exp.custom-exp .day-exp-name { color: #a5b4fc }
+
+  .day-exp-inputs { display: flex; gap: 8px }
+  .day-exp-inputs > div { flex: 1 }
+
+  /* ── Save button ── */
+  .btn-save {
+    width: 100%; background: linear-gradient(135deg, #3b82f6, #6366f1);
+    border: none; border-radius: 12px; color: #fff;
+    font-size: 14px; font-weight: 600; height: 48px;
+    cursor: pointer; margin-top: 4px; font-family: inherit;
+  }
+
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(-4px) } to { opacity: 1; transform: none } }
+</style>
+</head>
+<body>
+<div class="screen">
+  <h1>אפשרות ג׳ — Grid + פריסה מלאה</h1>
+
+  <!-- Default goals -->
+  <div class="card">
+    <p class="section-label">יעדי ברירת מחדל</p>
+    <div class="default-row">
+      <div>
+        <span class="lbl-blue">קלוריות (kcal)</span>
+        <div class="inp-wrap">
+          <input class="inp inp-blue" type="number" value="1700">
+        </div>
+      </div>
+      <div>
+        <span class="lbl-green">חלבון (g)</span>
+        <div class="inp-wrap">
+          <input class="inp inp-green" type="number" value="160">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Weekly card -->
+  <div class="card">
+    <p class="section-label">התאמה שבועית</p>
+
+    <!-- Grid -->
+    <div class="week-grid">
+      <div class="day-chip" onclick="selectDay(this,'א׳')">
+        <span class="day-name">א׳</span><div class="day-dot"></div>
+      </div>
+      <div class="day-chip" onclick="selectDay(this,'ב׳')">
+        <span class="day-name">ב׳</span><div class="day-dot"></div>
+      </div>
+      <div class="day-chip" onclick="selectDay(this,'ג׳')">
+        <span class="day-name">ג׳</span><div class="day-dot"></div>
+      </div>
+      <div class="day-chip custom" onclick="selectDay(this,'ד׳')">
+        <span class="day-name">ד׳</span><div class="day-dot"></div>
+      </div>
+      <div class="day-chip today custom selected" onclick="selectDay(this,'ה׳')">
+        <div class="today-badge">היום</div>
+        <span class="day-name">ה׳</span><div class="day-dot"></div>
+      </div>
+      <div class="day-chip custom" onclick="selectDay(this,'ו׳')">
+        <span class="day-name">ו׳</span><div class="day-dot"></div>
+      </div>
+      <div class="day-chip" onclick="selectDay(this,'ש׳')">
+        <span class="day-name">ש׳</span><div class="day-dot"></div>
+      </div>
+    </div>
+
+    <!-- Single day detail panel -->
+    <div id="detail-panel" class="detail-panel">
+      <div class="detail-header">
+        <span class="detail-name" id="detail-title">יום חמישי (היום)</span>
+        <button class="reset-btn"><span class="icon icon-sm">restart_alt</span></button>
+      </div>
+      <div class="detail-inputs">
+        <div>
+          <span class="lbl-blue">קלוריות</span>
+          <div class="inp-wrap">
+            <input class="inp inp-blue has-diff" type="number" id="detail-cal" value="2000">
+            <span class="inp-diff">(+300)</span>
+          </div>
+        </div>
+        <div>
+          <span class="lbl-green">חלבון</span>
+          <div class="inp-wrap">
+            <input class="inp inp-green has-diff" type="number" id="detail-prot" value="180">
+            <span class="inp-diff">(+20g)</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Expand toggle -->
+    <div class="expand-row">
+      <div class="expand-line"></div>
+      <button class="expand-btn" onclick="toggleExpand(this)" data-open="false">
+        <span class="icon icon-sm">unfold_more</span>
+        <span class="expand-label">פרוס את כל הימים</span>
+      </button>
+      <div class="expand-line"></div>
+    </div>
+
+    <!-- All days expanded -->
+    <div class="all-days" id="all-days" style="display:none">
+
+      <!-- א׳ — no override -->
+      <div class="day-exp">
+        <div class="day-exp-header">
+          <span class="day-exp-name">
+            יום ראשון
+          </span>
+        </div>
+        <div class="day-exp-inputs">
+          <div>
+            <span class="lbl-blue">קלוריות</span>
+            <div class="inp-wrap"><input class="inp inp-blue" type="number" value="1700"></div>
+          </div>
+          <div>
+            <span class="lbl-green">חלבון</span>
+            <div class="inp-wrap"><input class="inp inp-green" type="number" value="160"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ב׳ -->
+      <div class="day-exp">
+        <div class="day-exp-header">
+          <span class="day-exp-name">
+            יום שני
+          </span>
+        </div>
+        <div class="day-exp-inputs">
+          <div>
+            <span class="lbl-blue">קלוריות</span>
+            <div class="inp-wrap"><input class="inp inp-blue" type="number" value="1700"></div>
+          </div>
+          <div>
+            <span class="lbl-green">חלבון</span>
+            <div class="inp-wrap"><input class="inp inp-green" type="number" value="160"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ג׳ -->
+      <div class="day-exp">
+        <div class="day-exp-header">
+          <span class="day-exp-name">
+            יום שלישי
+          </span>
+        </div>
+        <div class="day-exp-inputs">
+          <div>
+            <span class="lbl-blue">קלוריות</span>
+            <div class="inp-wrap"><input class="inp inp-blue" type="number" value="1700"></div>
+          </div>
+          <div>
+            <span class="lbl-green">חלבון</span>
+            <div class="inp-wrap"><input class="inp inp-green" type="number" value="160"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ד׳ — custom -->
+      <div class="day-exp custom-exp">
+        <div class="day-exp-header">
+          <span class="day-exp-name">
+            יום רביעי
+          </span>
+          <button class="reset-btn"><span class="icon icon-sm">restart_alt</span></button>
+        </div>
+        <div class="day-exp-inputs">
+          <div>
+            <span class="lbl-blue">קלוריות</span>
+            <div class="inp-wrap">
+              <input class="inp inp-blue has-diff" type="number" value="1400">
+              <span class="inp-diff neg">(-300)</span>
+            </div>
+          </div>
+          <div>
+            <span class="lbl-green">חלבון</span>
+            <div class="inp-wrap">
+              <input class="inp inp-green has-diff" type="number" value="140">
+              <span class="inp-diff neg">(-20g)</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ה׳ — today + custom -->
+      <div class="day-exp today-exp custom-exp">
+        <div class="day-exp-header">
+          <span class="day-exp-name">
+            יום חמישי
+            <span style="font-size:9px;font-weight:700;color:#3b82f6;background:rgba(59,130,246,0.12);border-radius:4px;padding:2px 5px">היום</span>
+          </span>
+          <button class="reset-btn"><span class="icon icon-sm">restart_alt</span></button>
+        </div>
+        <div class="day-exp-inputs">
+          <div>
+            <span class="lbl-blue">קלוריות</span>
+            <div class="inp-wrap">
+              <input class="inp inp-blue has-diff" type="number" value="2000">
+              <span class="inp-diff">(+300)</span>
+            </div>
+          </div>
+          <div>
+            <span class="lbl-green">חלבון</span>
+            <div class="inp-wrap">
+              <input class="inp inp-green has-diff" type="number" value="180">
+              <span class="inp-diff">(+20g)</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ו׳ — custom -->
+      <div class="day-exp custom-exp">
+        <div class="day-exp-header">
+          <span class="day-exp-name">
+            יום שישי
+          </span>
+          <button class="reset-btn"><span class="icon icon-sm">restart_alt</span></button>
+        </div>
+        <div class="day-exp-inputs">
+          <div>
+            <span class="lbl-blue">קלוריות</span>
+            <div class="inp-wrap">
+              <input class="inp inp-blue has-diff" type="number" value="1900">
+              <span class="inp-diff">(+200)</span>
+            </div>
+          </div>
+          <div>
+            <span class="lbl-green">חלבון</span>
+            <div class="inp-wrap">
+              <input class="inp inp-green has-diff" type="number" value="170">
+              <span class="inp-diff">(+10g)</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ש׳ -->
+      <div class="day-exp">
+        <div class="day-exp-header">
+          <span class="day-exp-name">
+            שבת
+          </span>
+        </div>
+        <div class="day-exp-inputs">
+          <div>
+            <span class="lbl-blue">קלוריות</span>
+            <div class="inp-wrap"><input class="inp inp-blue" type="number" value="1700"></div>
+          </div>
+          <div>
+            <span class="lbl-green">חלבון</span>
+            <div class="inp-wrap"><input class="inp inp-green" type="number" value="160"></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <button class="btn-save">שמור יעדים</button>
+</div>
+
+<script>
+  const days = {
+    'א׳': { label:'יום ראשון',  custom:false, today:false, cal:1700, prot:160, calDiff:0,    protDiff:0   },
+    'ב׳': { label:'יום שני',    custom:false, today:false, cal:1700, prot:160, calDiff:0,    protDiff:0   },
+    'ג׳': { label:'יום שלישי', custom:false, today:false, cal:1700, prot:160, calDiff:0,    protDiff:0   },
+    'ד׳': { label:'יום רביעי', custom:true,  today:false, cal:1400, prot:140, calDiff:-300, protDiff:-20 },
+    'ה׳': { label:'יום חמישי', custom:true,  today:true,  cal:2000, prot:180, calDiff:+300, protDiff:+20 },
+    'ו׳': { label:'יום שישי',  custom:true,  today:false, cal:1900, prot:170, calDiff:+200, protDiff:+10 },
+    'ש׳': { label:'שבת',        custom:false, today:false, cal:1700, prot:160, calDiff:0,    protDiff:0   },
+  }
+
+  function selectDay(chip, key) {
+    document.querySelectorAll('.day-chip').forEach(c => c.classList.remove('selected'))
+    chip.classList.add('selected')
+    const d = days[key]
+
+    // title
+    document.getElementById('detail-title').textContent =
+      d.label + (d.today ? ' (היום)' : '')
+
+    // values
+    document.getElementById('detail-cal').value  = d.cal
+    document.getElementById('detail-prot').value = d.prot
+
+    // diffs
+    const diffs = document.querySelectorAll('#detail-panel .inp-diff')
+    if (d.calDiff !== 0) {
+      diffs[0].textContent = '(' + (d.calDiff > 0 ? '+' : '') + d.calDiff + ')'
+      diffs[0].className   = 'inp-diff' + (d.calDiff < 0 ? ' neg' : '')
+      diffs[1].textContent = '(' + (d.protDiff > 0 ? '+' : '') + d.protDiff + 'g)'
+      diffs[1].className   = 'inp-diff' + (d.protDiff < 0 ? ' neg' : '')
+      document.getElementById('detail-cal').classList.add('has-diff')
+      document.getElementById('detail-prot').classList.add('has-diff')
+    } else {
+      diffs[0].textContent = ''
+      diffs[1].textContent = ''
+      document.getElementById('detail-cal').classList.remove('has-diff')
+      document.getElementById('detail-prot').classList.remove('has-diff')
+    }
+  }
+
+  function toggleExpand(btn) {
+    const panel = document.getElementById('all-days')
+    const open  = btn.dataset.open === 'true'
+    panel.style.display = open ? 'none' : 'flex'
+    btn.dataset.open = !open
+    btn.querySelector('.icon').textContent  = open ? 'unfold_more' : 'unfold_less'
+    btn.querySelector('.expand-label').textContent = open ? 'פרוס את כל הימים' : 'סגור'
+  }
+</script>
+</body>
+</html>

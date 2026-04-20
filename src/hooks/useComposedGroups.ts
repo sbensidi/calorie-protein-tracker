@@ -50,6 +50,13 @@ export function useComposedGroups(userId: string | null) {
   }, [userId, fetch])
 
   const upsert = useCallback(async (group: ComposedGroup) => {
+    // Optimistic update — save locally first so refresh doesn't lose the group
+    setGroups(prev => {
+      const exists = prev.some(g => g.id === group.id)
+      const next = exists ? prev.map(g => g.id === group.id ? group : g) : [...prev, group]
+      lsSave(next)
+      return next
+    })
     if (!userId) return
     const { error } = await supabase.from('composed_groups').upsert({
       id:       group.id,
@@ -63,6 +70,12 @@ export function useComposedGroups(userId: string | null) {
   }, [userId, fetch])
 
   const remove = useCallback(async (id: string) => {
+    // Optimistic update — remove locally first
+    setGroups(prev => {
+      const next = prev.filter(g => g.id !== id)
+      lsSave(next)
+      return next
+    })
     if (!userId) return
     const { error } = await supabase.from('composed_groups').delete().eq('id', id)
     if (error) { import.meta.env.DEV && console.error('delete composed_group:', error) }

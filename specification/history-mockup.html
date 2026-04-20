@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>History Tab — Mockup v3</title>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0 }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #0f1117; color: #e2e8f0;
+    padding: 20px 16px 48px; min-height: 100vh;
+  }
+  .icon {
+    font-family: 'Material Icons'; font-style: normal;
+    line-height: 1; vertical-align: middle; font-size: 16px; user-select: none;
+  }
+  .icon-sm { font-size: 14px }
+  .screen { max-width: 390px; margin: 0 auto; display: flex; flex-direction: column; gap: 10px }
+
+  /* ── Top bar ────────────────────────────────────────────── */
+  .top-bar {
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .section-title {
+    font-size: 11px; font-weight: 700; color: #64748b;
+    text-transform: uppercase; letter-spacing: 0.08em;
+  }
+  .view-toggle {
+    display: flex; background: #1a1f2e; border: 1px solid #2a3040;
+    border-radius: 10px; padding: 3px; gap: 2px;
+  }
+  .vt-btn {
+    display: flex; align-items: center; gap: 5px;
+    font-size: 11px; font-weight: 600; font-family: inherit;
+    padding: 5px 10px; border-radius: 7px; cursor: pointer;
+    border: none; background: none; color: #64748b;
+    transition: all .15s;
+  }
+  .vt-btn.active {
+    background: rgba(99,102,241,0.2); color: #a5b4fc;
+  }
+
+  /* ── Status chips ───────────────────────────────────────── */
+  .status-filter {
+    display: flex; gap: 6px;
+  }
+  .sf-chip {
+    flex: 1; font-size: 11px; font-weight: 600; font-family: inherit;
+    padding: 6px 4px; border-radius: 10px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 3px;
+    border: 1px solid #2a3040; background: #1a1f2e; color: #64748b;
+    transition: all .15s; white-space: nowrap;
+  }
+  .sf-chip.active-all   { background: rgba(59,130,246,0.12);  border-color: rgba(59,130,246,0.35);  color: #60a5fa }
+  .sf-chip.active-succ  { background: rgba(16,185,129,0.12);  border-color: rgba(16,185,129,0.35);  color: #10b981 }
+  .sf-chip.active-over  { background: rgba(245,158,11,0.12);  border-color: rgba(245,158,11,0.35);  color: #f59e0b }
+  .sf-chip.active-under { background: rgba(99,102,241,0.12);  border-color: rgba(99,102,241,0.35);  color: #818cf8 }
+
+  /* ── Search (list-only) ─────────────────────────────────── */
+  .search-wrap { position: relative }
+  .search-icon {
+    position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+    color: #64748b; font-size: 18px; pointer-events: none;
+  }
+  .search-input {
+    width: 100%; background: #1a1f2e; border: 1px solid #2a3040;
+    border-radius: 12px; color: #e2e8f0; font-size: 13px;
+    padding: 10px 36px 10px 12px; outline: none; font-family: inherit;
+    transition: border-color .15s;
+  }
+  .search-input:focus { border-color: rgba(59,130,246,0.4) }
+  .search-input::placeholder { color: #4b5563 }
+
+  /* ── Calendar ───────────────────────────────────────────── */
+  .calendar-card {
+    background: #1a1f2e; border: 1px solid #2a3040;
+    border-radius: 16px; padding: 14px;
+  }
+  .cal-header {
+    display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;
+  }
+  .cal-title { font-size: 14px; font-weight: 700; color: #e2e8f0 }
+  .cal-nav { display: flex; gap: 2px }
+  .cal-nav-btn {
+    background: none; border: none; cursor: pointer; color: #64748b;
+    padding: 4px; display: flex; align-items: center; border-radius: 7px;
+    transition: background .15s, color .15s;
+  }
+  .cal-nav-btn:hover { background: #2a3040; color: #e2e8f0 }
+
+  .cal-weekdays {
+    display: grid; grid-template-columns: repeat(7, 1fr); margin-bottom: 4px;
+  }
+  .cal-wd {
+    text-align: center; font-size: 10px; font-weight: 600; color: #4b5563; padding: 3px 0;
+  }
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px }
+  .cal-cell {
+    height: 38px; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 2px;
+    font-size: 12px; font-weight: 600; border-radius: 8px;
+    cursor: pointer; transition: all .12s;
+    color: #3a4555; border: 1.5px solid transparent;
+  }
+  .cal-cell.empty   { pointer-events: none }
+  .cal-cell.has-data { background: rgba(255,255,255,0.03); color: #94a3b8 }
+  .cal-cell.today   { border-color: rgba(59,130,246,0.45); color: #60a5fa }
+  .cal-cell.selected { border-color: #6366f1 !important; box-shadow: 0 0 0 2px rgba(99,102,241,0.2) }
+  .cal-cell.dimmed  { opacity: 0.2 }
+  .cal-cell:not(.empty):hover { background: rgba(255,255,255,0.06) }
+
+  .cal-checks {
+    display: flex; gap: 3px; align-items: center; height: 12px;
+  }
+  .cal-check {
+    font-family: 'Material Icons'; font-style: normal; font-size: 10px; line-height: 1;
+  }
+  .cal-check.cal-ok   { color: #60a5fa }
+  .cal-check.prot-ok  { color: #34d399 }
+
+  .cal-legend {
+    display: flex; gap: 14px; margin-top: 10px;
+    padding-top: 10px; border-top: 1px solid #2a3040;
+  }
+  .legend-item { display: flex; align-items: center; gap: 4px; font-size: 10px; color: #64748b }
+  .legend-check {
+    font-family: 'Material Icons'; font-style: normal; font-size: 11px; line-height: 1;
+  }
+  .legend-check.cal-ok  { color: #60a5fa }
+  .legend-check.prot-ok { color: #34d399 }
+
+  /* ── Day detail panel (calendar mode) ──────────────────── */
+  .day-detail {
+    background: #1a1f2e; border: 1px solid #2a3040;
+    border-radius: 16px; overflow: hidden;
+  }
+  .day-detail.success { border-right: 3px solid #10b981 }
+  .day-detail.over    { border-right: 3px solid #f59e0b }
+  .day-detail.under   { border-right: 3px solid #6366f1 }
+
+  .detail-header {
+    padding: 12px 14px; display: flex; justify-content: space-between; align-items: flex-start;
+    border-bottom: 1px solid #2a3040;
+  }
+  .detail-date { font-size: 13px; font-weight: 700; color: #e2e8f0 }
+  .detail-meta { display: flex; align-items: center; gap: 8px; margin-top: 6px }
+  .items-count { font-size: 11px; color: #64748b }
+
+  .detail-totals {
+    padding: 10px 14px; display: flex; gap: 16px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .total-val { display: flex; align-items: baseline; gap: 3px }
+  .total-num { font-size: 20px; font-weight: 800 }
+  .total-num.cal  { color: #60a5fa }
+  .total-num.prot { color: #34d399 }
+  .total-unit { font-size: 11px; color: #64748b }
+  .goal-hint { font-size: 10px; color: #64748b; margin-top: 1px }
+  .goal-hint.over  { color: #f59e0b }
+  .goal-hint.under { color: #818cf8 }
+
+  .bars { display: flex; flex-direction: column; gap: 4px; padding: 8px 14px; border-bottom: 1px solid rgba(255,255,255,0.04) }
+  .bar-track { height: 4px; background: #2a3040; border-radius: 2px; overflow: hidden }
+  .bar-fill { height: 100%; border-radius: 2px; max-width: 100% }
+  .bar-fill.blue  { background: #3b82f6 }
+  .bar-fill.green { background: #10b981 }
+  .bar-fill.over  { background: #f59e0b }
+
+  .no-selection {
+    text-align: center; padding: 28px 0; color: #4b5563;
+  }
+  .no-selection .icon { font-size: 28px; display: block; margin-bottom: 6px; color: #2a3040 }
+  .no-selection p { font-size: 12px }
+
+  /* ── Meals list ─────────────────────────────────────────── */
+  .meals-list { padding: 4px 14px 4px }
+  .meal-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .meal-row:last-child { border-bottom: none; padding-bottom: 10px }
+  .meal-icon { color: #64748b; flex-shrink: 0 }
+  .meal-info { flex: 1; min-width: 0 }
+  .meal-name {
+    font-size: 13px; color: #e2e8f0;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .meal-name mark {
+    background: rgba(99,102,241,0.25); color: #a5b4fc;
+    border-radius: 3px; padding: 0 2px;
+  }
+  .meal-amount { font-size: 11px; color: #64748b; margin-top: 1px }
+  .meal-nums { display: flex; align-items: center; gap: 8px; flex-shrink: 0 }
+  .meal-cal  { font-size: 12px; font-weight: 700; color: #60a5fa }
+  .meal-prot { font-size: 12px; font-weight: 700; color: #34d399 }
+
+  /* ── Day card (list mode) ───────────────────────────────── */
+  .day-card {
+    background: #1a1f2e; border: 1px solid #2a3040;
+    border-radius: 16px; overflow: hidden;
+  }
+  .day-card.success { border-right: 3px solid #10b981 }
+  .day-card.over    { border-right: 3px solid #f59e0b }
+  .day-card.under   { border-right: 3px solid #6366f1 }
+  .day-summary {
+    padding: 14px; cursor: pointer; list-style: none;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .day-summary::-webkit-details-marker { display: none }
+  .day-header { display: flex; justify-content: space-between; align-items: center }
+  .day-date { font-size: 13px; font-weight: 700; color: #e2e8f0 }
+  .day-meta { display: flex; align-items: center; gap: 8px }
+  .status-badge {
+    display: flex; align-items: center; gap: 3px;
+    font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 20px;
+  }
+  .status-badge.success { background: rgba(16,185,129,0.12); color: #10b981 }
+  .status-badge.over    { background: rgba(245,158,11,0.12);  color: #f59e0b }
+  .status-badge.under   { background: rgba(99,102,241,0.12);  color: #818cf8 }
+  .chevron { font-size: 16px; color: #64748b; transition: transform .2s }
+  details[open] .chevron { transform: rotate(180deg) }
+  .totals-row { display: flex; gap: 16px }
+  .empty { text-align: center; padding: 48px 0; color: #4b5563 }
+
+  /* ── Back button ────────────────────────────────────────── */
+  .back-bar {
+    display: flex; align-items: center; gap: 8px;
+  }
+  .back-btn {
+    display: flex; align-items: center; gap: 4px;
+    font-size: 13px; font-weight: 600; font-family: inherit;
+    color: #60a5fa; background: none; border: none; cursor: pointer;
+    padding: 4px 0; transition: opacity .15s;
+  }
+  .back-btn:hover { opacity: 0.75 }
+  .back-title {
+    font-size: 13px; font-weight: 700; color: #e2e8f0; margin-right: auto;
+  }
+</style>
+</head>
+<body>
+<div class="screen">
+
+  <!-- Top bar -->
+  <div class="top-bar">
+    <span class="section-title">היסטוריה</span>
+    <div class="view-toggle">
+      <button class="vt-btn active" id="btn-cal" onclick="setView('cal')">
+        <span class="icon icon-sm">calendar_month</span> קלנדר
+      </button>
+      <button class="vt-btn" id="btn-list" onclick="setView('list')">
+        <span class="icon icon-sm">format_list_bulleted</span> רשימה
+      </button>
+    </div>
+  </div>
+
+  <!-- Status filter (shared) -->
+  <div class="status-filter" id="status-filter">
+    <button class="sf-chip active-all" onclick="setStatus(this,'all')">
+      <span class="icon icon-sm">filter_list</span> הכל
+    </button>
+    <button class="sf-chip" onclick="setStatus(this,'success')">
+      <span class="icon icon-sm">check_circle</span> עמד ביעד
+    </button>
+    <button class="sf-chip" onclick="setStatus(this,'over')">
+      <span class="icon icon-sm">trending_up</span> חריגה
+    </button>
+    <button class="sf-chip" onclick="setStatus(this,'under')">
+      <span class="icon icon-sm">trending_down</span> חסר
+    </button>
+  </div>
+
+  <!-- ── CALENDAR VIEW ────────────────────────────────────── -->
+  <div id="view-cal">
+    <!-- Calendar grid screen -->
+    <div id="cal-screen" style="display:flex;flex-direction:column;gap:10px">
+      <div class="calendar-card">
+        <div class="cal-header">
+          <div class="cal-nav">
+            <button class="cal-nav-btn" onclick="changeMonth(-1)">
+              <span class="icon">chevron_right</span>
+            </button>
+            <button class="cal-nav-btn" onclick="changeMonth(1)">
+              <span class="icon">chevron_left</span>
+            </button>
+          </div>
+          <span class="cal-title" id="cal-title"></span>
+        </div>
+        <div class="cal-weekdays">
+          <div class="cal-wd">א׳</div><div class="cal-wd">ב׳</div>
+          <div class="cal-wd">ג׳</div><div class="cal-wd">ד׳</div>
+          <div class="cal-wd">ה׳</div><div class="cal-wd">ו׳</div>
+          <div class="cal-wd">ש׳</div>
+        </div>
+        <div class="cal-grid" id="cal-grid"></div>
+        <div class="cal-legend">
+          <div class="legend-item"><span class="legend-check cal-ok">check</span>קלוריות בטווח</div>
+          <div class="legend-item"><span class="legend-check prot-ok">check</span>חלבון הושג</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Day drill-down screen -->
+    <div id="day-screen" style="display:none;flex-direction:column;gap:10px">
+      <div class="back-bar">
+        <button class="back-btn" onclick="goBackToCal()">
+          <span class="icon icon-sm">arrow_forward</span> קלנדר
+        </button>
+        <span class="back-title" id="day-screen-title"></span>
+      </div>
+      <div id="day-detail-panel"></div>
+    </div>
+  </div>
+
+  <!-- ── LIST VIEW ────────────────────────────────────────── -->
+  <div id="view-list" style="display:none">
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <!-- Search -->
+      <div class="search-wrap">
+        <span class="icon search-icon">search</span>
+        <input class="search-input" type="text" placeholder="חפש מאכל..." id="search-input" oninput="handleSearch(this.value)">
+      </div>
+
+      <!-- Days -->
+      <details class="day-card success" open data-status="success" data-date="2026-04-15">
+        <summary class="day-summary">
+          <div class="day-header">
+            <span class="day-date">יום שלישי, 15 באפריל</span>
+            <div class="day-meta">
+              <span class="items-count">6 פריטים</span>
+              <span class="status-badge success"><span class="icon icon-sm">check_circle</span> עמד ביעד</span>
+              <span class="icon chevron">expand_more</span>
+            </div>
+          </div>
+          <div class="totals-row">
+            <div>
+              <div class="total-val"><span class="total-num cal">1680</span><span class="total-unit">kcal</span></div>
+              <div class="goal-hint">יעד: 1700</div>
+            </div>
+            <div>
+              <div class="total-val"><span class="total-num prot">162.4</span><span class="total-unit">ג׳</span></div>
+              <div class="goal-hint">יעד: 160</div>
+            </div>
+          </div>
+          <div class="bars">
+            <div class="bar-track"><div class="bar-fill blue" style="width:98%"></div></div>
+            <div class="bar-track"><div class="bar-fill green" style="width:100%"></div></div>
+          </div>
+        </summary>
+        <div class="meals-list" id="meals-apr15">
+          <div class="meal-row"><span class="icon icon-sm meal-icon">wb_sunny</span><div class="meal-info"><div class="meal-name">שיבולת שועל</div><div class="meal-amount">80ג׳</div></div><div class="meal-nums"><span class="meal-cal">296</span><span class="meal-prot">10.4ג׳</span></div></div>
+          <div class="meal-row"><span class="icon icon-sm meal-icon">wb_sunny</span><div class="meal-info"><div class="meal-name">ביצים</div><div class="meal-amount">3 יח׳</div></div><div class="meal-nums"><span class="meal-cal">234</span><span class="meal-prot">18ג׳</span></div></div>
+          <div class="meal-row"><span class="icon icon-sm meal-icon">lunch_dining</span><div class="meal-info"><div class="meal-name">חזה עוף</div><div class="meal-amount">200ג׳</div></div><div class="meal-nums"><span class="meal-cal">330</span><span class="meal-prot">62ג׳</span></div></div>
+          <div class="meal-row"><span class="icon icon-sm meal-icon">lunch_dining</span><div class="meal-info"><div class="meal-name">אורז לבן</div><div class="meal-amount">150ג׳</div></div><div class="meal-nums"><span class="meal-cal">195</span><span class="meal-prot">3.6ג׳</span></div></div>
+          <div class="meal-row"><span class="icon icon-sm meal-icon">nights_stay</span><div class="meal-info"><div class="meal-name">פרגית</div><div class="meal-amount">180ג׳</div></div><div class="meal-nums"><span class="meal-cal">376</span><span class="meal-prot">48ג׳</span></div></div>
+          <div class="meal-row"><span class="icon icon-sm meal-icon">nutrition</span><div class="meal-info"><div class="meal-name">יוגורט יווני</div><div class="meal-amount">200ג׳</div></div><div class="meal-nums"><span class="meal-cal">130</span><span class="meal-prot">20ג׳</span></div></div>
+        </div>
+      </details>
+
+      <details class="day-card over" data-status="over" data-date="2026-04-14">
+        <summary class="day-summary">
+          <div class="day-header">
+            <span class="day-date">יום שני, 14 באפריל</span>
+            <div class="day-meta">
+              <span class="items-count">5 פריטים</span>
+              <span class="status-badge over"><span class="icon icon-sm">trending_up</span> חריגה</span>
+              <span class="icon chevron">expand_more</span>
+            </div>
+          </div>
+          <div class="totals-row">
+            <div>
+              <div class="total-val"><span class="total-num cal">2140</span><span class="total-unit">kcal</span></div>
+              <div class="goal-hint over">+440 מעל היעד</div>
+            </div>
+            <div>
+              <div class="total-val"><span class="total-num prot">145</span><span class="total-unit">ג׳</span></div>
+              <div class="goal-hint under">15ג׳ מתחת ליעד</div>
+            </div>
+          </div>
+          <div class="bars">
+            <div class="bar-track"><div class="bar-fill over" style="width:100%"></div></div>
+            <div class="bar-track"><div class="bar-fill green" style="width:90%"></div></div>
+          </div>
+        </summary>
+        <div class="meals-list">
+          <div class="meal-row"><span class="icon icon-sm meal-icon">wb_sunny</span><div class="meal-info"><div class="meal-name">גרנולה</div><div class="meal-amount">100ג׳</div></div><div class="meal-nums"><span class="meal-cal">430</span><span class="meal-prot">9ג׳</span></div></div>
+          <div class="meal-row"><span class="icon icon-sm meal-icon">lunch_dining</span><div class="meal-info"><div class="meal-name">שניצל</div><div class="meal-amount">2 יח׳</div></div><div class="meal-nums"><span class="meal-cal">560</span><span class="meal-prot">42ג׳</span></div></div>
+          <div class="meal-row"><span class="icon icon-sm meal-icon">lunch_dining</span><div class="meal-info"><div class="meal-name">פיתה</div><div class="meal-amount">1 יח׳</div></div><div class="meal-nums"><span class="meal-cal">170</span><span class="meal-prot">5ג׳</span></div></div>
+          <div class="meal-row"><span class="icon icon-sm meal-icon">nights_stay</span><div class="meal-info"><div class="meal-name">סלמון</div><div class="meal-amount">200ג׳</div></div><div class="meal-nums"><span class="meal-cal">416</span><span class="meal-prot">44ג׳</span></div></div>
+          <div class="meal-row"><span class="icon icon-sm meal-icon">nutrition</span><div class="meal-info"><div class="meal-name">שוקולד מריר</div><div class="meal-amount">50ג׳</div></div><div class="meal-nums"><span class="meal-cal">290</span><span class="meal-prot">4ג׳</span></div></div>
+        </div>
+      </details>
+
+      <details class="day-card under" data-status="under" data-date="2026-04-13">
+        <summary class="day-summary">
+          <div class="day-header">
+            <span class="day-date">ראשון, 13 באפריל</span>
+            <div class="day-meta">
+              <span class="items-count">3 פריטים</span>
+              <span class="status-badge under"><span class="icon icon-sm">trending_down</span> חסר</span>
+              <span class="icon chevron">expand_more</span>
+            </div>
+          </div>
+          <div class="totals-row">
+            <div>
+              <div class="total-val"><span class="total-num cal">1120</span><span class="total-unit">kcal</span></div>
+              <div class="goal-hint under">580 מתחת ליעד</div>
+            </div>
+            <div>
+              <div class="total-val"><span class="total-num prot">98</span><span class="total-unit">ג׳</span></div>
+              <div class="goal-hint under">62ג׳ מתחת ליעד</div>
+            </div>
+          </div>
+          <div class="bars">
+            <div class="bar-track"><div class="bar-fill blue" style="width:65%"></div></div>
+            <div class="bar-track"><div class="bar-fill green" style="width:61%"></div></div>
+          </div>
+        </summary>
+        <div class="meals-list">
+          <div class="meal-row"><span class="icon icon-sm meal-icon">wb_sunny</span><div class="meal-info"><div class="meal-name">ביצה קשה</div><div class="meal-amount">2 יח׳</div></div><div class="meal-nums"><span class="meal-cal">156</span><span class="meal-prot">12ג׳</span></div></div>
+          <div class="meal-row"><span class="icon icon-sm meal-icon">lunch_dining</span><div class="meal-info"><div class="meal-name">חזה עוף</div><div class="meal-amount">150ג׳</div></div><div class="meal-nums"><span class="meal-cal">247</span><span class="meal-prot">46ג׳</span></div></div>
+          <div class="meal-row"><span class="icon icon-sm meal-icon">nights_stay</span><div class="meal-info"><div class="meal-name">סלט ירקות</div><div class="meal-amount">300ג׳</div></div><div class="meal-nums"><span class="meal-cal">90</span><span class="meal-prot">3ג׳</span></div></div>
+        </div>
+      </details>
+
+    </div>
+  </div>
+
+</div><!-- /screen -->
+
+<script>
+// ── Data ──────────────────────────────────────────────────────────────
+const DATA = {
+  '2026-04-15': { status:'success', label:'יום שלישי, 15 באפריל', items:6, cal:1680, calGoal:1700, prot:162.4, protGoal:160 },
+  '2026-04-14': { status:'over',    label:'יום שני, 14 באפריל',   items:5, cal:2140, calGoal:1700, prot:145,   protGoal:160 },
+  '2026-04-13': { status:'under',   label:'ראשון, 13 באפריל',    items:3, cal:1120, calGoal:1700, prot:98,    protGoal:160 },
+  '2026-04-11': { status:'success', label:'שבת, 11 באפריל',      items:4, cal:1650, calGoal:1700, prot:155,   protGoal:160 },
+  '2026-04-10': { status:'success', label:'שישי, 10 באפריל',     items:5, cal:1720, calGoal:1700, prot:163,   protGoal:160 },
+  '2026-04-09': { status:'over',    label:'חמישי, 9 באפריל',     items:4, cal:2050, calGoal:1700, prot:170,   protGoal:160 },
+  '2026-04-08': { status:'under',   label:'רביעי, 8 באפריל',     items:2, cal:980,  calGoal:1700, prot:82,    protGoal:160 },
+  '2026-04-07': { status:'success', label:'שלישי, 7 באפריל',     items:5, cal:1690, calGoal:1700, prot:158,   protGoal:160 },
+  '2026-04-05': { status:'success', label:'ראשון, 5 באפריל',     items:4, cal:1710, calGoal:1700, prot:161,   protGoal:160 },
+  '2026-04-04': { status:'under',   label:'שבת, 4 באפריל',       items:3, cal:1100, calGoal:1700, prot:90,    protGoal:160 },
+  '2026-04-03': { status:'over',    label:'שישי, 3 באפריל',      items:6, cal:2200, calGoal:1700, prot:175,   protGoal:160 },
+  '2026-04-02': { status:'success', label:'חמישי, 2 באפריל',     items:5, cal:1680, calGoal:1700, prot:162,   protGoal:160 },
+  '2026-04-01': { status:'success', label:'רביעי, 1 באפריל',     items:4, cal:1700, calGoal:1700, prot:160,   protGoal:160 },
+}
+
+const MEALS = {
+  '2026-04-15': [
+    { icon:'wb_sunny',     name:'שיבולת שועל', amount:'80ג׳',  cal:296, prot:'10.4ג׳' },
+    { icon:'wb_sunny',     name:'ביצים',       amount:'3 יח׳', cal:234, prot:'18ג׳'   },
+    { icon:'lunch_dining', name:'חזה עוף',      amount:'200ג׳', cal:330, prot:'62ג׳'  },
+    { icon:'lunch_dining', name:'אורז לבן',     amount:'150ג׳', cal:195, prot:'3.6ג׳' },
+    { icon:'nights_stay',  name:'פרגית',        amount:'180ג׳', cal:376, prot:'48ג׳'  },
+    { icon:'nutrition',    name:'יוגורט יווני', amount:'200ג׳', cal:130, prot:'20ג׳'  },
+  ],
+  '2026-04-14': [
+    { icon:'wb_sunny',     name:'גרנולה',       amount:'100ג׳', cal:430, prot:'9ג׳'  },
+    { icon:'lunch_dining', name:'שניצל',         amount:'2 יח׳', cal:560, prot:'42ג׳' },
+    { icon:'lunch_dining', name:'פיתה',          amount:'1 יח׳', cal:170, prot:'5ג׳'  },
+    { icon:'nights_stay',  name:'סלמון',         amount:'200ג׳', cal:416, prot:'44ג׳' },
+    { icon:'nutrition',    name:'שוקולד מריר',   amount:'50ג׳',  cal:290, prot:'4ג׳'  },
+  ],
+  '2026-04-13': [
+    { icon:'wb_sunny',     name:'ביצה קשה',  amount:'2 יח׳', cal:156, prot:'12ג׳' },
+    { icon:'lunch_dining', name:'חזה עוף',    amount:'150ג׳', cal:247, prot:'46ג׳' },
+    { icon:'nights_stay',  name:'סלט ירקות', amount:'300ג׳', cal:90,  prot:'3ג׳'  },
+  ],
+}
+
+const HE_MONTHS = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר']
+
+let currentYear  = 2026
+let currentMonth = 3 // April (0-based)
+let selectedDate = null
+let activeStatus = 'all'
+let currentView  = 'cal'
+
+// ── View toggle ────────────────────────────────────────────────────────
+function setView(view) {
+  currentView = view
+  document.getElementById('view-cal').style.display  = view === 'cal'  ? '' : 'none'
+  document.getElementById('view-list').style.display = view === 'list' ? '' : 'none'
+  document.getElementById('btn-cal').classList.toggle('active',  view === 'cal')
+  document.getElementById('btn-list').classList.toggle('active', view === 'list')
+  applyListFilter()
+}
+
+// ── Calendar ────────────────────────────────────────────────────────────
+function toKey(y, m, d) {
+  return `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`
+}
+
+function renderCalendar() {
+  document.getElementById('cal-title').textContent = `${HE_MONTHS[currentMonth]} ${currentYear}`
+  const grid    = document.getElementById('cal-grid')
+  grid.innerHTML = ''
+  const todayKey   = toKey(2026, 3, 16) // mock today = Apr 16 2026
+  const firstDow   = new Date(currentYear, currentMonth, 1).getDay()
+  const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate()
+
+  for (let i = 0; i < firstDow; i++) {
+    const e = document.createElement('div'); e.className = 'cal-cell empty'; grid.appendChild(e)
+  }
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const key  = toKey(currentYear, currentMonth, d)
+    const info = DATA[key]
+    const cell = document.createElement('div')
+
+    const calOk  = info && info.cal  <= info.calGoal
+    const protOk = info && info.prot >= info.protGoal
+    const dayStatus = !info ? null
+      : (calOk && protOk)   ? 'success'
+      : (!calOk && !protOk) ? 'both'
+      : !calOk              ? 'over'
+      :                       'under'
+
+    let cls = 'cal-cell'
+    if (info) {
+      cls += ' has-data'
+      if (activeStatus !== 'all') {
+        const match = (activeStatus === 'success' && dayStatus === 'success')
+                   || (activeStatus === 'over'    && (dayStatus === 'over' || dayStatus === 'both'))
+                   || (activeStatus === 'under'   && (dayStatus === 'under' || dayStatus === 'both'))
+        if (!match) cls += ' dimmed'
+      }
+    }
+    if (key === todayKey)     cls += ' today'
+    if (key === selectedDate) cls += ' selected'
+    cell.className = cls
+
+    const num = document.createElement('span')
+    num.textContent = d
+    cell.appendChild(num)
+
+    if (info) {
+      const checks = document.createElement('div')
+      checks.className = 'cal-checks'
+      if (calOk) {
+        const c = document.createElement('span')
+        c.className = 'cal-check cal-ok'
+        c.textContent = 'check'
+        checks.appendChild(c)
+      }
+      if (protOk) {
+        const c = document.createElement('span')
+        c.className = 'cal-check prot-ok'
+        c.textContent = 'check'
+        checks.appendChild(c)
+      }
+      cell.appendChild(checks)
+      cell.addEventListener('click', () => selectDay(key))
+    }
+    grid.appendChild(cell)
+  }
+}
+
+function selectDay(key) {
+  if (!DATA[key]) return
+  selectedDate = key
+  renderCalendar()
+  renderDayDetail()
+  // transition to day screen
+  document.getElementById('cal-screen').style.display  = 'none'
+  document.getElementById('day-screen').style.display  = 'flex'
+  document.getElementById('status-filter').style.display = 'none'
+  document.getElementById('day-screen-title').textContent = DATA[key].label
+}
+
+function goBackToCal() {
+  selectedDate = null
+  document.getElementById('cal-screen').style.display  = ''
+  document.getElementById('day-screen').style.display  = 'none'
+  document.getElementById('status-filter').style.display = ''
+  document.getElementById('day-detail-panel').innerHTML = ''
+  renderCalendar()
+}
+
+function renderDayDetail() {
+  const panel = document.getElementById('day-detail-panel')
+  if (!selectedDate || !DATA[selectedDate]) {
+    panel.innerHTML = ''
+    return
+  }
+  const info  = DATA[selectedDate]
+  const meals = MEALS[selectedDate] || []
+
+  const calPct  = Math.min(100, Math.round(info.cal  / info.calGoal  * 100))
+  const protPct = Math.min(100, Math.round(info.prot / info.protGoal * 100))
+  const calOver  = info.cal  > info.calGoal
+  const protOver = info.prot > info.protGoal
+  const calDiff  = Math.abs(info.cal  - info.calGoal)
+  const protDiff = (Math.abs(info.prot - info.protGoal)).toFixed(1)
+  const calHint  = info.cal === info.calGoal ? `יעד: ${info.calGoal}` : (calOver ? `+${calDiff} מעל היעד` : `${calDiff} מתחת ליעד`)
+  const protHint = info.prot === info.protGoal ? `יעד: ${info.protGoal}` : (protOver ? `+${protDiff}ג׳ מעל היעד` : `${protDiff}ג׳ מתחת ליעד`)
+  const calHintCls  = info.cal === info.calGoal ? '' : (calOver ? 'over' : 'under')
+  const protHintCls = info.prot === info.protGoal ? '' : (protOver ? 'over' : 'under')
+
+  const badgeLabel = { success: 'עמד ביעד', over: 'חריגה', under: 'חסר' }[info.status]
+  const badgeIcon  = { success: 'check_circle', over: 'trending_up', under: 'trending_down' }[info.status]
+  const barCls     = info.cal > info.calGoal ? 'over' : 'blue'
+
+  const mealsHtml = meals.map(m => `
+    <div class="meal-row">
+      <span class="icon icon-sm meal-icon">${m.icon}</span>
+      <div class="meal-info">
+        <div class="meal-name">${m.name}</div>
+        <div class="meal-amount">${m.amount}</div>
+      </div>
+      <div class="meal-nums">
+        <span class="meal-cal">${m.cal}</span>
+        <span class="meal-prot">${m.prot}</span>
+      </div>
+    </div>
+  `).join('')
+
+  panel.innerHTML = `
+    <div class="day-detail ${info.status}">
+      <div class="detail-header">
+        <div>
+          <div class="detail-date">${info.label}</div>
+          <div class="detail-meta">
+            <span class="items-count">${info.items} פריטים</span>
+            <span class="status-badge ${info.status}">
+              <span class="icon icon-sm">${badgeIcon}</span> ${badgeLabel}
+            </span>
+          </div>
+        </div>
+      </div>
+      <div class="detail-totals">
+        <div>
+          <div class="total-val"><span class="total-num cal">${info.cal}</span><span class="total-unit">kcal</span></div>
+          <div class="goal-hint ${calHintCls}">${calHint}</div>
+        </div>
+        <div>
+          <div class="total-val"><span class="total-num prot">${info.prot}</span><span class="total-unit">ג׳</span></div>
+          <div class="goal-hint ${protHintCls}">${protHint}</div>
+        </div>
+      </div>
+      <div class="bars">
+        <div class="bar-track"><div class="bar-fill ${barCls}" style="width:${calPct}%"></div></div>
+        <div class="bar-track"><div class="bar-fill green" style="width:${protPct}%"></div></div>
+      </div>
+      ${meals.length ? `<div class="meals-list">${mealsHtml}</div>` : ''}
+    </div>
+  `
+}
+
+function changeMonth(dir) {
+  currentMonth += dir
+  if (currentMonth > 11) { currentMonth = 0; currentYear++ }
+  if (currentMonth < 0)  { currentMonth = 11; currentYear-- }
+  selectedDate = null
+  document.getElementById('day-detail-panel').innerHTML = ''
+  renderCalendar()
+}
+
+// ── Status filter ────────────────────────────────────────────────────────
+function setStatus(btn, status) {
+  activeStatus = status
+  const classMap = { all:'active-all', success:'active-succ', over:'active-over', under:'active-under' }
+  document.querySelectorAll('#status-filter .sf-chip').forEach(b =>
+    b.classList.remove('active-all','active-succ','active-over','active-under'))
+  btn.classList.add(classMap[status])
+  renderCalendar()
+  applyListFilter()
+}
+
+// ── List filter ───────────────────────────────────────────────────────────
+function applyListFilter() {
+  document.querySelectorAll('.day-card').forEach(card => {
+    const ok = activeStatus === 'all' || card.dataset.status === activeStatus
+    card.style.display = ok ? '' : 'none'
+  })
+}
+
+// ── Search (list mode) ────────────────────────────────────────────────────
+function handleSearch(query) {
+  const q = query.trim().toLowerCase()
+  document.querySelectorAll('.day-card').forEach(card => {
+    let dayHasMatch = false
+    card.querySelectorAll('.meal-row').forEach(row => {
+      const nameEl = row.querySelector('.meal-name')
+      const name   = nameEl.textContent.toLowerCase()
+      const match  = !q || name.includes(q)
+      row.style.display = match ? '' : 'none'
+      if (match) dayHasMatch = true
+      if (q && match) {
+        const orig = nameEl.textContent
+        const idx  = orig.toLowerCase().indexOf(q)
+        nameEl.innerHTML = orig.slice(0,idx)+'<mark>'+orig.slice(idx,idx+q.length)+'</mark>'+orig.slice(idx+q.length)
+      } else {
+        nameEl.innerHTML = nameEl.textContent
+      }
+    })
+    const statusOk = activeStatus === 'all' || card.dataset.status === activeStatus
+    card.style.display = (statusOk && (!q || dayHasMatch)) ? '' : 'none'
+    if (q && dayHasMatch) card.open = true
+  })
+}
+
+// Init
+renderCalendar()
+</script>
+</body>
+</html>

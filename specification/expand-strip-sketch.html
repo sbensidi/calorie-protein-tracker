@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chevron Badge — אחדות כרטיסים</title>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20,400,0,0" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0 }
+  body {
+    font-family: 'Heebo', sans-serif;
+    background: #090d14; color: #dde4f0;
+    padding: 24px 20px 48px; min-height: 100vh;
+  }
+  .icon {
+    font-family: 'Material Symbols Rounded';
+    font-style: normal; line-height: 1;
+    user-select: none; display: inline-block; direction: ltr;
+  }
+  .screens {
+    max-width: 820px; margin: 0 auto;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 32px;
+  }
+  .col { display: flex; flex-direction: column; gap: 10px }
+
+  .tab-label {
+    font-size: 10px; font-weight: 700; color: #6b7f96;
+    text-transform: uppercase; letter-spacing: .08em;
+    padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+
+  /* ── Shared card shell ────────────────────────────────────── */
+  .card {
+    background: #0f1521; border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 14px; overflow: hidden;
+  }
+
+  /* ── Shared chevron badge ─────────────────────────────────── */
+  .chevron-badge {
+    display: flex; align-items: center; justify-content: center;
+    width: 24px; height: 24px; border-radius: 7px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.09);
+    flex-shrink: 0; transition: background .15s;
+  }
+  .chevron-badge .icon { font-size: 15px; color: #6b7f96; transition: transform .2s }
+  .card.open .chevron-badge .icon { transform: rotate(180deg) }
+
+  /* ── Shared meals list ────────────────────────────────────── */
+  .meals-list { border-top: 1px solid rgba(255,255,255,0.07); padding: 4px 14px; display: none }
+  .card.open .meals-list { display: block }
+  .meal-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .meal-row:last-child { border-bottom: none; padding-bottom: 10px }
+  .meal-icon { font-size: 14px; color: #6b7f96; flex-shrink: 0 }
+  .meal-info { flex: 1; min-width: 0 }
+  .meal-name { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+  .meal-sub  { font-size: 11px; color: #6b7f96; margin-top: 1px }
+  .meal-nums { display: flex; flex-direction: column; align-items: flex-end; gap: 1px; flex-shrink: 0 }
+  .meal-cal  { font-size: 13px; font-weight: 700; color: #60a5fa; line-height: 1 }
+  .meal-prot { font-size: 13px; font-weight: 700; color: #34d399; line-height: 1 }
+  .num-unit  { font-size: 10px; font-weight: 500; opacity: 0.7; margin-inline-start: 1px }
+
+  /* ── History card ─────────────────────────────────────────── */
+  .hist-card { border-inline-start: 3px solid #10b981 }
+  .hist-card.over   { border-inline-start-color: #f59e0b }
+
+  .hist-header {
+    padding: 14px 14px 12px; cursor: pointer;
+    transition: background .15s;
+  }
+  .hist-header:hover { background: rgba(255,255,255,0.015) }
+
+  .hist-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px }
+  .hist-date { font-size: 13px; font-weight: 700 }
+  .hist-meta { display: flex; align-items: center; gap: 8px }
+  .status-badge {
+    display: flex; align-items: center; gap: 3px;
+    font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 20px;
+  }
+  .status-badge.success { background: rgba(16,185,129,0.10); color: #34d399 }
+  .status-badge.over    { background: rgba(245,158,11,0.10); color: #f59e0b }
+
+  .totals { display: flex; gap: 16px; margin-bottom: 10px }
+  .total-num { font-size: 20px; font-weight: 800 }
+  .total-num.cal  { color: #60a5fa }
+  .total-num.prot { color: #34d399 }
+  .total-unit { font-size: 11px; color: #94a8be }
+  .goal-hint  { font-size: 10px; color: #6b7f96; margin-top: 1px }
+  .goal-hint.over { color: #f59e0b }
+
+  .bars { display: flex; flex-direction: column; gap: 5px }
+  .bar-track { height: 5px; background: rgba(255,255,255,0.06); border-radius: 999px; overflow: hidden }
+  .bar-fill  { height: 100%; border-radius: 999px }
+  .bar-fill.blue  { background: #3b82f6; width: 98% }
+  .bar-fill.green { background: #10b981; width: 100% }
+  .bar-fill.over  { background: #f59e0b; width: 100% }
+
+  /* ── Today group card ─────────────────────────────────────── */
+  .today-card { /* same .card shell */ }
+
+  .today-header {
+    display: flex; align-items: center; gap: 8px;
+    padding: 11px 14px; cursor: pointer;
+    background: none; border: none; width: 100%; font-family: inherit;
+    transition: background .15s;
+  }
+  .today-header:hover { background: rgba(255,255,255,0.015) }
+
+  .meal-type-icon { flex-shrink: 0 }
+  .meal-type-label {
+    font-size: 11px; font-weight: 700; color: #94a8be;
+    text-transform: uppercase; letter-spacing: .08em; flex: 1; text-align: start;
+  }
+  .collapsed-totals { display: flex; align-items: center; gap: 8px }
+  .col-total { font-size: 12px; font-weight: 700 }
+
+  /* Today action buttons */
+  .meal-actions { display: flex; align-items: center; gap: 1px; flex-shrink: 0 }
+  .icon-btn {
+    width: 28px; height: 28px; border-radius: 7px; border: none;
+    background: transparent; cursor: pointer; display: flex;
+    align-items: center; justify-content: center;
+    color: #94a8be; transition: background .15s, color .15s;
+  }
+  .icon-btn:hover { background: rgba(255,255,255,0.08); color: #dde4f0 }
+  .icon-btn.danger:hover { background: rgba(244,63,94,0.10); color: #f43f5e }
+</style>
+</head>
+<body>
+<div class="screens">
+
+  <!-- ── HISTORY TAB ────────────────────────────────────────── -->
+  <div class="col">
+    <p class="tab-label">טאב היסטוריה — כרטיס יום</p>
+
+    <!-- closed -->
+    <div class="card hist-card" id="h1">
+      <div class="hist-header" onclick="toggle('h1')">
+        <div class="hist-top">
+          <span class="hist-date">יום שלישי, 15 באפריל</span>
+          <div class="hist-meta">
+            <span style="font-size:11px;color:#6b7f96">6 פריטים</span>
+            <span class="status-badge success"><span class="icon" style="font-size:12px">check_circle</span> עמד ביעד</span>
+            <span class="chevron-badge"><span class="icon">expand_more</span></span>
+          </div>
+        </div>
+        <div class="totals">
+          <div>
+            <div style="display:flex;align-items:baseline;gap:3px">
+              <span class="total-num cal">1680</span><span class="total-unit">kcal</span>
+            </div>
+            <div class="goal-hint">יעד: 1700</div>
+          </div>
+          <div>
+            <div style="display:flex;align-items:baseline;gap:3px">
+              <span class="total-num prot">162</span><span class="total-unit">ג׳</span>
+            </div>
+            <div class="goal-hint">יעד: 160</div>
+          </div>
+        </div>
+        <div class="bars">
+          <div class="bar-track"><div class="bar-fill blue"></div></div>
+          <div class="bar-track"><div class="bar-fill green"></div></div>
+        </div>
+      </div>
+      <div class="meals-list">
+        <div class="meal-row">
+          <span class="icon meal-icon">wb_sunny</span>
+          <div class="meal-info"><div class="meal-name">שיבולת שועל</div><div class="meal-sub">80ג׳</div></div>
+          <div class="meal-nums"><span class="meal-cal">296<span class="num-unit">kcal</span></span><span class="meal-prot">10.4<span class="num-unit">ג׳</span></span></div>
+        </div>
+        <div class="meal-row">
+          <span class="icon meal-icon">lunch_dining</span>
+          <div class="meal-info"><div class="meal-name">חזה עוף</div><div class="meal-sub">200ג׳</div></div>
+          <div class="meal-nums"><span class="meal-cal">330<span class="num-unit">kcal</span></span><span class="meal-prot">62<span class="num-unit">ג׳</span></span></div>
+        </div>
+        <div class="meal-row">
+          <span class="icon meal-icon">nights_stay</span>
+          <div class="meal-info"><div class="meal-name">פרגית</div><div class="meal-sub">180ג׳</div></div>
+          <div class="meal-nums"><span class="meal-cal">376<span class="num-unit">kcal</span></span><span class="meal-prot">48<span class="num-unit">ג׳</span></span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- over -->
+    <div class="card hist-card over" id="h2">
+      <div class="hist-header" onclick="toggle('h2')">
+        <div class="hist-top">
+          <span class="hist-date">יום שני, 14 באפריל</span>
+          <div class="hist-meta">
+            <span style="font-size:11px;color:#6b7f96">5 פריטים</span>
+            <span class="status-badge over"><span class="icon" style="font-size:12px">trending_up</span> חריגה</span>
+            <span class="chevron-badge"><span class="icon">expand_more</span></span>
+          </div>
+        </div>
+        <div class="totals">
+          <div>
+            <div style="display:flex;align-items:baseline;gap:3px">
+              <span class="total-num cal">2140</span><span class="total-unit">kcal</span>
+            </div>
+            <div class="goal-hint over">+440 מעל היעד</div>
+          </div>
+          <div>
+            <div style="display:flex;align-items:baseline;gap:3px">
+              <span class="total-num prot">145</span><span class="total-unit">ג׳</span>
+            </div>
+            <div class="goal-hint">יעד: 160</div>
+          </div>
+        </div>
+        <div class="bars">
+          <div class="bar-track"><div class="bar-fill over"></div></div>
+          <div class="bar-track"><div class="bar-fill green" style="width:90%"></div></div>
+        </div>
+      </div>
+      <div class="meals-list">
+        <div class="meal-row">
+          <span class="icon meal-icon">wb_sunny</span>
+          <div class="meal-info"><div class="meal-name">גרנולה</div><div class="meal-sub">100ג׳</div></div>
+          <div class="meal-nums"><span class="meal-cal">430<span class="num-unit">kcal</span></span><span class="meal-prot">9<span class="num-unit">ג׳</span></span></div>
+        </div>
+        <div class="meal-row">
+          <span class="icon meal-icon">lunch_dining</span>
+          <div class="meal-info"><div class="meal-name">שניצל</div><div class="meal-sub">2 יח׳</div></div>
+          <div class="meal-nums"><span class="meal-cal">560<span class="num-unit">kcal</span></span><span class="meal-prot">42<span class="num-unit">ג׳</span></span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TODAY TAB ──────────────────────────────────────────── -->
+  <div class="col">
+    <p class="tab-label">טאב היום — קבוצות ארוחה</p>
+
+    <!-- breakfast group -->
+    <div class="card today-card" id="t1">
+      <button class="today-header" onclick="toggle('t1')">
+        <span class="icon meal-type-icon" style="font-size:16px;color:var(--amber,#f59e0b)">wb_sunny</span>
+        <span class="meal-type-label">בוקר</span>
+        <span class="chevron-badge"><span class="icon">expand_more</span></span>
+      </button>
+      <div class="meals-list">
+        <div class="meal-row">
+          <div class="meal-info"><div class="meal-name">שיבולת שועל</div><div class="meal-sub">80ג׳</div></div>
+          <div class="meal-nums"><span class="meal-cal">296<span class="num-unit">kcal</span></span><span class="meal-prot">10.4<span class="num-unit">ג׳</span></span></div>
+          <div class="meal-actions">
+            <button class="icon-btn"><span class="icon" style="font-size:14px">content_copy</span></button>
+            <button class="icon-btn"><span class="icon" style="font-size:14px">edit</span></button>
+            <button class="icon-btn danger"><span class="icon" style="font-size:14px">delete</span></button>
+          </div>
+        </div>
+        <div class="meal-row">
+          <div class="meal-info"><div class="meal-name">ביצים</div><div class="meal-sub">3 יח׳</div></div>
+          <div class="meal-nums"><span class="meal-cal">234<span class="num-unit">kcal</span></span><span class="meal-prot">18<span class="num-unit">ג׳</span></span></div>
+          <div class="meal-actions">
+            <button class="icon-btn"><span class="icon" style="font-size:14px">content_copy</span></button>
+            <button class="icon-btn"><span class="icon" style="font-size:14px">edit</span></button>
+            <button class="icon-btn danger"><span class="icon" style="font-size:14px">delete</span></button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- lunch group — collapsed with totals shown -->
+    <div class="card today-card" id="t2">
+      <button class="today-header" onclick="toggle('t2')" style="background:rgba(255,255,255,0.015)">
+        <span class="icon meal-type-icon" style="font-size:16px;color:#10b981">lunch_dining</span>
+        <span class="meal-type-label">צהריים</span>
+        <div class="collapsed-totals" id="t2-totals">
+          <span class="col-total" style="color:#60a5fa">525 kcal</span>
+          <span class="col-total" style="color:#34d399">65.6ג׳</span>
+        </div>
+        <span class="chevron-badge" style="transform:rotate(0deg)"><span class="icon" style="transform:rotate(-90deg)">expand_more</span></span>
+      </button>
+    </div>
+
+    <!-- dinner group -->
+    <div class="card today-card" id="t3">
+      <button class="today-header" onclick="toggle('t3')">
+        <span class="icon meal-type-icon" style="font-size:16px;color:#8b5cf6">nights_stay</span>
+        <span class="meal-type-label">ערב</span>
+        <span class="chevron-badge"><span class="icon">expand_more</span></span>
+      </button>
+      <div class="meals-list">
+        <div class="meal-row">
+          <div class="meal-info"><div class="meal-name">פרגית</div><div class="meal-sub">180ג׳</div></div>
+          <div class="meal-nums"><span class="meal-cal">376<span class="num-unit">kcal</span></span><span class="meal-prot">48<span class="num-unit">ג׳</span></span></div>
+          <div class="meal-actions">
+            <button class="icon-btn"><span class="icon" style="font-size:14px">content_copy</span></button>
+            <button class="icon-btn"><span class="icon" style="font-size:14px">edit</span></button>
+            <button class="icon-btn danger"><span class="icon" style="font-size:14px">delete</span></button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  function toggle(id) {
+    document.getElementById(id).classList.toggle('open')
+  }
+</script>
+</body>
+</html>
