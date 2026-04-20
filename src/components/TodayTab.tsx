@@ -3,6 +3,7 @@ import type { Meal, FoodHistory, ComposedGroup } from '../types'
 import type { Lang } from '../lib/i18n'
 import { t, today } from '../lib/i18n'
 import { FoodEntryForm } from './FoodEntryForm'
+import type { ComposedEntry } from './FoodEntryForm'
 import { MealCard } from './MealCard'
 import { ComposedMealCard } from './ComposedMealCard'
 import { DailySummary } from './DailySummary'
@@ -130,6 +131,18 @@ export function TodayTab({
 
   // ── Composed groups ──────────────────────────────────────────
   const [composedGroups, setComposedGroups] = useState<ComposedGroup[]>(loadComposedGroups)
+
+  const composedEntries = useMemo<ComposedEntry[]>(() =>
+    composedGroups.map(g => {
+      const gMeals = meals.filter(m => g.mealIds.includes(m.id))
+      return {
+        id: g.id,
+        name: g.name,
+        calories: Math.round(gMeals.reduce((s, m) => s + m.calories, 0)),
+        protein: Math.round(gMeals.reduce((s, m) => s + m.protein, 0) * 10) / 10,
+      }
+    }).filter(e => e.name),
+  [composedGroups, meals])
 
   const updateComposed = (next: ComposedGroup[]) => {
     setComposedGroups(next)
@@ -590,6 +603,7 @@ export function TodayTab({
         getSuggestions={getSuggestions}
         onAdd={onAddMeal}
         onUpsertHistory={onUpsertHistory}
+        composedEntries={composedEntries}
       />
 
       {todayMeals.length === 0 && (

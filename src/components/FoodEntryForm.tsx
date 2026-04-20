@@ -10,6 +10,13 @@ type EntryMode = 'manual' | 'scan'
 
 type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack'
 
+export interface ComposedEntry {
+  id: string
+  name: string
+  calories: number
+  protein: number
+}
+
 interface FoodEntryFormProps {
   lang: Lang
   history: FoodHistory[]
@@ -17,9 +24,10 @@ interface FoodEntryFormProps {
   onAdd: (meal: Omit<Meal, 'id' | 'user_id' | 'created_at'>) => void
   onUpsertHistory: (item: Pick<FoodHistory, 'name' | 'grams' | 'calories' | 'protein'>) => void
   defaultMealType?: MealType
+  composedEntries?: ComposedEntry[]
 }
 
-export function FoodEntryForm({ lang, history, getSuggestions, onAdd, onUpsertHistory, defaultMealType }: FoodEntryFormProps) {
+export function FoodEntryForm({ lang, history, getSuggestions, onAdd, onUpsertHistory, defaultMealType, composedEntries }: FoodEntryFormProps) {
   const [mode, setMode]               = useState<EntryMode>(
     () => (localStorage.getItem('entry-mode') as EntryMode) ?? 'scan'
   )
@@ -88,6 +96,20 @@ export function FoodEntryForm({ lang, history, getSuggestions, onAdd, onUpsertHi
 
   const handleHistorySelect = (item: FoodHistory) => {
     handleSuggestionSelect(item)
+    setHistoryModalOpen(false)
+    setHistorySearch('')
+  }
+
+  const handleComposedSelect = (entry: ComposedEntry) => {
+    setFoodName(entry.name)
+    setGramsStr('')
+    setUnitsStr('')
+    setNutrition({ calories: entry.calories, protein: entry.protein })
+    setEditCalories(entry.calories || '')
+    setEditProtein(entry.protein || '')
+    setQty(1)
+    setAiError(false)
+    setDropdownOpen(false)
     setHistoryModalOpen(false)
     setHistorySearch('')
   }
@@ -750,7 +772,48 @@ export function FoodEntryForm({ lang, history, getSuggestions, onAdd, onUpsertHi
 
             {/* List */}
             <div style={{ overflowY: 'auto', flex: 1, borderTop: '1px solid var(--border)' }}>
-              {filtered.length === 0 ? (
+
+              {/* Composed dishes section */}
+              {!q && composedEntries && composedEntries.length > 0 && (
+                <>
+                  <div style={{ padding: '8px 14px 4px', fontSize: 10, fontWeight: 700, color: 'var(--text-3)', letterSpacing: '0.07em', textTransform: 'uppercase' }}>
+                    {lang === 'he' ? 'מנות שהרכבתי' : 'My composed dishes'}
+                  </div>
+                  {composedEntries.map((entry) => (
+                    <button
+                      key={entry.id}
+                      onClick={() => handleComposedSelect(entry)}
+                      style={{
+                        display: 'flex', alignItems: 'center', width: '100%',
+                        padding: '10px 14px', background: 'transparent', border: 'none',
+                        borderBottom: '1px solid var(--border)',
+                        cursor: 'pointer', gap: 10, textAlign: 'start', fontFamily: 'inherit',
+                        transition: 'background .12s',
+                      }}
+                      onMouseEnter={e => (e.currentTarget.style.background = 'rgba(139,92,246,0.05)')}
+                      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                    >
+                      <span className="icon icon-sm" style={{ color: 'var(--purple)', flexShrink: 0 }}>restaurant</span>
+                      <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {entry.name}
+                      </span>
+                      <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--blue-hi)' }}>{entry.calories}</span>
+                        <span style={{ fontSize: 11, color: 'var(--text-3)' }}>{t(lang, 'caloriesUnit')}</span>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--green-hi)', marginInlineStart: 4 }}>{entry.protein}</span>
+                        <span style={{ fontSize: 11, color: 'var(--text-3)' }}>{t(lang, 'proteinUnit')}</span>
+                      </div>
+                    </button>
+                  ))}
+                  {filtered.length > 0 && (
+                    <div style={{ padding: '8px 14px 4px', fontSize: 10, fontWeight: 700, color: 'var(--text-3)', letterSpacing: '0.07em', textTransform: 'uppercase' }}>
+                      {lang === 'he' ? 'היסטוריה' : 'History'}
+                    </div>
+                  )}
+                </>
+              )}
+
+              {filtered.length === 0 && (!composedEntries || composedEntries.length === 0 || q) ? (
                 <div style={{ padding: '32px 0', textAlign: 'center', color: 'var(--text-3)', fontSize: 13 }}>
                   {lang === 'he' ? 'לא נמצאו תוצאות' : 'No results found'}
                 </div>

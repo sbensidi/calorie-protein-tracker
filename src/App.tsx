@@ -159,7 +159,7 @@ export default function App() {
           />
         )}
         {tab === 'history' && (
-          <HistoryTab lang={lang} meals={meals} getGoalForDate={getGoalForDate} />
+          <HistoryTab lang={lang} meals={meals} history={history} getSuggestions={getSuggestions} getGoalForDate={getGoalForDate} />
         )}
         {tab === 'goals' && (
           <GoalsTab lang={lang} goals={goals} onSave={saveGoals} />
