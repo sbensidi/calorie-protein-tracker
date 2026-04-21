@@ -581,7 +581,7 @@ export function TodayTab({
         style={{
           position: 'fixed',
           bottom: 28,
-          insetInlineEnd: 24,
+          insetInlineEnd: 'max(calc((100vw - 560px) / 2 + 24px), 24px)',
           zIndex: 40,
           width: 56, height: 56, borderRadius: '50%',
           background: 'var(--blue)',
