@@ -850,11 +850,8 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
           borderRadius: 999,
           padding: fabPad,
           gap: fabGap,
-          boxShadow: '0 4px 20px rgba(59,130,246,0.4)',
-          transition: 'box-shadow 0.15s',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.5), 0 2px 8px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.06)',
         }}
-        onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 6px 28px rgba(59,130,246,0.62)' }}
-        onMouseLeave={e => { e.currentTarget.style.boxShadow = '0 4px 20px rgba(59,130,246,0.4)' }}
       >
         {/* Sliding active indicator */}
         <div style={{
