@@ -11,6 +11,14 @@ type EntryMode = 'manual' | 'scan'
 
 type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack'
 
+function mealTypeByTime(): MealType {
+  const h = new Date().getHours()
+  if (h >= 5  && h < 11) return 'breakfast'
+  if (h >= 11 && h < 15) return 'lunch'
+  if (h >= 15 && h < 21) return 'dinner'
+  return 'snack'
+}
+
 export interface ComposedEntry {
   id: string
   name: string
@@ -43,12 +51,12 @@ export function FoodEntryForm({ lang, history, getSuggestions, onAdd, onUpsertHi
   const [scanProduct,  setScanProduct]  = useState<BarcodeProduct | null>(null)
   const [scanNotFound, setScanNotFound] = useState<string | null>(null) // barcode that wasn't found
   const [scanGrams,    setScanGrams]  = useState('100')
-  const [scanMealType, setScanMealType] = useState<MealType>('lunch')
+  const [scanMealType, setScanMealType] = useState<MealType>(() => mealTypeByTime())
 
   const [foodName, setFoodName]       = useState('')
   const [gramsStr, setGramsStr]       = useState('')
   const [unitsStr, setUnitsStr]       = useState('')
-  const [mealType, setMealType]       = useState<MealType>(defaultMealType ?? 'lunch')
+  const [mealType, setMealType]       = useState<MealType>(() => defaultMealType ?? mealTypeByTime())
   const [calculating, setCalculating] = useState(false)
   const [nutrition, setNutrition]     = useState<NutritionResult | null>(null)
   const [editCalories, setEditCalories] = useState<number | ''>('')
