@@ -420,213 +420,14 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
     )
   }
 
-  // ── Pill FAB toggle (fixed, bottom of screen) ──────────────────────
-  const PillToggleFAB = () => {
-    const btnSize = 38
-    const pad = 5
-    const gap = 2
-    // Sliding indicator: left offset within the pill container
-    // In RTL flex: first DOM child (list) appears on the physical RIGHT → left: pad + btnSize + gap
-    // In LTR flex: first DOM child (list) appears on the physical LEFT  → left: pad
-    const indicatorLeft = isRTL
-      ? (view === 'list' ? pad + btnSize + gap : pad)
-      : (view === 'list' ? pad : pad + btnSize + gap)
+  // ── Pill FAB values (computed once, stable across renders) ──────────
+  const fabBtnSize = 38, fabPad = 5, fabGap = 2
+  // Indicator left offset: in RTL flex the list-btn (first DOM child) sits physically RIGHT
+  const fabIndicatorLeft = isRTL
+    ? (view === 'list' ? fabPad + fabBtnSize + fabGap : fabPad)
+    : (view === 'list' ? fabPad : fabPad + fabBtnSize + fabGap)
 
-    return (
-      <div style={{
-        position: 'fixed',
-        bottom: 28,
-        insetInlineEnd: 'max(calc((100vw - 560px) / 2 + 24px), 24px)',
-        zIndex: 40,
-        display: 'flex',
-        alignItems: 'center',
-        background: 'var(--bg-card2)',
-        border: '1px solid var(--border-hi)',
-        borderRadius: 999,
-        padding: pad,
-        gap,
-        boxShadow: '0 8px 32px rgba(0,0,0,0.5), 0 2px 8px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.06)',
-      }}>
-        {/* Sliding active indicator */}
-        <div style={{
-          position: 'absolute',
-          top: pad,
-          left: indicatorLeft,
-          width: btnSize,
-          height: btnSize,
-          borderRadius: 999,
-          background: 'rgba(59,130,246,0.18)',
-          border: '1px solid rgba(59,130,246,0.4)',
-          boxShadow: '0 0 14px rgba(59,130,246,0.28)',
-          transition: 'left 0.28s cubic-bezier(.34,1.56,.64,1)',
-          pointerEvents: 'none',
-        }} />
-
-        {/* List button */}
-        <button
-          className="fab-pill-btn"
-          onClick={() => { switchView('list'); setSelectedDate(null); setSearch('') }}
-          style={{
-            width: btnSize, height: btnSize, borderRadius: 999,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            border: 'none', background: 'transparent', cursor: 'pointer',
-            position: 'relative', zIndex: 1,
-            color: view === 'list' ? 'var(--blue-hi)' : 'var(--text-3)',
-          }}
-        >
-          <span className="icon" style={{ fontSize: 20 }}>format_list_bulleted</span>
-        </button>
-
-        {/* Calendar button */}
-        <button
-          className="fab-pill-btn"
-          onClick={() => { switchView('cal'); setSelectedDate(null); setSearch('') }}
-          style={{
-            width: btnSize, height: btnSize, borderRadius: 999,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            border: 'none', background: 'transparent', cursor: 'pointer',
-            position: 'relative', zIndex: 1,
-            color: view === 'cal' ? 'var(--blue-hi)' : 'var(--text-3)',
-          }}
-        >
-          <span className="icon" style={{ fontSize: 20 }}>calendar_month</span>
-        </button>
-      </div>
-    )
-  }
-
-  // ── Calendar view ──────────────────────────────────────────────────
-  if (view === 'cal') {
-    // Drill-down: show single day detail
-    if (selectedDate) {
-      const data = grouped.get(selectedDate)
-      return (
-        <>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {/* Back button */}
-          <button
-            onClick={() => setSelectedDate(null)}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 4, alignSelf: 'flex-start',
-              fontSize: 13, fontWeight: 600, fontFamily: 'inherit',
-              color: 'var(--blue-hi)', background: 'none', border: 'none',
-              cursor: 'pointer', padding: '2px 0',
-            }}
-          >
-            <span className="icon icon-sm">{lang === 'he' ? 'arrow_forward' : 'arrow_back'}</span>
-            {t(lang, 'calView')}
-          </button>
-
-          {data && (
-            <div
-              className="card"
-              style={{ borderInlineStart: `3px solid ${STATUS_COLOR[data.status].border}`, overflow: 'hidden' }}
-            >
-              <div style={{ padding: '14px 14px 12px' }}>
-                <DayCardContent date={selectedDate} data={data} />
-              </div>
-              <MealsList data={data} />
-            </div>
-          )}
-        </div>
-        <PillToggleFAB />
-        </>
-      )
-    }
-
-    // Calendar grid
-    return (
-      <>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-        <StatusFilterBar />
-
-        <div className="card" style={{ padding: 14 }}>
-          {/* Month header */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-            <div style={{ display: 'flex', gap: 2 }}>
-              {([[-1, 'chevron_right'], [1, 'chevron_left']] as const).map(([dir, icon]) => (
-                <button
-                  key={dir}
-                  onClick={() => changeMonth(dir)}
-                  style={{
-                    background: 'none', border: 'none', cursor: 'pointer',
-                    color: 'var(--text-3)', padding: 4, display: 'flex',
-                    alignItems: 'center', borderRadius: 7,
-                  }}
-                >
-                  <span className="icon">{icon}</span>
-                </button>
-              ))}
-            </div>
-            <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>{monthLabel}</span>
-          </div>
-
-          {/* Weekday labels */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', marginBottom: 4 }}>
-            {weekDayLabels.map(d => (
-              <div key={d} style={{ textAlign: 'center', fontSize: 10, fontWeight: 600, color: 'var(--text-3)', padding: '3px 0' }}>
-                {d}
-              </div>
-            ))}
-          </div>
-
-          {/* Day cells */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 2 }}>
-            {calCells.map((day, idx) => {
-              if (day === null) return <div key={`e${idx}`} />
-              const dateKey = toDateKey(calYear, calMonth, day)
-              const data    = grouped.get(dateKey)
-              const isToday = dateKey === todayKey
-              const dimmed  = !!data && statusFilter !== 'all' && data.status !== statusFilter
-
-              return (
-                <div
-                  key={dateKey}
-                  onClick={() => data && setSelectedDate(dateKey)}
-                  style={{
-                    height: 38,
-                    display: 'flex', flexDirection: 'column',
-                    alignItems: 'center', justifyContent: 'center', gap: 2,
-                    fontSize: 12, fontWeight: 600, borderRadius: 8,
-                    cursor: data ? 'pointer' : 'default',
-                    color:  isToday ? 'var(--blue-hi)' : data ? 'var(--text-2)' : 'var(--text-3)',
-                    background: data ? 'rgba(255,255,255,0.03)' : 'transparent',
-                    border: `1.5px solid ${isToday ? 'rgba(59,130,246,0.4)' : 'transparent'}`,
-                    opacity: dimmed ? 0.2 : 1,
-                    transition: 'opacity .15s',
-                  }}
-                >
-                  <span>{day}</span>
-                  {data && (
-                    <div style={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-                      {data.calOk  && <span className="icon" style={{ fontSize: 10, color: 'var(--blue-hi)'  }}>check</span>}
-                      {data.protOk && <span className="icon" style={{ fontSize: 10, color: 'var(--green-hi)' }}>check</span>}
-                    </div>
-                  )}
-                </div>
-              )
-            })}
-          </div>
-
-          {/* Legend */}
-          <div style={{ display: 'flex', gap: 14, marginTop: 10, paddingTop: 10, borderTop: '1px solid var(--border)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, color: 'var(--text-3)' }}>
-              <span className="icon" style={{ fontSize: 11, color: 'var(--blue-hi)' }}>check</span>
-              {t(lang, 'caloriesOk')}
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, color: 'var(--text-3)' }}>
-              <span className="icon" style={{ fontSize: 11, color: 'var(--green-hi)' }}>check</span>
-              {t(lang, 'proteinMet')}
-            </div>
-          </div>
-        </div>
-      </div>
-      <PillToggleFAB />
-      </>
-    )
-  }
-
-  // ── List view ──────────────────────────────────────────────────────
+  // ── List view pre-compute (needed before single return) ───────────
   const filteredDates = sortedDates.filter(date => {
     const data = grouped.get(date)!
     if (statusFilter !== 'all' && data.status !== statusFilter) return false
@@ -636,380 +437,468 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
     }
     return true
   })
-
-  // Sticky app-header height — must match the <header height={56}> in App.tsx
   const TOPBAR_H = 57  // 56px header + 1px border
 
+  // ── Single return — FAB always at stable position in the tree ─────
   return (
     <>
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 10, paddingBottom: 80 }}>
-
-      {/* Sticky bar: filters + search */}
-      <div style={{
-        position: 'sticky',
-        top: TOPBAR_H,
-        zIndex: 10,
-        background: 'var(--bg)',
-        paddingTop: 10,
-        paddingBottom: 6,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 10,
-      }}>
-        <div style={{ display: 'flex', gap: 6, alignItems: 'stretch' }}>
-          <button
-            onClick={() => setSortAsc(v => !v)}
-            title={sortAsc ? (lang === 'he' ? 'ישן לחדש' : 'Oldest first') : (lang === 'he' ? 'חדש לישן' : 'Newest first')}
-            style={{
-              flexShrink: 0, width: 36, borderRadius: 10, cursor: 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              border: '1px solid var(--border)',
-              background: 'var(--bg-card)',
-              color: 'var(--text-3)',
-              transition: 'all .15s',
-            }}
-          >
-            <span className="icon icon-sm">{sortAsc ? 'arrow_upward' : 'arrow_downward'}</span>
-          </button>
-          <div style={{ flex: 1 }}><StatusFilterBar /></div>
-        </div>
-
-      {/* Search */}
-      <div style={{ position: 'relative' }}>
-        {/* History browse button — inline-end (left RTL / right LTR) */}
-        <button
-          onMouseDown={e => {
-            e.preventDefault()
-            setHistorySearch('')
-            setHistoryModalOpen(true)
-            setDropdownOpen(false)
-            setTimeout(() => historySearchRef.current?.focus(), 50)
-          }}
-          tabIndex={-1}
-          title={lang === 'he' ? 'היסטוריית מזונות' : 'Food history'}
-          style={{
-            position: 'absolute',
-            ...(isRTL ? { left: 0 } : { right: 0 }),
-            top: 0, bottom: 0, width: 42,
-            background: 'none', border: 'none', cursor: 'pointer',
-            color: 'var(--text-3)', padding: 0,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            ...(isRTL ? { borderRight: '1px solid var(--border)' } : { borderLeft: '1px solid var(--border)' }),
-          }}
-        >
-          <span className="icon icon-sm">manage_search</span>
-        </button>
-        {/* Search icon (decorative) */}
-        <span className="icon" style={{
-          position: 'absolute',
-          ...(isRTL ? { right: 10 } : { left: 52 }),
-          top: '50%', transform: 'translateY(-50%)',
-          color: 'var(--text-3)', fontSize: 18, pointerEvents: 'none',
-        }}>search</span>
-        <input
-          ref={searchInputRef}
-          type="text"
-          className="inp"
-          dir={lang === 'he' ? 'rtl' : 'ltr'}
-          value={search}
-          onChange={e => { setSearch(e.target.value); setDropdownOpen(true) }}
-          onFocus={() => setDropdownOpen(true)}
-          onBlur={() => setTimeout(() => {
-            if (!searchDropdownRef.current?.contains(document.activeElement)) setDropdownOpen(false)
-          }, 150)}
-          placeholder={t(lang, 'searchFood')}
-          style={isRTL
-            ? { paddingRight: 36, paddingLeft: search ? 78 : 46 }
-            : { paddingLeft: 78, paddingRight: search ? 78 : 46 }}
-        />
-        {/* Clear button — same side as manage_search */}
-        {search && (
-          <button
-            onMouseDown={e => { e.preventDefault(); setSearch(''); setDropdownOpen(false); searchInputRef.current?.focus() }}
-            style={{
-              position: 'absolute',
-              ...(isRTL ? { left: 42 } : { right: 42 }),
-              top: '50%', transform: 'translateY(-50%)',
-              background: 'none', border: 'none', cursor: 'pointer',
-              color: 'var(--text-3)', padding: 2, display: 'flex',
-            }}
-          >
-            <span className="icon icon-sm">close</span>
-          </button>
-        )}
-
-        {/* Inline recent items dropdown */}
-        {dropdownOpen && (() => {
-          const q = search.trim().toLowerCase()
-          const recentItems = q
-            ? history.filter(h => h.name.toLowerCase().includes(q)).slice(0, 6)
-            : [...history].sort((a, b) => b.use_count - a.use_count).slice(0, 6)
-          const matchedComposed = composedEntries.filter(e => !q || e.name.toLowerCase().includes(q))
-          if (recentItems.length === 0 && matchedComposed.length === 0) return null
-          return (
-            <div
-              ref={searchDropdownRef}
+      {/* ── Calendar: drill-down ───────────────────────────────── */}
+      {view === 'cal' && selectedDate && (() => {
+        const data = grouped.get(selectedDate)
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <button
+              onClick={() => setSelectedDate(null)}
               style={{
-                position: 'absolute',
-                top: 'calc(46px + 4px)',
-                left: 0, right: 0,
-                background: 'var(--bg-card2)',
-                border: '1px solid var(--border-hi)',
-                borderRadius: 10,
-                overflow: 'hidden',
-                zIndex: 50,
-                boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+                display: 'flex', alignItems: 'center', gap: 4, alignSelf: 'flex-start',
+                fontSize: 13, fontWeight: 600, fontFamily: 'inherit',
+                color: 'var(--blue-hi)', background: 'none', border: 'none',
+                cursor: 'pointer', padding: '2px 0',
               }}
             >
-              {matchedComposed.map(entry => (
-                <button
-                  key={entry.id}
-                  onMouseDown={() => { setSearch(entry.name); setDropdownOpen(false) }}
-                  style={{
-                    display: 'flex', alignItems: 'center', width: '100%',
-                    padding: '9px 12px', background: 'transparent', border: 'none',
-                    borderBottom: '1px solid var(--border)',
-                    cursor: 'pointer', gap: 10, textAlign: 'start', fontFamily: 'inherit',
-                    transition: 'background .12s',
-                  }}
-                  onMouseEnter={e => (e.currentTarget.style.background = 'rgba(139,92,246,0.05)')}
-                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                >
-                  <span className="icon icon-sm" style={{ color: 'var(--purple)', flexShrink: 0 }}>restaurant</span>
-                  <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {entry.name}
-                  </span>
-                  <span style={{ fontSize: 11, color: 'var(--blue-hi)', fontWeight: 600 }}>{entry.calories}</span>
-                  <span style={{ fontSize: 11, color: 'var(--green-hi)', fontWeight: 600, marginInlineStart: 6 }}>{entry.protein}g</span>
-                </button>
-              ))}
-              {recentItems.map((item, i) => (
-                <button
-                  key={item.id}
-                  onMouseDown={() => { setSearch(item.name); setDropdownOpen(false) }}
-                  style={{
-                    display: 'flex', alignItems: 'center', width: '100%',
-                    padding: '9px 12px', background: 'transparent', border: 'none',
-                    borderBottom: i < recentItems.length - 1 ? '1px solid var(--border)' : 'none',
-                    cursor: 'pointer', gap: 10, textAlign: 'start', fontFamily: 'inherit',
-                    transition: 'background .12s',
-                  }}
-                  onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')}
-                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                >
-                  <span className="icon icon-sm" style={{ color: 'var(--text-2)', flexShrink: 0 }}>history</span>
-                  <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {item.name}
-                  </span>
-                  <span style={{ fontSize: 11, color: 'var(--blue-hi)', fontWeight: 600 }}>{Math.round(item.calories)}</span>
-                  <span style={{ fontSize: 11, color: 'var(--green-hi)', fontWeight: 600, marginInlineStart: 6 }}>{Math.round(item.protein * 10) / 10}g</span>
-                </button>
-              ))}
-            </div>
-          )
-        })()}
-      </div>
-
-      {/* Gradient fade — absolutely pinned to bottom of the sticky bar,
-          fades in when scrolled to hint at content behind it */}
-      <div style={{
-        position: 'relative', height: 0, overflow: 'visible', zIndex: 9,
-        pointerEvents: 'none',
-      }}>
-        <div style={{
-          position: 'absolute',
-          top: 0, left: -16, right: -16,
-          height: 28,
-          background: 'linear-gradient(to bottom, var(--bg), transparent)',
-          opacity: scrolledDown ? 1 : 0,
-          transition: 'opacity 0.35s ease',
-        }} />
-      </div>
-      </div>{/* end sticky bar */}
-
-      {filteredDates.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-3)' }}>
-          <span className="icon" style={{ fontSize: 28, display: 'block', marginBottom: 8 }}>search_off</span>
-          <p style={{ fontSize: 13, margin: 0 }}>{t(lang, 'noResults')}</p>
-        </div>
-      ) : (
-        filteredDates.map((date, i) => {
-          const data = grouped.get(date)!
-          return (
-            <details
-              key={date}
-              className="card fade-up"
-              style={{
-                animationDelay: `${i * 0.04}s`,
-                borderInlineStart: `3px solid ${STATUS_COLOR[data.status].border}`,
-                overflow: 'hidden',
-              }}
-            >
-              <summary style={{ padding: '14px 14px 12px' }}>
-                <DayCardContent date={date} data={data} chevron />
-              </summary>
-              <MealsList data={data} />
-            </details>
-          )
-        })
-      )}
-    </div>
-
-    {/* ── Bottom gradient fade ─────────────────────────────────── */}
-    <div style={{
-      position: 'fixed',
-      bottom: 0,
-      left: '50%',
-      transform: 'translateX(-50%)',
-      width: '100%',
-      maxWidth: 560,
-      height: 80,
-      background: 'linear-gradient(to top, var(--bg) 20%, transparent)',
-      pointerEvents: 'none',
-      zIndex: 39,
-    }} />
-
-    {/* ── Food history modal ──────────────────────────────────── */}
-    {historyModalOpen && (() => {
-      const q = historySearch.trim().toLowerCase()
-      const filtered = q
-        ? history.filter(h => h.name.toLowerCase().includes(q))
-        : [...history].sort((a, b) => b.use_count - a.use_count)
-      return (
-        <div className="compose-modal-backdrop" onClick={() => setHistoryModalOpen(false)}>
-          <div
-            className="compose-modal"
-            style={{ maxWidth: 440, padding: 0, overflow: 'hidden', maxHeight: '80vh', display: 'flex', flexDirection: 'column' }}
-            onClick={e => e.stopPropagation()}
-          >
-            {/* Header */}
-            <div style={{ padding: '14px 14px 0', display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span className="icon icon-sm" style={{ color: 'var(--text-3)' }}>manage_search</span>
-              <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-2)', flex: 1 }}>
-                {lang === 'he' ? 'היסטוריית מזונות' : 'Food history'}
-              </span>
-              <button onClick={() => setHistoryModalOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 4 }}>
-                <span className="icon icon-sm">close</span>
-              </button>
-            </div>
-
-            {/* Search */}
-            <div style={{ padding: '10px 14px' }}>
-              <div style={{ position: 'relative' }}>
-                <input
-                  ref={historySearchRef}
-                  className="inp"
-                  style={{ paddingInlineStart: 36, height: 40, fontSize: 13 }}
-                  placeholder={lang === 'he' ? 'חיפוש...' : 'Search...'}
-                  value={historySearch}
-                  onChange={e => setHistorySearch(e.target.value)}
-                  dir={lang === 'he' ? 'rtl' : 'ltr'}
-                />
-                <span className="icon icon-sm" style={{
-                  position: 'absolute', top: '50%', transform: 'translateY(-50%)',
-                  ...(isRTL ? { right: 10 } : { left: 10 }),
-                  color: 'var(--text-3)', pointerEvents: 'none',
-                }}>search</span>
-                {historySearch && (
-                  <button onClick={() => setHistorySearch('')} style={{
-                    position: 'absolute', top: '50%', transform: 'translateY(-50%)',
-                    ...(isRTL ? { left: 8 } : { right: 8 }),
-                    background: 'none', border: 'none', cursor: 'pointer',
-                    color: 'var(--text-3)', padding: 2, display: 'flex',
-                  }}>
-                    <span className="icon icon-sm">close</span>
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* List */}
-            <div style={{ overflowY: 'auto', flex: 1, borderTop: '1px solid var(--border)' }}>
-
-              {/* Composed dishes section */}
-              {composedEntries.filter(e => !q || e.name.toLowerCase().includes(q)).length > 0 && (
-                <>
-                  <div style={{ padding: '8px 14px 4px', fontSize: 10, fontWeight: 700, color: 'var(--text-3)', letterSpacing: '0.07em', textTransform: 'uppercase' }}>
-                    {lang === 'he' ? 'מנות שהרכבתי' : 'My composed dishes'}
-                  </div>
-                  {composedEntries.filter(e => !q || e.name.toLowerCase().includes(q)).map(entry => (
-                    <button
-                      key={entry.id}
-                      onClick={() => { setSearch(entry.name); setHistoryModalOpen(false); setHistorySearch('') }}
-                      style={{
-                        display: 'flex', alignItems: 'center', width: '100%',
-                        padding: '10px 14px', background: 'transparent', border: 'none',
-                        borderBottom: '1px solid var(--border)',
-                        cursor: 'pointer', gap: 10, textAlign: 'start', fontFamily: 'inherit',
-                        transition: 'background .12s',
-                      }}
-                      onMouseEnter={e => (e.currentTarget.style.background = 'rgba(139,92,246,0.05)')}
-                      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                    >
-                      <span className="icon icon-sm" style={{ color: 'var(--purple)', flexShrink: 0 }}>restaurant</span>
-                      <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {entry.name}
-                      </span>
-                      <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-                        <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--blue-hi)' }}>{entry.calories}</span>
-                        <span style={{ fontSize: 11, color: 'var(--text-3)' }}>{t(lang, 'caloriesUnit')}</span>
-                        <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--green-hi)', marginInlineStart: 4 }}>{entry.protein}</span>
-                        <span style={{ fontSize: 11, color: 'var(--text-3)' }}>{t(lang, 'proteinUnit')}</span>
-                      </div>
-                    </button>
-                  ))}
-                  {filtered.length > 0 && (
-                    <div style={{ padding: '8px 14px 4px', fontSize: 10, fontWeight: 700, color: 'var(--text-3)', letterSpacing: '0.07em', textTransform: 'uppercase' }}>
-                      {lang === 'he' ? 'היסטוריה' : 'History'}
-                    </div>
-                  )}
-                </>
-              )}
-
-              {filtered.length === 0 && composedEntries.filter(e => !q || e.name.toLowerCase().includes(q)).length === 0 ? (
-                <div style={{ padding: '32px 0', textAlign: 'center', color: 'var(--text-3)', fontSize: 13 }}>
-                  {lang === 'he' ? 'לא נמצאו תוצאות' : 'No results found'}
+              <span className="icon icon-sm">{lang === 'he' ? 'arrow_forward' : 'arrow_back'}</span>
+              {t(lang, 'calView')}
+            </button>
+            {data && (
+              <div className="card" style={{ borderInlineStart: `3px solid ${STATUS_COLOR[data.status].border}`, overflow: 'hidden' }}>
+                <div style={{ padding: '14px 14px 12px' }}>
+                  <DayCardContent date={selectedDate} data={data} />
                 </div>
-              ) : filtered.map((item, i) => {
-                const itemIsUnit = item.grams < 0
-                const amtDisplay = itemIsUnit ? `${Math.abs(item.grams)} ${unitLabel}` : `${item.grams}g`
-                return (
+                <MealsList data={data} />
+              </div>
+            )}
+          </div>
+        )
+      })()}
+
+      {/* ── Calendar: grid ─────────────────────────────────────── */}
+      {view === 'cal' && !selectedDate && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <StatusFilterBar />
+          <div className="card" style={{ padding: 14 }}>
+            {/* Month header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <div style={{ display: 'flex', gap: 2 }}>
+                {([[-1, 'chevron_right'], [1, 'chevron_left']] as const).map(([dir, icon]) => (
                   <button
-                    key={item.id}
-                    onClick={() => { setSearch(item.name); setHistoryModalOpen(false); setHistorySearch('') }}
+                    key={dir}
+                    onClick={() => changeMonth(dir)}
                     style={{
-                      display: 'flex', alignItems: 'center', width: '100%',
-                      padding: '10px 14px', background: 'transparent', border: 'none',
-                      borderBottom: i < filtered.length - 1 ? '1px solid var(--border)' : 'none',
-                      cursor: 'pointer', gap: 10, textAlign: 'start', fontFamily: 'inherit',
-                      transition: 'background .12s',
+                      background: 'none', border: 'none', cursor: 'pointer',
+                      color: 'var(--text-3)', padding: 4, display: 'flex',
+                      alignItems: 'center', borderRadius: 7,
                     }}
-                    onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.04)')}
-                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                   >
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {item.name}
-                      </p>
-                      <p style={{ fontSize: 11, color: 'var(--text-3)', margin: '2px 0 0' }}>
-                        {amtDisplay} · {item.use_count} {lang === 'he' ? 'שימושים' : 'uses'}
-                      </p>
-                    </div>
-                    <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-                      <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--blue-hi)' }}>{Math.round(item.calories)}</span>
-                      <span style={{ fontSize: 11, color: 'var(--text-3)' }}>{t(lang, 'caloriesUnit')}</span>
-                      <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--green-hi)', marginInlineStart: 4 }}>{Math.round(item.protein * 10) / 10}</span>
-                      <span style={{ fontSize: 11, color: 'var(--text-3)' }}>{t(lang, 'proteinUnit')}</span>
-                    </div>
+                    <span className="icon">{icon}</span>
                   </button>
+                ))}
+              </div>
+              <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>{monthLabel}</span>
+            </div>
+            {/* Weekday labels */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', marginBottom: 4 }}>
+              {weekDayLabels.map(d => (
+                <div key={d} style={{ textAlign: 'center', fontSize: 10, fontWeight: 600, color: 'var(--text-3)', padding: '3px 0' }}>
+                  {d}
+                </div>
+              ))}
+            </div>
+            {/* Day cells */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 2 }}>
+              {calCells.map((day, idx) => {
+                if (day === null) return <div key={`e${idx}`} />
+                const dateKey = toDateKey(calYear, calMonth, day)
+                const data    = grouped.get(dateKey)
+                const isToday = dateKey === todayKey
+                const dimmed  = !!data && statusFilter !== 'all' && data.status !== statusFilter
+                return (
+                  <div
+                    key={dateKey}
+                    onClick={() => data && setSelectedDate(dateKey)}
+                    style={{
+                      height: 38,
+                      display: 'flex', flexDirection: 'column',
+                      alignItems: 'center', justifyContent: 'center', gap: 2,
+                      fontSize: 12, fontWeight: 600, borderRadius: 8,
+                      cursor: data ? 'pointer' : 'default',
+                      color:  isToday ? 'var(--blue-hi)' : data ? 'var(--text-2)' : 'var(--text-3)',
+                      background: data ? 'rgba(255,255,255,0.03)' : 'transparent',
+                      border: `1.5px solid ${isToday ? 'rgba(59,130,246,0.4)' : 'transparent'}`,
+                      opacity: dimmed ? 0.2 : 1,
+                      transition: 'opacity .15s',
+                    }}
+                  >
+                    <span>{day}</span>
+                    {data && (
+                      <div style={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                        {data.calOk  && <span className="icon" style={{ fontSize: 10, color: 'var(--blue-hi)'  }}>check</span>}
+                        {data.protOk && <span className="icon" style={{ fontSize: 10, color: 'var(--green-hi)' }}>check</span>}
+                      </div>
+                    )}
+                  </div>
                 )
               })}
             </div>
+            {/* Legend */}
+            <div style={{ display: 'flex', gap: 14, marginTop: 10, paddingTop: 10, borderTop: '1px solid var(--border)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, color: 'var(--text-3)' }}>
+                <span className="icon" style={{ fontSize: 11, color: 'var(--blue-hi)' }}>check</span>
+                {t(lang, 'caloriesOk')}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, color: 'var(--text-3)' }}>
+                <span className="icon" style={{ fontSize: 11, color: 'var(--green-hi)' }}>check</span>
+                {t(lang, 'proteinMet')}
+              </div>
+            </div>
           </div>
         </div>
-      )
-    })()}
-    <PillToggleFAB />
+      )}
+
+      {/* ── List view ──────────────────────────────────────────── */}
+      {view === 'list' && (
+        <>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, paddingBottom: 80 }}>
+            {/* Sticky bar: filters + search */}
+            <div style={{
+              position: 'sticky', top: TOPBAR_H, zIndex: 10,
+              background: 'var(--bg)', paddingTop: 10, paddingBottom: 6,
+              display: 'flex', flexDirection: 'column', gap: 10,
+            }}>
+              <div style={{ display: 'flex', gap: 6, alignItems: 'stretch' }}>
+                <button
+                  onClick={() => setSortAsc(v => !v)}
+                  title={sortAsc ? (lang === 'he' ? 'ישן לחדש' : 'Oldest first') : (lang === 'he' ? 'חדש לישן' : 'Newest first')}
+                  style={{
+                    flexShrink: 0, width: 36, borderRadius: 10, cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    border: '1px solid var(--border)', background: 'var(--bg-card)',
+                    color: 'var(--text-3)', transition: 'all .15s',
+                  }}
+                >
+                  <span className="icon icon-sm">{sortAsc ? 'arrow_upward' : 'arrow_downward'}</span>
+                </button>
+                <div style={{ flex: 1 }}><StatusFilterBar /></div>
+              </div>
+
+              {/* Search */}
+              <div style={{ position: 'relative' }}>
+                <button
+                  onMouseDown={e => {
+                    e.preventDefault()
+                    setHistorySearch('')
+                    setHistoryModalOpen(true)
+                    setDropdownOpen(false)
+                    setTimeout(() => historySearchRef.current?.focus(), 50)
+                  }}
+                  tabIndex={-1}
+                  title={lang === 'he' ? 'היסטוריית מזונות' : 'Food history'}
+                  style={{
+                    position: 'absolute',
+                    ...(isRTL ? { left: 0 } : { right: 0 }),
+                    top: 0, bottom: 0, width: 42,
+                    background: 'none', border: 'none', cursor: 'pointer',
+                    color: 'var(--text-3)', padding: 0,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    ...(isRTL ? { borderRight: '1px solid var(--border)' } : { borderLeft: '1px solid var(--border)' }),
+                  }}
+                >
+                  <span className="icon icon-sm">manage_search</span>
+                </button>
+                <span className="icon" style={{
+                  position: 'absolute',
+                  ...(isRTL ? { right: 10 } : { left: 52 }),
+                  top: '50%', transform: 'translateY(-50%)',
+                  color: 'var(--text-3)', fontSize: 18, pointerEvents: 'none',
+                }}>search</span>
+                <input
+                  ref={searchInputRef}
+                  type="text"
+                  className="inp"
+                  dir={lang === 'he' ? 'rtl' : 'ltr'}
+                  value={search}
+                  onChange={e => { setSearch(e.target.value); setDropdownOpen(true) }}
+                  onFocus={() => setDropdownOpen(true)}
+                  onBlur={() => setTimeout(() => {
+                    if (!searchDropdownRef.current?.contains(document.activeElement)) setDropdownOpen(false)
+                  }, 150)}
+                  placeholder={t(lang, 'searchFood')}
+                  style={isRTL
+                    ? { paddingRight: 36, paddingLeft: search ? 78 : 46 }
+                    : { paddingLeft: 78, paddingRight: search ? 78 : 46 }}
+                />
+                {search && (
+                  <button
+                    onMouseDown={e => { e.preventDefault(); setSearch(''); setDropdownOpen(false); searchInputRef.current?.focus() }}
+                    style={{
+                      position: 'absolute',
+                      ...(isRTL ? { left: 42 } : { right: 42 }),
+                      top: '50%', transform: 'translateY(-50%)',
+                      background: 'none', border: 'none', cursor: 'pointer',
+                      color: 'var(--text-3)', padding: 2, display: 'flex',
+                    }}
+                  >
+                    <span className="icon icon-sm">close</span>
+                  </button>
+                )}
+                {/* Inline recent items dropdown */}
+                {dropdownOpen && (() => {
+                  const q = search.trim().toLowerCase()
+                  const recentItems = q
+                    ? history.filter(h => h.name.toLowerCase().includes(q)).slice(0, 6)
+                    : [...history].sort((a, b) => b.use_count - a.use_count).slice(0, 6)
+                  const matchedComposed = composedEntries.filter(e => !q || e.name.toLowerCase().includes(q))
+                  if (recentItems.length === 0 && matchedComposed.length === 0) return null
+                  return (
+                    <div ref={searchDropdownRef} style={{
+                      position: 'absolute', top: 'calc(46px + 4px)', left: 0, right: 0,
+                      background: 'var(--bg-card2)', border: '1px solid var(--border-hi)',
+                      borderRadius: 10, overflow: 'hidden', zIndex: 50,
+                      boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+                    }}>
+                      {matchedComposed.map(entry => (
+                        <button key={entry.id} onMouseDown={() => { setSearch(entry.name); setDropdownOpen(false) }}
+                          style={{ display: 'flex', alignItems: 'center', width: '100%', padding: '9px 12px', background: 'transparent', border: 'none', borderBottom: '1px solid var(--border)', cursor: 'pointer', gap: 10, textAlign: 'start', fontFamily: 'inherit', transition: 'background .12s' }}
+                          onMouseEnter={e => (e.currentTarget.style.background = 'rgba(139,92,246,0.05)')}
+                          onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                        >
+                          <span className="icon icon-sm" style={{ color: 'var(--purple)', flexShrink: 0 }}>restaurant</span>
+                          <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{entry.name}</span>
+                          <span style={{ fontSize: 11, color: 'var(--blue-hi)', fontWeight: 600 }}>{entry.calories}</span>
+                          <span style={{ fontSize: 11, color: 'var(--green-hi)', fontWeight: 600, marginInlineStart: 6 }}>{entry.protein}g</span>
+                        </button>
+                      ))}
+                      {recentItems.map((item, i) => (
+                        <button key={item.id} onMouseDown={() => { setSearch(item.name); setDropdownOpen(false) }}
+                          style={{ display: 'flex', alignItems: 'center', width: '100%', padding: '9px 12px', background: 'transparent', border: 'none', borderBottom: i < recentItems.length - 1 ? '1px solid var(--border)' : 'none', cursor: 'pointer', gap: 10, textAlign: 'start', fontFamily: 'inherit', transition: 'background .12s' }}
+                          onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')}
+                          onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                        >
+                          <span className="icon icon-sm" style={{ color: 'var(--text-2)', flexShrink: 0 }}>history</span>
+                          <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</span>
+                          <span style={{ fontSize: 11, color: 'var(--blue-hi)', fontWeight: 600 }}>{Math.round(item.calories)}</span>
+                          <span style={{ fontSize: 11, color: 'var(--green-hi)', fontWeight: 600, marginInlineStart: 6 }}>{Math.round(item.protein * 10) / 10}g</span>
+                        </button>
+                      ))}
+                    </div>
+                  )
+                })()}
+              </div>
+
+              {/* Top gradient fade */}
+              <div style={{ position: 'relative', height: 0, overflow: 'visible', zIndex: 9, pointerEvents: 'none' }}>
+                <div style={{
+                  position: 'absolute', top: 0, left: -16, right: -16, height: 28,
+                  background: 'linear-gradient(to bottom, var(--bg), transparent)',
+                  opacity: scrolledDown ? 1 : 0, transition: 'opacity 0.35s ease',
+                }} />
+              </div>
+            </div>{/* end sticky bar */}
+
+            {filteredDates.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-3)' }}>
+                <span className="icon" style={{ fontSize: 28, display: 'block', marginBottom: 8 }}>search_off</span>
+                <p style={{ fontSize: 13, margin: 0 }}>{t(lang, 'noResults')}</p>
+              </div>
+            ) : (
+              filteredDates.map((date, i) => {
+                const data = grouped.get(date)!
+                return (
+                  <details key={date} className="card fade-up"
+                    style={{ animationDelay: `${i * 0.04}s`, borderInlineStart: `3px solid ${STATUS_COLOR[data.status].border}`, overflow: 'hidden' }}
+                  >
+                    <summary style={{ padding: '14px 14px 12px' }}>
+                      <DayCardContent date={date} data={data} chevron />
+                    </summary>
+                    <MealsList data={data} />
+                  </details>
+                )
+              })
+            )}
+          </div>
+
+          {/* Bottom gradient fade */}
+          <div style={{
+            position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)',
+            width: '100%', maxWidth: 560, height: 80,
+            background: 'linear-gradient(to top, var(--bg) 20%, transparent)',
+            pointerEvents: 'none', zIndex: 39,
+          }} />
+
+          {/* Food history modal */}
+          {historyModalOpen && (() => {
+            const q = historySearch.trim().toLowerCase()
+            const filtered = q
+              ? history.filter(h => h.name.toLowerCase().includes(q))
+              : [...history].sort((a, b) => b.use_count - a.use_count)
+            return (
+              <div className="compose-modal-backdrop" onClick={() => setHistoryModalOpen(false)}>
+                <div className="compose-modal"
+                  style={{ maxWidth: 440, padding: 0, overflow: 'hidden', maxHeight: '80vh', display: 'flex', flexDirection: 'column' }}
+                  onClick={e => e.stopPropagation()}
+                >
+                  <div style={{ padding: '14px 14px 0', display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span className="icon icon-sm" style={{ color: 'var(--text-3)' }}>manage_search</span>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-2)', flex: 1 }}>
+                      {lang === 'he' ? 'היסטוריית מזונות' : 'Food history'}
+                    </span>
+                    <button onClick={() => setHistoryModalOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 4 }}>
+                      <span className="icon icon-sm">close</span>
+                    </button>
+                  </div>
+                  <div style={{ padding: '10px 14px' }}>
+                    <div style={{ position: 'relative' }}>
+                      <input ref={historySearchRef} className="inp"
+                        style={{ paddingInlineStart: 36, height: 40, fontSize: 13 }}
+                        placeholder={lang === 'he' ? 'חיפוש...' : 'Search...'}
+                        value={historySearch} onChange={e => setHistorySearch(e.target.value)}
+                        dir={lang === 'he' ? 'rtl' : 'ltr'}
+                      />
+                      <span className="icon icon-sm" style={{
+                        position: 'absolute', top: '50%', transform: 'translateY(-50%)',
+                        ...(isRTL ? { right: 10 } : { left: 10 }),
+                        color: 'var(--text-3)', pointerEvents: 'none',
+                      }}>search</span>
+                      {historySearch && (
+                        <button onClick={() => setHistorySearch('')} style={{
+                          position: 'absolute', top: '50%', transform: 'translateY(-50%)',
+                          ...(isRTL ? { left: 8 } : { right: 8 }),
+                          background: 'none', border: 'none', cursor: 'pointer',
+                          color: 'var(--text-3)', padding: 2, display: 'flex',
+                        }}>
+                          <span className="icon icon-sm">close</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  <div style={{ overflowY: 'auto', flex: 1, borderTop: '1px solid var(--border)' }}>
+                    {composedEntries.filter(e => !q || e.name.toLowerCase().includes(q)).length > 0 && (
+                      <>
+                        <div style={{ padding: '8px 14px 4px', fontSize: 10, fontWeight: 700, color: 'var(--text-3)', letterSpacing: '0.07em', textTransform: 'uppercase' }}>
+                          {lang === 'he' ? 'מנות שהרכבתי' : 'My composed dishes'}
+                        </div>
+                        {composedEntries.filter(e => !q || e.name.toLowerCase().includes(q)).map(entry => (
+                          <button key={entry.id}
+                            onClick={() => { setSearch(entry.name); setHistoryModalOpen(false); setHistorySearch('') }}
+                            style={{ display: 'flex', alignItems: 'center', width: '100%', padding: '10px 14px', background: 'transparent', border: 'none', borderBottom: '1px solid var(--border)', cursor: 'pointer', gap: 10, textAlign: 'start', fontFamily: 'inherit', transition: 'background .12s' }}
+                            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(139,92,246,0.05)')}
+                            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                          >
+                            <span className="icon icon-sm" style={{ color: 'var(--purple)', flexShrink: 0 }}>restaurant</span>
+                            <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{entry.name}</span>
+                            <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+                              <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--blue-hi)' }}>{entry.calories}</span>
+                              <span style={{ fontSize: 11, color: 'var(--text-3)' }}>{t(lang, 'caloriesUnit')}</span>
+                              <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--green-hi)', marginInlineStart: 4 }}>{entry.protein}</span>
+                              <span style={{ fontSize: 11, color: 'var(--text-3)' }}>{t(lang, 'proteinUnit')}</span>
+                            </div>
+                          </button>
+                        ))}
+                        {filtered.length > 0 && (
+                          <div style={{ padding: '8px 14px 4px', fontSize: 10, fontWeight: 700, color: 'var(--text-3)', letterSpacing: '0.07em', textTransform: 'uppercase' }}>
+                            {lang === 'he' ? 'היסטוריה' : 'History'}
+                          </div>
+                        )}
+                      </>
+                    )}
+                    {filtered.length === 0 && composedEntries.filter(e => !q || e.name.toLowerCase().includes(q)).length === 0 ? (
+                      <div style={{ padding: '32px 0', textAlign: 'center', color: 'var(--text-3)', fontSize: 13 }}>
+                        {lang === 'he' ? 'לא נמצאו תוצאות' : 'No results found'}
+                      </div>
+                    ) : filtered.map((item, i) => {
+                      const amtDisplay = item.grams < 0 ? `${Math.abs(item.grams)} ${unitLabel}` : `${item.grams}g`
+                      return (
+                        <button key={item.id}
+                          onClick={() => { setSearch(item.name); setHistoryModalOpen(false); setHistorySearch('') }}
+                          style={{ display: 'flex', alignItems: 'center', width: '100%', padding: '10px 14px', background: 'transparent', border: 'none', borderBottom: i < filtered.length - 1 ? '1px solid var(--border)' : 'none', cursor: 'pointer', gap: 10, textAlign: 'start', fontFamily: 'inherit', transition: 'background .12s' }}
+                          onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.04)')}
+                          onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                        >
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</p>
+                            <p style={{ fontSize: 11, color: 'var(--text-3)', margin: '2px 0 0' }}>
+                              {amtDisplay} · {item.use_count} {lang === 'he' ? 'שימושים' : 'uses'}
+                            </p>
+                          </div>
+                          <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+                            <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--blue-hi)' }}>{Math.round(item.calories)}</span>
+                            <span style={{ fontSize: 11, color: 'var(--text-3)' }}>{t(lang, 'caloriesUnit')}</span>
+                            <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--green-hi)', marginInlineStart: 4 }}>{Math.round(item.protein * 10) / 10}</span>
+                            <span style={{ fontSize: 11, color: 'var(--text-3)' }}>{t(lang, 'proteinUnit')}</span>
+                          </div>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              </div>
+            )
+          })()}
+        </>
+      )}
+
+      {/* ── Pill FAB — always last child → stable in React tree → transitions work ── */}
+      <div
+        style={{
+          position: 'fixed',
+          bottom: 28,
+          insetInlineEnd: 'max(calc((100vw - 560px) / 2 + 24px), 24px)',
+          zIndex: 40,
+          display: 'flex',
+          alignItems: 'center',
+          background: 'var(--bg-card2)',
+          border: '1px solid var(--border-hi)',
+          borderRadius: 999,
+          padding: fabPad,
+          gap: fabGap,
+          boxShadow: '0 4px 20px rgba(59,130,246,0.4)',
+          transition: 'box-shadow 0.15s',
+        }}
+        onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 6px 28px rgba(59,130,246,0.62)' }}
+        onMouseLeave={e => { e.currentTarget.style.boxShadow = '0 4px 20px rgba(59,130,246,0.4)' }}
+      >
+        {/* Sliding active indicator */}
+        <div style={{
+          position: 'absolute',
+          top: fabPad,
+          left: fabIndicatorLeft,
+          width: fabBtnSize,
+          height: fabBtnSize,
+          borderRadius: 999,
+          background: 'rgba(59,130,246,0.18)',
+          border: '1px solid rgba(59,130,246,0.4)',
+          boxShadow: '0 0 14px rgba(59,130,246,0.3)',
+          transition: 'left 0.28s cubic-bezier(.34,1.56,.64,1)',
+          pointerEvents: 'none',
+        }} />
+        {/* List button */}
+        <button
+          className="fab-pill-btn"
+          onClick={() => { switchView('list'); setSelectedDate(null); setSearch('') }}
+          style={{
+            width: fabBtnSize, height: fabBtnSize, borderRadius: 999,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            border: 'none', background: 'transparent', cursor: 'pointer',
+            position: 'relative', zIndex: 1,
+            color: view === 'list' ? 'var(--blue-hi)' : 'var(--text-3)',
+          }}
+        >
+          <span className="icon" style={{ fontSize: 20 }}>format_list_bulleted</span>
+        </button>
+        {/* Calendar button */}
+        <button
+          className="fab-pill-btn"
+          onClick={() => { switchView('cal'); setSelectedDate(null); setSearch('') }}
+          style={{
+            width: fabBtnSize, height: fabBtnSize, borderRadius: 999,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            border: 'none', background: 'transparent', cursor: 'pointer',
+            position: 'relative', zIndex: 1,
+            color: view === 'cal' ? 'var(--blue-hi)' : 'var(--text-3)',
+          }}
+        >
+          <span className="icon" style={{ fontSize: 20 }}>calendar_month</span>
+        </button>
+      </div>
     </>
   )
 }
