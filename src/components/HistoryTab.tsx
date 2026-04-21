@@ -854,6 +854,21 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
         })
       )}
     </div>
+
+    {/* ── Bottom gradient fade ─────────────────────────────────── */}
+    <div style={{
+      position: 'fixed',
+      bottom: 0,
+      left: '50%',
+      transform: 'translateX(-50%)',
+      width: '100%',
+      maxWidth: 560,
+      height: 80,
+      background: 'linear-gradient(to top, var(--bg) 20%, transparent)',
+      pointerEvents: 'none',
+      zIndex: 39,
+    }} />
+
     {/* ── Food history modal ──────────────────────────────────── */}
     {historyModalOpen && (() => {
       const q = historySearch.trim().toLowerCase()
