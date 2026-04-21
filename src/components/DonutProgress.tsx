@@ -1,12 +1,12 @@
 interface DonutProgressProps {
-  value:       number
-  goal:        number
-  color:       'blue' | 'green'
-  size?:       number
+  value:        number
+  goal:         number
+  type:         'calories' | 'protein'
+  size?:        number
   strokeWidth?: number
 }
 
-export function DonutProgress({ value, goal, color, size = 56, strokeWidth = 5 }: DonutProgressProps) {
+export function DonutProgress({ value, goal, type, size = 56, strokeWidth = 5 }: DonutProgressProps) {
   const pct     = goal > 0 ? Math.min(1, value / goal) : 0
   const realPct = goal > 0 ? Math.round((value / goal) * 100) : 0
 
@@ -14,24 +14,42 @@ export function DonutProgress({ value, goal, color, size = 56, strokeWidth = 5 }
   const circ = 2 * Math.PI * r
   const dash = circ * pct
 
-  const isOver  = realPct >= 100
-  const isClose = !isOver && realPct >= 80
+  // ── Calories: green gradient until goal, red when over ──────────────
+  // ── Protein:  red < 50%, amber 50-79%, bright green ≥ 100% ─────────
 
-  const fillColor = isOver
-    ? 'var(--red)'
-    : isClose
-    ? 'var(--amber)'
-    : color === 'blue'
-    ? 'var(--blue-hi)'
-    : 'var(--green-hi)'
+  let fillColor: string
+  let glowColor: string
 
-  const glowColor = isOver
-    ? 'rgba(244,63,94,0.35)'
-    : isClose
-    ? 'rgba(245,158,11,0.30)'
-    : color === 'blue'
-    ? 'rgba(59,130,246,0.30)'
-    : 'rgba(16,185,129,0.30)'
+  if (type === 'calories') {
+    if (realPct > 100) {
+      fillColor = 'var(--red)'
+      glowColor = 'rgba(244,63,94,0.35)'
+    } else if (realPct >= 80) {
+      // Close to goal — deeper green
+      fillColor = 'var(--green-hi)'
+      glowColor = 'rgba(16,185,129,0.35)'
+    } else if (realPct >= 50) {
+      // Mid range — medium green
+      fillColor = '#34d399'
+      glowColor = 'rgba(52,211,153,0.30)'
+    } else {
+      // Low — soft green
+      fillColor = '#6ee7b7'
+      glowColor = 'rgba(110,231,183,0.25)'
+    }
+  } else {
+    // protein
+    if (realPct >= 100) {
+      fillColor = 'var(--green-hi)'
+      glowColor = 'rgba(16,185,129,0.35)'
+    } else if (realPct >= 50) {
+      fillColor = 'var(--amber)'
+      glowColor = 'rgba(245,158,11,0.30)'
+    } else {
+      fillColor = 'var(--red)'
+      glowColor = 'rgba(244,63,94,0.35)'
+    }
+  }
 
   return (
     <div style={{ position: 'relative', width: size, height: size, flexShrink: 0 }}>
@@ -49,7 +67,7 @@ export function DonutProgress({ value, goal, color, size = 56, strokeWidth = 5 }
           stroke="rgba(255,255,255,0.07)"
           strokeWidth={strokeWidth}
         />
-        {/* Glow layer (slightly thicker, blurred) */}
+        {/* Glow layer */}
         {pct > 0 && (
           <circle
             cx={size / 2}

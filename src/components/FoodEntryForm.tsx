@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef } from 'react'
+import { useLockBodyScroll } from '../hooks/useLockBodyScroll'
 import type { FoodHistory, Meal, NutritionResult } from '../types'
 import type { Lang } from '../lib/i18n'
 import { t, currentTime, today } from '../lib/i18n'
@@ -25,11 +26,18 @@ interface FoodEntryFormProps {
   onUpsertHistory: (item: Pick<FoodHistory, 'name' | 'grams' | 'calories' | 'protein'>) => void
   defaultMealType?: MealType
   composedEntries?: ComposedEntry[]
+  onAddComposed?: (composedId: string) => void
 }
 
-export function FoodEntryForm({ lang, history, getSuggestions, onAdd, onUpsertHistory, defaultMealType, composedEntries }: FoodEntryFormProps) {
+export function FoodEntryForm({ lang, history, getSuggestions, onAdd, onUpsertHistory, defaultMealType, composedEntries, onAddComposed }: FoodEntryFormProps) {
   const [mode, setMode]               = useState<EntryMode>(
     () => (localStorage.getItem('entry-mode') as EntryMode) ?? 'scan'
+  )
+  // Mount BarcodeScanner only once the user has actually visited the scan tab.
+  // This prevents getUserMedia from firing when the form opens in manual mode.
+  // Once mounted we keep it mounted (just hidden) so the stream stays alive.
+  const [scannerMounted, setScannerMounted] = useState(
+    () => (localStorage.getItem('entry-mode') as EntryMode) === 'scan'
   )
   const [scanKey,      setScanKey]    = useState(0)   // increment to remount BarcodeScanner
   const [scanProduct,  setScanProduct]  = useState<BarcodeProduct | null>(null)
@@ -55,8 +63,12 @@ export function FoodEntryForm({ lang, history, getSuggestions, onAdd, onUpsertHi
   const dropdownRef    = useRef<HTMLDivElement>(null)
   const lastCalcRef    = useRef(0)  // debounce: timestamp of last calculate call
 
+  // Composed entry pending confirmation
+  const [pendingComposed, setPendingComposed] = useState<ComposedEntry | null>(null)
+
   // History modal
   const [historyModalOpen, setHistoryModalOpen] = useState(false)
+  useLockBodyScroll(historyModalOpen)
   const [historySearch,    setHistorySearch]    = useState('')
   const historySearchRef = useRef<HTMLInputElement>(null)
 
@@ -101,17 +113,10 @@ export function FoodEntryForm({ lang, history, getSuggestions, onAdd, onUpsertHi
   }
 
   const handleComposedSelect = (entry: ComposedEntry) => {
-    setFoodName(entry.name)
-    setGramsStr('')
-    setUnitsStr('')
-    setNutrition({ calories: entry.calories, protein: entry.protein })
-    setEditCalories(entry.calories || '')
-    setEditProtein(entry.protein || '')
-    setQty(1)
-    setAiError(false)
     setDropdownOpen(false)
     setHistoryModalOpen(false)
     setHistorySearch('')
+    setPendingComposed(entry)
   }
 
   const handleSuggestionSelect = (item: FoodHistory) => {
@@ -208,6 +213,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, onAdd, onUpsertHi
   }
 
   const switchMode = (m: EntryMode) => {
+    if (m === 'scan') setScannerMounted(true)
     setMode(m)
     localStorage.setItem('entry-mode', m)
     setScanProduct(null)
@@ -282,6 +288,49 @@ export function FoodEntryForm({ lang, history, getSuggestions, onAdd, onUpsertHi
 
   return (
     <>
+
+    {/* ── Composed entry confirmation ───────────────────────── */}
+    {pendingComposed && (
+      <div className="card" style={{ padding: 16, marginBottom: 20 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+          <span className="icon icon-sm" style={{ color: 'var(--purple)' }}>restaurant</span>
+          <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', flex: 1 }}>
+            {pendingComposed.name}
+          </span>
+          <button
+            onMouseDown={e => { e.preventDefault(); setPendingComposed(null) }}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 2, display: 'flex' }}
+          >
+            <span className="icon icon-sm">close</span>
+          </button>
+        </div>
+        <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+          <div style={{ flex: 1, background: 'rgba(59,130,246,0.07)', border: '1px solid rgba(59,130,246,0.14)', borderRadius: 10, padding: '10px 12px' }}>
+            <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--blue-hi)', letterSpacing: '0.04em', margin: '0 0 3px' }}>{t(lang, 'calories').toUpperCase()}</p>
+            <p style={{ fontSize: 20, fontWeight: 800, color: 'var(--text)', margin: 0, lineHeight: 1 }}>{pendingComposed.calories}</p>
+            <p style={{ fontSize: 10, color: 'var(--text-3)', margin: '2px 0 0' }}>{t(lang, 'caloriesUnit')}</p>
+          </div>
+          <div style={{ flex: 1, background: 'rgba(16,185,129,0.07)', border: '1px solid rgba(16,185,129,0.14)', borderRadius: 10, padding: '10px 12px' }}>
+            <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--green-hi)', letterSpacing: '0.04em', margin: '0 0 3px' }}>{t(lang, 'protein').toUpperCase()}</p>
+            <p style={{ fontSize: 20, fontWeight: 800, color: 'var(--text)', margin: 0, lineHeight: 1 }}>{pendingComposed.protein}</p>
+            <p style={{ fontSize: 10, color: 'var(--text-3)', margin: '2px 0 0' }}>{t(lang, 'proteinUnit')}</p>
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button
+            className="btn-confirm"
+            style={{ flex: 1 }}
+            onClick={() => { onAddComposed?.(pendingComposed.id); setPendingComposed(null) }}
+          >
+            {t(lang, 'add')}
+          </button>
+          <button className="btn-ghost" style={{ flex: 1 }} onClick={() => setPendingComposed(null)}>
+            {t(lang, 'cancel')}
+          </button>
+        </div>
+      </div>
+    )}
+
     <div className="card" style={{ padding: 16, marginBottom: 20 }}>
 
       {/* ── Segmented control ─────────────────────────────────── */}
@@ -303,13 +352,17 @@ export function FoodEntryForm({ lang, history, getSuggestions, onAdd, onUpsertHi
       </div>
 
       {/* ── Scan mode: camera ─────────────────────────────────── */}
-      {mode === 'scan' && !scanProduct && !scanNotFound && (
-        <BarcodeScanner
-          key={scanKey}
-          lang={lang}
-          onResult={handleScanResult}
-          onNotFound={handleScanNotFound}
-        />
+      {/* Mounted only after the user first visits the scan tab, then kept
+          mounted (hidden via CSS) so the stream survives mode switches. */}
+      {scannerMounted && (
+        <div style={{ display: mode === 'scan' && !scanProduct && !scanNotFound ? undefined : 'none' }}>
+          <BarcodeScanner
+            key={scanKey}
+            lang={lang}
+            onResult={handleScanResult}
+            onNotFound={handleScanNotFound}
+          />
+        </div>
       )}
 
       {/* ── Scan mode: not found ──────────────────────────────── */}
@@ -391,6 +444,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, onAdd, onUpsertHi
             </span>
             <input
               type="number"
+              inputMode="numeric"
               className="inp"
               style={{ flex: '0 0 80px', textAlign: 'center' }}
               value={scanGrams}
@@ -507,6 +561,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, onAdd, onUpsertHi
         <div style={{ position: 'relative' }}>
           <input
             type="number"
+            inputMode="numeric"
             className="inp"
             style={{ textAlign: 'center', opacity: unitsStr ? 0.35 : 1, transition: 'opacity .2s' }}
             placeholder={t(lang, 'grams')}
@@ -526,6 +581,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, onAdd, onUpsertHi
         <div style={{ position: 'relative' }}>
           <input
             type="number"
+            inputMode="numeric"
             className="inp"
             style={{ textAlign: 'center', opacity: gramsStr ? 0.35 : 1, transition: 'opacity .2s' }}
             placeholder={unitPlaceholder}
@@ -668,6 +724,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, onAdd, onUpsertHi
               <div style={{ position: 'relative' }}>
                 <input
                   type="number"
+                  inputMode="numeric"
                   className="inp"
                   style={{ borderColor: 'rgba(59,130,246,0.25)', ...(isRTL ? { paddingLeft: editCalories !== '' ? 32 : 12 } : { paddingRight: editCalories !== '' ? 32 : 12 }) }}
                   value={editCalories}
@@ -691,6 +748,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, onAdd, onUpsertHi
               <div style={{ position: 'relative' }}>
                 <input
                   type="number"
+                  inputMode="decimal"
                   step="0.1"
                   className="inp inp-green"
                   style={{ borderColor: 'rgba(16,185,129,0.25)', ...(isRTL ? { paddingLeft: editProtein !== '' ? 32 : 12 } : { paddingRight: editProtein !== '' ? 32 : 12 }) }}

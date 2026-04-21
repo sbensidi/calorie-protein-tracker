@@ -79,16 +79,27 @@ export function ComposedMealCard({
 
         {/* Name (editable) */}
         {editingName ? (
-          <input
-            className="inp"
-            style={{ flex: 1, height: 32, fontSize: 13, fontWeight: 700, padding: '0 8px', borderColor: 'rgba(59,130,246,0.4)' }}
-            value={nameInput}
-            autoFocus
-            onChange={e => setNameInput(e.target.value)}
-            onBlur={saveName}
-            onKeyDown={e => { if (e.key === 'Enter') saveName(); if (e.key === 'Escape') { setNameInput(group.name); setEditingName(false) } }}
-            dir={lang === 'he' ? 'rtl' : 'ltr'}
-          />
+          <div style={{ flex: 1, position: 'relative' }}>
+            <input
+              className="inp"
+              style={{ width: '100%', height: 32, fontSize: 13, fontWeight: 700, paddingInlineStart: 8, paddingInlineEnd: nameInput ? 32 : 8, borderColor: 'rgba(59,130,246,0.4)' }}
+              value={nameInput}
+              autoFocus
+              onChange={e => setNameInput(e.target.value)}
+              onBlur={saveName}
+              onKeyDown={e => { if (e.key === 'Enter') saveName(); if (e.key === 'Escape') { setNameInput(group.name); setEditingName(false) } }}
+              dir={lang === 'he' ? 'rtl' : 'ltr'}
+            />
+            {nameInput && (
+              <button
+                onMouseDown={e => { e.preventDefault(); setNameInput('') }}
+                tabIndex={-1}
+                style={{ position: 'absolute', insetInlineEnd: 0, top: 0, bottom: 0, width: 32, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              >
+                <span className="icon icon-sm">close</span>
+              </button>
+            )}
+          </div>
         ) : (
           <div style={{ flex: 1, minWidth: 0 }}>
             <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -148,15 +159,26 @@ export function ComposedMealCard({
                   background: 'rgba(59,130,246,0.04)', border: '1px solid rgba(59,130,246,0.18)',
                   borderRadius: 8, padding: '10px 10px', display: 'flex', flexDirection: 'column', gap: 8,
                 }}>
-                  <input
-                    className="inp"
-                    style={{ height: 36, fontSize: 13 }}
-                    value={childEdit.name}
-                    placeholder={t(lang, 'foodName')}
-                    onChange={e => setChildEdit(s => ({ ...s, name: e.target.value }))}
-                    autoFocus
-                    dir={lang === 'he' ? 'rtl' : 'ltr'}
-                  />
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      className="inp"
+                      style={{ height: 36, fontSize: 13, width: '100%', paddingInlineEnd: childEdit.name ? 32 : 12 }}
+                      value={childEdit.name}
+                      placeholder={t(lang, 'foodName')}
+                      onChange={e => setChildEdit(s => ({ ...s, name: e.target.value }))}
+                      autoFocus
+                      dir={lang === 'he' ? 'rtl' : 'ltr'}
+                    />
+                    {childEdit.name && (
+                      <button
+                        onMouseDown={e => { e.preventDefault(); setChildEdit(s => ({ ...s, name: '' })) }}
+                        tabIndex={-1}
+                        style={{ position: 'absolute', insetInlineEnd: 0, top: 0, bottom: 0, width: 32, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                      >
+                        <span className="icon icon-sm">close</span>
+                      </button>
+                    )}
+                  </div>
                   <div style={{ display: 'flex', gap: 8 }}>
                     <div style={{ flex: 1 }}>
                       <label style={{ fontSize: 10, color: 'var(--blue-hi)', fontWeight: 700, display: 'block', marginBottom: 3 }}>
@@ -164,6 +186,7 @@ export function ComposedMealCard({
                       </label>
                       <input
                         type="number"
+                        inputMode="numeric"
                         className="inp"
                         style={{ height: 36, fontSize: 13 }}
                         value={childEdit.calories}
@@ -178,6 +201,7 @@ export function ComposedMealCard({
                       </label>
                       <input
                         type="number"
+                        inputMode="decimal"
                         step="0.1"
                         className="inp inp-green"
                         style={{ height: 36, fontSize: 13 }}

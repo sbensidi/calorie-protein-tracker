@@ -42,15 +42,26 @@ export function MealCard({ meal, lang, showCheckbox, selected, onToggleSelect, o
     return (
       <div className="meal-row" style={{ borderColor: 'rgba(59,130,246,0.25)' }}>
         <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
-          <input
-            className="inp"
-            style={{ flex: 1 }}
-            value={editName}
-            onChange={e => setEditName(e.target.value)}
-            placeholder={t(lang, 'foodName')}
-            dir={lang === 'he' ? 'rtl' : 'ltr'}
-            autoFocus
-          />
+          <div style={{ flex: 1, position: 'relative' }}>
+            <input
+              className="inp"
+              style={{ width: '100%', paddingInlineEnd: editName ? 32 : 12 }}
+              value={editName}
+              onChange={e => setEditName(e.target.value)}
+              placeholder={t(lang, 'foodName')}
+              dir={lang === 'he' ? 'rtl' : 'ltr'}
+              autoFocus
+            />
+            {editName && (
+              <button
+                onMouseDown={e => { e.preventDefault(); setEditName('') }}
+                tabIndex={-1}
+                style={{ position: 'absolute', insetInlineEnd: 0, top: 0, bottom: 0, width: 32, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              >
+                <span className="icon icon-sm">close</span>
+              </button>
+            )}
+          </div>
           <select
             className="inp"
             style={{ width: 110, flexShrink: 0 }}
@@ -70,6 +81,7 @@ export function MealCard({ meal, lang, showCheckbox, selected, onToggleSelect, o
             </label>
             <input
               type="number"
+              inputMode="numeric"
               className="inp"
               value={editCalories}
               placeholder="0"
@@ -83,6 +95,7 @@ export function MealCard({ meal, lang, showCheckbox, selected, onToggleSelect, o
             </label>
             <input
               type="number"
+              inputMode="decimal"
               step="0.1"
               className="inp inp-green"
               value={editProtein}

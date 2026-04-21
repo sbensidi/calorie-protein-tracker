@@ -10,9 +10,10 @@ import { useFoodHistory } from './hooks/useFoodHistory'
 import { useComposedGroups } from './hooks/useComposedGroups'
 import { TodayTab } from './components/TodayTab'
 import { HistoryTab } from './components/HistoryTab'
-import { GoalsTab } from './components/GoalsTab'
+import { SettingsSheet } from './components/SettingsSheet'
+import { useProfile } from './hooks/useProfile'
 
-type Tab = 'today' | 'history' | 'goals'
+type Tab = 'today' | 'history'
 
 export default function App() {
   const [session, setSession] = useState<Session | null>(null)
@@ -21,8 +22,9 @@ export default function App() {
   const [lang, setLang] = useState<Lang>(() => {
     return (localStorage.getItem('lang') as Lang) || 'he'
   })
-  const [tab, setTab] = useState<Tab>('today')
+  const [tab, setTab]             = useState<Tab>('today')
   const [connected, setConnected] = useState(true)
+  const [settingsOpen, setSettingsOpen] = useState(false)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -51,6 +53,7 @@ export default function App() {
 
   const userId = session?.user?.id || null
 
+  const { profile, saveProfile } = useProfile()
   const { meals, addMeal, addMealWithId, updateMeal, deleteMeal, duplicateMeal } = useMeals(userId)
   const { goals, saveGoals, getGoalForDate } = useGoals(userId)
   const { history, upsertHistory, getSuggestions } = useFoodHistory(userId)
@@ -101,52 +104,42 @@ export default function App() {
 
   return (
     <div dir={lang === 'he' ? 'rtl' : 'ltr'} style={{ minHeight: '100vh', background: 'var(--bg)' }}>
-      <div style={{ maxWidth: 560, margin: '0 auto', padding: '20px 16px 60px' }}>
 
-        {/* Header */}
-        <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-          <h1 style={{ fontSize: 18, fontWeight: 800, margin: 0, color: 'var(--text)' }}>
-            {t(lang, 'appTitle')}
-          </h1>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-              <div style={{
-                width: 7, height: 7, borderRadius: '50%',
-                background: connected ? 'var(--green)' : 'var(--text-3)',
-                boxShadow: connected ? '0 0 6px var(--green)' : 'none',
-              }} />
-              <span style={{ fontSize: 11, color: 'var(--text-2)' }}>
-                {t(lang, connected ? 'connected' : 'disconnected')}
-              </span>
+      {/* ── Sticky app header ─────────────────────────────────────── */}
+      <div style={{
+        position: 'sticky', top: 0, zIndex: 30,
+        background: 'var(--bg)',
+        borderBottom: '1px solid var(--border)',
+      }}>
+        <div style={{ maxWidth: 560, margin: '0 auto', padding: '0 16px' }}>
+          <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', height: 56 }}>
+            <h1 style={{ fontSize: 18, fontWeight: 800, margin: 0, color: 'var(--text)' }}>
+              {t(lang, 'appTitle')}
+            </h1>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <button
+                onClick={() => setSettingsOpen(true)}
+                style={{
+                  width: 34, height: 34, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  background: 'rgba(255,255,255,0.06)', border: '1px solid var(--border)',
+                  color: 'var(--text-2)', cursor: 'pointer', transition: 'background .15s, color .15s',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.11)'; e.currentTarget.style.color = 'var(--text)' }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.color = 'var(--text-2)' }}
+              >
+                <span className="icon" style={{ fontSize: 20 }}>settings</span>
+              </button>
             </div>
-            <button
-              onClick={toggleLang}
-              style={{
-                padding: '5px 12px', borderRadius: 999,
-                background: 'rgba(255,255,255,0.06)', border: '1px solid var(--border)',
-                color: 'var(--text)', fontSize: 12, fontWeight: 700, cursor: 'pointer',
-                fontFamily: 'inherit', transition: 'background .15s',
-              }}
-            >
-              {lang === 'he' ? 'EN' : 'עב'}
-            </button>
-            <button
-              onClick={() => supabase.auth.signOut()}
-              style={{
-                padding: '5px 12px', borderRadius: 999,
-                background: 'transparent', border: '1px solid var(--border)',
-                color: 'var(--text-2)', fontSize: 12, cursor: 'pointer',
-                fontFamily: 'inherit', transition: 'color .15s',
-              }}
-            >
-              {t(lang, 'signOut')}
-            </button>
-          </div>
-        </header>
+          </header>
+        </div>
+      </div>
+
+      {/* ── Scrollable content ────────────────────────────────────── */}
+      <div style={{ maxWidth: 560, margin: '0 auto', padding: '16px 16px 80px' }}>
 
         {/* Tab bar */}
-        <div className="tab-bar" style={{ marginBottom: 20 }}>
-          {(['today', 'history', 'goals'] as Tab[]).map(tabKey => (
+        <div className="tab-bar" style={{ marginBottom: 20, gridTemplateColumns: 'repeat(2, 1fr)' }}>
+          {(['today', 'history'] as Tab[]).map(tabKey => (
             <button
               key={tabKey}
               onClick={() => setTab(tabKey)}
@@ -185,12 +178,23 @@ export default function App() {
             getSuggestions={getSuggestions}
             getGoalForDate={getGoalForDate}
             composedEntries={composedEntries}
+            composedGroups={composedGroups}
           />
         )}
-        {tab === 'goals' && (
-          <GoalsTab lang={lang} goals={goals} onSave={saveGoals} />
-        )}
       </div>
+
+      <SettingsSheet
+        isOpen={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        lang={lang}
+        profile={profile}
+        onSaveProfile={saveProfile}
+        goals={goals}
+        onSaveGoals={saveGoals}
+        connected={connected}
+        onToggleLang={toggleLang}
+        onSignOut={() => supabase.auth.signOut()}
+      />
     </div>
   )
 }

@@ -71,7 +71,7 @@ export function DailySummary({ meals, date, goalCalories, goalProtein, lang }: D
               {calLabel.text}
             </span>
           </div>
-          <DonutProgress value={totalCalories} goal={goalCalories} color="blue" size={58} strokeWidth={5} />
+          <DonutProgress value={totalCalories} goal={goalCalories} type="calories" size={58} strokeWidth={5} />
         </div>
 
         {/* ── Protein card ── */}
@@ -100,7 +100,7 @@ export function DailySummary({ meals, date, goalCalories, goalProtein, lang }: D
               {protLabel.text}
             </span>
           </div>
-          <DonutProgress value={totalProtein} goal={goalProtein} color="green" size={58} strokeWidth={5} />
+          <DonutProgress value={totalProtein} goal={goalProtein} type="protein" size={58} strokeWidth={5} />
         </div>
 
       </div>

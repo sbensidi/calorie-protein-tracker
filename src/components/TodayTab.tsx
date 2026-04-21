@@ -1,7 +1,10 @@
-import { useMemo, useState, useRef, useCallback } from 'react'
+import { useMemo, useState, useCallback } from 'react'
+import { useLockBodyScroll } from '../hooks/useLockBodyScroll'
+import { useSheetScroll } from '../hooks/useSheetScroll'
+import { SheetHandle } from './SheetHandle'
 import type { Meal, FoodHistory, ComposedGroup } from '../types'
 import type { Lang } from '../lib/i18n'
-import { t, today } from '../lib/i18n'
+import { t, today, currentTime } from '../lib/i18n'
 import { FoodEntryForm } from './FoodEntryForm'
 import type { ComposedEntry } from './FoodEntryForm'
 import { MealCard } from './MealCard'
@@ -35,14 +38,6 @@ function loadCollapsed(): Set<MealType> {
 }
 function saveCollapsed(s: Set<MealType>) {
   localStorage.setItem('collapsed-groups', JSON.stringify([...s]))
-}
-
-function loadSummarySlot(): number {
-  const v = localStorage.getItem('summary-slot')
-  return v !== null ? Number(v) : 0
-}
-function saveSummarySlot(n: number) {
-  localStorage.setItem('summary-slot', String(n))
 }
 
 
@@ -139,6 +134,30 @@ export function TodayTab({
     setAddIngredientModal(null)
   }
 
+  // ── Clone composed group into today ─────────────────────────
+  const handleAddComposed = useCallback(async (composedId: string) => {
+    const group = composedGroups.find(g => g.id === composedId)
+    if (!group) return
+    const newMealIds: string[] = []
+    for (const mealId of group.mealIds) {
+      const src = meals.find(m => m.id === mealId)
+      if (!src) continue
+      const newId = await onAddMealWithId({
+        date:        today(),
+        meal_type:   src.meal_type,
+        name:        src.name,
+        grams:       src.grams,
+        calories:    src.calories,
+        protein:     src.protein,
+        time_logged: currentTime(),
+      })
+      if (newId) newMealIds.push(newId)
+    }
+    if (newMealIds.length > 0) {
+      onUpsertGroup({ id: crypto.randomUUID(), name: group.name, mealIds: newMealIds })
+    }
+  }, [composedGroups, meals, onAddMealWithId, onUpsertGroup])
+
   const renameGroup = (groupId: string, name: string) => {
     const group = composedGroups.find(g => g.id === groupId)
     if (group) onUpsertGroup({ ...group, name })
@@ -204,64 +223,15 @@ export function TodayTab({
     clearSelection(type)
   }
 
-  // ── Draggable summary card ───────────────────────────────────
-  const [summarySlot, setSummarySlot] = useState(loadSummarySlot)
-  const dragging     = useRef(false)
-  const dragStartY   = useRef(0)
-  const dragCurrentY = useRef(0)
-  const [dragOffset, setDragOffset] = useState(0)
-  const [isDragging, setIsDragging] = useState(false)
-  const containerRef = useRef<HTMLDivElement>(null)
-  const summaryRef   = useRef<HTMLDivElement>(null)
-
-  const onPointerDown = useCallback((e: React.PointerEvent) => {
-    dragging.current     = true
-    dragStartY.current   = e.clientY
-    dragCurrentY.current = e.clientY
-    setIsDragging(true)
-    setDragOffset(0)
-    ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
-  }, [])
-
-  const onPointerMove = useCallback((e: React.PointerEvent) => {
-    if (!dragging.current) return
-    dragCurrentY.current = e.clientY
-    setDragOffset(e.clientY - dragStartY.current)
-  }, [])
-
-  const onPointerUp = useCallback((_e: React.PointerEvent) => {
-    if (!dragging.current) return
-    dragging.current = false
-    setIsDragging(false)
-    const delta = dragCurrentY.current - dragStartY.current
-    const newSlot = Math.max(0, Math.min(visibleTypes.length, summarySlot + Math.round(delta / 80)))
-    setSummarySlot(newSlot)
-    saveSummarySlot(newSlot)
-    setDragOffset(0)
-  }, [summarySlot, visibleTypes.length])
+  // ── Entry sheet ──────────────────────────────────────────────
+  const [entryOpen, setEntryOpen] = useState(false)
+  const anyModalOpen = entryOpen || !!composeModal || !!addIngredientModal
+  useLockBodyScroll(anyModalOpen)
+  const { scrollRef: entryScrollRef, scrolledDown: entryScrolledDown, onScroll: entryOnScroll } = useSheetScroll()
 
   // ── Render: summary card ─────────────────────────────────────
   const summaryCard = (
-    <div
-      ref={summaryRef}
-      style={{
-        marginBottom: 20,
-        transform: isDragging ? `translateY(${dragOffset}px)` : 'none',
-        transition: isDragging ? 'none' : 'transform 0.25s cubic-bezier(.22,.9,.36,1)',
-        zIndex: isDragging ? 10 : 'auto',
-        position: 'relative',
-        opacity: isDragging ? 0.92 : 1,
-      }}
-    >
-      <div
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp}
-        onPointerCancel={onPointerUp}
-        style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 24, marginBottom: 4, cursor: isDragging ? 'grabbing' : 'grab', touchAction: 'none' }}
-      >
-        <span className="icon icon-sm" style={{ color: 'var(--text-3)', fontSize: 20 }}>drag_handle</span>
-      </div>
+    <div style={{ marginBottom: 20 }}>
       <DailySummary meals={todayMeals} date={today()} goalCalories={goalCalories} goalProtein={goalProtein} lang={lang} />
     </div>
   )
@@ -476,15 +446,8 @@ export function TodayTab({
     )
   }
 
-  // ── Compose the list with summary card inserted at summarySlot ──
-  const items: React.ReactNode[] = []
-  const clampedSlot = Math.min(summarySlot, visibleTypes.length)
-
-  visibleTypes.forEach((type, i) => {
-    if (i === clampedSlot) items.push(<div key="summary">{summaryCard}</div>)
-    items.push(mealGroup(type, i))
-  })
-  if (clampedSlot >= visibleTypes.length) items.push(<div key="summary">{summaryCard}</div>)
+  // ── Meal groups list ─────────────────────────────────────────
+  const items = visibleTypes.map((type, i) => mealGroup(type, i))
 
   // ── Compose modal ────────────────────────────────────────────
   const composeModalEl = composeModal && (() => {
@@ -543,16 +506,27 @@ export function TodayTab({
           </div>
 
           {/* Name input */}
-          <input
-            className="inp"
-            style={{ borderColor: 'rgba(139,92,246,0.4)' }}
-            placeholder={t(lang, 'dishName') + '...'}
-            value={composeName}
-            onChange={e => setComposeName(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter') handleCompose() }}
-            autoFocus
-            dir={lang === 'he' ? 'rtl' : 'ltr'}
-          />
+          <div style={{ position: 'relative' }}>
+            <input
+              className="inp"
+              style={{ borderColor: 'rgba(139,92,246,0.4)', paddingInlineEnd: composeName ? 32 : 12 }}
+              placeholder={t(lang, 'dishName') + '...'}
+              value={composeName}
+              onChange={e => setComposeName(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') handleCompose() }}
+              autoFocus
+              dir={lang === 'he' ? 'rtl' : 'ltr'}
+            />
+            {composeName && (
+              <button
+                onMouseDown={e => { e.preventDefault(); setComposeName('') }}
+                tabIndex={-1}
+                style={{ position: 'absolute', insetInlineEnd: 0, top: 0, bottom: 0, width: 32, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              >
+                <span className="icon icon-sm">close</span>
+              </button>
+            )}
+          </div>
 
           {/* Buttons */}
           <div style={{ display: 'flex', gap: 8 }}>
@@ -570,15 +544,8 @@ export function TodayTab({
   })()
 
   return (
-    <div ref={containerRef}>
-      <FoodEntryForm
-        lang={lang}
-        history={history}
-        getSuggestions={getSuggestions}
-        onAdd={onAddMeal}
-        onUpsertHistory={onUpsertHistory}
-        composedEntries={composedEntries}
-      />
+    <div>
+      {summaryCard}
 
       {todayMeals.length === 0 && (
         <div style={{ textAlign: 'center', padding: '32px 0', color: 'var(--text-3)' }}>
@@ -588,15 +555,6 @@ export function TodayTab({
       )}
 
       {items}
-
-      {visibleTypes.length === 0 && todayMeals.length === 0 && (
-        <div>
-          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 4 }}>
-            <span className="icon icon-sm" style={{ color: 'var(--text-3)', fontSize: 20 }}>drag_handle</span>
-          </div>
-          <DailySummary meals={[]} date={today()} goalCalories={goalCalories} goalProtein={goalProtein} lang={lang} />
-        </div>
-      )}
 
       {composeModalEl}
 
@@ -616,6 +574,89 @@ export function TodayTab({
           </div>
         </div>
       )}
+
+      {/* ── FAB ──────────────────────────────────────────────────── */}
+      <button
+        onClick={() => setEntryOpen(true)}
+        style={{
+          position: 'fixed',
+          bottom: 28,
+          insetInlineEnd: 24,
+          zIndex: 40,
+          width: 56, height: 56, borderRadius: '50%',
+          background: 'var(--blue)',
+          color: '#fff',
+          border: 'none',
+          cursor: 'pointer',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          boxShadow: '0 4px 20px rgba(59,130,246,0.5)',
+          transition: 'transform 0.15s, box-shadow 0.15s',
+        }}
+        onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.08)'; e.currentTarget.style.boxShadow = '0 6px 28px rgba(59,130,246,0.65)' }}
+        onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)';    e.currentTarget.style.boxShadow = '0 4px 20px rgba(59,130,246,0.5)'  }}
+      >
+        <span className="icon" style={{ fontSize: 28 }}>add</span>
+      </button>
+
+      {/* ── Entry bottom sheet ────────────────────────────────────── */}
+      <div
+        onClick={() => setEntryOpen(false)}
+        style={{
+          position: 'fixed', inset: 0, zIndex: 99,
+          background: 'rgba(0,0,0,0.55)',
+          backdropFilter: entryOpen ? 'blur(2px)' : 'none',
+          opacity: entryOpen ? 1 : 0,
+          pointerEvents: entryOpen ? 'all' : 'none',
+          transition: 'opacity 0.3s, backdrop-filter 0.3s',
+        }}
+      />
+      <div style={{
+        position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 100,
+        display: 'flex', justifyContent: 'center', alignItems: 'flex-end',
+        pointerEvents: 'none',
+      }}>
+        <div style={{
+          width: '100%', maxWidth: 560,
+          pointerEvents: 'all',
+          background: 'var(--bg)',
+          borderTop: '1px solid var(--border)',
+          borderLeft: '1px solid var(--border)',
+          borderRight: '1px solid var(--border)',
+          borderRadius: '20px 20px 0 0',
+          // Tall by default so dropdowns have room; overflow visible so
+          // absolutely-positioned dropdowns are never clipped by the sheet.
+          height: 'min(90vh, 720px)',
+          overflow: 'visible',
+          transform: entryOpen ? 'translateY(0)' : 'translateY(105%)',
+          transition: 'transform 0.35s cubic-bezier(.22,.9,.36,1)',
+          display: 'flex',
+          flexDirection: 'column',
+        }}>
+          <SheetHandle scrolledDown={entryScrolledDown} onClose={() => setEntryOpen(false)} />
+
+          {/* Scroll container — overflow here, NOT on the outer sheet */}
+          <div
+            ref={entryScrollRef}
+            onScroll={entryOnScroll}
+            style={{
+              flex: 1,
+              overflowY: 'auto',
+              padding: '20px 16px',
+              paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 24px)',
+            }}
+          >
+            <FoodEntryForm
+              lang={lang}
+              history={history}
+              getSuggestions={getSuggestions}
+              onAdd={meal => { onAddMeal(meal); setEntryOpen(false) }}
+              onUpsertHistory={onUpsertHistory}
+              composedEntries={composedEntries}
+              onAddComposed={id => { handleAddComposed(id); setEntryOpen(false) }}
+            />
+          </div>
+        </div>
+      </div>
     </div>
   )
 }

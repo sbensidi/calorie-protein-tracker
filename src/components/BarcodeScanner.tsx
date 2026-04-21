@@ -11,22 +11,63 @@ interface BarcodeScannerProps {
   onNotFound: (barcode: string) => void
 }
 
-type ScanState = 'scanning' | 'looking-up' | 'error-camera' | 'error-permission'
+type ScanState = 'checking' | 'idle' | 'scanning' | 'looking-up' | 'error-camera' | 'error-permission'
 
 export function BarcodeScanner({ lang, onResult, onNotFound }: BarcodeScannerProps) {
   const videoRef    = useRef<HTMLVideoElement>(null)
   const controlsRef = useRef<{ stop: () => void } | null>(null)
+  const streamRef   = useRef<MediaStream | null>(null)
   const detectedRef = useRef(false)
-  const [state, setState] = useState<ScanState>('scanning')
+  const [state, setState] = useState<ScanState>('checking')
 
+  // On mount: try getUserMedia immediately without a gesture.
+  // On iOS this succeeds silently if permission is already granted (no dialog),
+  // and fails silently if it's not yet granted (no dialog either) — so it's
+  // safe to call from useEffect. If it fails we fall back to the idle button,
+  // which calls getUserMedia from a click handler (gesture → OS dialog).
   useEffect(() => {
+    navigator.mediaDevices
+      .getUserMedia({ video: { facingMode: 'environment' } })
+      .then(stream => {
+        streamRef.current = stream
+        setState('scanning')
+      })
+      .catch(() => {
+        // Not yet granted — require a user tap before requesting.
+        setState('idle')
+      })
+  }, []) // runs once on mount; component stays mounted across mode switches
+
+  // Called directly from a click handler — user gesture triggers the OS dialog.
+  const startCamera = () => {
+    navigator.mediaDevices
+      .getUserMedia({ video: { facingMode: 'environment' } })
+      .then(stream => {
+        streamRef.current = stream
+        setState('scanning')
+      })
+      .catch((e: unknown) => {
+        const msg = e instanceof Error ? e.message : ''
+        setState(
+          msg.toLowerCase().includes('permission') || msg.toLowerCase().includes('notallowed')
+            ? 'error-permission'
+            : 'error-camera'
+        )
+      })
+  }
+
+  // Start ZXing decoding once we have a stream.
+  useEffect(() => {
+    if (state !== 'scanning' || !streamRef.current) return
+
     detectedRef.current = false
     const reader = new BrowserMultiFormatReader()
+    const stream = streamRef.current
 
     const init = async () => {
       try {
-        const controls = await reader.decodeFromVideoDevice(
-          undefined,
+        const controls = await reader.decodeFromStream(
+          stream,
           videoRef.current!,
           async (result, _err) => {
             if (!result || detectedRef.current) return
@@ -34,14 +75,10 @@ export function BarcodeScanner({ lang, onResult, onNotFound }: BarcodeScannerPro
             controlsRef.current?.stop()
             const barcode = result.getText()
             setState('looking-up')
-
             try {
               const product = await lookupBarcode(barcode)
-              if (product) {
-                onResult(product)
-              } else {
-                onNotFound(barcode)
-              }
+              if (product) onResult(product)
+              else onNotFound(barcode)
             } catch {
               onNotFound(barcode)
             }
@@ -50,23 +87,70 @@ export function BarcodeScanner({ lang, onResult, onNotFound }: BarcodeScannerPro
         controlsRef.current = controls
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : ''
-        if (msg.toLowerCase().includes('permission') || msg.toLowerCase().includes('notallowed')) {
-          setState('error-permission')
-        } else {
-          setState('error-camera')
-        }
+        setState(
+          msg.toLowerCase().includes('permission') || msg.toLowerCase().includes('notallowed')
+            ? 'error-permission'
+            : 'error-camera'
+        )
       }
     }
 
     init()
 
+    // Do NOT stop the stream on cleanup — the component stays mounted and
+    // hidden when the user switches to manual mode. Keeping the stream alive
+    // means no re-permission prompt when they switch back to scan.
     return () => {
       controlsRef.current?.stop()
       controlsRef.current = null
     }
-  }, [onResult, onNotFound])
+  }, [state, onResult, onNotFound])
+
+  // Stop stream only when the component is truly unmounted (e.g. form closed).
+  useEffect(() => {
+    return () => {
+      streamRef.current?.getTracks().forEach(t => t.stop())
+      streamRef.current = null
+    }
+  }, [])
 
   const isRTL = lang === 'he'
+
+  if (state === 'checking') {
+    return (
+      <div className="scanner-error">
+        <span className="icon icon-sm" style={{ animation: 'spin 0.7s linear infinite', display: 'inline-block', color: 'var(--text-3)' }}>
+          progress_activity
+        </span>
+      </div>
+    )
+  }
+
+  if (state === 'idle') {
+    return (
+      <div className="scanner-error" style={{ gap: 14 }}>
+        <div style={{
+          width: 64, height: 64, borderRadius: 18,
+          background: 'rgba(59,130,246,0.12)', border: '1.5px solid rgba(59,130,246,0.3)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <span className="icon" style={{ fontSize: 32, color: 'var(--blue)' }}>barcode_scanner</span>
+        </div>
+        <button
+          onClick={startCamera}
+          style={{
+            padding: '12px 28px', borderRadius: 12, fontSize: 14, fontWeight: 700,
+            background: 'var(--blue)', color: '#fff', border: 'none',
+            cursor: 'pointer', fontFamily: 'inherit',
+            display: 'flex', alignItems: 'center', gap: 8,
+          }}
+        >
+          <span className="icon icon-sm">photo_camera</span>
+          {lang === 'he' ? 'הפעל מצלמה' : 'Activate camera'}
+        </button>
+      </div>
+    )
+  }
 
   if (state === 'error-permission') {
     return (
@@ -76,6 +160,7 @@ export function BarcodeScanner({ lang, onResult, onNotFound }: BarcodeScannerPro
       </div>
     )
   }
+
   if (state === 'error-camera') {
     return (
       <div className="scanner-error">
