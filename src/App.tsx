@@ -139,6 +139,19 @@ export default function App() {
 
         {/* Tab bar */}
         <div className="tab-bar" style={{ marginBottom: 20, gridTemplateColumns: 'repeat(2, 1fr)' }}>
+          {/* Sliding active indicator — left computed based on active tab + direction */}
+          <div className="tab-indicator" style={{
+            left: (() => {
+              const isRTL = lang === 'he'
+              const todayActive = tab === 'today'
+              // In DOM: [today, history]. RTL grid: today=right col, history=left col.
+              // indicator starts at left:3px (LTR today / RTL history)
+              // or at calc(50% + 1.5px) (LTR history / RTL today)
+              if (isRTL) return todayActive ? 'calc(50% + 1.5px)' : '3px'
+              else       return todayActive ? '3px' : 'calc(50% + 1.5px)'
+            })(),
+            width: 'calc(50% - 4.5px)',
+          }} />
           {(['today', 'history'] as Tab[]).map(tabKey => (
             <button
               key={tabKey}

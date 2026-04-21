@@ -455,23 +455,23 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
           width: btnSize,
           height: btnSize,
           borderRadius: 999,
-          background: 'rgba(99,102,241,0.2)',
-          border: '1px solid rgba(99,102,241,0.4)',
-          boxShadow: '0 0 12px rgba(99,102,241,0.25)',
-          transition: 'left 0.25s cubic-bezier(.34,1.56,.64,1)',
+          background: 'rgba(59,130,246,0.18)',
+          border: '1px solid rgba(59,130,246,0.4)',
+          boxShadow: '0 0 14px rgba(59,130,246,0.28)',
+          transition: 'left 0.28s cubic-bezier(.34,1.56,.64,1)',
           pointerEvents: 'none',
         }} />
 
         {/* List button */}
         <button
+          className="fab-pill-btn"
           onClick={() => { switchView('list'); setSelectedDate(null); setSearch('') }}
           style={{
             width: btnSize, height: btnSize, borderRadius: 999,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             border: 'none', background: 'transparent', cursor: 'pointer',
             position: 'relative', zIndex: 1,
-            color: view === 'list' ? 'var(--indigo-hi)' : 'var(--text-3)',
-            transition: 'color 0.2s',
+            color: view === 'list' ? 'var(--blue-hi)' : 'var(--text-3)',
           }}
         >
           <span className="icon" style={{ fontSize: 20 }}>format_list_bulleted</span>
@@ -479,14 +479,14 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
 
         {/* Calendar button */}
         <button
+          className="fab-pill-btn"
           onClick={() => { switchView('cal'); setSelectedDate(null); setSearch('') }}
           style={{
             width: btnSize, height: btnSize, borderRadius: 999,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             border: 'none', background: 'transparent', cursor: 'pointer',
             position: 'relative', zIndex: 1,
-            color: view === 'cal' ? 'var(--indigo-hi)' : 'var(--text-3)',
-            transition: 'color 0.2s',
+            color: view === 'cal' ? 'var(--blue-hi)' : 'var(--text-3)',
           }}
         >
           <span className="icon" style={{ fontSize: 20 }}>calendar_month</span>
