@@ -170,7 +170,7 @@ export function MealCard({ meal, lang, showCheckbox, selected, onToggleSelect, o
       <button
         className="icon-btn"
         onClick={e => { e.stopPropagation(); setEditing(true) }}
-        title={t(lang, 'edit')}
+        aria-label={t(lang, 'edit')}
       >
         <span className="icon icon-sm">edit</span>
       </button>

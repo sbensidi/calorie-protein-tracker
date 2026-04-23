@@ -24,17 +24,19 @@ function rowToGroup(row: DbRow): ComposedGroup {
 
 export function useComposedGroups(userId: string | null) {
   const [groups, setGroups] = useState<ComposedGroup[]>(lsLoad)
+  const [error, setError] = useState<string | null>(null)
 
   const fetch = useCallback(async () => {
     if (!userId) return
-    const { data, error } = await supabase
+    const { data, error: err } = await supabase
       .from('composed_groups')
       .select('id, name, meal_ids')
       .eq('user_id', userId)
-    if (error) { import.meta.env.DEV && console.error('fetch composed_groups:', error); return }
+    if (err) { import.meta.env.DEV && console.error('fetch composed_groups:', err); setError(err.message); return }
     const loaded = ((data ?? []) as DbRow[]).map(rowToGroup)
     setGroups(loaded)
     lsSave(loaded)
+    setError(null)
   }, [userId])
 
   useEffect(() => { fetch() }, [fetch])
@@ -43,7 +45,7 @@ export function useComposedGroups(userId: string | null) {
   useEffect(() => {
     if (!userId) return
     const channel = supabase
-      .channel('composed-groups-changes')
+      .channel(`composed-groups-${userId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'composed_groups', filter: `user_id=eq.${userId}` }, () => fetch())
       .subscribe()
     return () => { supabase.removeChannel(channel) }
@@ -58,14 +60,14 @@ export function useComposedGroups(userId: string | null) {
       return next
     })
     if (!userId) return
-    const { error } = await supabase.from('composed_groups').upsert({
+    const { error: err } = await supabase.from('composed_groups').upsert({
       id:       group.id,
       user_id:  userId,
       name:     group.name,
       meal_ids: group.mealIds,
       updated_at: new Date().toISOString(),
     })
-    if (error) { import.meta.env.DEV && console.error('upsert composed_group:', error) }
+    if (err) { import.meta.env.DEV && console.error('upsert composed_group:', err); setError(err.message) }
     else fetch()
   }, [userId, fetch])
 
@@ -77,15 +79,10 @@ export function useComposedGroups(userId: string | null) {
       return next
     })
     if (!userId) return
-    const { error } = await supabase.from('composed_groups').delete().eq('id', id)
-    if (error) { import.meta.env.DEV && console.error('delete composed_group:', error) }
+    const { error: err } = await supabase.from('composed_groups').delete().eq('id', id)
+    if (err) { import.meta.env.DEV && console.error('delete composed_group:', err); setError(err.message) }
     else fetch()
   }, [userId, fetch])
 
-  const updateLocal = useCallback((next: ComposedGroup[]) => {
-    setGroups(next)
-    lsSave(next)
-  }, [])
-
-  return { groups, upsert, remove, updateLocal, refetch: fetch }
+  return { groups, error, upsert, remove, refetch: fetch }
 }

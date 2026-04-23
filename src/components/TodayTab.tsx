@@ -1,4 +1,4 @@
-import { useMemo, useState, useCallback } from 'react'
+import { useMemo, useState, useCallback, useEffect } from 'react'
 import { useLockBodyScroll } from '../hooks/useLockBodyScroll'
 import { useSheetScroll } from '../hooks/useSheetScroll'
 import { SheetHandle } from './SheetHandle'
@@ -45,6 +45,7 @@ function saveCollapsed(s: Set<MealType>) {
 interface TodayTabProps {
   lang: Lang
   meals: Meal[]
+  loading?: boolean
   history: FoodHistory[]
   goalCalories: number
   goalProtein: number
@@ -59,12 +60,13 @@ interface TodayTabProps {
   composedGroups: ComposedGroup[]
   onUpsertGroup: (group: ComposedGroup) => void
   onRemoveGroup: (id: string) => void
+  showToast: (message: string, type: 'success' | 'error' | 'info') => void
 }
 
 export function TodayTab({
-  lang, meals, history, goalCalories, goalProtein,
+  lang, meals, loading = false, history, goalCalories, goalProtein,
   getSuggestions, onAddMeal, onAddMealWithId, onEditMeal, onDeleteMeal, onDuplicateMeal, onUpsertHistory,
-  composedEntries, composedGroups, onUpsertGroup, onRemoveGroup,
+  composedEntries, composedGroups, onUpsertGroup, onRemoveGroup, showToast,
 }: TodayTabProps) {
   const todayMeals = useMemo(() => meals.filter(m => m.date === today()), [meals])
 
@@ -193,40 +195,58 @@ export function TodayTab({
   const handleDuplicateSelected = (type: MealType) => {
     const sel = selectedIds[type]
     if (!sel) return
+    let count = 0
     mealsByType[type]
       .filter(m => sel.has(m.id))
-      .forEach(m => onDuplicateMeal(m))
+      .forEach(m => { onDuplicateMeal(m); count++ })
     // Also duplicate any composed groups fully selected
     composedGroups
       .filter(g => sel.has(g.id))
       .forEach(g => {
         const groupMeals = todayMeals.filter(m => g.mealIds.includes(m.id))
         groupMeals.forEach(m => onDuplicateMeal(m))
+        count++
       })
     clearSelection(type)
+    if (count > 0) showToast(lang === 'he' ? `שוכפלו ${count} פריטים` : `Duplicated ${count} item${count !== 1 ? 's' : ''}`, 'success')
   }
 
   const handleDeleteSelected = (type: MealType) => {
     const sel = selectedIds[type]
     if (!sel) return
+    let count = 0
     // Delete standalone meals
     mealsByType[type]
       .filter(m => sel.has(m.id) && !composedGroups.some(g => g.mealIds.includes(m.id)))
-      .forEach(m => onDeleteMeal(m.id))
+      .forEach(m => { onDeleteMeal(m.id); count++ })
     // Delete composed groups (dissolve + delete all children)
     composedGroups
       .filter(g => sel.has(g.id))
       .forEach(g => {
         g.mealIds.forEach(id => onDeleteMeal(id))
         dissolveGroup(g.id)
+        count++
       })
     clearSelection(type)
+    if (count > 0) showToast(lang === 'he' ? `נמחקו ${count} פריטים` : `Deleted ${count} item${count !== 1 ? 's' : ''}`, 'info')
   }
 
   // ── Entry sheet ──────────────────────────────────────────────
   const [entryOpen, setEntryOpen] = useState(false)
   const anyModalOpen = entryOpen || !!composeModal || !!addIngredientModal
   useLockBodyScroll(anyModalOpen)
+
+  // Escape key closes the topmost open modal
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return
+      if (addIngredientModal) { setAddIngredientModal(null); return }
+      if (composeModal) { setComposeModal(null); return }
+      if (entryOpen) { setEntryOpen(false); return }
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [addIngredientModal, composeModal, entryOpen])
   const { scrollRef: entryScrollRef, scrolledDown: entryScrolledDown, onScroll: entryOnScroll } = useSheetScroll()
 
   // ── Render: summary card ─────────────────────────────────────
@@ -312,7 +332,7 @@ export function TodayTab({
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               cursor: 'pointer',
             }}
-            title={t(lang, 'changeGroup')}
+            aria-label={t(lang, 'changeGroup')}
           >
             <span className="icon icon-sm" style={{ color: editingGroupType === type ? 'var(--amber)' : 'var(--text-3)' }}>
               edit
@@ -547,7 +567,15 @@ export function TodayTab({
     <div>
       {summaryCard}
 
-      {todayMeals.length === 0 && (
+      {loading && todayMeals.length === 0 && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {[0, 1, 2].map(i => (
+            <div key={i} className="card skeleton-card" style={{ height: 64, animationDelay: `${i * 0.08}s` }} />
+          ))}
+        </div>
+      )}
+
+      {!loading && todayMeals.length === 0 && (
         <div style={{ textAlign: 'center', padding: '32px 0', color: 'var(--text-3)' }}>
           <span className="icon" style={{ fontSize: 32, display: 'block', marginBottom: 8 }}>restaurant_menu</span>
           <p style={{ fontSize: 14, margin: 0 }}>{t(lang, 'noMealsToday')}</p>
@@ -578,6 +606,7 @@ export function TodayTab({
       {/* ── FAB ──────────────────────────────────────────────────── */}
       <button
         onClick={() => setEntryOpen(true)}
+        aria-label={lang === 'he' ? 'הוסף ארוחה' : 'Add meal'}
         style={{
           position: 'fixed',
           bottom: 28,

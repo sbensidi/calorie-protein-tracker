@@ -130,7 +130,7 @@ export function ComposedMealCard({
           <button
             className="icon-btn"
             onClick={e => { e.stopPropagation(); setEditingName(true) }}
-            title={t(lang, 'edit')}
+            aria-label={t(lang, 'edit')}
           >
             <span className="icon icon-sm">edit</span>
           </button>
@@ -258,7 +258,7 @@ export function ComposedMealCard({
                     className="icon-btn"
                     style={{ width: 26, height: 26, borderRadius: 6 }}
                     onClick={() => startEditChild(meal)}
-                    title={t(lang, 'edit')}
+                    aria-label={t(lang, 'edit')}
                   >
                     <span className="icon" style={{ fontSize: 14 }}>edit</span>
                   </button>
@@ -268,7 +268,7 @@ export function ComposedMealCard({
                     className="icon-btn danger"
                     style={{ width: 26, height: 26, borderRadius: 6 }}
                     onClick={() => onDeleteMeal(meal.id)}
-                    title={t(lang, 'delete')}
+                    aria-label={t(lang, 'delete')}
                   >
                     <span className="icon" style={{ fontSize: 14 }}>delete</span>
                   </button>

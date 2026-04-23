@@ -2,7 +2,7 @@ import { useState, useMemo, useRef, useEffect } from 'react'
 import { useLockBodyScroll } from '../hooks/useLockBodyScroll'
 import type { Meal, FoodHistory, ComposedGroup } from '../types'
 import type { Lang } from '../lib/i18n'
-import { t, formatDate, today } from '../lib/i18n'
+import { t, formatDate, today, HE_MONTHS, EN_MONTHS } from '../lib/i18n'
 import { DonutProgress } from './DonutProgress'
 import type { ComposedEntry } from './FoodEntryForm'
 
@@ -14,9 +14,6 @@ const MEAL_ICONS: Record<string, string> = {
   dinner:    'nights_stay',
   snack:     'nutrition',
 }
-
-const HE_MONTHS = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר']
-const EN_MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December']
 
 // ── Types ────────────────────────────────────────────────────────────
 

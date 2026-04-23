@@ -15,16 +15,18 @@ function isFoodHistory(x: unknown): x is FoodHistory {
 
 export function useFoodHistory(userId: string | null) {
   const [history, setHistory] = useState<FoodHistory[]>([])
+  const [error, setError] = useState<string | null>(null)
 
   const fetchHistory = useCallback(async () => {
     if (!userId) return
-    const { data, error } = await supabase
+    const { data, error: err } = await supabase
       .from('food_history')
       .select('*')
       .eq('user_id', userId)
       .order('use_count', { ascending: false })
       .order('last_used', { ascending: false })
-    if (!error && data) setHistory((data as unknown[]).filter(isFoodHistory))
+    if (err) setError(err.message)
+    else { setHistory((data as unknown[]).filter(isFoodHistory)); setError(null) }
   }, [userId])
 
   useEffect(() => {
@@ -66,5 +68,5 @@ export function useFoodHistory(userId: string | null) {
       .slice(0, 5)
   }, [history])
 
-  return { history, upsertHistory, getSuggestions }
+  return { history, error, upsertHistory, getSuggestions }
 }

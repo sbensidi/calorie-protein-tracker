@@ -1,16 +1,17 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from './lib/supabase'
 import type { Lang } from './lib/i18n'
 import { t } from './lib/i18n'
-import { useMemo } from 'react'
 import { useMeals } from './hooks/useMeals'
 import { useGoals } from './hooks/useGoals'
 import { useFoodHistory } from './hooks/useFoodHistory'
 import { useComposedGroups } from './hooks/useComposedGroups'
+import { useToast } from './hooks/useToast'
 import { TodayTab } from './components/TodayTab'
 import { HistoryTab } from './components/HistoryTab'
 import { SettingsSheet } from './components/SettingsSheet'
+import { ToastContainer } from './components/ToastContainer'
 import { useProfile } from './hooks/useProfile'
 
 type Tab = 'today' | 'history'
@@ -63,11 +64,18 @@ export default function App() {
 
   const userId = session?.user?.id || null
 
+  const { toasts, showToast, dismissToast } = useToast()
   const { profile, saveProfile } = useProfile()
-  const { meals, addMeal, addMealWithId, updateMeal, deleteMeal, duplicateMeal } = useMeals(userId)
-  const { goals, saveGoals, getGoalForDate } = useGoals(userId)
-  const { history, upsertHistory, getSuggestions } = useFoodHistory(userId)
-  const { groups: composedGroups, upsert: upsertGroup, remove: removeGroup } = useComposedGroups(userId)
+  const { meals, loading: mealsLoading, error: mealsError, addMeal, addMealWithId, updateMeal, deleteMeal, duplicateMeal } = useMeals(userId)
+  const { goals, error: goalsError, saveGoals, getGoalForDate } = useGoals(userId)
+  const { history, error: historyError, upsertHistory, getSuggestions } = useFoodHistory(userId)
+  const { groups: composedGroups, error: groupsError, upsert: upsertGroup, remove: removeGroup } = useComposedGroups(userId)
+
+  // Surface hook errors as toasts
+  useEffect(() => {
+    const err = mealsError || goalsError || historyError || groupsError
+    if (err) showToast(lang === 'he' ? 'שגיאה בתקשורת עם השרת' : 'Server error. Please try again.', 'error')
+  }, [mealsError, goalsError, historyError, groupsError]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const composedEntries = useMemo(() =>
     composedGroups.map(g => {
@@ -133,6 +141,7 @@ export default function App() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <button
                 onClick={() => setSettingsOpen(true)}
+                aria-label={lang === 'he' ? 'הגדרות' : 'Settings'}
                 style={{
                   width: 34, height: 34, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center',
                   background: 'var(--qty-bg)', border: '1px solid var(--border)',
@@ -181,6 +190,7 @@ export default function App() {
           <TodayTab
             lang={lang}
             meals={meals}
+            loading={mealsLoading}
             history={history}
             goalCalories={todayGoal.calories}
             goalProtein={todayGoal.protein}
@@ -195,6 +205,7 @@ export default function App() {
             composedGroups={composedGroups}
             onUpsertGroup={upsertGroup}
             onRemoveGroup={removeGroup}
+            showToast={showToast}
           />
         )}
         {tab === 'history' && (
@@ -223,7 +234,10 @@ export default function App() {
         onSignOut={() => supabase.auth.signOut()}
         theme={theme}
         onToggleTheme={() => setTheme(t => t === 'dark' ? 'light' : 'dark')}
+        showToast={showToast}
       />
+
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} lang={lang} />
     </div>
   )
 }

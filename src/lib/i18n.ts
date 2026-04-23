@@ -54,6 +54,8 @@ export const translations = {
     friday: 'שישי',
     saturday: 'שבת',
     aiError: 'שגיאה בחישוב AI — הזן ידנית',
+    aiErrorNetwork: 'שגיאת חיבור — בדוק אינטרנט ונסה שנית',
+    aiErrorNotFound: 'לא זיהינו את המוצר — נסה לתאר ביתר פירוט',
     confirmNutrition: 'אשר ערכי תזונה',
     unitLabel: 'יח׳',
     totalUnits: 'סה״כ יחידות',
@@ -173,6 +175,8 @@ export const translations = {
     friday: 'Friday',
     saturday: 'Saturday',
     aiError: 'AI calculation failed — enter manually',
+    aiErrorNetwork: 'Connection error — check your internet and try again',
+    aiErrorNotFound: 'Food not recognized — try adding more details',
     confirmNutrition: 'Confirm Nutrition',
     unitLabel: 'unit(s)',
     totalUnits: 'Total units',
@@ -249,7 +253,21 @@ export function t(lang: Lang, key: TranslationKey): string {
 }
 
 const hebrewDays = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת']
-const hebrewMonths = ['ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני', 'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר']
+
+export const HE_MONTHS = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר']
+export const EN_MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December']
+
+// Keep private alias for formatDate below
+const hebrewMonths = HE_MONTHS
+
+export const DAY_SHORT_HE: Record<DayKey, string> = {
+  sunday: 'א׳', monday: 'ב׳', tuesday: 'ג׳', wednesday: 'ד׳',
+  thursday: 'ה׳', friday: 'ו׳', saturday: 'ש׳',
+}
+export const DAY_SHORT_EN: Record<DayKey, string> = {
+  sunday: 'Su', monday: 'Mo', tuesday: 'Tu', wednesday: 'We',
+  thursday: 'Th', friday: 'Fr', saturday: 'Sa',
+}
 
 export function formatDate(dateStr: string, lang: Lang): string {
   const [year, month, day] = dateStr.split('-').map(Number)

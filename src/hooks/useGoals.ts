@@ -19,22 +19,27 @@ const DEFAULT_GOAL: Omit<Goal, 'id' | 'user_id' | 'updated_at'> = {
 export function useGoals(userId: string | null) {
   const [goals, setGoals] = useState<Goal | null>(null)
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const fetchGoals = useCallback(async () => {
     if (!userId) return
     setLoading(true)
-    const { data, error } = await supabase
+    const { data, error: err } = await supabase
       .from('goals')
       .select('*')
       .eq('user_id', userId)
       .single()
-    if (!error && isGoal(data)) {
+    if (!err && isGoal(data)) {
       setGoals(data as Goal)
-    } else {
+      setError(null)
+    } else if (err?.code === 'PGRST116') {
       // New user — auto-save defaults to DB so they have something to start with
       const defaults = { ...DEFAULT_GOAL, user_id: userId, updated_at: new Date().toISOString() }
-      await supabase.from('goals').upsert(defaults, { onConflict: 'user_id' })
-      setGoals({ id: '', ...defaults })
+      const { error: upsertErr } = await supabase.from('goals').upsert(defaults, { onConflict: 'user_id' })
+      if (upsertErr) setError(upsertErr.message)
+      else { setGoals({ id: '', ...defaults }); setError(null) }
+    } else if (err) {
+      setError(err.message)
     }
     setLoading(false)
   }, [userId])
@@ -47,7 +52,7 @@ export function useGoals(userId: string | null) {
   useEffect(() => {
     if (!userId) return
     const channel = supabase
-      .channel('goals-changes')
+      .channel(`goals-changes-${userId}`)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'goals', filter: `user_id=eq.${userId}` },
@@ -59,10 +64,10 @@ export function useGoals(userId: string | null) {
 
   const saveGoals = useCallback(async (updates: Partial<Goal>) => {
     if (!userId) return
-    const { error } = await supabase
+    const { error: err } = await supabase
       .from('goals')
       .upsert({ ...updates, user_id: userId, updated_at: new Date().toISOString() }, { onConflict: 'user_id' })
-    if (error && import.meta.env.DEV) console.error('Save goals error:', error)
+    if (err) { import.meta.env.DEV && console.error('Save goals error:', err); setError(err.message) }
     else fetchGoals()
   }, [userId, fetchGoals])
 
@@ -77,5 +82,5 @@ export function useGoals(userId: string | null) {
     }
   }, [goals])
 
-  return { goals, loading, saveGoals, getGoalForDate, refetch: fetchGoals }
+  return { goals, loading, error, saveGoals, getGoalForDate, refetch: fetchGoals }
 }

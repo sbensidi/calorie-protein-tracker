@@ -5,6 +5,8 @@ import type { Lang } from '../lib/i18n'
 import { t, currentTime, today } from '../lib/i18n'
 import { calculateNutrition } from '../lib/ai'
 import { BarcodeScanner } from './BarcodeScanner'
+import type { BarcodeScannerHandle } from './BarcodeScanner'
+import { ErrorBoundary } from './ErrorBoundary'
 import type { BarcodeProduct } from '../lib/barcodeApi'
 
 type EntryMode = 'manual' | 'scan'
@@ -47,7 +49,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, onAdd, onUpsertHi
   const [scannerMounted, setScannerMounted] = useState(
     () => (localStorage.getItem('entry-mode') as EntryMode) === 'scan'
   )
-  const [scanKey,      setScanKey]    = useState(0)   // increment to remount BarcodeScanner
+  const scannerRef  = useRef<BarcodeScannerHandle>(null)
   const [scanProduct,  setScanProduct]  = useState<BarcodeProduct | null>(null)
   const [scanNotFound, setScanNotFound] = useState<string | null>(null) // barcode that wasn't found
   const [scanGrams,    setScanGrams]  = useState('100')
@@ -62,7 +64,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, onAdd, onUpsertHi
   const [editCalories, setEditCalories] = useState<number | ''>('')
   const [editProtein,  setEditProtein]  = useState<number | ''>('')
   const [qty, setQty]                 = useState(1)
-  const [aiError, setAiError]         = useState(false)
+  const [aiError, setAiError]         = useState<'network' | 'notFound' | null>(null)
 
   // Dropdown
   const [dropdownOpen, setDropdownOpen] = useState(false)
@@ -141,7 +143,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, onAdd, onUpsertHi
     setEditProtein(item.protein   || '')
     setDropdownOpen(false)
     setQty(1)
-    setAiError(false)
+    setAiError(null)
     inputRef.current?.blur()
   }
 
@@ -152,16 +154,16 @@ export function FoodEntryForm({ lang, history, getSuggestions, onAdd, onUpsertHi
     if (now - lastCalcRef.current < 3000) return
     lastCalcRef.current = now
     setCalculating(true)
-    setAiError(false)
+    setAiError(null)
     setDropdownOpen(false)
     try {
       const result = await calculateNutrition(foodName, numericAmount, history, amountMode)
       setNutrition(result)
       setEditCalories(result.calories || '')
       setEditProtein(result.protein   || '')
-      if (result.calories === 0 && result.protein === 0) setAiError(true)
+      if (result.calories === 0 && result.protein === 0) setAiError('notFound')
     } catch {
-      setAiError(true)
+      setAiError('network')
       setNutrition({ calories: 0, protein: 0 })
       setEditCalories('')
       setEditProtein('')
@@ -176,7 +178,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, onAdd, onUpsertHi
     setNutrition(null)
     setEditCalories('')
     setEditProtein('')
-    setAiError(false)
+    setAiError(null)
     setQty(1)
     setDropdownOpen(false)
     setSuggestions([])
@@ -217,7 +219,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, onAdd, onUpsertHi
   const handleScanAgain = () => {
     setScanProduct(null)
     setScanNotFound(null)
-    setScanKey(k => k + 1)  // remount BarcodeScanner → fresh camera stream
+    scannerRef.current?.reset()
   }
 
   const switchMode = (m: EntryMode) => {
@@ -263,7 +265,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, onAdd, onUpsertHi
     setQty(1)
     setDropdownOpen(false)
     setSuggestions([])
-    setAiError(false)
+    setAiError(null)
     setEditCalories('')
     setEditProtein('')
   }
@@ -364,12 +366,14 @@ export function FoodEntryForm({ lang, history, getSuggestions, onAdd, onUpsertHi
           mounted (hidden via CSS) so the stream survives mode switches. */}
       {scannerMounted && (
         <div style={{ display: mode === 'scan' && !scanProduct && !scanNotFound ? undefined : 'none' }}>
-          <BarcodeScanner
-            key={scanKey}
-            lang={lang}
-            onResult={handleScanResult}
-            onNotFound={handleScanNotFound}
-          />
+          <ErrorBoundary>
+            <BarcodeScanner
+              ref={scannerRef}
+              lang={lang}
+              onResult={handleScanResult}
+              onNotFound={handleScanNotFound}
+            />
+          </ErrorBoundary>
         </div>
       )}
 
@@ -711,8 +715,8 @@ export function FoodEntryForm({ lang, history, getSuggestions, onAdd, onUpsertHi
 
       {aiError && (
         <p style={{ fontSize: 12, color: 'var(--red)', marginTop: 8, display: 'flex', alignItems: 'center', gap: 4 }}>
-          <span className="icon icon-sm">error_outline</span>
-          {t(lang, 'aiError')}
+          <span className="icon icon-sm">{aiError === 'network' ? 'wifi_off' : 'search_off'}</span>
+          {t(lang, aiError === 'network' ? 'aiErrorNetwork' : 'aiErrorNotFound')}
         </p>
       )}
 
@@ -790,7 +794,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, onAdd, onUpsertHi
 
           {/* Primary + secondary action buttons */}
           <div style={{ display: 'flex', gap: 8 }}>
-            <button className="btn-confirm" onClick={handleAdd} style={{ flex: 1 }}>
+            <button className="btn-confirm" onClick={handleAdd} style={{ flex: 1 }} disabled={calculating}>
               {t(lang, 'add')}
             </button>
             <button className="btn-ghost" onClick={handleCancelNutrition} style={{ flex: 1 }}>

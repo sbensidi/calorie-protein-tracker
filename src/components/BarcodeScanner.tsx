@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useImperativeHandle, forwardRef } from 'react'
 import { BrowserMultiFormatReader } from '@zxing/browser'
 import type { Lang } from '../lib/i18n'
 import { t } from '../lib/i18n'
@@ -11,14 +11,30 @@ interface BarcodeScannerProps {
   onNotFound: (barcode: string) => void
 }
 
+export interface BarcodeScannerHandle {
+  reset: () => void
+}
+
 type ScanState = 'checking' | 'idle' | 'scanning' | 'looking-up' | 'error-camera' | 'error-permission'
 
-export function BarcodeScanner({ lang, onResult, onNotFound }: BarcodeScannerProps) {
+export const BarcodeScanner = forwardRef<BarcodeScannerHandle, BarcodeScannerProps>(
+function BarcodeScanner({ lang, onResult, onNotFound }, ref) {
   const videoRef    = useRef<HTMLVideoElement>(null)
   const controlsRef = useRef<{ stop: () => void } | null>(null)
   const streamRef   = useRef<MediaStream | null>(null)
   const detectedRef = useRef(false)
   const [state, setState] = useState<ScanState>('checking')
+
+  useImperativeHandle(ref, () => ({
+    reset: () => {
+      // Stop current ZXing controls and restart scanning on the live stream
+      controlsRef.current?.stop()
+      controlsRef.current = null
+      detectedRef.current = false
+      if (streamRef.current) setState('scanning')
+      else setState('idle')
+    },
+  }))
 
   // On mount: try getUserMedia immediately without a gesture.
   // On iOS this succeeds silently if permission is already granted (no dialog),
@@ -197,4 +213,4 @@ export function BarcodeScanner({ lang, onResult, onNotFound }: BarcodeScannerPro
       </p>
     </div>
   )
-}
+})

@@ -3,7 +3,9 @@ import { useLockBodyScroll } from '../hooks/useLockBodyScroll'
 import { useSheetScroll } from '../hooks/useSheetScroll'
 import { SheetHandle } from './SheetHandle'
 import type { Lang, DayKey } from '../lib/i18n'
-import { t, DAY_KEYS } from '../lib/i18n'
+import { t, DAY_KEYS, DAY_SHORT_HE, DAY_SHORT_EN } from '../lib/i18n'
+import { toWeekIndex } from '../lib/utils'
+import type { Toast } from '../hooks/useToast'
 import type { Goal } from '../types'
 import type { UserProfile } from '../hooks/useProfile'
 
@@ -12,21 +14,6 @@ import type { UserProfile } from '../hooks/useProfile'
 type Screen = 'main' | 'profile' | 'goals'
 
 const ACTIVITY_MULTIPLIERS = [1.2, 1.375, 1.55, 1.725, 1.9]
-
-const DAY_INDEX: Record<DayKey, string> = {
-  sunday: '0', monday: '1', tuesday: '2', wednesday: '3',
-  thursday: '4', friday: '5', saturday: '6',
-}
-
-const DAY_SHORT_HE: Record<DayKey, string> = {
-  sunday: 'א׳', monday: 'ב׳', tuesday: 'ג׳', wednesday: 'ד׳',
-  thursday: 'ה׳', friday: 'ו׳', saturday: 'ש׳',
-}
-
-const DAY_SHORT_EN: Record<DayKey, string> = {
-  sunday: 'Su', monday: 'Mo', tuesday: 'Tu', wednesday: 'We',
-  thursday: 'Th', friday: 'Fr', saturday: 'Sa',
-}
 
 function calcBMR(p: UserProfile) {
   return Math.round(10 * p.weight + 6.25 * p.height - 5 * p.age + (p.sex === 'm' ? 5 : -161))
@@ -306,12 +293,13 @@ function MainScreen({ lang, connected, theme, onProfile, onGoals, onToggleLang, 
 
 // ── Profile Screen ────────────────────────────────────────────────────────────
 
-function ProfileScreen({ lang, profile, onSave, onApplyGoals, onBack }: {
+function ProfileScreen({ lang, profile, onSave, onApplyGoals, onBack, showToast }: {
   lang:         Lang
   profile:      UserProfile
   onSave:       (updates: Partial<UserProfile>) => void
   onApplyGoals: (calories: number, protein: number) => void
   onBack:       () => void
+  showToast:    (msg: string, type: 'success' | 'error' | 'info') => void
 }) {
   const [draft, setDraft] = useState<UserProfile>({ ...profile })
   const [saved, setSaved]     = useState(false)
@@ -336,6 +324,7 @@ function ProfileScreen({ lang, profile, onSave, onApplyGoals, onBack }: {
     onSave(draft)
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
+    showToast(lang === 'he' ? 'הפרופיל נשמר' : 'Profile saved', 'success')
   }
 
   const handleApply = () => {
@@ -343,6 +332,7 @@ function ProfileScreen({ lang, profile, onSave, onApplyGoals, onBack }: {
     onApplyGoals(suggestedCal, suggestedProt)
     setApplied(true)
     setTimeout(() => setApplied(false), 2000)
+    showToast(lang === 'he' ? 'היעדים הוחלו' : 'Goals applied', 'success')
   }
 
   const bmiColor  = bmiCategory === 'normal' ? 'var(--green-hi)' : bmiCategory === 'obese' ? 'var(--red)' : 'var(--amber)'
@@ -610,12 +600,13 @@ function ProfileScreen({ lang, profile, onSave, onApplyGoals, onBack }: {
 
 // ── Goals Screen ──────────────────────────────────────────────────────────────
 
-function GoalsScreen({ lang, profile, goals, onSave, onBack }: {
-  lang:    Lang
-  profile: UserProfile
-  goals:   Goal | null
-  onSave:  (updates: Partial<Goal>) => void
-  onBack:  () => void
+function GoalsScreen({ lang, profile, goals, onSave, onBack, showToast }: {
+  lang:      Lang
+  profile:   UserProfile
+  goals:     Goal | null
+  onSave:    (updates: Partial<Goal>) => void
+  onBack:    () => void
+  showToast: (msg: string, type: 'success' | 'error' | 'info') => void
 }) {
   const [defCal,  setDefCal]  = useState(goals?.default_calories ?? 1700)
   const [defProt, setDefProt] = useState(goals?.default_protein  ?? 160)
@@ -637,10 +628,10 @@ function GoalsScreen({ lang, profile, goals, onSave, onBack }: {
   const tdee = useMemo(() => calcTDEE(profile), [profile])
   const suggestedCal = tdee + (profile.goalType === 'lose' ? -500 : profile.goalType === 'gain' ? 300 : 0)
 
-  const hasOverride = (dayKey: DayKey) => !!overrides[DAY_INDEX[dayKey]]
+  const hasOverride = (dayKey: DayKey) => !!overrides[toWeekIndex(dayKey)]
 
   const getVal = (dayKey: DayKey, field: 'calories' | 'protein') => {
-    const entry = overrides[DAY_INDEX[dayKey]]
+    const entry = overrides[toWeekIndex(dayKey)]
     return entry?.[field] ?? (field === 'calories' ? defCal : defProt)
   }
 
@@ -655,7 +646,7 @@ function GoalsScreen({ lang, profile, goals, onSave, onBack }: {
   }
 
   const setDayOverride = (dayKey: DayKey, field: 'calories' | 'protein', value: string) => {
-    const idx = DAY_INDEX[dayKey]
+    const idx = toWeekIndex(dayKey)
     setOverrides(prev => ({
       ...prev,
       [idx]: { calories: prev[idx]?.calories ?? defCal, protein: prev[idx]?.protein ?? defProt, [field]: Number(value) },
@@ -663,8 +654,8 @@ function GoalsScreen({ lang, profile, goals, onSave, onBack }: {
   }
 
   const resetDay = (dayKey: DayKey) => {
-    const idx = DAY_INDEX[dayKey]
-    setOverrides(prev => { const n = { ...prev }; delete n[idx]; return n })
+    const idx = toWeekIndex(dayKey)
+    setOverrides(prev => { const n = { ...prev }; delete n[idx as keyof typeof n]; return n })
   }
 
   const dayShort = (dayKey: DayKey) => lang === 'he' ? DAY_SHORT_HE[dayKey] : DAY_SHORT_EN[dayKey]
@@ -673,6 +664,7 @@ function GoalsScreen({ lang, profile, goals, onSave, onBack }: {
     onSave({ default_calories: defCal, default_protein: defProt, weekly_overrides: overrides })
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
+    showToast(lang === 'he' ? 'היעדים נשמרו' : 'Goals saved', 'success')
   }
 
   const labelStyle: React.CSSProperties = {
@@ -907,10 +899,11 @@ interface SettingsSheetProps {
   onSignOut:      () => void
   theme:          'dark' | 'light'
   onToggleTheme:  () => void
+  showToast:      (message: string, type: Toast['type']) => void
 }
 
 export function SettingsSheet({
-  isOpen, onClose, lang, connected, profile, onSaveProfile, goals, onSaveGoals, onToggleLang, onSignOut, theme, onToggleTheme
+  isOpen, onClose, lang, connected, profile, onSaveProfile, goals, onSaveGoals, onToggleLang, onSignOut, theme, onToggleTheme, showToast
 }: SettingsSheetProps) {
   const [screen, setScreen] = useState<Screen>('main')
   useLockBodyScroll(isOpen)
@@ -920,6 +913,17 @@ export function SettingsSheet({
     setScreen('main')
     onClose()
   }
+
+  useEffect(() => {
+    if (!isOpen) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return
+      if (screen !== 'main') { setScreen('main'); return }
+      handleClose()
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [isOpen, screen]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <>
@@ -986,6 +990,7 @@ export function SettingsSheet({
               onSave={onSaveProfile}
               onApplyGoals={(cal, prot) => onSaveGoals({ default_calories: cal, default_protein: prot })}
               onBack={() => setScreen('main')}
+              showToast={showToast}
             />
           )}
           {screen === 'goals' && (
@@ -995,6 +1000,7 @@ export function SettingsSheet({
               goals={goals}
               onSave={onSaveGoals}
               onBack={() => setScreen('main')}
+              showToast={showToast}
             />
           )}
         </div>

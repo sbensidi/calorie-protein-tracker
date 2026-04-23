@@ -1,3 +1,5 @@
+import { memo } from 'react'
+
 interface DonutProgressProps {
   value:        number
   goal:         number
@@ -6,7 +8,7 @@ interface DonutProgressProps {
   strokeWidth?: number
 }
 
-export function DonutProgress({ value, goal, type, size = 56, strokeWidth = 5 }: DonutProgressProps) {
+export const DonutProgress = memo(function DonutProgress({ value, goal, type, size = 56, strokeWidth = 5 }: DonutProgressProps) {
   const pct     = goal > 0 ? Math.min(1, value / goal) : 0
   const realPct = goal > 0 ? Math.round((value / goal) * 100) : 0
 
@@ -52,10 +54,15 @@ export function DonutProgress({ value, goal, type, size = 56, strokeWidth = 5 }:
   }
 
   return (
-    <div style={{ position: 'relative', width: size, height: size, flexShrink: 0 }}>
+    <div
+      role="img"
+      aria-label={`${type === 'calories' ? 'Calories' : 'Protein'}: ${realPct}% of goal`}
+      style={{ position: 'relative', width: size, height: size, flexShrink: 0 }}
+    >
       <svg
         width={size}
         height={size}
+        aria-hidden="true"
         style={{ transform: 'rotate(-90deg)', display: 'block' }}
       >
         {/* Track */}
@@ -117,4 +124,4 @@ export function DonutProgress({ value, goal, type, size = 56, strokeWidth = 5 }:
       </div>
     </div>
   )
-}
+})

@@ -65,7 +65,7 @@
   --blue-hi:   #1d4ed8;
   --green:     #059669;
   --green-hi:  #047857;
-  --green-soft:#6ee7b7;
+  --green-soft:#0d9263; /* darkened for light-bg contrast (was #6ee7b7 — fails WCAG AA) */
   --red:       #dc2626;
   --red-hi:    #ef4444;
   --amber:     #b45309;
@@ -164,12 +164,42 @@ input[type="number"] { -moz-appearance: textfield; }
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
+}
 
 .fade-up   { animation: fadeUp 0.3s cubic-bezier(.22,.9,.36,1) both; }
+.skeleton-card {
+  background: var(--surface-2);
+  border-radius: 14px;
+  animation: skeleton-pulse 1.4s ease-in-out infinite;
+}
 .delay-1   { animation-delay: .05s; }
 .delay-2   { animation-delay: .10s; }
 .delay-3   { animation-delay: .15s; }
 .delay-4   { animation-delay: .20s; }
+
+/* ── Accessibility ──────────────────────────────────────────────── */
+/* Keyboard focus rings — visible only on keyboard navigation */
+:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+}
+/* Suppress focus ring on mouse click */
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration:   0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration:  0.01ms !important;
+  }
+  .skeleton-card { animation: none; opacity: 0.6; }
+}
 
 /* Cards */
 .card {
