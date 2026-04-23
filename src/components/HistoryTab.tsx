@@ -522,7 +522,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                       fontSize: 12, fontWeight: 600, borderRadius: 8,
                       cursor: data ? 'pointer' : 'default',
                       color:  isToday ? 'var(--blue-hi)' : data ? 'var(--text-2)' : 'var(--text-3)',
-                      background: data ? 'rgba(255,255,255,0.03)' : 'transparent',
+                      background: data ? 'var(--surface-1)' : 'transparent',
                       border: `1.5px solid ${isToday ? 'rgba(59,130,246,0.4)' : 'transparent'}`,
                       opacity: dimmed ? 0.2 : 1,
                       transition: 'opacity .15s',
@@ -670,7 +670,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                       {recentItems.map((item, i) => (
                         <button key={item.id} onMouseDown={() => { setSearch(item.name); setDropdownOpen(false) }}
                           style={{ display: 'flex', alignItems: 'center', width: '100%', padding: '9px 12px', background: 'transparent', border: 'none', borderBottom: i < recentItems.length - 1 ? '1px solid var(--border)' : 'none', cursor: 'pointer', gap: 10, textAlign: 'start', fontFamily: 'inherit', transition: 'background .12s' }}
-                          onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')}
+                          onMouseEnter={e => (e.currentTarget.style.background = 'var(--surface-2)')}
                           onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                         >
                           <span className="icon icon-sm" style={{ color: 'var(--text-2)', flexShrink: 0 }}>history</span>
@@ -810,7 +810,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                         <button key={item.id}
                           onClick={() => { setSearch(item.name); setHistoryModalOpen(false); setHistorySearch('') }}
                           style={{ display: 'flex', alignItems: 'center', width: '100%', padding: '10px 14px', background: 'transparent', border: 'none', borderBottom: i < filtered.length - 1 ? '1px solid var(--border)' : 'none', cursor: 'pointer', gap: 10, textAlign: 'start', fontFamily: 'inherit', transition: 'background .12s' }}
-                          onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.04)')}
+                          onMouseEnter={e => (e.currentTarget.style.background = 'var(--inp-bg)')}
                           onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                         >
                           <div style={{ flex: 1, minWidth: 0 }}>
@@ -850,7 +850,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
           borderRadius: 999,
           padding: fabPad,
           gap: fabGap,
-          boxShadow: '0 8px 32px rgba(0,0,0,0.5), 0 2px 8px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.06)',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.5), 0 2px 8px rgba(0,0,0,0.3), inset 0 1px 0 var(--surface-2)',
         }}
       >
         {/* Sliding active indicator */}

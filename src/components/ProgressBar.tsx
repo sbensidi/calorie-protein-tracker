@@ -17,7 +17,7 @@ export function ProgressBar({ value, goal, color }: ProgressBarProps) {
 
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-      <div style={{ flex: 1, height: 6, borderRadius: 999, background: 'rgba(255,255,255,0.06)', overflow: 'hidden' }}>
+      <div style={{ flex: 1, height: 6, borderRadius: 999, background: 'var(--qty-bg)', overflow: 'hidden' }}>
         <div
           className={color === 'blue' ? 'bar-blue' : 'bar-green'}
           style={{ height: '100%', width: `${pct}%`, borderRadius: 999 }}

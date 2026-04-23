@@ -25,6 +25,16 @@ export default function App() {
   const [tab, setTab]             = useState<Tab>('today')
   const [connected, setConnected] = useState(true)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
+    const saved = localStorage.getItem('theme')
+    if (saved === 'dark' || saved === 'light') return saved
+    return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'
+  })
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme
+    localStorage.setItem('theme', theme)
+  }, [theme])
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -103,7 +113,11 @@ export default function App() {
   }
 
   return (
-    <div dir={lang === 'he' ? 'rtl' : 'ltr'} style={{ minHeight: '100vh', background: 'var(--bg)' }}>
+    <div
+      dir={lang === 'he' ? 'rtl' : 'ltr'}
+      data-theme={theme}
+      style={{ minHeight: '100vh', background: 'var(--bg)' }}
+    >
 
       {/* ── Sticky app header ─────────────────────────────────────── */}
       <div style={{
@@ -121,11 +135,11 @@ export default function App() {
                 onClick={() => setSettingsOpen(true)}
                 style={{
                   width: 34, height: 34, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  background: 'rgba(255,255,255,0.06)', border: '1px solid var(--border)',
+                  background: 'var(--qty-bg)', border: '1px solid var(--border)',
                   color: 'var(--text-2)', cursor: 'pointer', transition: 'background .15s, color .15s',
                 }}
-                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.11)'; e.currentTarget.style.color = 'var(--text)' }}
-                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.color = 'var(--text-2)' }}
+                onMouseEnter={e => { e.currentTarget.style.background = 'var(--qty-hover)'; e.currentTarget.style.color = 'var(--text)' }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'var(--qty-bg)'; e.currentTarget.style.color = 'var(--text-2)' }}
               >
                 <span className="icon" style={{ fontSize: 20 }}>settings</span>
               </button>
@@ -207,6 +221,8 @@ export default function App() {
         connected={connected}
         onToggleLang={toggleLang}
         onSignOut={() => supabase.auth.signOut()}
+        theme={theme}
+        onToggleTheme={() => setTheme(t => t === 'dark' ? 'light' : 'dark')}
       />
     </div>
   )
@@ -282,7 +298,7 @@ function UpdatePasswordPage({ lang, onDone, onToggleLang }: { lang: Lang; onDone
         <div style={{ display: 'flex', justifyContent: 'center', marginTop: 16 }}>
           <button
             onClick={onToggleLang}
-            style={{ padding: '5px 14px', borderRadius: 999, background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border)', color: 'var(--text-2)', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}
+            style={{ padding: '5px 14px', borderRadius: 999, background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text-2)', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}
           >
             {lang === 'he' ? 'English' : 'עברית'}
           </button>
@@ -371,14 +387,14 @@ function AuthPage({ lang, onToggleLang }: { lang: Lang; onToggleLang: () => void
                 onClick={handleGoogle}
                 style={{
                   width: '100%', height: 46, borderRadius: 10, marginBottom: 6,
-                  background: 'rgba(255,255,255,0.06)', border: '1px solid var(--border-hi)',
+                  background: 'var(--qty-bg)', border: '1px solid var(--border-hi)',
                   color: 'var(--text)', fontSize: 14, fontWeight: 600,
                   cursor: 'pointer', fontFamily: 'inherit',
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
                   transition: 'background .15s',
                 }}
-                onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.10)')}
-                onMouseLeave={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')}
+                onMouseEnter={e => (e.currentTarget.style.background = 'var(--qty-hover)')}
+                onMouseLeave={e => (e.currentTarget.style.background = 'var(--qty-bg)')}
               >
                 {/* Google G logo SVG */}
                 <svg width="18" height="18" viewBox="0 0 24 24">
@@ -483,7 +499,7 @@ function AuthPage({ lang, onToggleLang }: { lang: Lang; onToggleLang: () => void
         <div style={{ display: 'flex', justifyContent: 'center', marginTop: 16 }}>
           <button
             onClick={onToggleLang}
-            style={{ padding: '5px 14px', borderRadius: 999, background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border)', color: 'var(--text-2)', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}
+            style={{ padding: '5px 14px', borderRadius: 999, background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text-2)', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}
           >
             {lang === 'he' ? 'English' : 'עברית'}
           </button>

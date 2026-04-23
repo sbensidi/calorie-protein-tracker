@@ -66,7 +66,7 @@ export function DailySummary({ meals, date, goalCalories, goalProtein, lang }: D
             display: 'inline-flex', alignItems: 'center', gap: 3,
             fontSize: 10, fontWeight: 700,
             padding: '3px 8px', borderRadius: 999,
-            background: calLabel.over ? 'rgba(244,63,94,0.15)' : 'rgba(255,255,255,0.07)',
+            background: calLabel.over ? 'rgba(244,63,94,0.15)' : 'var(--surface-3)',
             color: calLabel.over ? 'var(--red)' : 'var(--text-2)',
             alignSelf: 'flex-start',
           }}>
@@ -98,7 +98,7 @@ export function DailySummary({ meals, date, goalCalories, goalProtein, lang }: D
             display: 'inline-flex', alignItems: 'center', gap: 3,
             fontSize: 10, fontWeight: 700,
             padding: '3px 8px', borderRadius: 999,
-            background: protLabel.over ? 'rgba(244,63,94,0.15)' : 'rgba(255,255,255,0.07)',
+            background: protLabel.over ? 'rgba(244,63,94,0.15)' : 'var(--surface-3)',
             color: protLabel.over ? 'var(--red)' : 'var(--text-2)',
             alignSelf: 'flex-start',
           }}>

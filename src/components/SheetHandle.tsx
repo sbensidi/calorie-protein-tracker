@@ -32,7 +32,7 @@ export function SheetHandle({ scrolledDown, onClose }: SheetHandleProps) {
         background: 'var(--bg)',
         borderBottom: '1px solid var(--border)',
       }}>
-        <div style={{ width: 36, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.15)' }} />
+        <div style={{ width: 36, height: 4, borderRadius: 2, background: 'var(--surface-6)' }} />
 
         {onClose && (
           <button

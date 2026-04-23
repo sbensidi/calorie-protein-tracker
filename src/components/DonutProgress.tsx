@@ -30,11 +30,11 @@ export function DonutProgress({ value, goal, type, size = 56, strokeWidth = 5 }:
       glowColor = 'rgba(16,185,129,0.35)'
     } else if (realPct >= 50) {
       // Mid range — medium green
-      fillColor = '#34d399'
+      fillColor = 'var(--green)'
       glowColor = 'rgba(52,211,153,0.30)'
     } else {
       // Low — soft green
-      fillColor = '#6ee7b7'
+      fillColor = 'var(--green-soft)'
       glowColor = 'rgba(110,231,183,0.25)'
     }
   } else {
@@ -64,7 +64,7 @@ export function DonutProgress({ value, goal, type, size = 56, strokeWidth = 5 }:
           cy={size / 2}
           r={r}
           fill="none"
-          stroke="rgba(255,255,255,0.07)"
+          stroke="var(--surface-3)"
           strokeWidth={strokeWidth}
         />
         {/* Glow layer */}

@@ -475,7 +475,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, onAdd, onUpsertHi
           {scanG > 0 && (
             <div style={{
               display: 'flex', alignItems: 'center', gap: 10,
-              background: 'rgba(255,255,255,0.03)',
+              background: 'var(--surface-1)',
               border: '1px solid var(--border)',
               borderRadius: 10, padding: '9px 12px',
             }}>
@@ -692,7 +692,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, onAdd, onUpsertHi
                     cursor: 'pointer', gap: 10, textAlign: 'start', fontFamily: 'inherit',
                     transition: 'background .12s',
                   }}
-                  onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'var(--surface-2)')}
                   onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                 >
                   <span className="icon icon-sm" style={{ color: 'var(--text-2)', flexShrink: 0 }}>history</span>
@@ -930,7 +930,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, onAdd, onUpsertHi
                       cursor: 'pointer', gap: 10, textAlign: 'start', fontFamily: 'inherit',
                       transition: 'background .12s',
                     }}
-                    onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.04)')}
+                    onMouseEnter={e => (e.currentTarget.style.background = 'var(--inp-bg)')}
                     onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                   >
                     <div style={{ flex: 1, minWidth: 0 }}>

@@ -1,37 +1,115 @@
 @import "tailwindcss";
 
-:root {
-  /* ── Backgrounds & borders ─────────────────────────────── */
+[data-theme="dark"] {
+  /* Backgrounds */
   --bg:        #090d14;
   --bg-card:   #0f1521;
   --bg-card2:  #141c2d;
   --border:    rgba(255,255,255,0.07);
   --border-hi: rgba(255,255,255,0.12);
-
-  /* ── Text ──────────────────────────────────────────────── */
-  --text:      #dde4f0;
-  --text-2:    #94a8be;
-  --text-3:    #6b7f96;
-
-  /* ── Core colors ───────────────────────────────────────── */
+  /* Text */
+  --text:   #dde4f0;
+  --text-2: #94a8be;
+  --text-3: #6b7f96;
+  /* Brand (vivid on dark) */
   --blue:      #3b82f6;
   --blue-hi:   #60a5fa;
   --green:     #10b981;
   --green-hi:  #34d399;
+  --green-soft:#6ee7b7;
   --red:       #f43f5e;
   --red-hi:    #f87171;
   --amber:     #f59e0b;
   --purple:    #8b5cf6;
   --indigo:    #6366f1;
   --indigo-hi: #a5b4fc;
-
-  /* ── Tints (subtle bg for badges, highlights) ──────────── */
+  /* Tints */
   --blue-tint:   rgba(59,130,246,0.10);
   --green-tint:  rgba(16,185,129,0.10);
   --red-tint:    rgba(244,63,94,0.10);
   --amber-tint:  rgba(245,158,11,0.10);
   --indigo-tint: rgba(99,102,241,0.12);
   --purple-tint: rgba(139,92,246,0.10);
+  /* Neutral surfaces (white overlay on dark bg) */
+  --surface-1:   rgba(255,255,255,0.03);
+  --surface-2:   rgba(255,255,255,0.05);
+  --surface-3:   rgba(255,255,255,0.07);
+  --surface-4:   rgba(255,255,255,0.09);
+  --surface-5:   rgba(255,255,255,0.13);
+  --surface-6:   rgba(255,255,255,0.15);
+  --inp-bg:      rgba(255,255,255,0.04);
+  --icon-hover:  rgba(255,255,255,0.08);
+  --qty-bg:      rgba(255,255,255,0.06);
+  --qty-hover:   rgba(255,255,255,0.11);
+  /* Depth (dark overlay — less prominent in light mode) */
+  --depth-1:     rgba(0,0,0,0.10);
+  --depth-2:     rgba(0,0,0,0.12);
+  /* Special */
+  --modal-backdrop: rgba(0,0,0,0.65);
+  --scanner-bg:     #04060a;
+}
+
+[data-theme="light"] {
+  /* Backgrounds */
+  --bg:        #f0f4f8;
+  --bg-card:   #ffffff;
+  --bg-card2:  #eef2f7;
+  --border:    rgba(0,0,0,0.08);
+  --border-hi: rgba(0,0,0,0.14);
+  /* Text */
+  --text:   #0f1729;
+  --text-2: #4a5770;
+  --text-3: #7a8fa6;
+  /* Brand (darker for WCAG AA on light bg) */
+  --blue:      #2563eb;
+  --blue-hi:   #1d4ed8;
+  --green:     #059669;
+  --green-hi:  #047857;
+  --green-soft:#6ee7b7;
+  --red:       #dc2626;
+  --red-hi:    #ef4444;
+  --amber:     #b45309;
+  --purple:    #6d28d9;
+  --indigo:    #4338ca;
+  --indigo-hi: #3730a3;
+  /* Tints (same formula, slightly stronger on light) */
+  --blue-tint:   rgba(37,99,235,0.10);
+  --green-tint:  rgba(5,150,105,0.10);
+  --red-tint:    rgba(220,38,38,0.10);
+  --amber-tint:  rgba(180,83,9,0.10);
+  --indigo-tint: rgba(67,56,202,0.12);
+  --purple-tint: rgba(109,40,217,0.10);
+  /* Neutral surfaces (dark overlay on light bg) */
+  --surface-1:   rgba(0,0,0,0.02);
+  --surface-2:   rgba(0,0,0,0.04);
+  --surface-3:   rgba(0,0,0,0.05);
+  --surface-4:   rgba(0,0,0,0.06);
+  --surface-5:   rgba(0,0,0,0.09);
+  --surface-6:   rgba(0,0,0,0.12);
+  --inp-bg:      rgba(0,0,0,0.04);
+  --icon-hover:  rgba(0,0,0,0.06);
+  --qty-bg:      rgba(0,0,0,0.04);
+  --qty-hover:   rgba(0,0,0,0.08);
+  /* Depth */
+  --depth-1:     rgba(0,0,0,0.04);
+  --depth-2:     rgba(0,0,0,0.06);
+  /* Special */
+  --modal-backdrop: rgba(0,0,0,0.40);
+  --scanner-bg:     #0e1117;
+}
+
+/* Smooth theme transition — exclude animations/transforms */
+*, *::before, *::after {
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.15s ease;
+}
+
+/* Exclude animated elements from the global transition */
+.fade-up,
+.bar-blue,
+.bar-green,
+.tab-indicator,
+.fab-pill-btn {
+  transition: none;
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -106,7 +184,7 @@ input[type="number"] { -moz-appearance: textfield; }
 
 /* Inputs */
 .inp {
-  background: rgba(255,255,255,0.04);
+  background: var(--inp-bg);
   border: 1px solid var(--border);
   border-radius: 10px;
   color: var(--text);
@@ -157,7 +235,7 @@ input[type="number"] { -moz-appearance: textfield; }
 .btn-confirm:active { transform: scale(0.98); }
 
 .btn-ghost {
-  background: rgba(255,255,255,0.05);
+  background: var(--surface-2);
   color: var(--text-2);
   border: 1px solid var(--border);
   border-radius: 10px;
@@ -169,7 +247,7 @@ input[type="number"] { -moz-appearance: textfield; }
   font-family: inherit;
   transition: background .15s, color .15s;
 }
-.btn-ghost:hover  { background: rgba(255,255,255,0.09); color: var(--text); }
+.btn-ghost:hover  { background: var(--surface-4); color: var(--text); }
 .btn-ghost:active { transform: scale(0.97); }
 
 /* Meal rows */
@@ -188,7 +266,7 @@ input[type="number"] { -moz-appearance: textfield; }
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 3px;
-  background: rgba(255,255,255,0.04);
+  background: var(--inp-bg);
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 3px;
@@ -247,7 +325,7 @@ input[type="number"] { -moz-appearance: textfield; }
   color: var(--text-2);
   transition: background .15s, color .15s, transform .1s;
 }
-.icon-btn:hover  { background: rgba(255,255,255,0.08); color: var(--text); }
+.icon-btn:hover  { background: var(--icon-hover); color: var(--text); }
 .icon-btn:active { transform: scale(0.88); }
 .icon-btn.danger:hover { background: rgba(244,63,94,0.12); color: var(--red); }
 
@@ -255,7 +333,7 @@ input[type="number"] { -moz-appearance: textfield; }
 .qty-btn {
   width: 34px; height: 34px;
   border-radius: 50%;
-  background: rgba(255,255,255,0.06);
+  background: var(--qty-bg);
   border: 1px solid var(--border);
   color: var(--text);
   font-size: 18px;
@@ -266,7 +344,7 @@ input[type="number"] { -moz-appearance: textfield; }
   font-family: inherit;
   line-height: 1;
 }
-.qty-btn:hover  { background: rgba(255,255,255,0.11); }
+.qty-btn:hover  { background: var(--qty-hover); }
 .qty-btn:active { transform: scale(0.92); }
 
 /* Autocomplete chip */
@@ -304,7 +382,7 @@ details summary::-webkit-details-marker { display: none; }
 .chevron-badge {
   width: 24px; height: 24px;
   border-radius: 7px;
-  background: rgba(255,255,255,0.05);
+  background: var(--surface-2);
   border: 1px solid var(--border);
   display: inline-flex; align-items: center; justify-content: center;
   flex-shrink: 0;
@@ -344,8 +422,8 @@ details[open] .chevron-badge .icon { transform: rotate(180deg); }
   transition: background .12s;
 }
 .type-picker-row:last-child { border-bottom: none; }
-.type-picker-row:hover { background: rgba(255,255,255,0.03); }
-.type-picker-row.current { background: rgba(255,255,255,0.02); }
+.type-picker-row:hover { background: var(--surface-1); }
+.type-picker-row.current { background: var(--surface-1); }
 .type-picker-ico {
   width: 28px; height: 28px; border-radius: 8px;
   display: flex; align-items: center; justify-content: center;
@@ -382,12 +460,12 @@ details[open] .chevron-badge .icon { transform: rotate(180deg); }
   flex: 1;
   display: flex; flex-direction: column; align-items: center; gap: 5px;
   padding: 10px 4px;
-  background: none; border: none; border-inline-start: 1px solid rgba(255,255,255,0.05);
+  background: none; border: none; border-inline-start: 1px solid var(--border);
   font-family: inherit; font-size: 10px; font-weight: 700;
   cursor: pointer; transition: background .12s;
 }
 .group-action-btn:first-child { border-inline-start: none; }
-.group-action-btn:hover { background: rgba(255,255,255,0.03); }
+.group-action-btn:hover { background: var(--surface-1); }
 .group-action-btn-ico {
   width: 32px; height: 32px; border-radius: 9px;
   display: flex; align-items: center; justify-content: center;
@@ -395,7 +473,7 @@ details[open] .chevron-badge .icon { transform: rotate(180deg); }
 
 /* ── Composed meal card ─────────────────────────────────────────── */
 .composed-card {
-  background: rgba(0,0,0,0.12);
+  background: var(--depth-2);
   border: 1px solid rgba(139,92,246,0.15);
   border-radius: 11px;
   overflow: hidden;
@@ -403,21 +481,21 @@ details[open] .chevron-badge .icon { transform: rotate(180deg); }
 }
 .composed-children {
   border-top: 1px solid rgba(139,92,246,0.1);
-  background: rgba(0,0,0,0.1);
+  background: var(--depth-1);
   padding: 6px 8px 8px;
   display: flex; flex-direction: column; gap: 3px;
 }
 .child-row {
   display: flex; align-items: center; gap: 8px;
   padding: 7px 10px; border-radius: 8px;
-  background: rgba(255,255,255,0.02);
-  border: 1px solid rgba(255,255,255,0.05);
+  background: var(--surface-1);
+  border: 1px solid var(--border);
 }
 
 /* ── Compose-meal modal ─────────────────────────────────────────── */
 .compose-modal-backdrop {
   position: fixed; inset: 0;
-  background: rgba(0,0,0,0.65);
+  background: var(--modal-backdrop);
   display: flex; align-items: center; justify-content: center;
   z-index: 200; padding: 20px;
 }
@@ -431,7 +509,7 @@ details[open] .chevron-badge .icon { transform: rotate(180deg); }
 }
 .compose-modal-summary {
   display: flex; align-items: center; gap: 10px;
-  background: rgba(255,255,255,0.03);
+  background: var(--surface-1);
   border: 1px solid var(--border);
   border-radius: 10px; padding: 10px 13px;
 }
@@ -442,7 +520,7 @@ details[open] .chevron-badge .icon { transform: rotate(180deg); }
 .compose-modal-item {
   display: flex; align-items: center; gap: 8px;
   padding: 6px 10px; border-radius: 8px;
-  background: rgba(255,255,255,0.03);
+  background: var(--surface-1);
   border: 1px solid var(--border);
   font-size: 12px; color: var(--text-2);
 }
@@ -450,7 +528,7 @@ details[open] .chevron-badge .icon { transform: rotate(180deg); }
 /* ── Segmented control (manual / scan toggle) ──────────────────── */
 .seg-control {
   display: flex;
-  background: rgba(255,255,255,0.04);
+  background: var(--inp-bg);
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 3px;
@@ -487,7 +565,7 @@ details[open] .chevron-badge .icon { transform: rotate(180deg); }
   position: relative;
   width: 100%;
   aspect-ratio: 4 / 3;
-  background: #04060a;
+  background: var(--scanner-bg);
   border-radius: 12px;
   overflow: hidden;
   border: 1px solid var(--border);
@@ -504,6 +582,13 @@ details[open] .chevron-badge .icon { transform: rotate(180deg); }
     linear-gradient(to left,   rgba(4,6,10,0.6) 0%, transparent 18%),
     linear-gradient(to bottom, rgba(4,6,10,0.5) 0%, transparent 16%),
     linear-gradient(to top,    rgba(4,6,10,0.5) 0%, transparent 16%);
+}
+[data-theme="light"] .scanner-vignette {
+  background:
+    linear-gradient(to right,  rgba(14,17,23,0.6) 0%, transparent 18%),
+    linear-gradient(to left,   rgba(14,17,23,0.6) 0%, transparent 18%),
+    linear-gradient(to bottom, rgba(14,17,23,0.5) 0%, transparent 16%),
+    linear-gradient(to top,    rgba(14,17,23,0.5) 0%, transparent 16%);
 }
 .scanner-frame {
   position: absolute;

@@ -106,7 +106,9 @@ function DayPanel({
               inputMode="numeric"
               className="inp"
               style={{ height: compact ? 38 : undefined, fontSize: compact ? 13 : undefined, paddingInlineEnd: calDiff ? 52 : undefined }}
-              value={calVal}
+              value={calVal === 0 ? '' : calVal}
+              placeholder="0"
+              onFocus={e => e.target.select()}
               onChange={e => onChangeCal(e.target.value)}
             />
             {calDiff && (
@@ -132,7 +134,9 @@ function DayPanel({
               inputMode="decimal"
               className="inp inp-green"
               style={{ height: compact ? 38 : undefined, fontSize: compact ? 13 : undefined, paddingInlineEnd: protDiff ? 52 : undefined }}
-              value={protVal}
+              value={protVal === 0 ? '' : protVal}
+              placeholder="0"
+              onFocus={e => e.target.select()}
               onChange={e => onChangeProt(e.target.value)}
             />
             {protDiff && (
@@ -153,13 +157,15 @@ function DayPanel({
 
 // ── Main Screen ───────────────────────────────────────────────────────────────
 
-function MainScreen({ lang, connected, onProfile, onGoals, onToggleLang, onSignOut }: {
-  lang:         Lang
-  connected:    boolean
-  onProfile:    () => void
-  onGoals:      () => void
-  onToggleLang: () => void
-  onSignOut:    () => void
+function MainScreen({ lang, connected, theme, onProfile, onGoals, onToggleLang, onToggleTheme, onSignOut }: {
+  lang:           Lang
+  connected:      boolean
+  theme:          'dark' | 'light'
+  onProfile:      () => void
+  onGoals:        () => void
+  onToggleLang:   () => void
+  onToggleTheme:  () => void
+  onSignOut:      () => void
 }) {
   const chevron = lang === 'he' ? 'chevron_left' : 'chevron_right'
 
@@ -221,7 +227,7 @@ function MainScreen({ lang, connected, onProfile, onGoals, onToggleLang, onSignO
 
         {/* Language */}
         <div style={{ ...rowBase, cursor: 'default' }}>
-          <span className="icon" style={{ fontSize: 22, color: '#8b5cf6', flexShrink: 0 }}>language</span>
+          <span className="icon" style={{ fontSize: 22, color: 'var(--purple)', flexShrink: 0 }}>language</span>
           <div style={{ flex: 1, textAlign: 'start' }}>
             <p style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', margin: 0 }}>
               {t(lang, 'language')}
@@ -231,12 +237,55 @@ function MainScreen({ lang, connected, onProfile, onGoals, onToggleLang, onSignO
             onClick={onToggleLang}
             style={{
               padding: '6px 16px', borderRadius: 999,
-              background: 'rgba(255,255,255,0.06)', border: '1px solid var(--border)',
+              background: 'var(--qty-bg)', border: '1px solid var(--border)',
               color: 'var(--text)', fontSize: 12, fontWeight: 700,
               cursor: 'pointer', fontFamily: 'inherit',
             }}
           >
             {lang === 'he' ? 'EN' : 'עב'}
+          </button>
+        </div>
+
+        {/* Theme */}
+        <div style={{ ...rowBase, cursor: 'default' }}>
+          <span className="icon" style={{ fontSize: 22, color: 'var(--amber)', flexShrink: 0 }}>
+            {theme === 'dark' ? 'dark_mode' : 'light_mode'}
+          </span>
+          <div style={{ flex: 1, textAlign: 'start' }}>
+            <p style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', margin: 0 }}>
+              {lang === 'he' ? 'מצב תצוגה' : 'Appearance'}
+            </p>
+          </div>
+          {/* Toggle pill */}
+          <button
+            onClick={onToggleTheme}
+            aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            style={{
+              position: 'relative',
+              width: 50, height: 28,
+              borderRadius: 999,
+              border: 'none',
+              cursor: 'pointer',
+              padding: 0,
+              background: theme === 'dark' ? 'rgba(59,130,246,0.25)' : 'rgba(245,158,11,0.25)',
+              transition: 'background 0.25s',
+              flexShrink: 0,
+            }}
+          >
+            <span style={{
+              position: 'absolute',
+              top: 3, left: theme === 'dark' ? 3 : 23,
+              width: 22, height: 22,
+              borderRadius: '50%',
+              background: theme === 'dark' ? 'var(--blue)' : 'var(--amber)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              transition: 'left 0.25s cubic-bezier(.34,1.56,.64,1), background 0.25s',
+              boxShadow: '0 1px 4px rgba(0,0,0,0.3)',
+            }}>
+              <span className="icon" style={{ fontSize: 13, color: '#fff' }}>
+                {theme === 'dark' ? 'dark_mode' : 'light_mode'}
+              </span>
+            </span>
           </button>
         </div>
 
@@ -361,7 +410,9 @@ function ProfileScreen({ lang, profile, onSave, onApplyGoals, onBack }: {
                 inputMode="numeric"
                 className="inp"
                 min={min} max={max}
-                value={draft[key]}
+                value={draft[key] === 0 ? '' : draft[key]}
+                placeholder="0"
+                onFocus={e => e.target.select()}
                 onChange={e => set(key, Number(e.target.value) as any)}
                 style={{ textAlign: lang === 'he' ? 'right' : 'left', paddingInlineStart: 12, paddingInlineEnd: 28 }}
               />
@@ -479,7 +530,7 @@ function ProfileScreen({ lang, profile, onSave, onApplyGoals, onBack }: {
 
         {/* Why 500 explanation */}
         {draft.goalType === 'lose' && (
-          <div style={{ background: 'rgba(0,0,0,0.15)', borderRadius: 8, padding: '8px 10px', marginBottom: 10 }}>
+          <div style={{ background: 'var(--depth-2)', borderRadius: 8, padding: '8px 10px', marginBottom: 10 }}>
             <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--blue-hi)', margin: '0 0 4px' }}>
               {lang === 'he' ? 'למה דווקא 500 קק״ל פחות?' : 'Why exactly 500 kcal less?'}
             </p>
@@ -685,7 +736,9 @@ function GoalsScreen({ lang, profile, goals, onSave, onBack }: {
           <div style={{ position: 'relative' }}>
             <input type="number" inputMode="numeric" className="inp"
               style={{ paddingInlineEnd: defCal > 0 ? 32 : undefined }}
-              value={defCal} onChange={e => setDefCal(Number(e.target.value))} />
+              value={defCal === 0 ? '' : defCal} placeholder="0"
+              onFocus={e => e.target.select()}
+              onChange={e => setDefCal(Number(e.target.value))} />
             {defCal > 0 && (
               <button
                 onMouseDown={e => { e.preventDefault(); setDefCal(0) }}
@@ -704,7 +757,9 @@ function GoalsScreen({ lang, profile, goals, onSave, onBack }: {
           <div style={{ position: 'relative' }}>
             <input type="number" inputMode="decimal" className="inp inp-green"
               style={{ paddingInlineEnd: defProt > 0 ? 32 : undefined }}
-              value={defProt} onChange={e => setDefProt(Number(e.target.value))} />
+              value={defProt === 0 ? '' : defProt} placeholder="0"
+              onFocus={e => e.target.select()}
+              onChange={e => setDefProt(Number(e.target.value))} />
             {defProt > 0 && (
               <button
                 onMouseDown={e => { e.preventDefault(); setDefProt(0) }}
@@ -850,10 +905,12 @@ interface SettingsSheetProps {
   onSaveGoals:    (updates: Partial<Goal>) => void
   onToggleLang:   () => void
   onSignOut:      () => void
+  theme:          'dark' | 'light'
+  onToggleTheme:  () => void
 }
 
 export function SettingsSheet({
-  isOpen, onClose, lang, connected, profile, onSaveProfile, goals, onSaveGoals, onToggleLang, onSignOut
+  isOpen, onClose, lang, connected, profile, onSaveProfile, goals, onSaveGoals, onToggleLang, onSignOut, theme, onToggleTheme
 }: SettingsSheetProps) {
   const [screen, setScreen] = useState<Screen>('main')
   useLockBodyScroll(isOpen)
@@ -871,7 +928,7 @@ export function SettingsSheet({
         onClick={handleClose}
         style={{
           position: 'fixed', inset: 0, zIndex: 99,
-          background: 'rgba(0,0,0,0.55)',
+          background: 'var(--modal-backdrop)',
           backdropFilter: isOpen ? 'blur(2px)' : 'none',
           opacity: isOpen ? 1 : 0,
           pointerEvents: isOpen ? 'all' : 'none',
@@ -914,9 +971,11 @@ export function SettingsSheet({
             <MainScreen
               lang={lang}
               connected={connected}
+              theme={theme}
               onProfile={() => setScreen('profile')}
               onGoals={() => setScreen('goals')}
               onToggleLang={onToggleLang}
+              onToggleTheme={onToggleTheme}
               onSignOut={() => { handleClose(); onSignOut() }}
             />
           )}

@@ -307,7 +307,7 @@ export function TodayTab({
             }}
             style={{
               width: 26, height: 26, borderRadius: 8, flexShrink: 0,
-              background: editingGroupType === type ? 'rgba(245,158,11,0.12)' : 'rgba(255,255,255,0.04)',
+              background: editingGroupType === type ? 'rgba(245,158,11,0.12)' : 'var(--inp-bg)',
               border: `1px solid ${editingGroupType === type ? 'rgba(245,158,11,0.3)' : 'var(--border)'}`,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               cursor: 'pointer',
@@ -603,7 +603,7 @@ export function TodayTab({
         onClick={() => setEntryOpen(false)}
         style={{
           position: 'fixed', inset: 0, zIndex: 99,
-          background: 'rgba(0,0,0,0.55)',
+          background: 'var(--modal-backdrop)',
           backdropFilter: entryOpen ? 'blur(2px)' : 'none',
           opacity: entryOpen ? 1 : 0,
           pointerEvents: entryOpen ? 'all' : 'none',
