@@ -1021,7 +1021,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                 {/* Chart header: title + toggle */}
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
                   <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-2)', margin: 0 }}>
-                    {lang === 'he' ? 'לפי יום — 7 ימים' : '7-day breakdown'}
+                    {range7Label}
                   </p>
                   <div style={{ display: 'flex', background: 'var(--surface-2)', borderRadius: 8, padding: 2, gap: 2 }}>
                     {(['cal', 'prot'] as const).map(m => (
