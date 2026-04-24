@@ -454,15 +454,25 @@ export function FoodEntryForm({ lang, history, getSuggestions, onAdd, onUpsertHi
             <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-2)', flexShrink: 0 }}>
               {t(lang, 'grams')}
             </span>
-            <input
-              type="number"
-              inputMode="numeric"
-              className="inp"
-              style={{ flex: '0 0 80px', textAlign: 'center' }}
-              value={scanGrams}
-              onFocus={e => e.target.select()}
-              onChange={e => setScanGrams(e.target.value)}
-            />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+              <button
+                className="qty-btn"
+                onClick={() => setScanGrams(g => String(Math.max(10, Math.round((Number(g) || 0) - 10))))}
+              >−</button>
+              <input
+                type="number"
+                inputMode="decimal"
+                className="inp"
+                style={{ width: 64, textAlign: 'center', padding: '0 4px' }}
+                value={scanGrams}
+                onFocus={e => e.target.select()}
+                onChange={e => setScanGrams(e.target.value)}
+              />
+              <button
+                className="qty-btn"
+                onClick={() => setScanGrams(g => String((Number(g) || 0) + 10))}
+              >+</button>
+            </div>
             <select
               className="inp"
               style={{ flex: 1 }}
