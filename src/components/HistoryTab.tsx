@@ -1015,6 +1015,11 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                             }} />
                           )}
                         </div>
+                        {b.hasData && (
+                          <span style={{ fontSize: 8, fontWeight: 700, color: 'var(--text-3)', lineHeight: 1 }}>
+                            {isCal ? Math.round(val) : Math.round(val * 10) / 10}
+                          </span>
+                        )}
                         <span style={{ fontSize: 9, fontWeight: 600, color: 'var(--text-3)' }}>{b.label}</span>
                       </div>
                     )
