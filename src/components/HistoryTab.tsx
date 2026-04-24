@@ -1036,6 +1036,11 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                   <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, color: 'var(--text-3)' }}>
                     <div style={{ width: 12, borderTop: `1.5px dashed ${goalLegendColor}` }} />
                     {lang === 'he' ? 'יעד' : 'Goal'}
+                    <span style={{ fontWeight: 700, color: 'var(--text-2)' }}>
+                      {isCal
+                        ? `${todayGoal.calories.toLocaleString()} ${t(lang, 'caloriesUnit')}`
+                        : `${todayGoal.protein}${t(lang, 'proteinUnit')}`}
+                    </span>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, color: 'var(--text-3)' }}>
                     <div style={{ width: 12, height: 3, background: 'var(--amber)', borderRadius: 2 }} />
