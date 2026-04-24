@@ -915,10 +915,12 @@ function FoodHistoryScreen({ lang, history, composedGroups, onDelete, onUpdate, 
   onBack:         () => void
   showToast:      (msg: string, type: 'success' | 'error' | 'info') => void
 }) {
-  const [search, setSearch]     = useState('')
+  const [search, setSearch]       = useState('')
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editDraft, setEditDraft] = useState<{ name: string; grams: string; calories: string; protein: string }>({ name: '', grams: '', calories: '', protein: '' })
-  const [tab, setTab]           = useState<'foods' | 'composed'>('foods')
+  const [tab, setTab]             = useState<'foods' | 'composed'>('foods')
+  // Per-gram ratios of the item being edited — used for proportional scaling when grams changes
+  const editRatios = useRef({ calPerGram: 0, protPerGram: 0 })
 
   const q = search.trim().toLowerCase()
   const filtered = q
@@ -926,9 +928,23 @@ function FoodHistoryScreen({ lang, history, composedGroups, onDelete, onUpdate, 
     : [...history].sort((a, b) => b.use_count - a.use_count)
 
   const startEdit = (item: FoodHistory) => {
+    const absGrams = Math.abs(item.grams) || 1
+    editRatios.current = { calPerGram: item.calories / absGrams, protPerGram: item.protein / absGrams }
     setEditingId(item.id)
     setEditDraft({ name: item.name, grams: String(item.grams), calories: String(Math.round(item.calories)), protein: String(Math.round(item.protein * 10) / 10) })
   }
+
+  const handleGramsChange = (val: string) => {
+    const g = Math.abs(Number(val)) || 0
+    const { calPerGram, protPerGram } = editRatios.current
+    setEditDraft(d => ({
+      ...d,
+      grams:    val,
+      calories: g > 0 ? String(Math.round(calPerGram  * g))           : d.calories,
+      protein:  g > 0 ? String(Math.round(protPerGram * g * 10) / 10) : d.protein,
+    }))
+  }
+
   const saveEdit = () => {
     if (!editingId) return
     onUpdate(editingId, { name: editDraft.name, grams: Number(editDraft.grams), calories: Number(editDraft.calories), protein: Number(editDraft.protein) })
@@ -1017,15 +1033,30 @@ function FoodHistoryScreen({ lang, history, composedGroups, onDelete, onUpdate, 
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6 }}>
                           <div>
                             <label style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-3)', display: 'block', marginBottom: 3 }}>{lang === 'he' ? 'גרם/יח׳' : 'g/pcs'}</label>
-                            <input className="inp" type="number" value={editDraft.grams} onChange={e => setEditDraft(d => ({ ...d, grams: e.target.value }))} style={inputSm} />
+                            <input className="inp" type="number" inputMode="decimal" value={editDraft.grams}
+                              onFocus={e => e.target.select()}
+                              onChange={e => handleGramsChange(e.target.value)}
+                              style={{ ...inputSm, borderColor: 'rgba(59,130,246,0.5)' }} />
                           </div>
                           <div>
-                            <label style={{ fontSize: 10, fontWeight: 600, color: 'var(--blue-hi)', display: 'block', marginBottom: 3 }}>{t(lang, 'caloriesUnit')}</label>
-                            <input className="inp" type="number" value={editDraft.calories} onChange={e => setEditDraft(d => ({ ...d, calories: e.target.value }))} style={inputSm} />
+                            <label style={{ fontSize: 10, fontWeight: 600, color: 'var(--blue-hi)', display: 'flex', alignItems: 'center', gap: 3, marginBottom: 3 }}>
+                              {t(lang, 'caloriesUnit')}
+                              <span className="icon" style={{ fontSize: 10, opacity: 0.6 }} title={lang === 'he' ? 'מחושב אוטומטית לפי גרם' : 'Auto-scaled from grams'}>calculate</span>
+                            </label>
+                            <input className="inp" type="number" inputMode="decimal" value={editDraft.calories}
+                              onFocus={e => e.target.select()}
+                              onChange={e => setEditDraft(d => ({ ...d, calories: e.target.value }))}
+                              style={inputSm} />
                           </div>
                           <div>
-                            <label style={{ fontSize: 10, fontWeight: 600, color: 'var(--green-hi)', display: 'block', marginBottom: 3 }}>{t(lang, 'proteinUnit')}</label>
-                            <input className="inp" type="number" value={editDraft.protein} onChange={e => setEditDraft(d => ({ ...d, protein: e.target.value }))} style={inputSm} />
+                            <label style={{ fontSize: 10, fontWeight: 600, color: 'var(--green-hi)', display: 'flex', alignItems: 'center', gap: 3, marginBottom: 3 }}>
+                              {t(lang, 'proteinUnit')}
+                              <span className="icon" style={{ fontSize: 10, opacity: 0.6 }} title={lang === 'he' ? 'מחושב אוטומטית לפי גרם' : 'Auto-scaled from grams'}>calculate</span>
+                            </label>
+                            <input className="inp" type="number" inputMode="decimal" value={editDraft.protein}
+                              onFocus={e => e.target.select()}
+                              onChange={e => setEditDraft(d => ({ ...d, protein: e.target.value }))}
+                              style={inputSm} />
                           </div>
                         </div>
                         <div style={{ display: 'flex', gap: 6 }}>
