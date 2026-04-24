@@ -76,6 +76,8 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
   )
   const [sortAsc, setSortAsc] = useState(false)
   const [chartMetric, setChartMetric] = useState<'cal' | 'prot'>('cal')
+  const [offset7,  setOffset7]  = useState(0) // weeks back (0 = current week)
+  const [offset30, setOffset30] = useState(0) // months back (0 = current 30d)
   // Persist search per view
   const [searchByView, setSearchByView] = useState<Record<'cal' | 'list' | 'stats', string>>({ cal: '', list: '', stats: '' })
   const search = searchByView[view]
@@ -853,39 +855,27 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
         const now = new Date()
         const nowKey = today()
 
-        // Collect past days (excluding today) with data, sorted newest first
-        const days = sortedDates // already sorted newest first, excludes today
+        // Helper: format a Date as DD.MM
+        const fmt = (d: Date) =>
+          `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}`
 
-        const last7  = days.filter(d => {
-          const diff = (new Date(nowKey).getTime() - new Date(d).getTime()) / 86400000
-          return diff >= 1 && diff <= 7
-        })
-        const last30 = days.filter(d => {
-          const diff = (new Date(nowKey).getTime() - new Date(d).getTime()) / 86400000
-          return diff >= 1 && diff <= 30
-        })
+        // Helper: date key string from Date
+        const toKey = (d: Date) =>
+          `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 
-        const avg = (arr: string[], key: 'totalCalories' | 'totalProtein') => {
-          if (arr.length === 0) return 0
-          return Math.round(arr.reduce((s, d) => s + (grouped.get(d)?.[key] ?? 0), 0) / arr.length)
-        }
+        // ── 7-day window ──────────────────────────────────────────
+        // offset7=0 → ends yesterday; offset7=1 → 8–14 days ago, etc.
+        const end7 = new Date(now)
+        end7.setDate(end7.getDate() - 1 - offset7 * 7)
+        const start7 = new Date(end7)
+        start7.setDate(start7.getDate() - 6)
+        const range7Label = `${fmt(start7)} – ${fmt(end7)}`
 
-        const avg7Cal  = avg(last7,  'totalCalories')
-        const avg7Prot = avg(last7,  'totalProtein')
-        const avg30Cal = avg(last30, 'totalCalories')
-        const avg30Prot= avg(last30, 'totalProtein')
-
-        const successDays7  = last7.filter(d  => grouped.get(d)?.status === 'success').length
-        const successDays30 = last30.filter(d => grouped.get(d)?.status === 'success').length
-        const pct7  = last7.length  ? Math.round(successDays7  / last7.length  * 100) : 0
-        const pct30 = last30.length ? Math.round(successDays30 / last30.length * 100) : 0
-
-        // Last 7 days bar chart data (day by day, including gaps)
         const barDays: Array<{ label: string; dateKey: string; cal: number; prot: number; goalCal: number; goalProt: number; hasData: boolean }> = []
-        for (let i = 7; i >= 1; i--) {
-          const d = new Date(now)
+        for (let i = 6; i >= 0; i--) {
+          const d = new Date(end7)
           d.setDate(d.getDate() - i)
-          const dKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+          const dKey = toKey(d)
           const data = grouped.get(dKey)
           const g    = getGoalForDate(dKey)
           const dayLabel = lang === 'he'
@@ -893,6 +883,35 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
             : ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'][d.getDay()]
           barDays.push({ label: dayLabel, dateKey: dKey, cal: data?.totalCalories ?? 0, prot: data?.totalProtein ?? 0, goalCal: g.calories, goalProt: g.protein, hasData: !!data })
         }
+
+        const last7 = barDays.filter(b => b.hasData).map(b => b.dateKey)
+
+        // ── 30-day window ─────────────────────────────────────────
+        const end30 = new Date(now)
+        end30.setDate(end30.getDate() - 1 - offset30 * 30)
+        const start30 = new Date(end30)
+        start30.setDate(start30.getDate() - 29)
+        const range30Label = `${fmt(start30)} – ${fmt(end30)}`
+
+        const last30 = sortedDates.filter(d => {
+          const t = new Date(d).getTime()
+          return t >= start30.setHours(0,0,0,0) && t <= end30.setHours(23,59,59,999)
+        })
+
+        const avg = (arr: string[], key: 'totalCalories' | 'totalProtein') => {
+          if (arr.length === 0) return 0
+          return Math.round(arr.reduce((s, d) => s + (grouped.get(d)?.[key] ?? 0), 0) / arr.length)
+        }
+
+        const avg7Cal   = avg(last7,  'totalCalories')
+        const avg7Prot  = avg(last7,  'totalProtein')
+        const avg30Cal  = avg(last30, 'totalCalories')
+        const avg30Prot = avg(last30, 'totalProtein')
+
+        const successDays7  = last7.filter(d  => grouped.get(d)?.status === 'success').length
+        const successDays30 = last30.filter(d => grouped.get(d)?.status === 'success').length
+        const pct7  = last7.length  ? Math.round(successDays7  / last7.length  * 100) : 0
+        const pct30 = last30.length ? Math.round(successDays30 / last30.length * 100) : 0
 
         const barH    = 80
 
@@ -950,22 +969,51 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
 
             {/* 7-day section */}
             <div>
-              <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-2)', textTransform: 'uppercase', letterSpacing: '0.07em', margin: '0 0 8px' }}>
-                {lang === 'he' ? `7 ימים אחרונים (${last7.length} ימים עם נתונים)` : `Last 7 days (${last7.length} days with data)`}
-              </p>
-              <div style={{ display: 'flex', gap: 6 }}>
-                <StatCard label={lang === 'he' ? 'קל׳ ממוצע' : 'Avg cal'} value={avg7Cal} unit={t(lang, 'caloriesUnit')} color="var(--blue-hi)" />
-                <StatCard label={lang === 'he' ? 'חל׳ ממוצע' : 'Avg prot'} value={avg7Prot} unit={t(lang, 'proteinUnit')} color="var(--green-hi)" />
-                <div style={{ flex: 1, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: '12px 10px', textAlign: 'center' }}>
-                  <p style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-3)', margin: '0 0 6px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                    {lang === 'he' ? 'עמידה ביעד' : 'On target'}
-                  </p>
-                  <p style={{ fontSize: 22, fontWeight: 800, color: pct7 >= 70 ? 'var(--green-hi)' : pct7 >= 40 ? 'var(--amber)' : 'var(--red)', margin: 0 }}>
-                    {pct7}%
-                  </p>
-                  <p style={{ fontSize: 10, color: 'var(--text-3)', margin: '2px 0 0' }}>{successDays7}/{last7.length} {lang === 'he' ? 'ימים' : 'days'}</p>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-2)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+                    {lang === 'he' ? `7 ימים — ${last7.length} עם נתונים` : `7 days — ${last7.length} with data`}
+                  </span>
+                  <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-3)' }}>{range7Label}</span>
+                </div>
+                <div style={{ display: 'flex', gap: 4 }}>
+                  <button
+                    className="icon-btn"
+                    onClick={() => setOffset7(o => o + 1)}
+                    aria-label={lang === 'he' ? 'שבוע קודם' : 'Previous week'}
+                  >
+                    <span className="icon icon-sm">{lang === 'he' ? 'chevron_right' : 'chevron_left'}</span>
+                  </button>
+                  <button
+                    className="icon-btn"
+                    onClick={() => setOffset7(o => o - 1)}
+                    disabled={offset7 === 0}
+                    aria-label={lang === 'he' ? 'שבוע הבא' : 'Next week'}
+                    style={{ opacity: offset7 === 0 ? 0.3 : 1 }}
+                  >
+                    <span className="icon icon-sm">{lang === 'he' ? 'chevron_left' : 'chevron_right'}</span>
+                  </button>
                 </div>
               </div>
+              {last7.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '20px 0', color: 'var(--text-3)' }}>
+                  <p style={{ fontSize: 13, margin: 0 }}>{lang === 'he' ? 'אין נתונים בטווח זה' : 'No data in this range'}</p>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <StatCard label={lang === 'he' ? 'קל׳ ממוצע' : 'Avg cal'} value={avg7Cal} unit={t(lang, 'caloriesUnit')} color="var(--blue-hi)" />
+                  <StatCard label={lang === 'he' ? 'חל׳ ממוצע' : 'Avg prot'} value={avg7Prot} unit={t(lang, 'proteinUnit')} color="var(--green-hi)" />
+                  <div style={{ flex: 1, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: '12px 10px', textAlign: 'center' }}>
+                    <p style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-3)', margin: '0 0 6px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                      {lang === 'he' ? 'עמידה ביעד' : 'On target'}
+                    </p>
+                    <p style={{ fontSize: 22, fontWeight: 800, color: pct7 >= 70 ? 'var(--green-hi)' : pct7 >= 40 ? 'var(--amber)' : 'var(--red)', margin: 0 }}>
+                      {pct7}%
+                    </p>
+                    <p style={{ fontSize: 10, color: 'var(--text-3)', margin: '2px 0 0' }}>{successDays7}/{last7.length} {lang === 'he' ? 'ימים' : 'days'}</p>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Bar chart with cal/prot toggle */}
@@ -1051,11 +1099,38 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
             )}
 
             {/* 30-day section */}
-            {last30.length > 0 && (
-              <div>
-                <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-2)', textTransform: 'uppercase', letterSpacing: '0.07em', margin: '0 0 8px' }}>
-                  {lang === 'he' ? `30 ימים אחרונים (${last30.length} ימים עם נתונים)` : `Last 30 days (${last30.length} days with data)`}
-                </p>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-2)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+                    {lang === 'he' ? `30 ימים — ${last30.length} עם נתונים` : `30 days — ${last30.length} with data`}
+                  </span>
+                  <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-3)' }}>{range30Label}</span>
+                </div>
+                <div style={{ display: 'flex', gap: 4 }}>
+                  <button
+                    className="icon-btn"
+                    onClick={() => setOffset30(o => o + 1)}
+                    aria-label={lang === 'he' ? '30 הימים הקודמים' : 'Previous 30 days'}
+                  >
+                    <span className="icon icon-sm">{lang === 'he' ? 'chevron_right' : 'chevron_left'}</span>
+                  </button>
+                  <button
+                    className="icon-btn"
+                    onClick={() => setOffset30(o => o - 1)}
+                    disabled={offset30 === 0}
+                    aria-label={lang === 'he' ? '30 הימים הבאים' : 'Next 30 days'}
+                    style={{ opacity: offset30 === 0 ? 0.3 : 1 }}
+                  >
+                    <span className="icon icon-sm">{lang === 'he' ? 'chevron_left' : 'chevron_right'}</span>
+                  </button>
+                </div>
+              </div>
+              {last30.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '20px 0', color: 'var(--text-3)' }}>
+                  <p style={{ fontSize: 13, margin: 0 }}>{lang === 'he' ? 'אין נתונים בטווח זה' : 'No data in this range'}</p>
+                </div>
+              ) : (
                 <div style={{ display: 'flex', gap: 6 }}>
                   <StatCard label={lang === 'he' ? 'קל׳ ממוצע' : 'Avg cal'} value={avg30Cal} unit={t(lang, 'caloriesUnit')} color="var(--blue-hi)" />
                   <StatCard label={lang === 'he' ? 'חל׳ ממוצע' : 'Avg prot'} value={avg30Prot} unit={t(lang, 'proteinUnit')} color="var(--green-hi)" />
@@ -1069,8 +1144,8 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                     <p style={{ fontSize: 10, color: 'var(--text-3)', margin: '2px 0 0' }}>{successDays30}/{last30.length} {lang === 'he' ? 'ימים' : 'days'}</p>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
 
             {/* Insight note */}
             {last7.length >= 3 && (
