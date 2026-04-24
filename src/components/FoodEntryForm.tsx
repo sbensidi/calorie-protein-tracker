@@ -647,14 +647,18 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
           }}
           style={{ fontSize: 13, fontWeight: 700, cursor: 'pointer', padding: '0 6px', textAlign: 'center' }}
         >
-          <option value="g">g</option>
-          <option value="oz">oz</option>
-          <option value="ml">ml</option>
-          <option value="cup">{lang === 'he' ? 'כוס' : 'cup'}</option>
-          <option value="tbsp">{lang === 'he' ? 'כף' : 'tbsp'}</option>
-          <option value="tsp">{lang === 'he' ? 'כפית' : 'tsp'}</option>
-          <option value="fl_oz">fl oz</option>
-          <option value="pcs">{lang === 'he' ? 'יח׳' : 'pcs'}</option>
+          {([
+            { v: 'g',     he: 'גרם',        en: 'g'     },
+            { v: 'oz',    he: 'אונקיה',      en: 'oz'    },
+            { v: 'ml',    he: 'מ"ל',         en: 'ml'    },
+            { v: 'cup',   he: 'כוס',         en: 'cup'   },
+            { v: 'tbsp',  he: 'כף',          en: 'tbsp'  },
+            { v: 'tsp',   he: 'כפית',        en: 'tsp'   },
+            { v: 'fl_oz', he: 'אונ׳ נוזל',  en: 'fl oz' },
+            { v: 'pcs',   he: 'יח׳',         en: 'pcs'   },
+          ] as const).map(u => (
+            <option key={u.v} value={u.v}>{lang === 'he' ? u.he : u.en}</option>
+          ))}
         </select>
 
         {/* Row 2 col 1 — meal type */}
