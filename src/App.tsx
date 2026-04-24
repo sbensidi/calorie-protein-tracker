@@ -61,7 +61,8 @@ export default function App() {
     supabase.from('profiles').select('theme, lang').eq('id', userId).single().then(({ data }) => {
       if (data?.theme === 'dark' || data?.theme === 'light') setTheme(data.theme)
       if (data?.lang === 'he' || data?.lang === 'en') setLang(data.lang as Lang)
-      prefsSynced.current = true
+      // Defer so state-update effects triggered by setTheme/setLang fire before we allow saves
+      setTimeout(() => { prefsSynced.current = true })
     })
   }, [userId]) // eslint-disable-line react-hooks/exhaustive-deps
 
