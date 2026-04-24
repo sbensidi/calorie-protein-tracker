@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from './lib/supabase'
 import { t } from './lib/i18n'
@@ -18,7 +18,7 @@ import { useProfile } from './hooks/useProfile'
 type Tab = 'today' | 'history'
 
 export default function App() {
-  const { lang, theme, toggleLang, toggleTheme } = useAppContext()
+  const { lang, theme, toggleLang, toggleTheme, setTheme, setLang } = useAppContext()
   const [session, setSession] = useState<Session | null>(null)
   const [authLoading, setAuthLoading] = useState(true)
   const [isRecovery, setIsRecovery] = useState(false)
@@ -53,11 +53,28 @@ export default function App() {
 
   const userId = session?.user?.id || null
 
+  // Sync theme/lang from Supabase on login; save back on change
+  const prefsSynced = useRef(false)
+  useEffect(() => {
+    if (!userId) { prefsSynced.current = false; return }
+    prefsSynced.current = false
+    supabase.from('profiles').select('theme, lang').eq('id', userId).single().then(({ data }) => {
+      if (data?.theme === 'dark' || data?.theme === 'light') setTheme(data.theme)
+      if (data?.lang === 'he' || data?.lang === 'en') setLang(data.lang as Lang)
+      prefsSynced.current = true
+    })
+  }, [userId]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!userId || !prefsSynced.current) return
+    supabase.from('profiles').upsert({ id: userId, theme, lang, updated_at: new Date().toISOString() }, { onConflict: 'id' })
+  }, [theme, lang]) // eslint-disable-line react-hooks/exhaustive-deps
+
   const { toasts, showToast, dismissToast } = useToast()
   const { profile, saveProfile, error: profileError } = useProfile(userId)
   const { meals, loading: mealsLoading, error: mealsError, addMeal, addMealWithId, updateMeal, deleteMeal, duplicateMeal } = useMeals(userId)
   const { goals, error: goalsError, saveGoals, getGoalForDate } = useGoals(userId)
-  const { history, error: historyError, upsertHistory, getSuggestions } = useFoodHistory(userId)
+  const { history, error: historyError, upsertHistory, getSuggestions, deleteHistory, updateHistory } = useFoodHistory(userId)
   const { groups: composedGroups, error: groupsError, upsert: upsertGroup, remove: removeGroup } = useComposedGroups(userId)
 
   // Surface hook errors as toasts
@@ -217,6 +234,11 @@ export default function App() {
         theme={theme}
         onToggleTheme={toggleTheme}
         showToast={showToast}
+        history={history}
+        onDeleteHistory={deleteHistory}
+        onUpdateHistory={updateHistory}
+        composedGroups={composedGroups}
+        onRemoveGroup={removeGroup}
       />
 
       <ToastContainer toasts={toasts} onDismiss={dismissToast} lang={lang} />

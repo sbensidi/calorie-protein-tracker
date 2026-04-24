@@ -65,8 +65,8 @@ const STATUS_COLOR: Record<DayData['status'], { border: string; badge: string; t
 export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntries = [], composedGroups = [] }: HistoryTabProps) {
   const todayKey = today()
 
-  const [view, setView] = useState<'cal' | 'list'>(
-    () => (localStorage.getItem('history-view') as 'cal' | 'list') ?? 'cal'
+  const [view, setView] = useState<'cal' | 'list' | 'stats'>(
+    () => (localStorage.getItem('history-view') as 'cal' | 'list' | 'stats') ?? 'cal'
   )
   const [calYear,      setCalYear]      = useState(() => new Date().getFullYear())
   const [calMonth,     setCalMonth]     = useState(() => new Date().getMonth())
@@ -76,7 +76,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
   )
   const [sortAsc, setSortAsc] = useState(false)
   // Persist search per view
-  const [searchByView, setSearchByView] = useState<Record<'cal' | 'list', string>>({ cal: '', list: '' })
+  const [searchByView, setSearchByView] = useState<Record<'cal' | 'list' | 'stats', string>>({ cal: '', list: '', stats: '' })
   const search = searchByView[view]
   const setSearch = (val: string) => setSearchByView(prev => ({ ...prev, [view]: val }))
   const debouncedSearch = useDebounce(search, 150)
@@ -117,7 +117,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
   const isRTL = lang === 'he'
   const unitLabel = lang === 'he' ? 'יח׳' : 'pcs'
 
-  const switchView = (v: 'cal' | 'list') => {
+  const switchView = (v: 'cal' | 'list' | 'stats') => {
     setView(v)
     localStorage.setItem('history-view', v)
   }
@@ -431,10 +431,12 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
 
   // ── Pill FAB values (computed once, stable across renders) ──────────
   const fabBtnSize = 38, fabPad = 5, fabGap = 2
-  // Indicator left offset: in RTL flex the list-btn (first DOM child) sits physically RIGHT
+  // 3-button FAB: [list, cal, stats] in DOM order (RTL reverses visual order)
+  // In LTR: list=0, cal=1, stats=2. In RTL: list appears rightmost (idx 0), cal center (1), stats left (2).
+  const fabViewIdx: Record<'list' | 'cal' | 'stats', number> = { list: 0, cal: 1, stats: 2 }
   const fabIndicatorLeft = isRTL
-    ? (view === 'list' ? fabPad + fabBtnSize + fabGap : fabPad)
-    : (view === 'list' ? fabPad : fabPad + fabBtnSize + fabGap)
+    ? fabPad + (2 - fabViewIdx[view]) * (fabBtnSize + fabGap)
+    : fabPad + fabViewIdx[view] * (fabBtnSize + fabGap)
 
   // ── List view pre-compute (needed before single return) ───────────
   const filteredDates = sortedDates.filter(date => {
@@ -845,6 +847,182 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
         </>
       )}
 
+      {/* ── Stats view ─────────────────────────────────────────── */}
+      {view === 'stats' && (() => {
+        const now = new Date()
+        const nowKey = today()
+
+        // Collect past days (excluding today) with data, sorted newest first
+        const days = sortedDates // already sorted newest first, excludes today
+
+        const last7  = days.filter(d => {
+          const diff = (new Date(nowKey).getTime() - new Date(d).getTime()) / 86400000
+          return diff >= 1 && diff <= 7
+        })
+        const last30 = days.filter(d => {
+          const diff = (new Date(nowKey).getTime() - new Date(d).getTime()) / 86400000
+          return diff >= 1 && diff <= 30
+        })
+
+        const avg = (arr: string[], key: 'totalCalories' | 'totalProtein') => {
+          if (arr.length === 0) return 0
+          return Math.round(arr.reduce((s, d) => s + (grouped.get(d)?.[key] ?? 0), 0) / arr.length)
+        }
+
+        const avg7Cal  = avg(last7,  'totalCalories')
+        const avg7Prot = avg(last7,  'totalProtein')
+        const avg30Cal = avg(last30, 'totalCalories')
+        const avg30Prot= avg(last30, 'totalProtein')
+
+        const successDays7  = last7.filter(d  => grouped.get(d)?.status === 'success').length
+        const successDays30 = last30.filter(d => grouped.get(d)?.status === 'success').length
+        const pct7  = last7.length  ? Math.round(successDays7  / last7.length  * 100) : 0
+        const pct30 = last30.length ? Math.round(successDays30 / last30.length * 100) : 0
+
+        // Last 7 days bar chart data (day by day, including gaps)
+        const barDays: Array<{ label: string; dateKey: string; cal: number; prot: number; goalCal: number; goalProt: number; hasData: boolean }> = []
+        for (let i = 7; i >= 1; i--) {
+          const d = new Date(now)
+          d.setDate(d.getDate() - i)
+          const dKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+          const data = grouped.get(dKey)
+          const g    = getGoalForDate(dKey)
+          const dayLabel = lang === 'he'
+            ? ['א׳', 'ב׳', 'ג׳', 'ד׳', 'ה׳', 'ו׳', 'ש׳'][d.getDay()]
+            : ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'][d.getDay()]
+          barDays.push({ label: dayLabel, dateKey: dKey, cal: data?.totalCalories ?? 0, prot: data?.totalProtein ?? 0, goalCal: g.calories, goalProt: g.protein, hasData: !!data })
+        }
+
+        const maxCal  = Math.max(...barDays.map(b => Math.max(b.cal, b.goalCal)), 1)
+        const barH    = 80
+
+        const StatCard = ({ label, value, unit, color }: { label: string; value: number; unit: string; color: string }) => (
+          <div style={{ flex: 1, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: '12px 10px', textAlign: 'center' }}>
+            <p style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-3)', margin: '0 0 6px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{label}</p>
+            <p style={{ fontSize: 0, margin: 0 }}>
+              <span style={{ fontSize: 22, fontWeight: 800, color }}>{value.toLocaleString()}</span>
+              <span style={{ fontSize: 10, color: 'var(--text-3)', marginInlineStart: 3 }}>{unit}</span>
+            </p>
+          </div>
+        )
+
+        if (last7.length === 0 && last30.length === 0) {
+          return (
+            <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-3)' }}>
+              <span className="icon" style={{ fontSize: 32, display: 'block', marginBottom: 8 }}>bar_chart</span>
+              <p style={{ fontSize: 14, margin: 0 }}>{lang === 'he' ? 'אין מספיק נתונים עדיין' : 'Not enough data yet'}</p>
+            </div>
+          )
+        }
+
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14, paddingBottom: 80 }}>
+
+            {/* 7-day section */}
+            <div>
+              <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-2)', textTransform: 'uppercase', letterSpacing: '0.07em', margin: '0 0 8px' }}>
+                {lang === 'he' ? `7 ימים אחרונים (${last7.length} ימים עם נתונים)` : `Last 7 days (${last7.length} days with data)`}
+              </p>
+              <div style={{ display: 'flex', gap: 6 }}>
+                <StatCard label={lang === 'he' ? 'קל׳ ממוצע' : 'Avg cal'} value={avg7Cal} unit={t(lang, 'caloriesUnit')} color="var(--blue-hi)" />
+                <StatCard label={lang === 'he' ? 'חל׳ ממוצע' : 'Avg prot'} value={avg7Prot} unit={t(lang, 'proteinUnit')} color="var(--green-hi)" />
+                <div style={{ flex: 1, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: '12px 10px', textAlign: 'center' }}>
+                  <p style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-3)', margin: '0 0 6px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                    {lang === 'he' ? 'עמידה ביעד' : 'On target'}
+                  </p>
+                  <p style={{ fontSize: 22, fontWeight: 800, color: pct7 >= 70 ? 'var(--green-hi)' : pct7 >= 40 ? 'var(--amber)' : 'var(--red)', margin: 0 }}>
+                    {pct7}%
+                  </p>
+                  <p style={{ fontSize: 10, color: 'var(--text-3)', margin: '2px 0 0' }}>{successDays7}/{last7.length} {lang === 'he' ? 'ימים' : 'days'}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Bar chart */}
+            {last7.length > 0 && (
+              <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: '14px 12px' }}>
+                <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-2)', margin: '0 0 12px' }}>
+                  {lang === 'he' ? 'קלוריות לפי יום' : 'Calories by day'}
+                </p>
+                <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4, height: barH + 20 }}>
+                  {barDays.map(b => {
+                    const barHeight = b.hasData ? Math.max(4, Math.round((b.cal / maxCal) * barH)) : 0
+                    const goalHeight= Math.max(2, Math.round((b.goalCal / maxCal) * barH))
+                    const overGoal  = b.hasData && b.cal > b.goalCal
+                    return (
+                      <div key={b.dateKey} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                        <div style={{ position: 'relative', width: '100%', height: barH, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+                          {/* Goal line */}
+                          <div style={{ position: 'absolute', bottom: goalHeight, left: 0, right: 0, borderTop: '1.5px dashed rgba(59,130,246,0.35)' }} />
+                          {/* Bar */}
+                          {b.hasData && (
+                            <div style={{
+                              width: '70%', height: barHeight,
+                              borderRadius: '4px 4px 0 0',
+                              background: overGoal ? 'var(--amber)' : 'var(--blue)',
+                              opacity: 0.85,
+                              transition: 'height .3s ease',
+                            }} />
+                          )}
+                        </div>
+                        <span style={{ fontSize: 9, fontWeight: 600, color: 'var(--text-3)' }}>{b.label}</span>
+                      </div>
+                    )
+                  })}
+                </div>
+                <div style={{ display: 'flex', gap: 14, marginTop: 8, paddingTop: 8, borderTop: '1px solid var(--border)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, color: 'var(--text-3)' }}>
+                    <div style={{ width: 12, height: 3, background: 'var(--blue)', borderRadius: 2 }} />
+                    {lang === 'he' ? 'קלוריות' : 'Calories'}
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, color: 'var(--text-3)' }}>
+                    <div style={{ width: 12, borderTop: '1.5px dashed rgba(59,130,246,0.5)' }} />
+                    {lang === 'he' ? 'יעד' : 'Goal'}
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, color: 'var(--text-3)' }}>
+                    <div style={{ width: 12, height: 3, background: 'var(--amber)', borderRadius: 2 }} />
+                    {lang === 'he' ? 'חריגה' : 'Over goal'}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 30-day section */}
+            {last30.length > 0 && (
+              <div>
+                <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-2)', textTransform: 'uppercase', letterSpacing: '0.07em', margin: '0 0 8px' }}>
+                  {lang === 'he' ? `30 ימים אחרונים (${last30.length} ימים עם נתונים)` : `Last 30 days (${last30.length} days with data)`}
+                </p>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <StatCard label={lang === 'he' ? 'קל׳ ממוצע' : 'Avg cal'} value={avg30Cal} unit={t(lang, 'caloriesUnit')} color="var(--blue-hi)" />
+                  <StatCard label={lang === 'he' ? 'חל׳ ממוצע' : 'Avg prot'} value={avg30Prot} unit={t(lang, 'proteinUnit')} color="var(--green-hi)" />
+                  <div style={{ flex: 1, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: '12px 10px', textAlign: 'center' }}>
+                    <p style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-3)', margin: '0 0 6px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                      {lang === 'he' ? 'עמידה ביעד' : 'On target'}
+                    </p>
+                    <p style={{ fontSize: 22, fontWeight: 800, color: pct30 >= 70 ? 'var(--green-hi)' : pct30 >= 40 ? 'var(--amber)' : 'var(--red)', margin: 0 }}>
+                      {pct30}%
+                    </p>
+                    <p style={{ fontSize: 10, color: 'var(--text-3)', margin: '2px 0 0' }}>{successDays30}/{last30.length} {lang === 'he' ? 'ימים' : 'days'}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Streak/insight note */}
+            {last7.length >= 3 && (
+              <div style={{ background: 'rgba(59,130,246,0.07)', border: '1px solid rgba(59,130,246,0.18)', borderRadius: 12, padding: '10px 14px' }}>
+                <p style={{ fontSize: 12, color: 'var(--text-2)', margin: 0, lineHeight: 1.6 }}>
+                  {lang === 'he'
+                    ? `ב-7 הימים האחרונים צרכת בממוצע ${avg7Cal.toLocaleString()} קק״ל ו-${avg7Prot}ג׳ חלבון. עמדת ביעד ב-${pct7}% מהימים.`
+                    : `Over the last 7 days you averaged ${avg7Cal.toLocaleString()} kcal and ${avg7Prot}g protein. You met your goals on ${pct7}% of days.`}
+                </p>
+              </div>
+            )}
+          </div>
+        )
+      })()}
+
       {/* ── Pill FAB — always last child → stable in React tree → transitions work ── */}
       <div
         style={{
@@ -903,6 +1081,20 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
           }}
         >
           <span className="icon" style={{ fontSize: 20 }}>calendar_month</span>
+        </button>
+        {/* Stats button */}
+        <button
+          className="fab-pill-btn"
+          onClick={() => { switchView('stats'); setSelectedDate(null) }}
+          style={{
+            width: fabBtnSize, height: fabBtnSize, borderRadius: 999,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            border: 'none', background: 'transparent', cursor: 'pointer',
+            position: 'relative', zIndex: 1,
+            color: view === 'stats' ? 'var(--blue-hi)' : 'var(--text-3)',
+          }}
+        >
+          <span className="icon" style={{ fontSize: 20 }}>bar_chart</span>
         </button>
       </div>
     </>

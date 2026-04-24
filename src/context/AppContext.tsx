@@ -7,6 +7,8 @@ interface AppContextValue {
   theme:         'dark' | 'light'
   toggleLang:    () => void
   toggleTheme:   () => void
+  setTheme:      (t: 'dark' | 'light') => void
+  setLang:       (l: Lang) => void
 }
 
 const AppContext = createContext<AppContextValue | null>(null)
@@ -36,8 +38,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setTheme(t => t === 'dark' ? 'light' : 'dark')
   }, [])
 
+  const applyTheme = useCallback((t: 'dark' | 'light') => {
+    setTheme(t)
+  }, [])
+
+  const applyLang = useCallback((l: Lang) => {
+    setLang(l)
+    localStorage.setItem('lang', l)
+  }, [])
+
   return (
-    <AppContext.Provider value={{ lang, theme, toggleLang, toggleTheme }}>
+    <AppContext.Provider value={{ lang, theme, toggleLang, toggleTheme, setTheme: applyTheme, setLang: applyLang }}>
       {children}
     </AppContext.Provider>
   )

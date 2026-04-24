@@ -13,6 +13,7 @@ interface BarcodeScannerProps {
 
 export interface BarcodeScannerHandle {
   reset: () => void
+  stop:  () => void
 }
 
 type ScanState = 'checking' | 'idle' | 'scanning' | 'looking-up' | 'error-camera' | 'error-permission'
@@ -27,12 +28,19 @@ function BarcodeScanner({ lang, onResult, onNotFound }, ref) {
 
   useImperativeHandle(ref, () => ({
     reset: () => {
-      // Stop current ZXing controls and restart scanning on the live stream
       controlsRef.current?.stop()
       controlsRef.current = null
       detectedRef.current = false
       if (streamRef.current) setState('scanning')
       else setState('idle')
+    },
+    stop: () => {
+      controlsRef.current?.stop()
+      controlsRef.current = null
+      streamRef.current?.getTracks().forEach(t => t.stop())
+      streamRef.current = null
+      detectedRef.current = false
+      setState('idle')
     },
   }))
 

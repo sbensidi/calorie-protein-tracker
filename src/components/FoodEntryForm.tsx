@@ -223,6 +223,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, onAdd, onUpsertHi
 
   const switchMode = (m: EntryMode) => {
     if (m === 'scan') setScannerMounted(true)
+    if (m === 'manual') scannerRef.current?.stop()
     setMode(m)
     localStorage.setItem('entry-mode', m)
     setScanProduct(null)

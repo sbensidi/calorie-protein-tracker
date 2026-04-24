@@ -75,5 +75,15 @@ export function useFoodHistory(userId: string | null) {
       .map(({ item }) => item)
   }, [historyLower])
 
-  return { history, error, upsertHistory, getSuggestions }
+  const deleteHistory = useCallback(async (id: string) => {
+    await supabase.from('food_history').delete().eq('id', id)
+    fetchHistory()
+  }, [fetchHistory])
+
+  const updateHistory = useCallback(async (id: string, updates: Partial<Pick<FoodHistory, 'name' | 'grams' | 'calories' | 'protein'>>) => {
+    await supabase.from('food_history').update(updates).eq('id', id)
+    fetchHistory()
+  }, [fetchHistory])
+
+  return { history, error, upsertHistory, getSuggestions, deleteHistory, updateHistory }
 }
