@@ -628,7 +628,19 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
           inputMode="decimal"
           className="inp"
           style={{ textAlign: 'center' }}
-          placeholder={isPcs ? (lang === 'he' ? 'יח׳' : 'pcs') : t(lang, 'grams')}
+          placeholder={(() => {
+            const labels: Record<string, { he: string; en: string }> = {
+              g:     { he: 'גרם',       en: 'g'     },
+              oz:    { he: 'אונקיה',    en: 'oz'    },
+              ml:    { he: 'מ"ל',       en: 'ml'    },
+              cup:   { he: 'כוס',       en: 'cup'   },
+              tbsp:  { he: 'כף',        en: 'tbsp'  },
+              tsp:   { he: 'כפית',      en: 'tsp'   },
+              fl_oz: { he: "אונ' נוזל", en: 'fl oz' },
+              pcs:   { he: 'יח׳',       en: 'pcs'   },
+            }
+            return lang === 'he' ? labels[entryUnit].he : labels[entryUnit].en
+          })()}
           value={amountStr}
           onFocus={e => e.target.select()}
           onChange={e => { setAmountStr(e.target.value); setNutrition(null) }}
