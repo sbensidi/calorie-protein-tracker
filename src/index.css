@@ -98,6 +98,23 @@
   --scanner-bg:     #0e1117;
 }
 
+/* Accessibility: focus ring */
+:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+button:focus:not(:focus-visible),
+a:focus:not(:focus-visible) { outline: none; }
+
+/* Accessibility: respect reduced-motion preference */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
 /* Smooth theme transition — exclude animations/transforms */
 *, *::before, *::after {
   transition: background-color 0.2s ease, border-color 0.2s ease, color 0.15s ease;

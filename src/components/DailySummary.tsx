@@ -2,6 +2,7 @@ import type { Meal } from '../types'
 import type { Lang } from '../lib/i18n'
 import { t, formatDate } from '../lib/i18n'
 import { DonutProgress } from './DonutProgress'
+import { StatusBadge } from './StatusBadge'
 
 interface DailySummaryProps {
   meals:        Meal[]
@@ -62,19 +63,7 @@ export function DailySummary({ meals, date, goalCalories, goalProtein, lang }: D
             </div>
             <DonutProgress value={totalCalories} goal={goalCalories} type="calories" size={58} strokeWidth={5} />
           </div>
-          <span style={{
-            display: 'inline-flex', alignItems: 'center', gap: 3,
-            fontSize: 10, fontWeight: 700,
-            padding: '3px 8px', borderRadius: 999,
-            background: calLabel.over ? 'rgba(244,63,94,0.15)' : 'var(--surface-3)',
-            color: calLabel.over ? 'var(--red)' : 'var(--text-2)',
-            alignSelf: 'flex-start',
-          }}>
-            <span className="icon icon-sm" style={{ fontSize: 11 }}>
-              {calLabel.over ? 'arrow_upward' : 'arrow_downward'}
-            </span>
-            {calLabel.text}
-          </span>
+          <StatusBadge status={calLabel.over ? 'over' : 'under'} text={calLabel.text} lang={lang} />
         </div>
 
         {/* ── Protein card ── */}
@@ -94,19 +83,7 @@ export function DailySummary({ meals, date, goalCalories, goalProtein, lang }: D
             </div>
             <DonutProgress value={totalProtein} goal={goalProtein} type="protein" size={58} strokeWidth={5} />
           </div>
-          <span style={{
-            display: 'inline-flex', alignItems: 'center', gap: 3,
-            fontSize: 10, fontWeight: 700,
-            padding: '3px 8px', borderRadius: 999,
-            background: protLabel.over ? 'rgba(244,63,94,0.15)' : 'var(--surface-3)',
-            color: protLabel.over ? 'var(--red)' : 'var(--text-2)',
-            alignSelf: 'flex-start',
-          }}>
-            <span className="icon icon-sm" style={{ fontSize: 11 }}>
-              {protLabel.over ? 'arrow_upward' : 'arrow_downward'}
-            </span>
-            {protLabel.text}
-          </span>
+          <StatusBadge status={protLabel.over ? 'over' : 'under'} text={protLabel.text} lang={lang} />
         </div>
 
       </div>

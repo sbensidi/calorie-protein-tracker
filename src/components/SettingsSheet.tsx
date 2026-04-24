@@ -896,7 +896,7 @@ interface SettingsSheetProps {
   lang:           Lang
   connected:      boolean
   profile:        UserProfile
-  onSaveProfile:  (updates: Partial<UserProfile>) => void
+  onSaveProfile:  (updates: Partial<UserProfile>) => void | Promise<void>
   goals:          Goal | null
   onSaveGoals:    (updates: Partial<Goal>) => void
   onToggleLang:   () => void

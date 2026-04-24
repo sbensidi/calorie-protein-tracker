@@ -54,7 +54,7 @@ export default function App() {
   const userId = session?.user?.id || null
 
   const { toasts, showToast, dismissToast } = useToast()
-  const { profile, saveProfile } = useProfile()
+  const { profile, saveProfile, error: profileError } = useProfile(userId)
   const { meals, loading: mealsLoading, error: mealsError, addMeal, addMealWithId, updateMeal, deleteMeal, duplicateMeal } = useMeals(userId)
   const { goals, error: goalsError, saveGoals, getGoalForDate } = useGoals(userId)
   const { history, error: historyError, upsertHistory, getSuggestions } = useFoodHistory(userId)
@@ -62,9 +62,9 @@ export default function App() {
 
   // Surface hook errors as toasts
   useEffect(() => {
-    const err = mealsError || goalsError || historyError || groupsError
+    const err = mealsError || goalsError || historyError || groupsError || profileError
     if (err) showToast(lang === 'he' ? 'שגיאה בתקשורת עם השרת' : 'Server error. Please try again.', 'error')
-  }, [mealsError, goalsError, historyError, groupsError]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [mealsError, goalsError, historyError, groupsError, profileError]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const composedEntries = useMemo(() =>
     composedGroups.map(g => {

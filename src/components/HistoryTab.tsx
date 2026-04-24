@@ -1,4 +1,5 @@
 import { useState, useMemo, useRef, useEffect } from 'react'
+import { useDebounce } from '../hooks/useDebounce'
 import { useLockBodyScroll } from '../hooks/useLockBodyScroll'
 import type { Meal, FoodHistory, ComposedGroup } from '../types'
 import type { Lang } from '../lib/i18n'
@@ -78,6 +79,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
   const [searchByView, setSearchByView] = useState<Record<'cal' | 'list', string>>({ cal: '', list: '' })
   const search = searchByView[view]
   const setSearch = (val: string) => setSearchByView(prev => ({ ...prev, [view]: val }))
+  const debouncedSearch = useDebounce(search, 150)
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [expandedGroupIds, setExpandedGroupIds] = useState<Set<string>>(new Set())
   const toggleGroupExpand = (id: string) =>
@@ -438,8 +440,8 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
   const filteredDates = sortedDates.filter(date => {
     const data = grouped.get(date)!
     if (statusFilter !== 'all' && data.status !== statusFilter) return false
-    if (search) {
-      const q = search.toLowerCase()
+    if (debouncedSearch) {
+      const q = debouncedSearch.toLowerCase()
       return data.meals.some(m => m.name.toLowerCase().includes(q))
     }
     return true
@@ -649,7 +651,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                 )}
                 {/* Inline recent items dropdown */}
                 {dropdownOpen && (() => {
-                  const q = search.trim().toLowerCase()
+                  const q = debouncedSearch.trim().toLowerCase()
                   const recentItems = q
                     ? history.filter(h => h.name.toLowerCase().includes(q)).slice(0, 6)
                     : [...history].sort((a, b) => b.use_count - a.use_count).slice(0, 6)

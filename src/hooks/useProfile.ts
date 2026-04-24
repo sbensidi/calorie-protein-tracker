@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
+import { supabase } from '../lib/supabase'
 
 export interface UserProfile {
   sex:           'm' | 'f'
@@ -20,21 +21,83 @@ const DEFAULT: UserProfile = {
   goalType:      'maintain',
 }
 
-export function useProfile() {
-  const [profile, setProfile] = useState<UserProfile>(() => {
-    try {
-      const saved = localStorage.getItem(LS_KEY)
-      return saved ? { ...DEFAULT, ...JSON.parse(saved) } : DEFAULT
-    } catch {
-      return DEFAULT
-    }
-  })
+function lsLoad(): UserProfile {
+  try {
+    const saved = localStorage.getItem(LS_KEY)
+    return saved ? { ...DEFAULT, ...JSON.parse(saved) } : DEFAULT
+  } catch {
+    return DEFAULT
+  }
+}
 
-  const saveProfile = (updates: Partial<UserProfile>) => {
+function dbToProfile(row: Record<string, unknown>): UserProfile {
+  return {
+    sex:           (row.sex as 'm' | 'f') ?? DEFAULT.sex,
+    age:           (row.age as number)    ?? DEFAULT.age,
+    height:        (row.height as number) ?? DEFAULT.height,
+    weight:        (row.weight as number) ?? DEFAULT.weight,
+    activityLevel: (row.activity_level as 0|1|2|3|4) ?? DEFAULT.activityLevel,
+    goalType:      (row.goal_type as 'lose'|'maintain'|'gain') ?? DEFAULT.goalType,
+  }
+}
+
+function profileToDb(p: UserProfile, userId: string) {
+  return {
+    id:             userId,
+    sex:            p.sex,
+    age:            p.age,
+    height:         p.height,
+    weight:         p.weight,
+    activity_level: p.activityLevel,
+    goal_type:      p.goalType,
+    updated_at:     new Date().toISOString(),
+  }
+}
+
+export function useProfile(userId: string | null) {
+  const [profile, setProfile] = useState<UserProfile>(lsLoad)
+  const [loading, setLoading] = useState(false)
+  const [error, setError]     = useState<string | null>(null)
+
+  const fetchProfile = useCallback(async () => {
+    if (!userId) return
+    setLoading(true)
+    const { data, error: err } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single()
+    if (!err && data) {
+      const p = dbToProfile(data as Record<string, unknown>)
+      setProfile(p)
+      localStorage.setItem(LS_KEY, JSON.stringify(p))
+      setError(null)
+    } else if (err?.code === 'PGRST116') {
+      // No profile yet — keep localStorage default, will be created on first save
+      setError(null)
+    } else if (err) {
+      setError(err.message)
+    }
+    setLoading(false)
+  }, [userId])
+
+  useEffect(() => { fetchProfile() }, [fetchProfile])
+
+  const saveProfile = useCallback(async (updates: Partial<UserProfile>) => {
     const next = { ...profile, ...updates }
     setProfile(next)
     localStorage.setItem(LS_KEY, JSON.stringify(next))
-  }
+    if (!userId) return
+    const { error: err } = await supabase
+      .from('profiles')
+      .upsert(profileToDb(next, userId), { onConflict: 'id' })
+    if (err) {
+      import.meta.env.DEV && console.error('Save profile error:', err)
+      setError(err.message)
+    } else {
+      setError(null)
+    }
+  }, [profile, userId])
 
-  return { profile, saveProfile }
+  return { profile, loading, error, saveProfile }
 }

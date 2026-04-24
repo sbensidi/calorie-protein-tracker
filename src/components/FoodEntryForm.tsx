@@ -712,12 +712,14 @@ export function FoodEntryForm({ lang, history, getSuggestions, onAdd, onUpsertHi
         )
       })()}
 
-      {aiError && (
-        <p style={{ fontSize: 12, color: 'var(--red)', marginTop: 8, display: 'flex', alignItems: 'center', gap: 4 }}>
-          <span className="icon icon-sm">{aiError === 'network' ? 'wifi_off' : 'search_off'}</span>
-          {t(lang, aiError === 'network' ? 'aiErrorNetwork' : 'aiErrorNotFound')}
-        </p>
-      )}
+      <div aria-live="polite" aria-atomic="true">
+        {aiError && (
+          <p style={{ fontSize: 12, color: 'var(--red)', marginTop: 8, display: 'flex', alignItems: 'center', gap: 4 }}>
+            <span className="icon icon-sm">{aiError === 'network' ? 'wifi_off' : 'search_off'}</span>
+            {t(lang, aiError === 'network' ? 'aiErrorNetwork' : 'aiErrorNotFound')}
+          </p>
+        )}
+      </div>
 
       {/* Confirmation card */}
       {nutrition !== null && (
