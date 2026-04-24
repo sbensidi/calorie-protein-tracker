@@ -206,6 +206,11 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
         setNutrition(result)
         setEditCalories(result.calories)
         setEditProtein(result.protein)
+        // Auto-switch to ml when AI identifies a zero-cal zero-prot fluid (e.g. water)
+        if (result.calories === 0 && result.protein === 0) {
+          const currentUnitIsWeight = entryUnit === 'g' || entryUnit === 'oz'
+          if (currentUnitIsWeight) setEntryUnit('ml')
+        }
       }
     } catch {
       setAiError('network')
@@ -214,7 +219,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
       setEditProtein('')
     }
     setCalculating(false)
-  }, [foodName, numericAmount, history, amountMode])
+  }, [foodName, numericAmount, history, amountMode, entryUnit])
 
   const handleCancelNutrition = () => {
     setFoodName('')

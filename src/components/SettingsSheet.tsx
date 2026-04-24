@@ -786,8 +786,10 @@ function GoalsScreen({ lang, profile, goals, onSave, onSaveFluidGoal, fluidGoalM
   useEffect(() => { setDefFluidGoal(fluidGoalMl) }, [fluidGoalMl])
 
   const tdee = useMemo(() => calcTDEE(profile), [profile])
-  const suggestedCal      = tdee + (profile.goalType === 'lose' ? -500 : profile.goalType === 'gain' ? 300 : 0)
-  const suggestedFluidMl  = Math.round(profile.weight * 35 / 100) * 100
+  const suggestedCal     = tdee + (profile.goalType === 'lose' ? -500 : profile.goalType === 'gain' ? 300 : 0)
+  const suggestedProtRate = profile.goalType === 'lose' ? 2.0 : profile.goalType === 'gain' ? 2.2 : 1.6
+  const suggestedProt    = Math.round(profile.weight * suggestedProtRate)
+  const suggestedFluidMl = Math.round(profile.weight * 35 / 100) * 100
 
   const hasOverride = (dayKey: DayKey) => !!overrides[toWeekIndex(dayKey)]
 
@@ -845,36 +847,92 @@ function GoalsScreen({ lang, profile, goals, onSave, onSaveFluidGoal, fluidGoalM
         </h2>
       </div>
 
-      {/* TDEE suggestion banner */}
-      <div style={{ background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.2)', borderRadius: 12, padding: 12, marginBottom: 16 }}>
-        <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--blue-hi)', margin: '0 0 5px' }}>
-          {lang === 'he'
-            ? `TDEE מהפרופיל שלך: ${tdee.toLocaleString()} קק״ל`
-            : `Your profile TDEE: ${tdee.toLocaleString()} kcal`}
-        </p>
-        {profile.goalType === 'lose' ? (
-          <p style={{ fontSize: 11, color: 'var(--text-2)', margin: '0 0 10px', lineHeight: 1.6 }}>
-            {lang === 'he'
-              ? `מוצע: ${suggestedCal.toLocaleString()} קק״ל (גרעון 500). מדוע 500? 1 ק״ג שומן ≈ 7,700 קק״ל. 500 ביום × 7 = 3,500 קק״ל ≈ 0.5 ק״ג/שבוע — קצב בטוח ובר-קיימא שמשמר שריר.`
-              : `Suggested: ${suggestedCal.toLocaleString()} kcal (500 deficit). Why 500? 1 kg fat ≈ 7,700 kcal. 500/day × 7 = 3,500 kcal ≈ 0.5 kg/week — safe, sustainable rate that preserves muscle.`}
+      {/* Recommendations card */}
+      <div style={{ background: 'rgba(59,130,246,0.06)', border: '1px solid rgba(59,130,246,0.18)', borderRadius: 12, padding: '12px 14px', marginBottom: 16 }}>
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
+          <span className="icon icon-sm" style={{ color: 'var(--blue-hi)' }}>auto_fix_high</span>
+          <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--blue-hi)', margin: 0 }}>
+            {lang === 'he' ? 'המלצות מהפרופיל שלך' : 'Recommendations from your profile'}
           </p>
-        ) : (
-          <p style={{ fontSize: 11, color: 'var(--text-2)', margin: '0 0 10px' }}>
-            {lang === 'he'
-              ? `מוצע: ${suggestedCal.toLocaleString()} קק״ל`
-              : `Suggested: ${suggestedCal.toLocaleString()} kcal`}
-          </p>
-        )}
+          <span style={{ fontSize: 10, color: 'var(--text-3)', marginInlineStart: 'auto' }}>
+            TDEE {tdee.toLocaleString()} {lang === 'he' ? 'קק״ל' : 'kcal'}
+          </span>
+        </div>
+
+        {/* 3 metric rows */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 12 }}>
+          {/* Calories */}
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+            <div style={{ width: 36, height: 36, borderRadius: 8, background: 'rgba(59,130,246,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <span className="icon icon-sm" style={{ color: 'var(--blue-hi)' }}>local_fire_department</span>
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <p style={{ fontSize: 11, margin: 0 }}>
+                <span style={{ fontWeight: 800, color: 'var(--blue-hi)' }}>{suggestedCal.toLocaleString()}</span>
+                <span style={{ color: 'var(--text-3)', marginInlineStart: 3 }}>{lang === 'he' ? 'קק״ל' : 'kcal'}</span>
+              </p>
+              <p style={{ fontSize: 10, color: 'var(--text-3)', margin: '2px 0 0', lineHeight: 1.5 }}>
+                {profile.goalType === 'lose'
+                  ? (lang === 'he' ? 'גרעון 500 מה-TDEE — ≈0.5 ק״ג/שבוע, קצב בטוח שמשמר שריר' : '500 deficit from TDEE — ≈0.5 kg/week, safe rate preserving muscle')
+                  : profile.goalType === 'gain'
+                    ? (lang === 'he' ? 'עודף 300 מה-TDEE — בנייה מבוקרת ללא הצטברות שומן מיותרת' : '+300 above TDEE — controlled surplus for muscle gain without excess fat')
+                    : (lang === 'he' ? 'שמירה על משקל — שווה לצריכה האנרגטית היומית' : 'Maintenance — matches your daily energy expenditure')}
+              </p>
+            </div>
+          </div>
+
+          {/* Protein */}
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+            <div style={{ width: 36, height: 36, borderRadius: 8, background: 'rgba(16,185,129,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <span className="icon icon-sm" style={{ color: 'var(--green-hi)' }}>fitness_center</span>
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <p style={{ fontSize: 11, margin: 0 }}>
+                <span style={{ fontWeight: 800, color: 'var(--green-hi)' }}>{suggestedProt}</span>
+                <span style={{ color: 'var(--text-3)', marginInlineStart: 3 }}>{lang === 'he' ? 'ג׳ חלבון' : 'g protein'}</span>
+              </p>
+              <p style={{ fontSize: 10, color: 'var(--text-3)', margin: '2px 0 0', lineHeight: 1.5 }}>
+                {profile.goalType === 'lose'
+                  ? (lang === 'he' ? `${suggestedProtRate}ג׳/ק״ג — שמירה מרבית על מסת שריר בזמן גרעון` : `${suggestedProtRate}g/kg — maximum muscle retention during deficit`)
+                  : profile.goalType === 'gain'
+                    ? (lang === 'he' ? `${suggestedProtRate}ג׳/ק״ג — סינתזת שריר מיטבית בזמן עודף` : `${suggestedProtRate}g/kg — optimal muscle synthesis during surplus`)
+                    : (lang === 'he' ? `${suggestedProtRate}ג׳/ק״ג — כמות מינימלית להחזקת מסת שריר` : `${suggestedProtRate}g/kg — minimum for maintaining muscle mass`)}
+              </p>
+            </div>
+          </div>
+
+          {/* Fluid */}
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+            <div style={{ width: 36, height: 36, borderRadius: 8, background: 'rgba(6,182,212,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <span className="icon icon-sm" style={{ color: 'var(--blue-hi)' }}>water_drop</span>
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <p style={{ fontSize: 11, margin: 0 }}>
+                <span style={{ fontWeight: 800, color: 'var(--blue-hi)' }}>
+                  {suggestedFluidMl >= 1000 ? (suggestedFluidMl / 1000).toFixed(1) : suggestedFluidMl}
+                </span>
+                <span style={{ color: 'var(--text-3)', marginInlineStart: 3 }}>
+                  {suggestedFluidMl >= 1000 ? (lang === 'he' ? 'ל׳ נוזלים' : 'L fluid') : 'ml'}
+                </span>
+              </p>
+              <p style={{ fontSize: 10, color: 'var(--text-3)', margin: '2px 0 0', lineHeight: 1.5 }}>
+                {lang === 'he' ? `35 מ״ל × ${profile.weight} ק״ג — מינימום הידרציה יומי` : `35 ml × ${profile.weight} kg — minimum daily hydration`}
+              </p>
+            </div>
+          </div>
+        </div>
+
         <button
-          onClick={() => { setDefCal(suggestedCal); setDefFluidGoal(suggestedFluidMl) }}
+          onClick={() => { setDefCal(suggestedCal); setDefProt(suggestedProt); setDefFluidGoal(suggestedFluidMl) }}
           style={{
-            padding: '5px 14px', borderRadius: 8, fontSize: 11, fontWeight: 700,
+            width: '100%', padding: '8px 14px', borderRadius: 8, fontSize: 12, fontWeight: 700,
             cursor: 'pointer', fontFamily: 'inherit',
             background: 'rgba(59,130,246,0.15)', border: '1px solid rgba(59,130,246,0.3)',
             color: 'var(--blue-hi)',
           }}
         >
-          {lang === 'he' ? 'החל הצעה' : 'Apply Suggestion'}
+          {lang === 'he' ? 'החל את כל ההמלצות' : 'Apply All Recommendations'}
         </button>
       </div>
 

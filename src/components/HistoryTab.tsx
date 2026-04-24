@@ -1015,6 +1015,12 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                 <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--green-hi)', whiteSpace: 'nowrap' }}>
                   {todayGoal.protein}g <span style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-3)' }}>{lang === 'he' ? 'חלבון' : 'protein'}</span>
                 </span>
+                {fluidGoalMl > 0 && (
+                  <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--blue-hi)', whiteSpace: 'nowrap' }}>
+                    {fluidGoalMl >= 1000 ? `${(fluidGoalMl / 1000).toFixed(1)}${lang === 'he' ? 'ל׳' : 'L'}` : `${fluidGoalMl}ml`}
+                    {' '}<span style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-3)' }}>{lang === 'he' ? 'נוזלים' : 'fluid'}</span>
+                  </span>
+                )}
               </div>
             </div>
 
