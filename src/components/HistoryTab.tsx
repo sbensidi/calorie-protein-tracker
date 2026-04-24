@@ -75,6 +75,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
     () => (localStorage.getItem('history-filter') as StatusFilter) ?? 'all'
   )
   const [sortAsc, setSortAsc] = useState(false)
+  const [chartMetric, setChartMetric] = useState<'cal' | 'prot'>('cal')
   // Persist search per view
   const [searchByView, setSearchByView] = useState<Record<'cal' | 'list' | 'stats', string>>({ cal: '', list: '', stats: '' })
   const search = searchByView[view]
@@ -893,7 +894,6 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
           barDays.push({ label: dayLabel, dateKey: dKey, cal: data?.totalCalories ?? 0, prot: data?.totalProtein ?? 0, goalCal: g.calories, goalProt: g.protein, hasData: !!data })
         }
 
-        const maxCal  = Math.max(...barDays.map(b => Math.max(b.cal, b.goalCal)), 1)
         const barH    = 80
 
         const StatCard = ({ label, value, unit, color }: { label: string; value: number; unit: string; color: string }) => (
@@ -915,8 +915,38 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
           )
         }
 
+        // Today's goal for reference row
+        const todayGoal = getGoalForDate(nowKey)
+
+        // Chart values derived from chartMetric toggle
+        const isCal   = chartMetric === 'cal'
+        const maxVal  = Math.max(...barDays.map(b => Math.max(isCal ? b.cal : b.prot, isCal ? b.goalCal : b.goalProt)), 1)
+        const barColor     = isCal ? 'var(--blue)'    : 'var(--green)'
+        const goalDashColor= isCal ? 'rgba(59,130,246,0.35)' : 'rgba(16,185,129,0.35)'
+        const goalLegendColor = isCal ? 'rgba(59,130,246,0.5)' : 'rgba(16,185,129,0.5)'
+
         return (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14, paddingBottom: 80 }}>
+
+            {/* ── Goals reference row ────────────────────────────── */}
+            <div style={{
+              display: 'flex', gap: 8, alignItems: 'center',
+              background: 'var(--bg-card)', border: '1px solid var(--border)',
+              borderRadius: 12, padding: '10px 14px',
+            }}>
+              <span className="icon icon-sm" style={{ color: 'var(--text-3)', flexShrink: 0 }}>target</span>
+              <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-3)', flexShrink: 0 }}>
+                {lang === 'he' ? 'יעד יומי:' : 'Daily goal:'}
+              </span>
+              <div style={{ display: 'flex', gap: 12, flex: 1, flexWrap: 'wrap' }}>
+                <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--blue-hi)', whiteSpace: 'nowrap' }}>
+                  {todayGoal.calories.toLocaleString()} <span style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-3)' }}>{t(lang, 'caloriesUnit')}</span>
+                </span>
+                <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--green-hi)', whiteSpace: 'nowrap' }}>
+                  {todayGoal.protein}g <span style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-3)' }}>{lang === 'he' ? 'חלבון' : 'protein'}</span>
+                </span>
+              </div>
+            </div>
 
             {/* 7-day section */}
             <div>
@@ -938,28 +968,48 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
               </div>
             </div>
 
-            {/* Bar chart */}
+            {/* Bar chart with cal/prot toggle */}
             {last7.length > 0 && (
               <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: '14px 12px' }}>
-                <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-2)', margin: '0 0 12px' }}>
-                  {lang === 'he' ? 'קלוריות לפי יום' : 'Calories by day'}
-                </p>
+                {/* Chart header: title + toggle */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                  <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-2)', margin: 0 }}>
+                    {lang === 'he' ? 'לפי יום — 7 ימים' : '7-day breakdown'}
+                  </p>
+                  <div style={{ display: 'flex', background: 'var(--surface-2)', borderRadius: 8, padding: 2, gap: 2 }}>
+                    {(['cal', 'prot'] as const).map(m => (
+                      <button
+                        key={m}
+                        onClick={() => setChartMetric(m)}
+                        style={{
+                          padding: '3px 10px', borderRadius: 6, border: 'none', cursor: 'pointer',
+                          fontFamily: 'inherit', fontSize: 11, fontWeight: 700, transition: 'all .15s',
+                          background: chartMetric === m ? (m === 'cal' ? 'var(--blue)' : 'var(--green)') : 'transparent',
+                          color: chartMetric === m ? '#fff' : 'var(--text-3)',
+                        }}
+                      >
+                        {m === 'cal' ? (lang === 'he' ? 'קל׳' : 'Cal') : (lang === 'he' ? 'חל׳' : 'Prot')}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4, height: barH + 20 }}>
                   {barDays.map(b => {
-                    const barHeight = b.hasData ? Math.max(4, Math.round((b.cal / maxCal) * barH)) : 0
-                    const goalHeight= Math.max(2, Math.round((b.goalCal / maxCal) * barH))
-                    const overGoal  = b.hasData && b.cal > b.goalCal
+                    const val      = isCal ? b.cal      : b.prot
+                    const goalVal  = isCal ? b.goalCal  : b.goalProt
+                    const barHeight  = b.hasData ? Math.max(4, Math.round((val     / maxVal) * barH)) : 0
+                    const goalHeight = Math.max(2, Math.round((goalVal / maxVal) * barH))
+                    const overGoal   = b.hasData && val > goalVal
                     return (
                       <div key={b.dateKey} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
                         <div style={{ position: 'relative', width: '100%', height: barH, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
-                          {/* Goal line */}
-                          <div style={{ position: 'absolute', bottom: goalHeight, left: 0, right: 0, borderTop: '1.5px dashed rgba(59,130,246,0.35)' }} />
-                          {/* Bar */}
+                          <div style={{ position: 'absolute', bottom: goalHeight, left: 0, right: 0, borderTop: `1.5px dashed ${goalDashColor}` }} />
                           {b.hasData && (
                             <div style={{
                               width: '70%', height: barHeight,
                               borderRadius: '4px 4px 0 0',
-                              background: overGoal ? 'var(--amber)' : 'var(--blue)',
+                              background: overGoal ? 'var(--amber)' : barColor,
                               opacity: 0.85,
                               transition: 'height .3s ease',
                             }} />
@@ -972,11 +1022,11 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                 </div>
                 <div style={{ display: 'flex', gap: 14, marginTop: 8, paddingTop: 8, borderTop: '1px solid var(--border)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, color: 'var(--text-3)' }}>
-                    <div style={{ width: 12, height: 3, background: 'var(--blue)', borderRadius: 2 }} />
-                    {lang === 'he' ? 'קלוריות' : 'Calories'}
+                    <div style={{ width: 12, height: 3, background: barColor, borderRadius: 2 }} />
+                    {isCal ? (lang === 'he' ? 'קלוריות' : 'Calories') : (lang === 'he' ? 'חלבון' : 'Protein')}
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, color: 'var(--text-3)' }}>
-                    <div style={{ width: 12, borderTop: '1.5px dashed rgba(59,130,246,0.5)' }} />
+                    <div style={{ width: 12, borderTop: `1.5px dashed ${goalLegendColor}` }} />
                     {lang === 'he' ? 'יעד' : 'Goal'}
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, color: 'var(--text-3)' }}>
@@ -1009,7 +1059,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
               </div>
             )}
 
-            {/* Streak/insight note */}
+            {/* Insight note */}
             {last7.length >= 3 && (
               <div style={{ background: 'rgba(59,130,246,0.07)', border: '1px solid rgba(59,130,246,0.18)', borderRadius: 12, padding: '10px 14px' }}>
                 <p style={{ fontSize: 12, color: 'var(--text-2)', margin: 0, lineHeight: 1.6 }}>
