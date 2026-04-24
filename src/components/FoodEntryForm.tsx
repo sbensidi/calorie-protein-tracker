@@ -636,7 +636,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
               cup:   { he: 'כוס',       en: 'cup'   },
               tbsp:  { he: 'כף',        en: 'tbsp'  },
               tsp:   { he: 'כפית',      en: 'tsp'   },
-              fl_oz: { he: "אונ' נוזל", en: 'fl oz' },
+              fl_oz: { he: "פל.אונ׳",   en: 'fl oz' },
               pcs:   { he: 'יח׳',       en: 'pcs'   },
             }
             return lang === 'he' ? labels[entryUnit].he : labels[entryUnit].en
@@ -657,7 +657,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
             setNutrition(null)
             libraryDensityRef.current = null
           }}
-          style={{ fontSize: 13, fontWeight: 700, cursor: 'pointer', padding: '0 6px', textAlign: 'center' }}
+          style={{ fontSize: 13, fontWeight: 700, cursor: 'pointer', padding: '0 6px', textAlign: 'center', textOverflow: 'ellipsis', overflow: 'hidden' }}
         >
           {([
             { v: 'g',     he: 'גרם',        en: 'g'     },
@@ -666,7 +666,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
             { v: 'cup',   he: 'כוס',         en: 'cup'   },
             { v: 'tbsp',  he: 'כף',          en: 'tbsp'  },
             { v: 'tsp',   he: 'כפית',        en: 'tsp'   },
-            { v: 'fl_oz', he: 'אונ׳ נוזל',  en: 'fl oz' },
+            { v: 'fl_oz', he: 'פל.אונ׳',    en: 'fl oz' },
             { v: 'pcs',   he: 'יח׳',         en: 'pcs'   },
           ] as const).map(u => (
             <option key={u.v} value={u.v}>{lang === 'he' ? u.he : u.en}</option>
