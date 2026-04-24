@@ -884,6 +884,10 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
         start7.setDate(start7.getDate() - 6)
         const range7Label = `${fmt(start7)} – ${fmt(end7)}`
 
+        // ── Fluid stats helpers (declared early — used in barDays) ────
+        const fluidForDate = (date: string): number =>
+          (grouped.get(date)?.meals ?? []).reduce((s, m) => s + (m.fluid_ml ?? 0), 0)
+
         const barDays: Array<{ label: string; dateKey: string; cal: number; prot: number; fluid: number; goalCal: number; goalProt: number; goalFluid: number; hasData: boolean }> = []
         for (let i = 6; i >= 0; i--) {
           const d = new Date(end7)
@@ -927,9 +931,6 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
         const pct30 = last30.length ? Math.round(successDays30 / last30.length * 100) : 0
 
         // ── Fluid stats ───────────────────────────────────────────
-        const fluidForDate = (date: string): number =>
-          (grouped.get(date)?.meals ?? []).reduce((s, m) => s + (m.fluid_ml ?? 0), 0)
-
         const fluidDays7    = last7.filter(d  => fluidForDate(d) > 0)
         const fluidDays30   = last30.filter(d => fluidForDate(d) > 0)
         const avg7FluidMl   = fluidDays7.length  > 0 ? Math.round(fluidDays7.reduce( (s, d) => s + fluidForDate(d), 0) / fluidDays7.length)  : 0
