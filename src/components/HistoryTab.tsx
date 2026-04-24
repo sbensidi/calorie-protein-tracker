@@ -1012,14 +1012,17 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                               background: overGoal ? 'var(--amber)' : barColor,
                               opacity: 0.85,
                               transition: 'height .3s ease',
-                            }} />
+                              display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+                              paddingBottom: 3, overflow: 'hidden',
+                            }}>
+                              {barHeight >= 20 && (
+                                <span style={{ fontSize: 9, fontWeight: 800, color: '#fff', lineHeight: 1, opacity: 0.9 }}>
+                                  {isCal ? Math.round(val) : Math.round(val * 10) / 10}
+                                </span>
+                              )}
+                            </div>
                           )}
                         </div>
-                        {b.hasData && (
-                          <span style={{ fontSize: 8, fontWeight: 700, color: 'var(--text-3)', lineHeight: 1 }}>
-                            {isCal ? Math.round(val) : Math.round(val * 10) / 10}
-                          </span>
-                        )}
                         <span style={{ fontSize: 9, fontWeight: 600, color: 'var(--text-3)' }}>{b.label}</span>
                       </div>
                     )
