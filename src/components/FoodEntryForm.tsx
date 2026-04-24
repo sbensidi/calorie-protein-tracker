@@ -657,7 +657,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
             setNutrition(null)
             libraryDensityRef.current = null
           }}
-          style={{ fontSize: 13, fontWeight: 700, cursor: 'pointer', padding: '0 6px', textAlign: 'center', textOverflow: 'ellipsis', overflow: 'hidden' }}
+          style={{ fontSize: 13, fontWeight: 700, cursor: 'pointer', textOverflow: 'ellipsis', overflow: 'hidden' }}
         >
           {([
             { v: 'g',     he: 'גרם',        en: 'g'     },
