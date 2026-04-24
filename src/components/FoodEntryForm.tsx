@@ -305,7 +305,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
   const isVolumeUnit  = entryUnit !== 'pcs' && entryUnit !== 'g' && entryUnit !== 'oz'
   const detectedFluidMl = isVolumeUnit ? toBase(numericAmount, entryUnit as UnitId) * qty : null
   const calZeroOk     = !fluidZeroCalOnly || numCalories === 0
-  const isFluid       = detectedFluidMl !== null && detectedFluidMl > fluidThresholdMl && calZeroOk
+  const isFluid       = detectedFluidMl !== null && detectedFluidMl >= fluidThresholdMl && calZeroOk
 
   const handleAdd = () => {
     if (!foodName.trim() || nutrition === null) return
@@ -925,21 +925,22 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
           {isFluid && (
             <div style={{
               display: 'flex', alignItems: 'center', gap: 8,
-              background: fluidExcluded ? 'rgba(107,127,150,0.06)' : 'rgba(6,182,212,0.07)',
-              border: `1px solid ${fluidExcluded ? 'rgba(107,127,150,0.12)' : 'rgba(6,182,212,0.18)'}`,
+              background: fluidExcluded ? 'rgba(107,127,150,0.06)' : 'rgba(59,130,246,0.07)',
+              border: `1px solid ${fluidExcluded ? 'rgba(107,127,150,0.12)' : 'rgba(59,130,246,0.18)'}`,
               borderRadius: 9, padding: '7px 11px',
+              margin: '10px 0',
               transition: 'background .2s, border-color .2s',
             }}>
               <span style={{ fontSize: 14, flexShrink: 0 }}>💧</span>
               <span style={{
                 fontSize: 12, fontWeight: 600, flex: 1,
-                color: fluidExcluded ? 'var(--text-3)' : 'var(--cyan-hi)',
+                color: fluidExcluded ? 'var(--text-3)' : 'var(--blue-hi)',
                 textDecoration: fluidExcluded ? 'line-through' : 'none',
                 opacity: fluidExcluded ? 0.7 : 1,
               }}>
                 {lang === 'he'
-                  ? `${Math.round(detectedFluidMl!)}מ״ל יתווספו ליעד הנוזלים`
-                  : `${Math.round(detectedFluidMl!)}ml will count toward fluid goal`}
+                  ? `${Math.round(detectedFluidMl!)} מ״ל יתווספו ליעד הנוזלים`
+                  : `${Math.round(detectedFluidMl!)} ml will count toward fluid goal`}
               </span>
               {/* Toggle */}
               <button
@@ -960,7 +961,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
           )}
 
           {/* Quiet hint when volume but cal > 0 */}
-          {isVolumeUnit && !isFluid && detectedFluidMl !== null && detectedFluidMl > fluidThresholdMl && (
+          {isVolumeUnit && !isFluid && detectedFluidMl !== null && detectedFluidMl >= fluidThresholdMl && (
             <p style={{ fontSize: 11, color: 'var(--text-3)', margin: 0, display: 'flex', alignItems: 'center', gap: 5 }}>
               <span>💧</span>
               {lang === 'he' ? 'לא יספר לנוזלים — קלוריות > 0' : 'Won\'t count as fluid — calories > 0'}
