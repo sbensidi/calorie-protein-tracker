@@ -3,7 +3,7 @@ import { useLockBodyScroll } from '../hooks/useLockBodyScroll'
 import { useFocusTrap } from '../hooks/useFocusTrap'
 import { useSheetScroll } from '../hooks/useSheetScroll'
 import { SheetHandle } from './SheetHandle'
-import type { Meal, FoodHistory, ComposedGroup } from '../types'
+import type { Meal, FoodHistory, FoodLibraryItem, ComposedGroup } from '../types'
 import type { Lang } from '../lib/i18n'
 import { t, today, currentTime } from '../lib/i18n'
 import { FoodEntryForm } from './FoodEntryForm'
@@ -51,6 +51,7 @@ interface TodayTabProps {
   goalCalories: number
   goalProtein: number
   getSuggestions: (q: string) => FoodHistory[]
+  searchLibrary?: (q: string) => FoodLibraryItem[]
   onAddMeal: (meal: Omit<Meal, 'id' | 'user_id' | 'created_at'>) => void
   onAddMealWithId: (meal: Omit<Meal, 'id' | 'user_id' | 'created_at'>) => Promise<string | null>
   onEditMeal: (id: string, updates: Partial<Meal>) => void
@@ -66,7 +67,7 @@ interface TodayTabProps {
 
 export function TodayTab({
   lang, meals, loading = false, history, goalCalories, goalProtein,
-  getSuggestions, onAddMeal, onAddMealWithId, onEditMeal, onDeleteMeal, onDuplicateMeal, onUpsertHistory,
+  getSuggestions, searchLibrary, onAddMeal, onAddMealWithId, onEditMeal, onDeleteMeal, onDuplicateMeal, onUpsertHistory,
   composedEntries, composedGroups, onUpsertGroup, onRemoveGroup, showToast,
 }: TodayTabProps) {
   const todayMeals = useMemo(() => meals.filter(m => m.date === today()), [meals])
@@ -663,6 +664,7 @@ export function TodayTab({
               lang={lang}
               history={history}
               getSuggestions={getSuggestions}
+              searchLibrary={searchLibrary}
               defaultMealType={addIngredientModal.mealType}
               onAdd={handleAddIngredientSubmit}
               onUpsertHistory={onUpsertHistory}
@@ -746,6 +748,7 @@ export function TodayTab({
               lang={lang}
               history={history}
               getSuggestions={getSuggestions}
+              searchLibrary={searchLibrary}
               onAdd={meal => { onAddMeal(meal); setEntryOpen(false) }}
               onUpsertHistory={onUpsertHistory}
               composedEntries={composedEntries}

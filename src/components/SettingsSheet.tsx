@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from 'react'
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import { useLockBodyScroll } from '../hooks/useLockBodyScroll'
 import { useFocusTrap } from '../hooks/useFocusTrap'
 import { useSheetScroll } from '../hooks/useSheetScroll'
@@ -9,10 +9,11 @@ import { toWeekIndex } from '../lib/utils'
 import type { Toast } from '../hooks/useToast'
 import type { Goal, FoodHistory, ComposedGroup } from '../types'
 import type { UserProfile } from '../hooks/useProfile'
+import { useFoodLibrary } from '../hooks/useFoodLibrary'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-type Screen = 'main' | 'profile' | 'goals' | 'foodHistory'
+type Screen = 'main' | 'profile' | 'goals' | 'foodHistory' | 'library'
 
 const ACTIVITY_MULTIPLIERS = [1.2, 1.375, 1.55, 1.725, 1.9]
 
@@ -145,13 +146,14 @@ function DayPanel({
 
 // ── Main Screen ───────────────────────────────────────────────────────────────
 
-function MainScreen({ lang, connected, theme, onProfile, onGoals, onFoodHistory, onToggleLang, onToggleTheme, onSignOut }: {
+function MainScreen({ lang, connected, theme, onProfile, onGoals, onFoodHistory, onLibrary, onToggleLang, onToggleTheme, onSignOut }: {
   lang:           Lang
   connected:      boolean
   theme:          'dark' | 'light'
   onProfile:      () => void
   onGoals:        () => void
   onFoodHistory:  () => void
+  onLibrary:      () => void
   onToggleLang:   () => void
   onToggleTheme:  () => void
   onSignOut:      () => void
@@ -223,6 +225,20 @@ function MainScreen({ lang, connected, theme, onProfile, onGoals, onFoodHistory,
             </p>
             <p style={{ fontSize: 11, color: 'var(--text-3)', margin: '2px 0 0' }}>
               {lang === 'he' ? 'עריכה ומחיקת מזונות מההיסטוריה' : 'Edit or delete saved food items'}
+            </p>
+          </div>
+          <span className="icon icon-sm" style={{ color: 'var(--text-3)', flexShrink: 0 }}>{chevron}</span>
+        </button>
+
+        {/* Food Library */}
+        <button onClick={onLibrary} style={rowBase}>
+          <span className="icon" style={{ fontSize: 22, color: 'var(--green-hi)', flexShrink: 0 }}>menu_book</span>
+          <div style={{ flex: 1, textAlign: 'start' }}>
+            <p style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', margin: 0 }}>
+              {lang === 'he' ? 'ספריית מזונות' : 'Food Library'}
+            </p>
+            <p style={{ fontSize: 11, color: 'var(--text-3)', margin: '2px 0 0' }}>
+              {lang === 'he' ? 'עיון ב-120+ מזונות מובנים' : 'Browse 120+ built-in foods'}
             </p>
           </div>
           <span className="icon icon-sm" style={{ color: 'var(--text-3)', flexShrink: 0 }}>{chevron}</span>
@@ -1108,6 +1124,141 @@ function FoodHistoryScreen({ lang, history, composedGroups, onDelete, onUpdate, 
   )
 }
 
+// ── Library Screen ────────────────────────────────────────────────────────────
+
+const LIBRARY_CATEGORIES_HE: Record<string, string> = {
+  vegetable: 'ירקות', fruit: 'פירות', protein_meat: 'עוף ובשר',
+  protein_fish: 'דגים', egg_dairy: 'ביצים ויוגורט', cheese: 'גבינות',
+  nuts: 'אגוזים ופיצוחים', grain: 'דגנים', legume: 'קטניות',
+  oil_fat: 'שמנים ושומנים', sauce_spread: 'רטבים וממרחים', beverage: 'משקאות',
+}
+const LIBRARY_CATEGORIES_EN: Record<string, string> = {
+  vegetable: 'Vegetables', fruit: 'Fruits', protein_meat: 'Chicken & Meat',
+  protein_fish: 'Fish', egg_dairy: 'Eggs & Dairy', cheese: 'Cheeses',
+  nuts: 'Nuts & Seeds', grain: 'Grains', legume: 'Legumes',
+  oil_fat: 'Oils & Fats', sauce_spread: 'Sauces & Spreads', beverage: 'Beverages',
+}
+const CATEGORY_ORDER = ['protein_meat', 'protein_fish', 'egg_dairy', 'cheese', 'vegetable', 'fruit', 'grain', 'legume', 'nuts', 'oil_fat', 'sauce_spread', 'beverage']
+
+function LibraryScreen({ lang, onBack }: { lang: Lang; onBack: () => void }) {
+  const { library, loading } = useFoodLibrary()
+  const [search, setSearch] = useState('')
+  const [activeCategory, setActiveCategory] = useState<string | null>(null)
+
+  const categories = useCallback(() => CATEGORY_ORDER, [])()
+  const catLabels = lang === 'he' ? LIBRARY_CATEGORIES_HE : LIBRARY_CATEGORIES_EN
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    return library.filter(item => {
+      const matchCat  = !activeCategory || item.category === activeCategory
+      const matchText = !q || item.name_he.toLowerCase().includes(q) || item.name_en.toLowerCase().includes(q)
+      return matchCat && matchText
+    })
+  }, [library, search, activeCategory])
+
+  const isRTL   = lang === 'he'
+
+  return (
+    <>
+      {/* Back header */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '8px 0 16px' }}>
+        <button onClick={onBack} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-2)', padding: 4, display: 'flex', borderRadius: 8 }}>
+          <span className="icon icon-sm">{isRTL ? 'arrow_forward' : 'arrow_back'}</span>
+        </button>
+        <h2 style={{ fontSize: 17, fontWeight: 800, color: 'var(--text)', margin: 0, flex: 1 }}>
+          {lang === 'he' ? 'ספריית מזונות' : 'Food Library'}
+        </h2>
+        <span style={{ fontSize: 11, color: 'var(--text-3)' }}>
+          {library.length} {lang === 'he' ? 'פריטים' : 'items'}
+        </span>
+      </div>
+
+      {/* Search */}
+      <div style={{ position: 'relative', marginBottom: 12 }}>
+        <span className="icon icon-sm" style={{ position: 'absolute', top: '50%', transform: 'translateY(-50%)', ...(isRTL ? { right: 10 } : { left: 10 }), color: 'var(--text-3)', pointerEvents: 'none' }}>search</span>
+        <input
+          className="inp"
+          type="search"
+          placeholder={lang === 'he' ? 'חיפוש מזון...' : 'Search food...'}
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          style={{ ...(isRTL ? { paddingRight: 34 } : { paddingLeft: 34 }) }}
+        />
+      </div>
+
+      {/* Category chips */}
+      <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 6, marginBottom: 12, scrollbarWidth: 'none' }}>
+        <button
+          onClick={() => setActiveCategory(null)}
+          style={{
+            padding: '5px 12px', borderRadius: 999, border: 'none', cursor: 'pointer', fontFamily: 'inherit',
+            fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap', transition: 'background .12s, color .12s',
+            background: activeCategory === null ? 'var(--blue)' : 'var(--surface-2)',
+            color: activeCategory === null ? '#fff' : 'var(--text-2)',
+          }}
+        >
+          {lang === 'he' ? 'הכל' : 'All'}
+        </button>
+        {categories.map(cat => (
+          <button
+            key={cat}
+            onClick={() => setActiveCategory(activeCategory === cat ? null : cat)}
+            style={{
+              padding: '5px 12px', borderRadius: 999, border: 'none', cursor: 'pointer', fontFamily: 'inherit',
+              fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap', transition: 'background .12s, color .12s',
+              background: activeCategory === cat ? 'var(--blue)' : 'var(--surface-2)',
+              color: activeCategory === cat ? '#fff' : 'var(--text-2)',
+            }}
+          >
+            {catLabels[cat] ?? cat}
+          </button>
+        ))}
+      </div>
+
+      {/* Results */}
+      {loading ? (
+        <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-3)', fontSize: 13 }}>
+          <span className="icon" style={{ fontSize: 24, display: 'block', marginBottom: 8, animation: 'spin 0.7s linear infinite' }}>progress_activity</span>
+          {lang === 'he' ? 'טוען...' : 'Loading...'}
+        </div>
+      ) : filtered.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-3)', fontSize: 13 }}>
+          <span className="icon" style={{ fontSize: 24, display: 'block', marginBottom: 8, opacity: 0.4 }}>search_off</span>
+          {lang === 'he' ? 'לא נמצאו תוצאות' : 'No results found'}
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+          {filtered.map((item, i) => (
+            <div
+              key={item.id}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 10,
+                padding: '10px 4px',
+                borderBottom: i < filtered.length - 1 ? '1px solid var(--border)' : 'none',
+              }}
+            >
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {lang === 'he' ? item.name_he : item.name_en}
+                </p>
+                <p style={{ fontSize: 11, color: 'var(--text-3)', margin: '2px 0 0' }}>
+                  {catLabels[item.category] ?? item.category}
+                </p>
+              </div>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
+                <span style={{ fontSize: 11, color: 'var(--blue-hi)', fontWeight: 600 }}>{item.calories_per_100g} {lang === 'he' ? 'קל' : 'cal'}</span>
+                <span style={{ fontSize: 11, color: 'var(--green-hi)', fontWeight: 600 }}>{item.protein_per_100g}g</span>
+                <span style={{ fontSize: 10, color: 'var(--text-3)' }}>/{lang === 'he' ? '100' : '100'}g</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </>
+  )
+}
+
 // ── SettingsSheet ─────────────────────────────────────────────────────────────
 
 interface SettingsSheetProps {
@@ -1212,6 +1363,7 @@ export function SettingsSheet({
               onProfile={() => setScreen('profile')}
               onGoals={() => setScreen('goals')}
               onFoodHistory={() => setScreen('foodHistory')}
+              onLibrary={() => setScreen('library')}
               onToggleLang={onToggleLang}
               onToggleTheme={onToggleTheme}
               onSignOut={() => { handleClose(); onSignOut() }}
@@ -1248,6 +1400,12 @@ export function SettingsSheet({
               onRemoveGroup={onRemoveGroup}
               onBack={() => setScreen('main')}
               showToast={showToast}
+            />
+          )}
+          {screen === 'library' && (
+            <LibraryScreen
+              lang={lang}
+              onBack={() => setScreen('main')}
             />
           )}
         </div>

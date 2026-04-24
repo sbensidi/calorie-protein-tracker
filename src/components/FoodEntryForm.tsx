@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef } from 'react'
 import { useLockBodyScroll } from '../hooks/useLockBodyScroll'
-import type { FoodHistory, Meal, NutritionResult } from '../types'
+import type { FoodHistory, FoodLibraryItem, Meal, NutritionResult } from '../types'
 import type { Lang } from '../lib/i18n'
 import { t, currentTime, today } from '../lib/i18n'
 import { calculateNutrition } from '../lib/ai'
@@ -29,10 +29,15 @@ export interface ComposedEntry {
   protein: number
 }
 
+type CombinedSuggestion =
+  | { source: 'history'; item: FoodHistory }
+  | { source: 'library'; item: FoodLibraryItem }
+
 interface FoodEntryFormProps {
   lang: Lang
   history: FoodHistory[]
   getSuggestions: (q: string) => FoodHistory[]
+  searchLibrary?: (q: string) => FoodLibraryItem[]
   onAdd: (meal: Omit<Meal, 'id' | 'user_id' | 'created_at'>) => void
   onUpsertHistory: (item: Pick<FoodHistory, 'name' | 'grams' | 'calories' | 'protein'>) => void
   defaultMealType?: MealType
@@ -40,7 +45,7 @@ interface FoodEntryFormProps {
   onAddComposed?: (composedId: string) => void
 }
 
-export function FoodEntryForm({ lang, history, getSuggestions, onAdd, onUpsertHistory, defaultMealType, composedEntries, onAddComposed }: FoodEntryFormProps) {
+export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, onAdd, onUpsertHistory, defaultMealType, composedEntries, onAddComposed }: FoodEntryFormProps) {
   const [mode, setMode]               = useState<EntryMode>(
     () => (localStorage.getItem('entry-mode') as EntryMode) ?? 'scan'
   )
@@ -69,7 +74,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, onAdd, onUpsertHi
 
   // Dropdown
   const [dropdownOpen, setDropdownOpen] = useState(false)
-  const [suggestions,  setSuggestions]  = useState<FoodHistory[]>([])
+  const [suggestions,  setSuggestions]  = useState<CombinedSuggestion[]>([])
   const inputRef    = useRef<HTMLInputElement>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const lastCalcRef = useRef(0)  // debounce: timestamp of last calculate call
@@ -88,9 +93,15 @@ export function FoodEntryForm({ lang, history, getSuggestions, onAdd, onUpsertHi
 
   const openDropdown = (query: string) => {
     const q = query.trim()
-    const items = q ? getSuggestions(q) : history.slice(0, 6)
-    setSuggestions(items)
-    setDropdownOpen(items.length > 0)
+    const histItems: CombinedSuggestion[] = (q ? getSuggestions(q) : history.slice(0, 6))
+      .map(item => ({ source: 'history' as const, item }))
+    const histNames = new Set(histItems.map(s => (s.item as FoodHistory).name.toLowerCase()))
+    const libItems: CombinedSuggestion[] = q && searchLibrary
+      ? searchLibrary(q).filter(li => !histNames.has(li.name_he.toLowerCase())).slice(0, 4).map(item => ({ source: 'library' as const, item }))
+      : []
+    const combined = [...histItems, ...libItems]
+    setSuggestions(combined)
+    setDropdownOpen(combined.length > 0)
   }
 
   const handleFoodNameChange = (v: string) => {
@@ -119,6 +130,23 @@ export function FoodEntryForm({ lang, history, getSuggestions, onAdd, onUpsertHi
     handleSuggestionSelect(item)
     setHistoryModalOpen(false)
     setHistorySearch('')
+  }
+
+  const handleLibrarySelect = (item: FoodLibraryItem) => {
+    const grams = item.serving_size ?? 100
+    const cal   = Math.round(item.calories_per_100g * grams / 100)
+    const prot  = Math.round(item.protein_per_100g  * grams / 100 * 10) / 10
+    const name  = lang === 'he' ? item.name_he : item.name_en
+    setFoodName(name)
+    setGramsStr(String(grams))
+    setUnitsStr('')
+    setNutrition({ calories: cal, protein: prot })
+    setEditCalories(cal)
+    setEditProtein(prot)
+    setDropdownOpen(false)
+    setQty(1)
+    setAiError(null)
+    inputRef.current?.blur()
   }
 
   const handleComposedSelect = (entry: ComposedEntry) => {
@@ -689,35 +717,66 @@ export function FoodEntryForm({ lang, history, getSuggestions, onAdd, onUpsertHi
                 <span style={{ fontSize: 11, color: 'var(--green-hi)', flexShrink: 0, fontWeight: 600 }}>{entry.protein}g</span>
               </button>
             ))}
-            {/* Food history items */}
-            {suggestions.map((item, i) => {
-              const itemIsUnit = item.grams < 0
-              const amtDisplay = itemIsUnit
-                ? `${Math.abs(item.grams)} ${unitLabel}`
-                : `${item.grams}g`
-              return (
-                <button
-                  key={item.id}
-                  onMouseDown={() => handleSuggestionSelect(item)}
-                  style={{
-                    display: 'flex', alignItems: 'center', width: '100%',
-                    padding: '9px 12px', background: 'transparent', border: 'none',
-                    borderBottom: i < suggestions.length - 1 ? '1px solid var(--border)' : 'none',
-                    cursor: 'pointer', gap: 10, textAlign: 'start', fontFamily: 'inherit',
-                    transition: 'background .12s',
-                  }}
-                  onMouseEnter={e => (e.currentTarget.style.background = 'var(--surface-2)')}
-                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                >
-                  <span className="icon icon-sm" style={{ color: 'var(--text-2)', flexShrink: 0 }}>history</span>
-                  <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {item.name}
-                  </span>
-                  <span style={{ fontSize: 11, color: 'var(--text-2)', flexShrink: 0 }}>{amtDisplay}</span>
-                  <span style={{ fontSize: 11, color: 'var(--blue-hi)', flexShrink: 0, fontWeight: 600 }}>{Math.round(item.calories)}</span>
-                  <span style={{ fontSize: 11, color: 'var(--green-hi)', flexShrink: 0, fontWeight: 600 }}>{Math.round(item.protein * 10) / 10}g</span>
-                </button>
-              )
+            {/* Food history + library items */}
+            {suggestions.map((s, i) => {
+              const isLast = i === suggestions.length - 1
+              if (s.source === 'history') {
+                const item = s.item
+                const itemIsUnit = item.grams < 0
+                const amtDisplay = itemIsUnit ? `${Math.abs(item.grams)} ${unitLabel}` : `${item.grams}g`
+                return (
+                  <button
+                    key={`h-${item.id}`}
+                    onMouseDown={() => handleSuggestionSelect(item)}
+                    style={{
+                      display: 'flex', alignItems: 'center', width: '100%',
+                      padding: '9px 12px', background: 'transparent', border: 'none',
+                      borderBottom: isLast ? 'none' : '1px solid var(--border)',
+                      cursor: 'pointer', gap: 10, textAlign: 'start', fontFamily: 'inherit',
+                      transition: 'background .12s',
+                    }}
+                    onMouseEnter={e => (e.currentTarget.style.background = 'var(--surface-2)')}
+                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                  >
+                    <span className="icon icon-sm" style={{ color: 'var(--text-2)', flexShrink: 0 }}>history</span>
+                    <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {item.name}
+                    </span>
+                    <span style={{ fontSize: 11, color: 'var(--text-2)', flexShrink: 0 }}>{amtDisplay}</span>
+                    <span style={{ fontSize: 11, color: 'var(--blue-hi)', flexShrink: 0, fontWeight: 600 }}>{Math.round(item.calories)}</span>
+                    <span style={{ fontSize: 11, color: 'var(--green-hi)', flexShrink: 0, fontWeight: 600 }}>{Math.round(item.protein * 10) / 10}g</span>
+                  </button>
+                )
+              } else {
+                const item = s.item
+                const grams = item.serving_size ?? 100
+                const cal   = Math.round(item.calories_per_100g * grams / 100)
+                const prot  = Math.round(item.protein_per_100g  * grams / 100 * 10) / 10
+                const name  = lang === 'he' ? item.name_he : item.name_en
+                return (
+                  <button
+                    key={`lib-${item.id}`}
+                    onMouseDown={() => handleLibrarySelect(item)}
+                    style={{
+                      display: 'flex', alignItems: 'center', width: '100%',
+                      padding: '9px 12px', background: 'rgba(245,158,11,0.04)', border: 'none',
+                      borderBottom: isLast ? 'none' : '1px solid var(--border)',
+                      cursor: 'pointer', gap: 10, textAlign: 'start', fontFamily: 'inherit',
+                      transition: 'background .12s',
+                    }}
+                    onMouseEnter={e => (e.currentTarget.style.background = 'rgba(245,158,11,0.10)')}
+                    onMouseLeave={e => (e.currentTarget.style.background = 'rgba(245,158,11,0.04)')}
+                  >
+                    <span className="icon icon-sm" style={{ color: 'var(--amber)', flexShrink: 0 }}>menu_book</span>
+                    <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {name}
+                    </span>
+                    <span style={{ fontSize: 11, color: 'var(--text-2)', flexShrink: 0 }}>{grams}g</span>
+                    <span style={{ fontSize: 11, color: 'var(--blue-hi)', flexShrink: 0, fontWeight: 600 }}>{cal}</span>
+                    <span style={{ fontSize: 11, color: 'var(--green-hi)', flexShrink: 0, fontWeight: 600 }}>{prot}g</span>
+                  </button>
+                )
+              }
             })}
           </div>
         )

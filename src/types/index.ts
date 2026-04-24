@@ -45,6 +45,21 @@ export interface NutritionResult {
   protein: number
 }
 
+export interface FoodLibraryItem {
+  id: string
+  name_he: string
+  name_en: string
+  category: string
+  calories_per_100g: number
+  protein_per_100g: number
+  fat_per_100g: number | null
+  carbs_per_100g: number | null
+  fiber_per_100g: number | null
+  serving_size: number | null
+  serving_unit: string
+  density: number | null
+}
+
 /** Client-side only — persisted in localStorage, not Supabase */
 export interface ComposedGroup {
   id: string

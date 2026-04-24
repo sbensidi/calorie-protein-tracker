@@ -8,6 +8,7 @@ import { useMeals } from './hooks/useMeals'
 import { useGoals } from './hooks/useGoals'
 import { useFoodHistory } from './hooks/useFoodHistory'
 import { useComposedGroups } from './hooks/useComposedGroups'
+import { useFoodLibrary } from './hooks/useFoodLibrary'
 import { useToast } from './hooks/useToast'
 import { TodayTab } from './components/TodayTab'
 import { HistoryTab } from './components/HistoryTab'
@@ -72,6 +73,7 @@ export default function App() {
   }, [theme, lang]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const { toasts, showToast, dismissToast } = useToast()
+  const { searchLibrary } = useFoodLibrary()
   const { profile, saveProfile, error: profileError } = useProfile(userId)
   const { meals, loading: mealsLoading, error: mealsError, addMeal, addMealWithId, updateMeal, deleteMeal, duplicateMeal } = useMeals(userId)
   const { goals, error: goalsError, saveGoals, getGoalForDate } = useGoals(userId)
@@ -195,6 +197,7 @@ export default function App() {
             goalCalories={todayGoal.calories}
             goalProtein={todayGoal.protein}
             getSuggestions={getSuggestions}
+            searchLibrary={searchLibrary}
             onAddMeal={addMeal}
             onAddMealWithId={addMealWithId}
             onEditMeal={updateMeal}
