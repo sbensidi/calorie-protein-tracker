@@ -341,16 +341,17 @@ function ProfileScreen({ lang, profile, onSave, onApplyGoals, onBack, onNavigate
   const set = <K extends keyof UserProfile>(key: K, val: UserProfile[K]) =>
     setDraft(p => ({ ...p, [key]: val }))
 
-  const { bmr, tdee, suggestedCal, suggestedProt, bmi, bmiCategory } = useMemo(() => {
+  const { bmr, tdee, suggestedCal, suggestedProt, suggestedFluidMl, bmi, bmiCategory } = useMemo(() => {
     const bmr  = calcBMR(draft)
     const tdee = calcTDEE(draft)
-    const delta       = draft.goalType === 'lose' ? -500 : draft.goalType === 'gain' ? 300 : 0
-    const suggestedCal  = tdee + delta
-    const protRate      = draft.goalType === 'lose' ? 2.0 : draft.goalType === 'gain' ? 2.2 : 1.6
-    const suggestedProt = Math.round(draft.weight * protRate)
-    const bmiVal        = Math.round((draft.weight / ((draft.height / 100) ** 2)) * 10) / 10
-    const bmiCategory   = bmiVal < 18.5 ? 'underweight' : bmiVal < 25 ? 'normal' : bmiVal < 30 ? 'overweight' : 'obese'
-    return { bmr, tdee, suggestedCal, suggestedProt, bmi: bmiVal, bmiCategory }
+    const delta           = draft.goalType === 'lose' ? -500 : draft.goalType === 'gain' ? 300 : 0
+    const suggestedCal    = tdee + delta
+    const protRate        = draft.goalType === 'lose' ? 2.0 : draft.goalType === 'gain' ? 2.2 : 1.6
+    const suggestedProt   = Math.round(draft.weight * protRate)
+    const suggestedFluidMl = Math.round(draft.weight * 35 / 100) * 100
+    const bmiVal          = Math.round((draft.weight / ((draft.height / 100) ** 2)) * 10) / 10
+    const bmiCategory     = bmiVal < 18.5 ? 'underweight' : bmiVal < 25 ? 'normal' : bmiVal < 30 ? 'overweight' : 'obese'
+    return { bmr, tdee, suggestedCal, suggestedProt, suggestedFluidMl, bmi: bmiVal, bmiCategory }
   }, [draft])
 
   const handleSave = () => {
@@ -361,12 +362,11 @@ function ProfileScreen({ lang, profile, onSave, onApplyGoals, onBack, onNavigate
   }
 
   const handleApply = () => {
-    onSave(draft)
+    onSave({ ...draft, fluidGoalMl: suggestedFluidMl })
     onApplyGoals(suggestedCal, suggestedProt)
     setApplied(true)
     setTimeout(() => setApplied(false), 2000)
     showToast(lang === 'he' ? 'היעדים הוחלו' : 'Goals applied', 'success')
-    // Auto-navigate to goals screen so user can review what was applied
     setTimeout(() => onNavigateToGoals(), 600)
   }
 
@@ -522,7 +522,7 @@ function ProfileScreen({ lang, profile, onSave, onApplyGoals, onBack, onNavigate
       </div>
 
       {/* TDEE */}
-      <div style={{ marginBottom: 18 }}>
+      <div style={{ marginBottom: 14 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 4 }}>
           <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-2)' }}>
             {lang === 'he' ? 'TDEE — הוצאה אנרגטית יומית' : 'TDEE — Total Daily Energy Expenditure'}
@@ -535,6 +535,26 @@ function ProfileScreen({ lang, profile, onSave, onApplyGoals, onBack, onNavigate
           {lang === 'he'
             ? 'BMR × מכפיל פעילות — כמה קלוריות אתה באמת שורף ביום כולל כל הפעילות שלך.'
             : 'BMR × activity multiplier — actual daily calories burned including all your activities.'}
+        </p>
+      </div>
+
+      {/* Recommended fluid */}
+      <div style={{ marginBottom: 18 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 4 }}>
+          <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-2)' }}>
+            {lang === 'he' ? 'נוזלים מומלצים ביום' : 'Recommended daily fluid'}
+          </span>
+          <span style={{ fontSize: 19, fontWeight: 800, color: 'var(--blue-hi)' }}>
+            {suggestedFluidMl >= 1000 ? (suggestedFluidMl / 1000).toFixed(1) : suggestedFluidMl}{' '}
+            <span style={{ fontSize: 11, fontWeight: 400 }}>
+              {suggestedFluidMl >= 1000 ? (lang === 'he' ? 'ל׳' : 'L') : 'ml'}
+            </span>
+          </span>
+        </div>
+        <p style={{ fontSize: 11, color: 'var(--text-3)', margin: 0, lineHeight: 1.5 }}>
+          {lang === 'he'
+            ? `35מ״ל × ${draft.weight}ק״ג — כמות הידרציה מינימלית מומלצת למניעת התייבשות.`
+            : `35ml × ${draft.weight}kg — minimum recommended hydration to prevent dehydration.`}
         </p>
       </div>
 
@@ -583,10 +603,28 @@ function ProfileScreen({ lang, profile, onSave, onApplyGoals, onBack, onNavigate
             {suggestedProt} <span style={{ fontSize: 11, fontWeight: 400 }}>{t(lang, 'proteinUnit')}</span>
           </span>
         </div>
-        <p style={{ fontSize: 11, color: 'var(--text-3)', margin: '0 0 14px', lineHeight: 1.5 }}>
+        <p style={{ fontSize: 11, color: 'var(--text-3)', margin: '0 0 10px', lineHeight: 1.5 }}>
           {lang === 'he'
             ? `${protRateLabel} גרם × ${draft.weight} ק״ג — ${protReasonHe}`
             : `${protRateLabel}g × ${draft.weight} kg — ${protReasonEn}`}
+        </p>
+
+        {/* Suggested Fluid */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+          <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-2)' }}>
+            {lang === 'he' ? 'יעד נוזלים מומלץ' : 'Suggested Fluid Goal'}
+          </span>
+          <span style={{ fontSize: 21, fontWeight: 800, color: 'var(--blue-hi)' }}>
+            {suggestedFluidMl >= 1000 ? (suggestedFluidMl / 1000).toFixed(1) : suggestedFluidMl}{' '}
+            <span style={{ fontSize: 11, fontWeight: 400 }}>
+              {suggestedFluidMl >= 1000 ? (lang === 'he' ? 'ל׳' : 'L') : 'ml'}
+            </span>
+          </span>
+        </div>
+        <p style={{ fontSize: 11, color: 'var(--text-3)', margin: '0 0 14px', lineHeight: 1.5 }}>
+          {lang === 'he'
+            ? `35מ״ל × ${draft.weight}ק״ג = ${Math.round(draft.weight * 35)}מ״ל`
+            : `35ml × ${draft.weight}kg = ${Math.round(draft.weight * 35)}ml`}
         </p>
 
         <button
@@ -662,71 +700,33 @@ function ProfileScreen({ lang, profile, onSave, onApplyGoals, onBack, onNavigate
         </div>
       </div>
 
-      {/* ── Fluid goal section ─────────────────────────────── */}
-      <div style={{ height: 1, background: 'var(--border)', margin: '4px 0' }} />
-      <label style={labelStyle}>💧 {lang === 'he' ? 'מעקב נוזלים' : 'Fluid tracking'}</label>
+      {/* ── Fluid detection settings ────────────────────────── */}
+      <div style={{ height: 1, background: 'var(--border)', margin: '18px 0 16px' }} />
+      <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-2)', marginBottom: 14, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+        {lang === 'he' ? 'זיהוי נוזלים' : 'Fluid detection'}
+      </p>
 
-      {/* fluid goal */}
-      <div>
-        <label style={{ ...labelStyle, fontSize: 11 }}>{lang === 'he' ? 'יעד נוזלים יומי' : 'Daily fluid goal'}</label>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          <input
-            type="number"
-            inputMode="numeric"
-            className="inp"
-            style={{ flex: 1, textAlign: 'center' }}
-            value={draft.fluidGoalMl}
-            onChange={e => set('fluidGoalMl', Number(e.target.value) || 2500)}
-          />
-          <span style={{ fontSize: 13, color: 'var(--text-3)', whiteSpace: 'nowrap' }}>
-            {lang === 'he' ? 'מ״ל' : 'ml'}
-          </span>
-          <button
-            onClick={() => set('fluidGoalMl', Math.round(draft.weight * 35 / 100) * 100)}
-            style={{
-              background: 'rgba(6,182,212,0.10)', border: '1px solid rgba(6,182,212,0.2)',
-              borderRadius: 8, color: 'var(--cyan-hi)', fontFamily: 'inherit',
-              fontSize: 12, fontWeight: 700, padding: '7px 10px', cursor: 'pointer', whiteSpace: 'nowrap',
-            }}
-          >
-            {lang === 'he' ? '✦ חשב' : '✦ Calc'}
-          </button>
-        </div>
-        <p style={{ fontSize: 10, color: 'var(--text-3)', margin: '4px 0 0' }}>
-          {lang === 'he'
-            ? `35מ״ל × ${draft.weight}ק״ג = ${Math.round(draft.weight * 35)}מ״ל`
-            : `35ml × ${draft.weight}kg = ${Math.round(draft.weight * 35)}ml`}
-        </p>
-      </div>
-
-      {/* fluid threshold */}
-      <div>
-        <label style={{ ...labelStyle, fontSize: 11 }}>{lang === 'he' ? 'סף זיהוי (מ״ל)' : 'Detection threshold (ml)'}</label>
+      {/* fluid threshold + zero-cal toggle on one row */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20 }}>
         <input
           type="number"
           inputMode="numeric"
           className="inp"
-          style={{ textAlign: 'center', width: 100 }}
+          style={{ width: 70, textAlign: 'center', flexShrink: 0 }}
           value={draft.fluidThresholdMl}
           onChange={e => set('fluidThresholdMl', Number(e.target.value) || 100)}
         />
-      </div>
-
-      {/* zero-cal only toggle */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-        <div>
-          <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', margin: 0 }}>
-            {lang === 'he' ? 'ספור רק 0 קלוריות כנוזל' : 'Count only 0-calorie entries as fluid'}
-          </p>
-          <p style={{ fontSize: 11, color: 'var(--text-3)', margin: '2px 0 0' }}>
-            {lang === 'he' ? 'מים, תה, קפה שחור בלבד' : 'Water, tea, black coffee only'}
-          </p>
-        </div>
+        <span style={{ fontSize: 12, color: 'var(--text-3)', flexShrink: 0 }}>ml</span>
+        <span style={{ flex: 1 }} />
+        <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-2)', flexShrink: 0 }}>
+          {lang === 'he' ? '0 קל׳ בלבד' : '0-cal only'}
+        </span>
         <button
           onClick={() => set('fluidZeroCalOnly', !draft.fluidZeroCalOnly)}
+          aria-label={lang === 'he' ? 'הפעל/בטל' : 'Toggle'}
           style={{
             width: 44, height: 26, borderRadius: 99, border: 'none', cursor: 'pointer', flexShrink: 0,
-            background: draft.fluidZeroCalOnly ? 'var(--cyan)' : 'rgba(107,127,150,0.25)',
+            background: draft.fluidZeroCalOnly ? 'var(--blue)' : 'rgba(107,127,150,0.25)',
             position: 'relative', transition: 'background .2s',
           }}
         >
@@ -755,16 +755,19 @@ function ProfileScreen({ lang, profile, onSave, onApplyGoals, onBack, onNavigate
 
 // ── Goals Screen ──────────────────────────────────────────────────────────────
 
-function GoalsScreen({ lang, profile, goals, onSave, onBack, showToast }: {
-  lang:      Lang
-  profile:   UserProfile
-  goals:     Goal | null
-  onSave:    (updates: Partial<Goal>) => void
-  onBack:    () => void
-  showToast: (msg: string, type: 'success' | 'error' | 'info') => void
+function GoalsScreen({ lang, profile, goals, onSave, onSaveFluidGoal, fluidGoalMl = 2500, onBack, showToast }: {
+  lang:              Lang
+  profile:           UserProfile
+  goals:             Goal | null
+  onSave:            (updates: Partial<Goal>) => void
+  onSaveFluidGoal?:  (ml: number) => void
+  fluidGoalMl?:      number
+  onBack:            () => void
+  showToast:         (msg: string, type: 'success' | 'error' | 'info') => void
 }) {
-  const [defCal,  setDefCal]  = useState(goals?.default_calories ?? 1700)
-  const [defProt, setDefProt] = useState(goals?.default_protein  ?? 160)
+  const [defCal,       setDefCal]       = useState(goals?.default_calories ?? 1700)
+  const [defProt,      setDefProt]      = useState(goals?.default_protein  ?? 160)
+  const [defFluidGoal, setDefFluidGoal] = useState(fluidGoalMl)
   const [overrides, setOverrides] = useState<Record<string, { calories: number; protein: number }>>(goals?.weekly_overrides ?? {})
   const [saved, setSaved]     = useState(false)
   const [expandAll, setExpandAll] = useState(false)
@@ -780,8 +783,11 @@ function GoalsScreen({ lang, profile, goals, onSave, onBack, showToast }: {
     }
   }, [goals])
 
+  useEffect(() => { setDefFluidGoal(fluidGoalMl) }, [fluidGoalMl])
+
   const tdee = useMemo(() => calcTDEE(profile), [profile])
-  const suggestedCal = tdee + (profile.goalType === 'lose' ? -500 : profile.goalType === 'gain' ? 300 : 0)
+  const suggestedCal      = tdee + (profile.goalType === 'lose' ? -500 : profile.goalType === 'gain' ? 300 : 0)
+  const suggestedFluidMl  = Math.round(profile.weight * 35 / 100) * 100
 
   const hasOverride = (dayKey: DayKey) => !!overrides[toWeekIndex(dayKey)]
 
@@ -817,6 +823,7 @@ function GoalsScreen({ lang, profile, goals, onSave, onBack, showToast }: {
 
   const handleSave = () => {
     onSave({ default_calories: defCal, default_protein: defProt, weekly_overrides: overrides })
+    onSaveFluidGoal?.(defFluidGoal)
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
     showToast(lang === 'he' ? 'היעדים נשמרו' : 'Goals saved', 'success')
@@ -859,7 +866,7 @@ function GoalsScreen({ lang, profile, goals, onSave, onBack, showToast }: {
           </p>
         )}
         <button
-          onClick={() => setDefCal(suggestedCal)}
+          onClick={() => { setDefCal(suggestedCal); setDefFluidGoal(suggestedFluidMl) }}
           style={{
             padding: '5px 14px', borderRadius: 8, fontSize: 11, fontWeight: 700,
             cursor: 'pointer', fontFamily: 'inherit',
@@ -917,6 +924,30 @@ function GoalsScreen({ lang, profile, goals, onSave, onBack, showToast }: {
               </button>
             )}
           </div>
+        </div>
+        <div style={{ flex: 1 }}>
+          <label style={{ ...labelStyle, color: 'var(--blue-hi)' }}>
+            {lang === 'he' ? 'נוזלים (מ״ל)' : 'Fluid (ml)'}
+          </label>
+          <div style={{ position: 'relative' }}>
+            <input type="number" inputMode="numeric" className="inp"
+              style={{ paddingInlineEnd: defFluidGoal > 0 ? 32 : undefined, borderColor: 'rgba(59,130,246,0.35)' }}
+              value={defFluidGoal === 0 ? '' : defFluidGoal} placeholder="0"
+              onFocus={e => e.target.select()}
+              onChange={e => setDefFluidGoal(Number(e.target.value))} />
+            {defFluidGoal > 0 && (
+              <button
+                onMouseDown={e => { e.preventDefault(); setDefFluidGoal(0) }}
+                tabIndex={-1}
+                style={{ position: 'absolute', insetInlineEnd: 0, top: 0, bottom: 0, width: 32, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              >
+                <span className="icon icon-sm">close</span>
+              </button>
+            )}
+          </div>
+          <p style={{ fontSize: 10, color: 'var(--text-3)', margin: '3px 0 0' }}>
+            {lang === 'he' ? `מומלץ ${suggestedFluidMl}מ״ל` : `Suggested ${suggestedFluidMl}ml`}
+          </p>
         </div>
       </div>
 
@@ -1506,6 +1537,8 @@ export function SettingsSheet({
               profile={profile}
               goals={goals}
               onSave={onSaveGoals}
+              onSaveFluidGoal={ml => onSaveProfile({ fluidGoalMl: ml })}
+              fluidGoalMl={profile.fluidGoalMl}
               onBack={() => setScreen('main')}
               showToast={showToast}
             />

@@ -17,7 +17,7 @@ export async function calculateNutrition(
   amount: number,
   history: FoodHistory[],
   amountType: 'g' | 'unit' = 'g'
-): Promise<NutritionResult> {
+): Promise<NutritionResult | null> {
   const cached = findInHistory(foodName, amount, history, amountType)
   if (cached) return cached
 
@@ -41,7 +41,7 @@ export async function calculateNutrition(
     }
   }
 
-  return { calories: 0, protein: 0 }
+  return null
 }
 
 function findInHistory(

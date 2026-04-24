@@ -38,6 +38,7 @@ interface HistoryTabProps {
   getGoalForDate:   (date: string) => { calories: number; protein: number }
   composedEntries?: ComposedEntry[]
   composedGroups?:  ComposedGroup[]
+  fluidGoalMl?:     number
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────
@@ -62,7 +63,7 @@ const STATUS_COLOR: Record<DayData['status'], { border: string; badge: string; t
 
 // ── Component ────────────────────────────────────────────────────────
 
-export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntries = [], composedGroups = [] }: HistoryTabProps) {
+export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntries = [], composedGroups = [], fluidGoalMl = 2500 }: HistoryTabProps) {
   const todayKey = today()
 
   const [view, setView] = useState<'cal' | 'list' | 'stats'>(
@@ -388,7 +389,13 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                             {meal.name}
                           </p>
                           <p style={{ fontSize: 10, color: 'var(--text-3)', margin: 0 }}>
-                            {meal.grams < 0 ? `${Math.abs(meal.grams)} ${lang === 'he' ? 'יח׳' : 'pcs'}` : `${meal.grams}g`}
+                            {meal.fluid_ml != null && !meal.fluid_excluded
+                              ? (meal.fluid_ml >= 1000
+                                  ? `${(meal.fluid_ml / 1000).toFixed(1)}${lang === 'he' ? 'ל׳' : 'L'}`
+                                  : `${Math.round(meal.fluid_ml)}ml`)
+                              : meal.grams < 0
+                                ? `${Math.abs(meal.grams)} ${lang === 'he' ? 'יח׳' : 'pcs'}`
+                                : `${meal.grams}g`}
                           </p>
                         </div>
                         <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
@@ -414,7 +421,13 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                   {meal.name}
                 </p>
                 <p style={{ fontSize: 11, color: 'var(--text-3)', margin: 0 }}>
-                  {meal.grams < 0 ? `${Math.abs(meal.grams)} ${lang === 'he' ? 'יח׳' : 'pcs'}` : `${meal.grams}g`}
+                  {meal.fluid_ml != null && !meal.fluid_excluded
+                    ? (meal.fluid_ml >= 1000
+                        ? `${(meal.fluid_ml / 1000).toFixed(1)}${lang === 'he' ? 'ל׳' : 'L'}`
+                        : `${Math.round(meal.fluid_ml)}ml`)
+                    : meal.grams < 0
+                      ? `${Math.abs(meal.grams)} ${lang === 'he' ? 'יח׳' : 'pcs'}`
+                      : `${meal.grams}g`}
                 </p>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
@@ -913,6 +926,22 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
         const pct7  = last7.length  ? Math.round(successDays7  / last7.length  * 100) : 0
         const pct30 = last30.length ? Math.round(successDays30 / last30.length * 100) : 0
 
+        // ── Fluid stats ───────────────────────────────────────────
+        const fluidForDate = (date: string): number =>
+          (grouped.get(date)?.meals ?? []).reduce((s, m) => s + (m.fluid_ml ?? 0), 0)
+
+        const fluidDays7    = last7.filter(d  => fluidForDate(d) > 0)
+        const fluidDays30   = last30.filter(d => fluidForDate(d) > 0)
+        const avg7FluidMl   = fluidDays7.length  > 0 ? Math.round(fluidDays7.reduce( (s, d) => s + fluidForDate(d), 0) / fluidDays7.length)  : 0
+        const avg30FluidMl  = fluidDays30.length > 0 ? Math.round(fluidDays30.reduce((s, d) => s + fluidForDate(d), 0) / fluidDays30.length) : 0
+        const goalDays7Fluid  = last7.filter(d  => fluidForDate(d) >= fluidGoalMl).length
+        const goalDays30Fluid = last30.filter(d => fluidForDate(d) >= fluidGoalMl).length
+        const pct7Fluid  = last7.length  > 0 ? Math.round(goalDays7Fluid  / last7.length  * 100) : 0
+        const pct30Fluid = last30.length > 0 ? Math.round(goalDays30Fluid / last30.length * 100) : 0
+        const fmtMl = (ml: number) => ml >= 1000
+          ? `${(ml / 1000).toFixed(1)}${lang === 'he' ? 'ל׳' : 'L'}`
+          : `${ml}ml`
+
         const barH    = 80
 
         const StatCard = ({ label, value, unit, color }: { label: string; value: number; unit: string; color: string }) => (
@@ -999,19 +1028,52 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                   <p style={{ fontSize: 13, margin: 0 }}>{lang === 'he' ? 'אין נתונים בטווח זה' : 'No data in this range'}</p>
                 </div>
               ) : (
-                <div style={{ display: 'flex', gap: 6 }}>
-                  <StatCard label={lang === 'he' ? 'קל׳ ממוצע' : 'Avg cal'} value={avg7Cal} unit={t(lang, 'caloriesUnit')} color="var(--blue-hi)" />
-                  <StatCard label={lang === 'he' ? 'חל׳ ממוצע' : 'Avg prot'} value={avg7Prot} unit={t(lang, 'proteinUnit')} color="var(--green-hi)" />
-                  <div style={{ flex: 1, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: '12px 10px', textAlign: 'center' }}>
-                    <p style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-3)', margin: '0 0 6px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                      {lang === 'he' ? 'עמידה ביעד' : 'On target'}
-                    </p>
-                    <p style={{ fontSize: 22, fontWeight: 800, color: pct7 >= 70 ? 'var(--green-hi)' : pct7 >= 40 ? 'var(--amber)' : 'var(--red)', margin: 0 }}>
-                      {pct7}%
-                    </p>
-                    <p style={{ fontSize: 10, color: 'var(--text-3)', margin: '2px 0 0' }}>{successDays7}/{last7.length} {lang === 'he' ? 'ימים' : 'days'}</p>
+                <>
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <StatCard label={lang === 'he' ? 'קל׳ ממוצע' : 'Avg cal'} value={avg7Cal} unit={t(lang, 'caloriesUnit')} color="var(--blue-hi)" />
+                    <StatCard label={lang === 'he' ? 'חל׳ ממוצע' : 'Avg prot'} value={avg7Prot} unit={t(lang, 'proteinUnit')} color="var(--green-hi)" />
+                    <div style={{ flex: 1, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: '12px 10px', textAlign: 'center' }}>
+                      <p style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-3)', margin: '0 0 6px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                        {lang === 'he' ? 'עמידה ביעד' : 'On target'}
+                      </p>
+                      <p style={{ fontSize: 22, fontWeight: 800, color: pct7 >= 70 ? 'var(--green-hi)' : pct7 >= 40 ? 'var(--amber)' : 'var(--red)', margin: 0 }}>
+                        {pct7}%
+                      </p>
+                      <p style={{ fontSize: 10, color: 'var(--text-3)', margin: '2px 0 0' }}>{successDays7}/{last7.length} {lang === 'he' ? 'ימים' : 'days'}</p>
+                    </div>
                   </div>
-                </div>
+                  {fluidDays7.length > 0 && (
+                    <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
+                      <div style={{ flex: 1, background: 'var(--bg-card)', border: '1px solid var(--cyan)', borderRadius: 12, padding: '12px 10px', textAlign: 'center' }}>
+                        <p style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-3)', margin: '0 0 6px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                          {lang === 'he' ? '💧 נוזלים ממוצע' : '💧 Avg fluid'}
+                        </p>
+                        <p style={{ fontSize: 0, margin: 0 }}>
+                          <span style={{ fontSize: 22, fontWeight: 800, color: 'var(--cyan-hi)' }}>
+                            {avg7FluidMl >= 1000 ? (avg7FluidMl / 1000).toFixed(1) : avg7FluidMl}
+                          </span>
+                          <span style={{ fontSize: 10, color: 'var(--text-3)', marginInlineStart: 3 }}>
+                            {avg7FluidMl >= 1000 ? (lang === 'he' ? 'ל׳' : 'L') : 'ml'}
+                          </span>
+                        </p>
+                        <p style={{ fontSize: 10, color: 'var(--text-3)', margin: '2px 0 0' }}>
+                          {lang === 'he' ? `${fluidDays7.length} ימים עם נוזלים` : `${fluidDays7.length} days logged`}
+                        </p>
+                      </div>
+                      <div style={{ flex: 1, background: 'var(--bg-card)', border: '1px solid var(--cyan)', borderRadius: 12, padding: '12px 10px', textAlign: 'center' }}>
+                        <p style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-3)', margin: '0 0 6px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                          {lang === 'he' ? '💧 יעד נוזלים' : '💧 Fluid goal'}
+                        </p>
+                        <p style={{ fontSize: 22, fontWeight: 800, color: pct7Fluid >= 70 ? 'var(--cyan-hi)' : pct7Fluid >= 40 ? 'var(--amber)' : 'var(--red)', margin: 0 }}>
+                          {pct7Fluid}%
+                        </p>
+                        <p style={{ fontSize: 10, color: 'var(--text-3)', margin: '2px 0 0' }}>
+                          {goalDays7Fluid}/{last7.length} {lang === 'he' ? 'ימים' : 'days'} · {lang === 'he' ? 'יעד' : 'goal'} {fmtMl(fluidGoalMl)}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
             </div>
 
@@ -1129,19 +1191,52 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                   <p style={{ fontSize: 13, margin: 0 }}>{lang === 'he' ? 'אין נתונים בטווח זה' : 'No data in this range'}</p>
                 </div>
               ) : (
-                <div style={{ display: 'flex', gap: 6 }}>
-                  <StatCard label={lang === 'he' ? 'קל׳ ממוצע' : 'Avg cal'} value={avg30Cal} unit={t(lang, 'caloriesUnit')} color="var(--blue-hi)" />
-                  <StatCard label={lang === 'he' ? 'חל׳ ממוצע' : 'Avg prot'} value={avg30Prot} unit={t(lang, 'proteinUnit')} color="var(--green-hi)" />
-                  <div style={{ flex: 1, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: '12px 10px', textAlign: 'center' }}>
-                    <p style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-3)', margin: '0 0 6px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                      {lang === 'he' ? 'עמידה ביעד' : 'On target'}
-                    </p>
-                    <p style={{ fontSize: 22, fontWeight: 800, color: pct30 >= 70 ? 'var(--green-hi)' : pct30 >= 40 ? 'var(--amber)' : 'var(--red)', margin: 0 }}>
-                      {pct30}%
-                    </p>
-                    <p style={{ fontSize: 10, color: 'var(--text-3)', margin: '2px 0 0' }}>{successDays30}/{last30.length} {lang === 'he' ? 'ימים' : 'days'}</p>
+                <>
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <StatCard label={lang === 'he' ? 'קל׳ ממוצע' : 'Avg cal'} value={avg30Cal} unit={t(lang, 'caloriesUnit')} color="var(--blue-hi)" />
+                    <StatCard label={lang === 'he' ? 'חל׳ ממוצע' : 'Avg prot'} value={avg30Prot} unit={t(lang, 'proteinUnit')} color="var(--green-hi)" />
+                    <div style={{ flex: 1, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: '12px 10px', textAlign: 'center' }}>
+                      <p style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-3)', margin: '0 0 6px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                        {lang === 'he' ? 'עמידה ביעד' : 'On target'}
+                      </p>
+                      <p style={{ fontSize: 22, fontWeight: 800, color: pct30 >= 70 ? 'var(--green-hi)' : pct30 >= 40 ? 'var(--amber)' : 'var(--red)', margin: 0 }}>
+                        {pct30}%
+                      </p>
+                      <p style={{ fontSize: 10, color: 'var(--text-3)', margin: '2px 0 0' }}>{successDays30}/{last30.length} {lang === 'he' ? 'ימים' : 'days'}</p>
+                    </div>
                   </div>
-                </div>
+                  {fluidDays30.length > 0 && (
+                    <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
+                      <div style={{ flex: 1, background: 'var(--bg-card)', border: '1px solid var(--cyan)', borderRadius: 12, padding: '12px 10px', textAlign: 'center' }}>
+                        <p style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-3)', margin: '0 0 6px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                          {lang === 'he' ? '💧 נוזלים ממוצע' : '💧 Avg fluid'}
+                        </p>
+                        <p style={{ fontSize: 0, margin: 0 }}>
+                          <span style={{ fontSize: 22, fontWeight: 800, color: 'var(--cyan-hi)' }}>
+                            {avg30FluidMl >= 1000 ? (avg30FluidMl / 1000).toFixed(1) : avg30FluidMl}
+                          </span>
+                          <span style={{ fontSize: 10, color: 'var(--text-3)', marginInlineStart: 3 }}>
+                            {avg30FluidMl >= 1000 ? (lang === 'he' ? 'ל׳' : 'L') : 'ml'}
+                          </span>
+                        </p>
+                        <p style={{ fontSize: 10, color: 'var(--text-3)', margin: '2px 0 0' }}>
+                          {lang === 'he' ? `${fluidDays30.length} ימים עם נוזלים` : `${fluidDays30.length} days logged`}
+                        </p>
+                      </div>
+                      <div style={{ flex: 1, background: 'var(--bg-card)', border: '1px solid var(--cyan)', borderRadius: 12, padding: '12px 10px', textAlign: 'center' }}>
+                        <p style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-3)', margin: '0 0 6px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                          {lang === 'he' ? '💧 יעד נוזלים' : '💧 Fluid goal'}
+                        </p>
+                        <p style={{ fontSize: 22, fontWeight: 800, color: pct30Fluid >= 70 ? 'var(--cyan-hi)' : pct30Fluid >= 40 ? 'var(--amber)' : 'var(--red)', margin: 0 }}>
+                          {pct30Fluid}%
+                        </p>
+                        <p style={{ fontSize: 10, color: 'var(--text-3)', margin: '2px 0 0' }}>
+                          {goalDays30Fluid}/{last30.length} {lang === 'he' ? 'ימים' : 'days'} · {lang === 'he' ? 'יעד' : 'goal'} {fmtMl(fluidGoalMl)}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
             </div>
 

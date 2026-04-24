@@ -3,7 +3,7 @@ import { memo } from 'react'
 interface DonutProgressProps {
   value:        number
   goal:         number
-  type:         'calories' | 'protein'
+  type:         'calories' | 'protein' | 'fluid'
   size?:        number
   strokeWidth?: number
 }
@@ -39,8 +39,7 @@ export const DonutProgress = memo(function DonutProgress({ value, goal, type, si
       fillColor = 'var(--green-soft)'
       glowColor = 'rgba(110,231,183,0.25)'
     }
-  } else {
-    // protein
+  } else if (type === 'protein') {
     if (realPct >= 100) {
       fillColor = 'var(--green-hi)'
       glowColor = 'rgba(16,185,129,0.35)'
@@ -51,12 +50,21 @@ export const DonutProgress = memo(function DonutProgress({ value, goal, type, si
       fillColor = 'var(--red)'
       glowColor = 'rgba(244,63,94,0.35)'
     }
+  } else {
+    // fluid
+    if (realPct >= 100) {
+      fillColor = 'var(--green-hi)'
+      glowColor = 'rgba(16,185,129,0.35)'
+    } else {
+      fillColor = 'var(--blue)'
+      glowColor = 'rgba(59,130,246,0.30)'
+    }
   }
 
   return (
     <div
       role="img"
-      aria-label={`${type === 'calories' ? 'Calories' : 'Protein'}: ${realPct}% of goal`}
+      aria-label={`${type === 'calories' ? 'Calories' : type === 'protein' ? 'Protein' : 'Fluid'}: ${realPct}% of goal`}
       style={{ position: 'relative', width: size, height: size, flexShrink: 0 }}
     >
       <svg

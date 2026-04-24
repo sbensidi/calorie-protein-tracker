@@ -143,9 +143,13 @@ export function MealCard({ meal, lang, weightUnit = 'g', showCheckbox, selected,
           )}
         </p>
         <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-2)', margin: '2px 0 0' }}>
-          {meal.grams < 0
-            ? `${Math.abs(meal.grams)} ${lang === 'he' ? 'יח׳' : 'pcs'}`
-            : formatWeight(meal.grams, weightUnit)}
+          {meal.fluid_ml != null && !meal.fluid_excluded
+            ? (meal.fluid_ml >= 1000
+                ? `${(meal.fluid_ml / 1000).toFixed(1)}${lang === 'he' ? 'ל׳' : 'L'}`
+                : `${Math.round(meal.fluid_ml)}ml`)
+            : meal.grams < 0
+              ? `${Math.abs(meal.grams)} ${lang === 'he' ? 'יח׳' : 'pcs'}`
+              : formatWeight(meal.grams, weightUnit)}
         </p>
       </div>
 

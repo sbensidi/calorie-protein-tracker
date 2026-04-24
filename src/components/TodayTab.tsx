@@ -75,9 +75,10 @@ export function TodayTab({
   getSuggestions, searchLibrary, defaultWeightUnit = 'g', defaultVolumeUnit = 'ml',
   onAddMeal, onAddMealWithId, onEditMeal, onDeleteMeal, onDuplicateMeal, onUpsertHistory,
   composedEntries, composedGroups, onUpsertGroup, onRemoveGroup, showToast,
-  fluidGoalMl: _fluidGoalMl = 2500, fluidThresholdMl = 100, fluidZeroCalOnly = true,
+  fluidGoalMl = 2500, fluidThresholdMl = 100, fluidZeroCalOnly = true,
 }: TodayTabProps) {
-  const todayMeals = useMemo(() => meals.filter(m => m.date === today()), [meals])
+  const todayMeals    = useMemo(() => meals.filter(m => m.date === today()), [meals])
+  const fluidTodayMl  = useMemo(() => todayMeals.reduce((s, m) => s + (m.fluid_ml ?? 0), 0), [todayMeals])
 
 
   // ── Pending deletes (undo support) — declared before mealsByType ────────────
@@ -323,7 +324,13 @@ export function TodayTab({
   // ── Render: summary card ─────────────────────────────────────
   const summaryCard = (
     <div style={{ marginBottom: 20 }}>
-      <DailySummary meals={todayMeals} date={today()} goalCalories={goalCalories} goalProtein={goalProtein} lang={lang} />
+      <DailySummary
+        meals={todayMeals} date={today()}
+        goalCalories={goalCalories} goalProtein={goalProtein}
+        lang={lang}
+        fluidGoalMl={fluidGoalMl}
+        fluidTodayMl={fluidTodayMl}
+      />
     </div>
   )
 

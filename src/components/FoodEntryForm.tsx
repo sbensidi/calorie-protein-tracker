@@ -197,10 +197,16 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
     setDropdownOpen(false)
     try {
       const result = await calculateNutrition(foodName, numericAmount, history, amountMode)
-      setNutrition(result)
-      setEditCalories(result.calories || '')
-      setEditProtein(result.protein   || '')
-      if (result.calories === 0 && result.protein === 0) setAiError('notFound')
+      if (result === null) {
+        setAiError('notFound')
+        setNutrition({ calories: 0, protein: 0 })
+        setEditCalories('')
+        setEditProtein('')
+      } else {
+        setNutrition(result)
+        setEditCalories(result.calories)
+        setEditProtein(result.protein)
+      }
     } catch {
       setAiError('network')
       setNutrition({ calories: 0, protein: 0 })
@@ -940,7 +946,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
                 onClick={() => setFluidExcluded(v => !v)}
                 style={{
                   width: 34, height: 20, borderRadius: 99, border: 'none', cursor: 'pointer',
-                  background: fluidExcluded ? 'rgba(107,127,150,0.25)' : 'var(--cyan)',
+                  background: fluidExcluded ? 'rgba(107,127,150,0.25)' : 'var(--blue)',
                   position: 'relative', flexShrink: 0, transition: 'background .2s',
                 }}
               >
