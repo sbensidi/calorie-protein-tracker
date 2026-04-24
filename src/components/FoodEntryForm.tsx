@@ -49,9 +49,12 @@ interface FoodEntryFormProps {
   defaultMealType?: MealType
   composedEntries?: ComposedEntry[]
   onAddComposed?: (composedId: string) => void
+  fluidGoalMl?: number
+  fluidThresholdMl?: number
+  fluidZeroCalOnly?: boolean
 }
 
-export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, defaultWeightUnit = 'g', defaultVolumeUnit: _defaultVolumeUnit = 'ml', onAdd, onUpsertHistory, defaultMealType, composedEntries, onAddComposed }: FoodEntryFormProps) {
+export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, defaultWeightUnit = 'g', defaultVolumeUnit: _defaultVolumeUnit = 'ml', onAdd, onUpsertHistory, defaultMealType, composedEntries, onAddComposed, fluidThresholdMl = 100, fluidZeroCalOnly = true }: FoodEntryFormProps) {
   const [mode, setMode]               = useState<EntryMode>(
     () => (localStorage.getItem('entry-mode') as EntryMode) ?? 'scan'
   )
@@ -93,6 +96,8 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
   const [historyModalOpen, setHistoryModalOpen] = useState(false)
   useLockBodyScroll(historyModalOpen)
   const [historySearch,    setHistorySearch]    = useState('')
+
+  const [fluidExcluded, setFluidExcluded] = useState(false)
 
   const isPcs        = entryUnit === 'pcs'
   const amountMode: 'g' | 'unit' = isPcs ? 'unit' : 'g'
@@ -216,6 +221,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
     setDropdownOpen(false)
     setSuggestions([])
     setEntryUnit(defaultWeightUnit)
+    setFluidExcluded(false)
     libraryDensityRef.current = null
   }
 
@@ -236,13 +242,15 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
     const calories = Math.round(scanProduct.caloriesPer100g * grams / 100)
     const protein  = Math.round(scanProduct.proteinPer100g  * grams / 100 * 10) / 10
     onAdd({
-      date:        today(),
-      meal_type:   scanMealType,
-      name:        scanProduct.name,
+      date:           today(),
+      meal_type:      scanMealType,
+      name:           scanProduct.name,
       grams,
       calories,
       protein,
-      time_logged: currentTime(),
+      time_logged:    currentTime(),
+      fluid_ml:       null,
+      fluid_excluded: false,
     })
     onUpsertHistory({ name: scanProduct.name, grams, calories, protein })
     // Reset scan state
@@ -287,16 +295,24 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
     ? `${foodName} ×${qty % 1 === 0 ? qty : qty.toFixed(1)}`
     : foodName
 
+  // Fluid detection: volume unit + amount > threshold + (if zeroCalOnly: cal = 0)
+  const isVolumeUnit  = entryUnit !== 'pcs' && entryUnit !== 'g' && entryUnit !== 'oz'
+  const detectedFluidMl = isVolumeUnit ? toBase(numericAmount, entryUnit as UnitId) * qty : null
+  const calZeroOk     = !fluidZeroCalOnly || numCalories === 0
+  const isFluid       = detectedFluidMl !== null && detectedFluidMl > fluidThresholdMl && calZeroOk
+
   const handleAdd = () => {
     if (!foodName.trim() || nutrition === null) return
     onAdd({
-      date:        today(),
-      meal_type:   mealType,
-      name:        effectiveName,
-      grams:       storedGrams,
-      calories:    effectiveCalories,
-      protein:     effectiveProtein,
-      time_logged: currentTime(),
+      date:           today(),
+      meal_type:      mealType,
+      name:           effectiveName,
+      grams:          storedGrams,
+      calories:       effectiveCalories,
+      protein:        effectiveProtein,
+      time_logged:    currentTime(),
+      fluid_ml:       isFluid && !fluidExcluded ? detectedFluidMl : null,
+      fluid_excluded: false,
     })
     const historyGrams = isPcs ? -numericAmount : numericAmount
     if (historyGrams !== 0) {
@@ -313,6 +329,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
     setEditCalories('')
     setEditProtein('')
     setEntryUnit(defaultWeightUnit)
+    setFluidExcluded(false)
     libraryDensityRef.current = null
   }
 
@@ -897,6 +914,52 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
               </div>
             </div>
           </div>
+
+          {/* Fluid notice — shown when auto-detected */}
+          {isFluid && (
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 8,
+              background: fluidExcluded ? 'rgba(107,127,150,0.06)' : 'rgba(6,182,212,0.07)',
+              border: `1px solid ${fluidExcluded ? 'rgba(107,127,150,0.12)' : 'rgba(6,182,212,0.18)'}`,
+              borderRadius: 9, padding: '7px 11px',
+              transition: 'background .2s, border-color .2s',
+            }}>
+              <span style={{ fontSize: 14, flexShrink: 0 }}>💧</span>
+              <span style={{
+                fontSize: 12, fontWeight: 600, flex: 1,
+                color: fluidExcluded ? 'var(--text-3)' : 'var(--cyan-hi)',
+                textDecoration: fluidExcluded ? 'line-through' : 'none',
+                opacity: fluidExcluded ? 0.7 : 1,
+              }}>
+                {lang === 'he'
+                  ? `${Math.round(detectedFluidMl!)}מ״ל יתווספו ליעד הנוזלים`
+                  : `${Math.round(detectedFluidMl!)}ml will count toward fluid goal`}
+              </span>
+              {/* Toggle */}
+              <button
+                onClick={() => setFluidExcluded(v => !v)}
+                style={{
+                  width: 34, height: 20, borderRadius: 99, border: 'none', cursor: 'pointer',
+                  background: fluidExcluded ? 'rgba(107,127,150,0.25)' : 'var(--cyan)',
+                  position: 'relative', flexShrink: 0, transition: 'background .2s',
+                }}
+              >
+                <span style={{
+                  position: 'absolute', width: 14, height: 14, borderRadius: '50%', background: '#fff',
+                  top: 3, transition: 'right .2s',
+                  right: fluidExcluded ? 17 : 3,
+                }} />
+              </button>
+            </div>
+          )}
+
+          {/* Quiet hint when volume but cal > 0 */}
+          {isVolumeUnit && !isFluid && detectedFluidMl !== null && detectedFluidMl > fluidThresholdMl && (
+            <p style={{ fontSize: 11, color: 'var(--text-3)', margin: 0, display: 'flex', alignItems: 'center', gap: 5 }}>
+              <span>💧</span>
+              {lang === 'he' ? 'לא יספר לנוזלים — קלוריות > 0' : 'Won\'t count as fluid — calories > 0'}
+            </p>
+          )}
 
           {/* Primary + secondary action buttons */}
           <div style={{ display: 'flex', gap: 8 }}>

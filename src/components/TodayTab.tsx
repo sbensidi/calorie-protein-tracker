@@ -65,6 +65,9 @@ interface TodayTabProps {
   onUpsertGroup: (group: ComposedGroup) => void
   onRemoveGroup: (id: string) => void
   showToast: (message: string, type: 'success' | 'error' | 'info', options?: { action?: { label: string; onClick: () => void }; durationMs?: number }) => void
+  fluidGoalMl?: number
+  fluidThresholdMl?: number
+  fluidZeroCalOnly?: boolean
 }
 
 export function TodayTab({
@@ -72,8 +75,10 @@ export function TodayTab({
   getSuggestions, searchLibrary, defaultWeightUnit = 'g', defaultVolumeUnit = 'ml',
   onAddMeal, onAddMealWithId, onEditMeal, onDeleteMeal, onDuplicateMeal, onUpsertHistory,
   composedEntries, composedGroups, onUpsertGroup, onRemoveGroup, showToast,
+  fluidGoalMl: _fluidGoalMl = 2500, fluidThresholdMl = 100, fluidZeroCalOnly = true,
 }: TodayTabProps) {
   const todayMeals = useMemo(() => meals.filter(m => m.date === today()), [meals])
+
 
   // ── Pending deletes (undo support) — declared before mealsByType ────────────
   const [pendingDeleteIds, setPendingDeleteIds] = useState<Set<string>>(new Set())
@@ -190,13 +195,15 @@ export function TodayTab({
       const src = meals.find(m => m.id === mealId)
       if (!src) continue
       const newId = await onAddMealWithId({
-        date:        today(),
-        meal_type:   src.meal_type,
-        name:        src.name,
-        grams:       src.grams,
-        calories:    src.calories,
-        protein:     src.protein,
-        time_logged: currentTime(),
+        date:           today(),
+        meal_type:      src.meal_type,
+        name:           src.name,
+        grams:          src.grams,
+        calories:       src.calories,
+        protein:        src.protein,
+        time_logged:    currentTime(),
+        fluid_ml:       src.fluid_ml,
+        fluid_excluded: src.fluid_excluded,
       })
       if (newId) newMealIds.push(newId)
     }
@@ -674,6 +681,8 @@ export function TodayTab({
               defaultMealType={addIngredientModal.mealType}
               onAdd={handleAddIngredientSubmit}
               onUpsertHistory={onUpsertHistory}
+              fluidThresholdMl={fluidThresholdMl}
+              fluidZeroCalOnly={fluidZeroCalOnly}
             />
           </div>
         </div>
@@ -761,6 +770,8 @@ export function TodayTab({
               onUpsertHistory={onUpsertHistory}
               composedEntries={composedEntries}
               onAddComposed={id => { handleAddComposed(id); setEntryOpen(false) }}
+              fluidThresholdMl={fluidThresholdMl}
+              fluidZeroCalOnly={fluidZeroCalOnly}
             />
           </div>
         </div>

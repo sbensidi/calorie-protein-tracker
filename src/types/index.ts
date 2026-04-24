@@ -11,6 +11,8 @@ export interface Meal {
   protein: number
   time_logged: string
   created_at: string
+  fluid_ml:       number | null
+  fluid_excluded: boolean
 }
 
 export interface Goal {

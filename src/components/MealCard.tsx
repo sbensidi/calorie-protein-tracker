@@ -138,6 +138,9 @@ export function MealCard({ meal, lang, weightUnit = 'g', showCheckbox, selected,
       <div style={{ minWidth: 0, flexShrink: 1 }}>
         <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {meal.name}
+          {meal.fluid_ml != null && !meal.fluid_excluded && (
+            <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--cyan-hi)', opacity: 0.8 }}> (💧)</span>
+          )}
         </p>
         <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-2)', margin: '2px 0 0' }}>
           {meal.grams < 0

@@ -662,6 +662,82 @@ function ProfileScreen({ lang, profile, onSave, onApplyGoals, onBack, onNavigate
         </div>
       </div>
 
+      {/* ── Fluid goal section ─────────────────────────────── */}
+      <div style={{ height: 1, background: 'var(--border)', margin: '4px 0' }} />
+      <label style={labelStyle}>💧 {lang === 'he' ? 'מעקב נוזלים' : 'Fluid tracking'}</label>
+
+      {/* fluid goal */}
+      <div>
+        <label style={{ ...labelStyle, fontSize: 11 }}>{lang === 'he' ? 'יעד נוזלים יומי' : 'Daily fluid goal'}</label>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <input
+            type="number"
+            inputMode="numeric"
+            className="inp"
+            style={{ flex: 1, textAlign: 'center' }}
+            value={draft.fluidGoalMl}
+            onChange={e => set('fluidGoalMl', Number(e.target.value) || 2500)}
+          />
+          <span style={{ fontSize: 13, color: 'var(--text-3)', whiteSpace: 'nowrap' }}>
+            {lang === 'he' ? 'מ״ל' : 'ml'}
+          </span>
+          <button
+            onClick={() => set('fluidGoalMl', Math.round(draft.weight * 35 / 100) * 100)}
+            style={{
+              background: 'rgba(6,182,212,0.10)', border: '1px solid rgba(6,182,212,0.2)',
+              borderRadius: 8, color: 'var(--cyan-hi)', fontFamily: 'inherit',
+              fontSize: 12, fontWeight: 700, padding: '7px 10px', cursor: 'pointer', whiteSpace: 'nowrap',
+            }}
+          >
+            {lang === 'he' ? '✦ חשב' : '✦ Calc'}
+          </button>
+        </div>
+        <p style={{ fontSize: 10, color: 'var(--text-3)', margin: '4px 0 0' }}>
+          {lang === 'he'
+            ? `35מ״ל × ${draft.weight}ק״ג = ${Math.round(draft.weight * 35)}מ״ל`
+            : `35ml × ${draft.weight}kg = ${Math.round(draft.weight * 35)}ml`}
+        </p>
+      </div>
+
+      {/* fluid threshold */}
+      <div>
+        <label style={{ ...labelStyle, fontSize: 11 }}>{lang === 'he' ? 'סף זיהוי (מ״ל)' : 'Detection threshold (ml)'}</label>
+        <input
+          type="number"
+          inputMode="numeric"
+          className="inp"
+          style={{ textAlign: 'center', width: 100 }}
+          value={draft.fluidThresholdMl}
+          onChange={e => set('fluidThresholdMl', Number(e.target.value) || 100)}
+        />
+      </div>
+
+      {/* zero-cal only toggle */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+        <div>
+          <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', margin: 0 }}>
+            {lang === 'he' ? 'ספור רק 0 קלוריות כנוזל' : 'Count only 0-calorie entries as fluid'}
+          </p>
+          <p style={{ fontSize: 11, color: 'var(--text-3)', margin: '2px 0 0' }}>
+            {lang === 'he' ? 'מים, תה, קפה שחור בלבד' : 'Water, tea, black coffee only'}
+          </p>
+        </div>
+        <button
+          onClick={() => set('fluidZeroCalOnly', !draft.fluidZeroCalOnly)}
+          style={{
+            width: 44, height: 26, borderRadius: 99, border: 'none', cursor: 'pointer', flexShrink: 0,
+            background: draft.fluidZeroCalOnly ? 'var(--cyan)' : 'rgba(107,127,150,0.25)',
+            position: 'relative', transition: 'background .2s',
+          }}
+        >
+          <span style={{
+            position: 'absolute', width: 18, height: 18, borderRadius: '50%', background: '#fff',
+            top: 4, transition: 'right .2s',
+            right: draft.fluidZeroCalOnly ? 4 : 22,
+          }} />
+        </button>
+      </div>
+
       {/* Save Profile */}
       <button
         onClick={handleSave}

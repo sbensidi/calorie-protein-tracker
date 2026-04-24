@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>סקיצה — Fluid Badge</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #090d14;
+    color: #dde4f0;
+    min-height: 100vh;
+    padding: 32px 24px 80px;
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+    align-items: center;
+  }
+
+  :root {
+    --bg-card: #0f1521;
+    --border: rgba(255,255,255,0.07);
+    --border-hi: rgba(255,255,255,0.12);
+    --text: #dde4f0;
+    --text-2: #94a8be;
+    --text-3: #6b7f96;
+    --blue-hi: #60a5fa;
+    --green-hi: #34d399;
+    --cyan: #06b6d4;
+    --cyan-hi: #22d3ee;
+  }
+
+  .section-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #6b7f96;
+    text-align: center;
+    margin-bottom: -24px;
+  }
+
+  /* ── Meal row ── */
+  .meal-row {
+    width: 320px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 11px 13px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: border-color .2s, background .2s;
+  }
+  .meal-row.fluid { border-color: rgba(6,182,212,0.22); background: rgba(6,182,212,0.03); }
+  .meal-row.excluded { border-color: var(--border); opacity: 0.72; }
+
+  .meal-info { min-width: 0; flex: 1; }
+  .meal-name { font-size: 14px; font-weight: 600; color: var(--text); }
+  .meal-amount { font-size: 12px; color: var(--text-2); margin-top: 2px; }
+
+  .meal-nums {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 3px;
+    flex-shrink: 0;
+  }
+  .cal { font-size: 15px; font-weight: 700; color: var(--blue-hi); }
+  .prot { font-size: 15px; font-weight: 700; color: var(--green-hi); }
+  .unit { font-size: 10px; color: var(--text-3); }
+
+  .edit-btn {
+    width: 28px; height: 28px;
+    border-radius: 7px; border: none;
+    background: transparent; cursor: pointer;
+    color: var(--text-3); font-size: 14px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+
+  /* ══ THE BADGE ══ */
+  .fluid-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    border-radius: 6px;
+    padding: 3px 7px 3px 6px;
+    font-size: 10px;
+    font-weight: 700;
+    cursor: pointer;
+    user-select: none;
+    transition: background .15s, border-color .15s, color .15s, opacity .15s;
+    border: 1px solid transparent;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  /* State A — active, counts toward goal */
+  .fluid-badge.active {
+    background: rgba(6,182,212,0.12);
+    border-color: rgba(6,182,212,0.25);
+    color: var(--cyan-hi);
+  }
+  .fluid-badge.active:hover {
+    background: rgba(6,182,212,0.2);
+    border-color: rgba(6,182,212,0.4);
+  }
+  .fluid-badge.active:active { transform: scale(0.94); }
+
+  /* State B — excluded by user */
+  .fluid-badge.excluded {
+    background: rgba(107,127,150,0.08);
+    border-color: rgba(107,127,150,0.15);
+    color: var(--text-3);
+  }
+  .fluid-badge.excluded .badge-amount {
+    text-decoration: line-through;
+    opacity: 0.6;
+  }
+  .fluid-badge.excluded:hover {
+    background: rgba(6,182,212,0.08);
+    border-color: rgba(6,182,212,0.2);
+    color: var(--cyan-hi);
+  }
+  .fluid-badge.excluded:active { transform: scale(0.94); }
+
+  .badge-drop { font-size: 11px; line-height: 1; }
+  .badge-amount { font-variant-numeric: tabular-nums; }
+  .badge-x {
+    font-size: 9px;
+    opacity: 0.6;
+    margin-right: -1px;
+  }
+  .badge-undo { font-size: 10px; }
+
+  /* ── States diagram ── */
+  .states-row {
+    display: flex;
+    gap: 32px;
+    align-items: flex-start;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .state-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .state-name {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-3);
+  }
+
+  .arrow {
+    font-size: 20px;
+    color: var(--text-3);
+    align-self: center;
+    margin-top: 8px;
+  }
+
+  .tooltip {
+    font-size: 10px;
+    color: var(--text-3);
+    line-height: 1.5;
+    text-align: center;
+    max-width: 110px;
+  }
+
+  /* ── Full card demos ── */
+  .cards-col {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .annotation {
+    font-size: 11px;
+    color: var(--text-3);
+    line-height: 1.6;
+    border-right: 2px solid rgba(6,182,212,0.3);
+    padding-right: 10px;
+    max-width: 300px;
+  }
+</style>
+</head>
+<body>
+
+<!-- ══ Section 1: Badge states ══ -->
+<div class="section-label">מצבי ה-badge — לחיצה מחליפה בין המצבים</div>
+
+<div class="states-row">
+
+  <!-- State A: Active -->
+  <div class="state-box">
+    <div class="state-name">מזוהה ונספר</div>
+    <button class="fluid-badge active" onclick="toggle(this)">
+      <span class="badge-drop">💧</span>
+      <span class="badge-amount">300מ״ל</span>
+      <span class="badge-x">✕</span>
+    </button>
+    <div class="tooltip">לחיצה → מעבר למצב "הוחרג"</div>
+  </div>
+
+  <div class="arrow">⇄</div>
+
+  <!-- State B: Excluded -->
+  <div class="state-box">
+    <div class="state-name">הוחרג ידנית</div>
+    <button class="fluid-badge excluded" onclick="toggle(this)">
+      <span class="badge-drop">💧</span>
+      <span class="badge-amount">300מ״ל</span>
+      <span class="badge-undo">↩</span>
+    </button>
+    <div class="tooltip">לחיצה → חזרה למצב "נספר"</div>
+  </div>
+
+</div>
+
+<!-- ══ Section 2: Live interactive demo ══ -->
+<div class="section-label">דמו אינטראקטיבי — לחץ על ה-badge</div>
+
+<div class="cards-col">
+
+  <!-- Card 1: water, active -->
+  <div class="meal-row fluid" id="card1">
+    <div class="meal-info">
+      <div class="meal-name">מים</div>
+      <div class="meal-amount">500 מ״ל</div>
+    </div>
+    <div class="meal-nums">
+      <div><span class="cal">0</span> <span class="unit">קק״ל</span></div>
+    </div>
+    <button class="fluid-badge active" onclick="toggleCard('card1', this, '500מ״ל')">
+      <span class="badge-drop">💧</span>
+      <span class="badge-amount">500מ״ל</span>
+      <span class="badge-x">✕</span>
+    </button>
+    <button class="edit-btn">✎</button>
+  </div>
+
+  <!-- Card 2: coffee, active -->
+  <div class="meal-row fluid" id="card2">
+    <div class="meal-info">
+      <div class="meal-name">קפה עם חלב</div>
+      <div class="meal-amount">300 מ״ל</div>
+    </div>
+    <div class="meal-nums">
+      <div><span class="cal">120</span> <span class="unit">קק״ל</span></div>
+      <div><span class="prot">6</span> <span class="unit">g</span></div>
+    </div>
+    <button class="fluid-badge active" onclick="toggleCard('card2', this, '300מ״ל')">
+      <span class="badge-drop">💧</span>
+      <span class="badge-amount">300מ״ל</span>
+      <span class="badge-x">✕</span>
+    </button>
+    <button class="edit-btn">✎</button>
+  </div>
+
+  <!-- Card 3: soup, pre-excluded -->
+  <div class="meal-row excluded" id="card3">
+    <div class="meal-info">
+      <div class="meal-name">מרק עוף</div>
+      <div class="meal-amount">250 מ״ל</div>
+    </div>
+    <div class="meal-nums">
+      <div><span class="cal">85</span> <span class="unit">קק״ל</span></div>
+      <div><span class="prot">8</span> <span class="unit">g</span></div>
+    </div>
+    <button class="fluid-badge excluded" onclick="toggleCard('card3', this, '250מ״ל')">
+      <span class="badge-drop">💧</span>
+      <span class="badge-amount">250מ״ל</span>
+      <span class="badge-undo">↩</span>
+    </button>
+    <button class="edit-btn">✎</button>
+  </div>
+
+  <!-- Card 4: regular food — no badge -->
+  <div class="meal-row" id="card4">
+    <div class="meal-info">
+      <div class="meal-name">חזה עוף</div>
+      <div class="meal-amount">150g</div>
+    </div>
+    <div class="meal-nums">
+      <div><span class="cal">165</span> <span class="unit">קק״ל</span></div>
+      <div><span class="prot">31</span> <span class="unit">g</span></div>
+    </div>
+    <button class="edit-btn">✎</button>
+  </div>
+
+</div>
+
+<div class="annotation">
+  <strong style="color:var(--text-2)">Active (ציאן):</strong> נספר. לחיצה → מוחרג.<br>
+  <strong style="color:var(--text-2)">Excluded (אפור):</strong> מוחרג. לחיצה → נספר.<br>
+  הסמלים מחליפים: ✕ ↔ ↩ מבהירים את הכוונה.<br>
+  ארוחה רגילה (גרם/oz) — אין badge כלל.
+</div>
+
+<script>
+  function toggle(btn) {
+    const isActive = btn.classList.contains('active')
+    btn.classList.toggle('active', !isActive)
+    btn.classList.toggle('excluded', isActive)
+    const amountEl = btn.querySelector('.badge-amount')
+    const iconEl   = btn.querySelector('.badge-x, .badge-undo')
+    if (!isActive) {
+      iconEl.className = 'badge-undo'
+      iconEl.textContent = '↩'
+    } else {
+      iconEl.className = 'badge-x'
+      iconEl.textContent = '✕'
+    }
+  }
+
+  function toggleCard(cardId, btn, amount) {
+    const card = document.getElementById(cardId)
+    const isActive = btn.classList.contains('active')
+    btn.classList.toggle('active',   !isActive)
+    btn.classList.toggle('excluded',  isActive)
+    card.classList.toggle('fluid',    !isActive)
+    card.classList.toggle('excluded',  isActive)
+    const amountEl = btn.querySelector('.badge-amount')
+    const iconEl   = btn.querySelector('.badge-x, .badge-undo')
+    if (!isActive) {
+      iconEl.className = 'badge-undo'
+      iconEl.textContent = '↩'
+    } else {
+      iconEl.className = 'badge-x'
+      iconEl.textContent = '✕'
+    }
+  }
+</script>
+</body>
+</html>

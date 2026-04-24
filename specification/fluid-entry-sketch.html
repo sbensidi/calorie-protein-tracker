@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>סקיצה — הזנת נוזל</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #090d14;
+    color: #dde4f0;
+    min-height: 100vh;
+    padding: 32px 16px 80px;
+    display: flex;
+    gap: 28px;
+    justify-content: center;
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  :root {
+    --bg-card: #0f1521;
+    --bg-card2: #141c2d;
+    --border: rgba(255,255,255,0.07);
+    --text: #dde4f0;
+    --text-2: #94a8be;
+    --text-3: #6b7f96;
+    --blue: #3b82f6;
+    --blue-hi: #60a5fa;
+    --green: #10b981;
+    --green-hi: #34d399;
+    --cyan: #06b6d4;
+    --cyan-hi: #22d3ee;
+    --surface-2: rgba(255,255,255,0.05);
+  }
+
+  .panel {
+    width: 320px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .panel-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #6b7f96;
+    margin-bottom: 2px;
+  }
+
+  /* ── Inputs ── */
+  .inp {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.09);
+    border-radius: 9px;
+    color: var(--text);
+    font-family: inherit;
+    font-size: 14px;
+    padding: 9px 11px;
+    width: 100%;
+    outline: none;
+  }
+  .inp:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(59,130,246,0.12); }
+  .inp.inp-green:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(16,185,129,0.12); }
+
+  select.inp {
+    appearance: none;
+    padding-left: 28px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='%236b7f96'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: left 8px center;
+    cursor: pointer;
+  }
+
+  /* ── Buttons ── */
+  .btn-primary {
+    background: var(--blue);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    padding: 10px;
+    width: 100%;
+    cursor: pointer;
+  }
+  .btn-ghost {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 10px;
+    color: var(--text-2);
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 10px;
+    width: 100%;
+    cursor: pointer;
+  }
+
+  /* ── Entry form card ── */
+  .form-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+  }
+
+  /* ── Fluid notice ── */
+  .fluid-notice {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(6,182,212,0.07);
+    border: 1px solid rgba(6,182,212,0.18);
+    border-radius: 9px;
+    padding: 8px 11px;
+    transition: all .2s;
+  }
+
+  .fluid-notice.opted-out {
+    background: rgba(107,127,150,0.06);
+    border-color: rgba(107,127,150,0.12);
+  }
+
+  .notice-icon { font-size: 14px; flex-shrink: 0; }
+
+  .notice-text {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--cyan-hi);
+    flex: 1;
+    line-height: 1.3;
+  }
+  .fluid-notice.opted-out .notice-text {
+    color: var(--text-3);
+    text-decoration: line-through;
+    opacity: 0.7;
+  }
+
+  /* Toggle switch */
+  .toggle-wrap {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+  }
+
+  .toggle {
+    width: 34px;
+    height: 20px;
+    background: var(--cyan);
+    border-radius: 99px;
+    position: relative;
+    cursor: pointer;
+    transition: background .2s;
+    border: none;
+    flex-shrink: 0;
+  }
+  .toggle.off { background: rgba(107,127,150,0.25); }
+
+  .toggle::after {
+    content: '';
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    background: #fff;
+    border-radius: 50%;
+    top: 3px;
+    right: 3px;
+    transition: right .2s;
+  }
+  .toggle.off::after { right: 17px; }
+
+  /* ── Meal card ── */
+  .meal-row {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 10px 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .meal-row.fluid { border-color: rgba(6,182,212,0.18); background: rgba(6,182,212,0.03); }
+
+  .meal-info { min-width: 0; flex: 1; }
+  .meal-name { font-size: 14px; font-weight: 600; color: var(--text); }
+  .meal-amount { font-size: 12px; color: var(--text-2); margin-top: 2px; }
+
+  .meal-nums {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 3px;
+    flex-shrink: 0;
+  }
+
+  /* Read-only fluid indicator — inline after food name */
+  .fluid-inline {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--cyan-hi);
+    opacity: 0.8;
+    white-space: nowrap;
+  }
+
+  .edit-btn {
+    width: 28px; height: 28px;
+    border-radius: 7px; border: none;
+    background: transparent; cursor: pointer;
+    color: var(--text-3); font-size: 14px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+
+  /* ── Annotation ── */
+  .annotation {
+    font-size: 11px;
+    color: var(--text-3);
+    line-height: 1.6;
+    border-right: 2px solid rgba(6,182,212,0.25);
+    padding-right: 10px;
+  }
+
+  .label-row {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    margin-bottom: -3px;
+  }
+  .inp-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-3);
+  }
+
+  .row-2col { display: flex; gap: 8px; }
+  .row-2col > * { flex: 1; }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════
+     PANEL 1 — טופס הזנה: נוזל מזוהה (ON)
+     ══════════════════════════════════════════ -->
+<div class="panel">
+  <div class="panel-label">1 — טופס הזנה: נוזל מזוהה</div>
+
+  <div class="form-card">
+    <!-- Row 1: name + amount + unit -->
+    <div class="row-2col" style="grid-template-columns: 1fr 72px 90px; display:grid; gap:8px">
+      <input class="inp" value="מים" placeholder="שם המזון" style="grid-column:1" />
+      <input class="inp" value="500" type="number" style="grid-column:2; text-align:center" />
+      <select class="inp" style="grid-column:3; font-size:13px">
+        <option selected>מ״ל</option>
+        <option>כוס</option>
+        <option>כף</option>
+        <option>יח׳</option>
+      </select>
+    </div>
+
+    <!-- Row 2: cal + protein -->
+    <div class="row-2col">
+      <div>
+        <div class="label-row"><span class="inp-label" style="color:var(--blue-hi)">קלוריות</span></div>
+        <input class="inp" value="0" type="number" style="margin-top:4px" />
+      </div>
+      <div>
+        <div class="label-row"><span class="inp-label" style="color:var(--green-hi)">חלבון</span></div>
+        <input class="inp inp-green" value="0" type="number" style="margin-top:4px" />
+      </div>
+    </div>
+
+    <!-- ★ Fluid notice — appears when: volume unit + amount > 100ml + cal = 0 -->
+    <div class="fluid-notice" id="notice1">
+      <span class="notice-icon">💧</span>
+      <span class="notice-text">500מ״ל יתווספו ליעד הנוזלים היומי</span>
+      <div class="toggle-wrap">
+        <button class="toggle" id="toggle1" onclick="toggleNotice('notice1','toggle1')"></button>
+      </div>
+    </div>
+
+    <!-- Row: meal type -->
+    <select class="inp" style="font-size:13px">
+      <option>ארוחת בוקר</option>
+      <option selected>צהריים</option>
+      <option>ערב</option>
+      <option>חטיף</option>
+    </select>
+
+    <div style="display:flex; gap:8px">
+      <button class="btn-primary" style="flex:2">הוסף</button>
+      <button class="btn-ghost" style="flex:1">ביטול</button>
+    </div>
+  </div>
+
+  <div class="annotation">
+    שורת הנוזל מופיעה <strong style="color:var(--text-2)">אוטומטית</strong> כשמתקיימים:<br>
+    יחידת נפח + כמות &gt; 100מ״ל + קלוריות = 0.<br>
+    הטוגל מכבה את הצבירה לפני השמירה.
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════
+     PANEL 2 — טופס הזנה: נוזל עם קלוריות
+     ══════════════════════════════════════════ -->
+<div class="panel">
+  <div class="panel-label">2 — נוזל עם קלוריות (קפה עם חלב)</div>
+
+  <div class="form-card">
+    <div style="display:grid; grid-template-columns: 1fr 72px 90px; gap:8px">
+      <input class="inp" value="קפה עם חלב" placeholder="שם המזון" />
+      <input class="inp" value="300" type="number" style="text-align:center" />
+      <select class="inp" style="font-size:13px">
+        <option selected>מ״ל</option>
+        <option>כוס</option>
+        <option>כף</option>
+        <option>יח׳</option>
+      </select>
+    </div>
+
+    <div class="row-2col">
+      <div>
+        <div class="label-row"><span class="inp-label" style="color:var(--blue-hi)">קלוריות</span></div>
+        <input class="inp" value="120" type="number" style="margin-top:4px" />
+      </div>
+      <div>
+        <div class="label-row"><span class="inp-label" style="color:var(--green-hi)">חלבון</span></div>
+        <input class="inp inp-green" value="6" type="number" style="margin-top:4px" />
+      </div>
+    </div>
+
+    <!-- No fluid notice — cal > 0 so not auto-detected -->
+    <div style="display:flex; align-items:center; gap:6px; padding: 6px 2px">
+      <span style="font-size:11px; color:var(--text-3)">💧 לא יתווסף לנוזלים — קלוריות &gt; 0</span>
+    </div>
+
+    <select class="inp" style="font-size:13px">
+      <option>ארוחת בוקר</option>
+      <option selected>צהריים</option>
+      <option>ערב</option>
+      <option>חטיף</option>
+    </select>
+
+    <div style="display:flex; gap:8px">
+      <button class="btn-primary" style="flex:2">הוסף</button>
+      <button class="btn-ghost" style="flex:1">ביטול</button>
+    </div>
+  </div>
+
+  <div class="annotation">
+    קפה עם חלב = 120 קלוריות → לא נחשב מים.<br>
+    <strong style="color:var(--text-2)">הודעה שקטה</strong> (לא שורת notice) מסבירה למה.<br>
+    קלוריות = 0 הוא הכלל — פשוט ואחיד.
+  </div>
+
+
+  <!-- ══ Meal cards after save ══ -->
+  <div class="panel-label" style="margin-top:16px">3 — כרטיסים אחרי שמירה</div>
+
+  <!-- Water — counted, inline indicator in name -->
+  <div class="meal-row fluid">
+    <div class="meal-info">
+      <div class="meal-name">
+        מים
+        <span class="fluid-inline">&nbsp;(💧)</span>
+      </div>
+      <div class="meal-amount">500 מ״ל</div>
+    </div>
+    <div class="meal-nums">
+      <span style="font-size:15px; font-weight:700; color:var(--blue-hi)">0 <span style="font-size:10px; color:var(--text-3)">קק״ל</span></span>
+    </div>
+    <button class="edit-btn">✎</button>
+  </div>
+
+  <!-- Coffee — no fluid indicator -->
+  <div class="meal-row">
+    <div class="meal-info">
+      <div class="meal-name">קפה עם חלב</div>
+      <div class="meal-amount">300 מ״ל</div>
+    </div>
+    <div class="meal-nums">
+      <span style="font-size:15px; font-weight:700; color:var(--blue-hi)">120 <span style="font-size:10px; color:var(--text-3)">קק״ל</span></span>
+    </div>
+    <button class="edit-btn">✎</button>
+  </div>
+
+  <!-- Soup — opted out at entry, no indicator -->
+  <div class="meal-row">
+    <div class="meal-info">
+      <div class="meal-name">מרק עוף</div>
+      <div class="meal-amount">250 מ״ל</div>
+    </div>
+    <div class="meal-nums">
+      <span style="font-size:15px; font-weight:700; color:var(--blue-hi)">0 <span style="font-size:10px; color:var(--text-3)">קק״ל</span></span>
+    </div>
+    <button class="edit-btn">✎</button>
+  </div>
+
+  <div class="annotation">
+    האינדיקטור (💧) מופיע <strong style="color:var(--text-2)">בסוגריים אחרי השם</strong> — חלק מהשורה, לא אלמנט נפרד.<br>
+    קפה עם חלב — ללא אינדיקטור (קלוריות &gt; 0).<br>
+    מרק שבוטל בהזנה — ללא אינדיקטור.
+  </div>
+</div>
+
+<script>
+  function toggleNotice(noticeId, toggleId) {
+    const notice = document.getElementById(noticeId)
+    const toggle = document.getElementById(toggleId)
+    const isOn = !toggle.classList.contains('off')
+    toggle.classList.toggle('off', isOn)
+    notice.classList.toggle('opted-out', isOn)
+  }
+</script>
+</body>
+</html>

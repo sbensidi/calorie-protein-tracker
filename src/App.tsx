@@ -200,6 +200,9 @@ export default function App() {
             searchLibrary={searchLibrary}
             defaultWeightUnit={profile.weightUnit}
             defaultVolumeUnit={profile.volumeUnit}
+            fluidGoalMl={profile.fluidGoalMl}
+            fluidThresholdMl={profile.fluidThresholdMl}
+            fluidZeroCalOnly={profile.fluidZeroCalOnly}
             onAddMeal={addMeal}
             onAddMealWithId={addMealWithId}
             onEditMeal={updateMeal}

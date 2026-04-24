@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>סקיצה — מעקב נוזלים</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #090d14;
+    color: #dde4f0;
+    min-height: 100vh;
+    padding: 24px 16px 60px;
+    display: flex;
+    gap: 32px;
+    justify-content: center;
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .panel {
+    width: 340px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .panel-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #6b7f96;
+    margin-bottom: 4px;
+  }
+
+  /* ── Design tokens ── */
+  :root {
+    --bg: #090d14;
+    --bg-card: #0f1521;
+    --bg-card2: #141c2d;
+    --border: rgba(255,255,255,0.07);
+    --border-hi: rgba(255,255,255,0.12);
+    --text: #dde4f0;
+    --text-2: #94a8be;
+    --text-3: #6b7f96;
+    --blue: #3b82f6;
+    --blue-hi: #60a5fa;
+    --green: #10b981;
+    --green-hi: #34d399;
+    --cyan: #06b6d4;
+    --cyan-hi: #22d3ee;
+    --cyan-tint: rgba(6,182,212,0.10);
+    --cyan-dash: rgba(6,182,212,0.35);
+    --amber: #f59e0b;
+    --surface-2: rgba(255,255,255,0.05);
+    --surface-3: rgba(255,255,255,0.07);
+  }
+
+  /* ── Card ── */
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 16px;
+  }
+
+  /* ── Donut row ── */
+  .donut-row {
+    display: flex;
+    gap: 10px;
+    align-items: stretch;
+  }
+
+  .donut-cell {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .donut-wrap {
+    position: relative;
+    width: 80px;
+    height: 80px;
+  }
+
+  .donut-wrap svg {
+    transform: rotate(-90deg);
+  }
+
+  .donut-center {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1px;
+  }
+
+  .donut-val {
+    font-size: 17px;
+    font-weight: 800;
+    line-height: 1;
+  }
+
+  .donut-unit {
+    font-size: 9px;
+    font-weight: 600;
+    color: var(--text-3);
+    line-height: 1;
+  }
+
+  .donut-label {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text-3);
+    text-align: center;
+  }
+
+  .donut-sub {
+    font-size: 9px;
+    color: var(--text-3);
+    text-align: center;
+    margin-top: -3px;
+  }
+
+  /* ── Meal card ── */
+  .meal-row {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 10px 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .meal-row.fluid-detected {
+    border-color: rgba(6,182,212,0.2);
+    background: rgba(6,182,212,0.03);
+  }
+
+  .meal-row.fluid-excluded {
+    border-color: var(--border);
+    background: var(--bg-card);
+    opacity: 0.75;
+  }
+
+  .fluid-badge {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    background: rgba(6,182,212,0.12);
+    border: 1px solid rgba(6,182,212,0.2);
+    border-radius: 6px;
+    padding: 2px 6px;
+    font-size: 9px;
+    font-weight: 700;
+    color: var(--cyan-hi);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .fluid-badge.excluded {
+    background: rgba(107,127,150,0.1);
+    border-color: rgba(107,127,150,0.15);
+    color: var(--text-3);
+    text-decoration: line-through;
+  }
+
+  .exclude-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-3);
+    font-size: 11px;
+    padding: 2px 4px;
+    border-radius: 4px;
+    opacity: 0.6;
+  }
+  .exclude-btn:hover { opacity: 1; color: var(--cyan-hi); }
+
+  /* ── Settings section ── */
+  .settings-section {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+
+  .settings-row {
+    display: flex;
+    align-items: center;
+    padding: 13px 16px;
+    gap: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .settings-row:last-child { border-bottom: none; }
+
+  .settings-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+
+  .settings-label { font-size: 14px; font-weight: 600; flex: 1; }
+  .settings-sub   { font-size: 11px; color: var(--text-3); margin-top: 1px; }
+
+  .inp {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.09);
+    border-radius: 9px;
+    color: var(--text);
+    font-family: inherit;
+    font-size: 14px;
+    padding: 8px 10px;
+    width: 100%;
+  }
+
+  .calc-btn {
+    background: rgba(6,182,212,0.1);
+    border: 1px solid rgba(6,182,212,0.2);
+    border-radius: 8px;
+    color: var(--cyan-hi);
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 7px 12px;
+    cursor: pointer;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  /* ── Stats card ── */
+  .stat-card {
+    flex: 1;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 10px;
+    text-align: center;
+  }
+
+  .stat-label {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text-3);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 6px;
+  }
+
+  .stat-val {
+    font-size: 22px;
+    font-weight: 800;
+  }
+
+  .stat-unit {
+    font-size: 10px;
+    color: var(--text-3);
+    margin-right: 2px;
+  }
+
+  /* Section divider */
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 4px 0;
+  }
+
+  .section-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-3);
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    padding: 0 16px 8px;
+  }
+
+  /* Annotation */
+  .annotation {
+    font-size: 11px;
+    color: var(--text-3);
+    line-height: 1.5;
+    border-right: 2px solid rgba(6,182,212,0.3);
+    padding-right: 10px;
+  }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--cyan-tint);
+    border: 1px solid var(--cyan-dash);
+    border-radius: 20px;
+    padding: 3px 10px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--cyan-hi);
+  }
+
+  /* Progress bar */
+  .fluid-bar-wrap {
+    height: 6px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 99px;
+    overflow: hidden;
+    margin-top: 8px;
+  }
+  .fluid-bar-fill {
+    height: 100%;
+    border-radius: 99px;
+    background: linear-gradient(90deg, var(--cyan), var(--cyan-hi));
+    transition: width .4s ease;
+  }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════
+     PANEL 1 — TodayTab: כרטיס סיכום יומי
+     ══════════════════════════════════════════════ -->
+<div class="panel">
+  <div class="panel-label">1 — TodayTab: שורת דונאטס</div>
+
+  <div class="card">
+    <!-- Donut row: cal + protein + fluids -->
+    <div class="donut-row">
+
+      <!-- Calories -->
+      <div class="donut-cell">
+        <div class="donut-wrap">
+          <svg width="80" height="80" viewBox="0 0 80 80">
+            <circle cx="40" cy="40" r="32" fill="none" stroke="rgba(59,130,246,0.12)" stroke-width="7"/>
+            <circle cx="40" cy="40" r="32" fill="none" stroke="#3b82f6" stroke-width="7"
+              stroke-dasharray="201" stroke-dashoffset="60" stroke-linecap="round"/>
+          </svg>
+          <div class="donut-center">
+            <span class="donut-val" style="color:#60a5fa">1,420</span>
+            <span class="donut-unit">/ 1,800</span>
+          </div>
+        </div>
+        <span class="donut-label">קלוריות</span>
+        <span class="donut-sub">נותרו 380 קק״ל</span>
+      </div>
+
+      <!-- Protein -->
+      <div class="donut-cell">
+        <div class="donut-wrap">
+          <svg width="80" height="80" viewBox="0 0 80 80">
+            <circle cx="40" cy="40" r="32" fill="none" stroke="rgba(16,185,129,0.12)" stroke-width="7"/>
+            <circle cx="40" cy="40" r="32" fill="none" stroke="#10b981" stroke-width="7"
+              stroke-dasharray="201" stroke-dashoffset="80" stroke-linecap="round"/>
+          </svg>
+          <div class="donut-center">
+            <span class="donut-val" style="color:#34d399">98</span>
+            <span class="donut-unit">/ 140g</span>
+          </div>
+        </div>
+        <span class="donut-label">חלבון</span>
+        <span class="donut-sub">נותרו 42g</span>
+      </div>
+
+      <!-- Fluids — NEW -->
+      <div class="donut-cell">
+        <div class="donut-wrap">
+          <svg width="80" height="80" viewBox="0 0 80 80">
+            <circle cx="40" cy="40" r="32" fill="none" stroke="rgba(6,182,212,0.12)" stroke-width="7"/>
+            <circle cx="40" cy="40" r="32" fill="none" stroke="#06b6d4" stroke-width="7"
+              stroke-dasharray="201" stroke-dashoffset="100" stroke-linecap="round"/>
+          </svg>
+          <div class="donut-center">
+            <span class="donut-val" style="color:#22d3ee; font-size:14px">1.4L</span>
+            <span class="donut-unit">/ 2.5L</span>
+          </div>
+        </div>
+        <span class="donut-label">נוזלים</span>
+        <span class="donut-sub">נותרו 1.1L</span>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="annotation">
+    הדונאט השלישי — ציאן — מצטרף לשורה הקיימת.
+    ערך מוצג בליטרים כשמעל 1,000ml.
+    אותה שפה ויזואלית בדיוק.
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════
+     PANEL 2 — כרטיסי ארוחה עם תיוג נוזל
+     ══════════════════════════════════════════════ -->
+<div class="panel">
+  <div class="panel-label">2 — כרטיסי ארוחה: תיוג אוטומטי + החרגה</div>
+
+  <!-- מזוהה אוטומטית כנוזל -->
+  <div class="meal-row fluid-detected">
+    <div style="min-width:0; flex:1">
+      <p style="font-size:14px; font-weight:600; color:var(--text); margin:0">קפה עם חלב</p>
+      <p style="font-size:13px; color:var(--text-2); margin:2px 0 0">300 מ״ל</p>
+    </div>
+    <div style="display:flex; flex-direction:column; align-items:flex-end; gap:4px">
+      <div style="display:flex; align-items:center; gap:6px">
+        <span style="font-size:15px; font-weight:700; color:var(--blue-hi)">120</span>
+        <span style="font-size:11px; color:var(--text-3)">קק״ל</span>
+      </div>
+      <!-- fluid badge + exclude -->
+      <div style="display:flex; align-items:center; gap:4px">
+        <span class="fluid-badge">💧 300מ״ל</span>
+        <button class="exclude-btn" title="הסר מספירת נוזלים">✕</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- מזוהה אוטומטית — מים -->
+  <div class="meal-row fluid-detected">
+    <div style="min-width:0; flex:1">
+      <p style="font-size:14px; font-weight:600; color:var(--text); margin:0">מים</p>
+      <p style="font-size:13px; color:var(--text-2); margin:2px 0 0">500 מ״ל</p>
+    </div>
+    <div style="display:flex; flex-direction:column; align-items:flex-end; gap:4px">
+      <div style="display:flex; align-items:center; gap:6px">
+        <span style="font-size:15px; font-weight:700; color:var(--blue-hi)">0</span>
+        <span style="font-size:11px; color:var(--text-3)">קק״ל</span>
+      </div>
+      <div style="display:flex; align-items:center; gap:4px">
+        <span class="fluid-badge">💧 500מ״ל</span>
+        <button class="exclude-btn" title="הסר מספירת נוזלים">✕</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- הוחרג ידנית -->
+  <div class="meal-row fluid-excluded">
+    <div style="min-width:0; flex:1">
+      <p style="font-size:14px; font-weight:600; color:var(--text); margin:0">מרק עוף</p>
+      <p style="font-size:13px; color:var(--text-2); margin:2px 0 0">250 מ״ל</p>
+    </div>
+    <div style="display:flex; flex-direction:column; align-items:flex-end; gap:4px">
+      <div style="display:flex; align-items:center; gap:6px">
+        <span style="font-size:15px; font-weight:700; color:var(--blue-hi)">85</span>
+        <span style="font-size:11px; color:var(--text-3)">קק״ל</span>
+      </div>
+      <div style="display:flex; align-items:center; gap:4px">
+        <span class="fluid-badge excluded">💧 הוחרג</span>
+        <button class="exclude-btn" style="color:var(--cyan-hi); opacity:1" title="כלול בספירת נוזלים">↩</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ארוחה רגילה — לא מזוהה -->
+  <div class="meal-row">
+    <div style="min-width:0; flex:1">
+      <p style="font-size:14px; font-weight:600; color:var(--text); margin:0">חזה עוף</p>
+      <p style="font-size:13px; color:var(--text-2); margin:2px 0 0">150g</p>
+    </div>
+    <div style="display:flex; align-items:center; gap:6px">
+      <div style="display:flex; flex-direction:column; align-items:flex-end; gap:3px">
+        <span style="font-size:15px; font-weight:700; color:var(--blue-hi)">165</span>
+        <span style="font-size:15px; font-weight:700; color:var(--green-hi)">31</span>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:3px">
+        <span style="font-size:11px; color:var(--text-3)">קק״ל</span>
+        <span style="font-size:11px; color:var(--text-3)">g</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="annotation">
+    תיוג אוטומטי: יחידת נפח + סכום > 100מ״ל.<br>
+    badge ציאן = נספר בנוזלים.<br>
+    ✕ → מעבר למצב "הוחרג" עם ↩ לביטול.<br>
+    מרק: זוהה אוטומטית, הוחרג ידנית.<br>
+    ארוחות ביחידות משקל — אין badge כלל.
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════
+     PANEL 3 — Settings: הגדרת יעד נוזלים
+     ══════════════════════════════════════════════ -->
+<div class="panel">
+  <div class="panel-label">3 — Settings: יעד נוזלים יומי</div>
+
+  <div class="settings-section">
+    <div class="section-title" style="padding-top:12px">נוזלים יומיים</div>
+
+    <div class="settings-row" style="flex-direction:column; align-items:stretch; gap:10px">
+      <div style="display:flex; align-items:center; gap:8px">
+        <div class="settings-icon" style="background:rgba(6,182,212,0.1); color:var(--cyan-hi)">💧</div>
+        <div style="flex:1">
+          <div class="settings-label">יעד נוזלים יומי</div>
+          <div class="settings-sub">ברירת מחדל לפי משקל גוף</div>
+        </div>
+      </div>
+      <div style="display:flex; gap:8px; align-items:center">
+        <input class="inp" type="number" value="2500" style="flex:1" />
+        <span style="font-size:13px; color:var(--text-3); white-space:nowrap">מ״ל</span>
+        <button class="calc-btn">
+          ✦ חשב
+        </button>
+      </div>
+    </div>
+
+    <!-- Tooltip / calculation explanation -->
+    <div style="padding:10px 16px; background:rgba(6,182,212,0.05); border-top:1px solid rgba(6,182,212,0.1)">
+      <p style="font-size:11px; color:var(--text-3); line-height:1.6; margin:0">
+        <span style="color:var(--cyan-hi); font-weight:700">חישוב:</span>
+        35מ״ל × משקל גוף (70ק״ג) = <strong style="color:var(--text)">2,450מ״ל</strong><br>
+        עוגל ל-2,500מ״ל. ניתן לשנות ידנית.
+      </p>
+    </div>
+
+    <!-- Threshold setting -->
+    <div class="settings-row">
+      <div style="flex:1">
+        <div class="settings-label" style="font-size:13px">סף זיהוי אוטומטי</div>
+        <div class="settings-sub">הזנות מעל כמות זו יתווספו לנוזלים</div>
+      </div>
+      <div style="display:flex; align-items:center; gap:6px">
+        <input class="inp" type="number" value="100" style="width:64px; text-align:center" />
+        <span style="font-size:12px; color:var(--text-3)">מ״ל</span>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="annotation">
+    כפתור "חשב" מחשב 35מ״ל × משקל גוף<br>
+    ומציג הסבר שקוף מה חושב ולמה.<br>
+    סף ברירת מחדל 100מ״ל — ניתן לשינוי.
+  </div>
+
+
+  <!-- ── Stats section ── -->
+  <div class="panel-label" style="margin-top:16px">4 — Stats: כרטיסי נוזלים</div>
+
+  <div style="display:flex; gap:6px">
+    <div class="stat-card">
+      <div class="stat-label">מ״ל ממוצע</div>
+      <div>
+        <span class="stat-val" style="color:var(--cyan-hi)">1,820</span>
+        <span class="stat-unit">מ״ל</span>
+      </div>
+      <div class="fluid-bar-wrap">
+        <div class="fluid-bar-fill" style="width:73%"></div>
+      </div>
+      <div style="font-size:9px; color:var(--text-3); margin-top:4px">73% מהיעד</div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-label">עמידה ביעד</div>
+      <div>
+        <span class="stat-val" style="color:var(--green-hi)">57</span>
+        <span class="stat-unit">%</span>
+      </div>
+      <div style="font-size:10px; color:var(--text-3); margin-top:4px">4/7 ימים</div>
+    </div>
+  </div>
+
+  <div class="annotation">
+    כרטיסי נוזלים מופיעים בחלק הסטטיסטיקות<br>
+    בנפרד מכרטיסי הקלוריות/חלבון.<br>
+    פס התקדמות קצר מחזק את ה-% ויזואלית.
+  </div>
+
+</div>
+
+</body>
+</html>
