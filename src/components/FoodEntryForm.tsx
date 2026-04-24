@@ -795,11 +795,20 @@ export function FoodEntryForm({ lang, history, getSuggestions, onAdd, onUpsertHi
                 {t(lang, 'quantity')}
               </label>
               <div style={{ display: 'flex', alignItems: 'center', gap: 4, height: 46 }}>
-                <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', minWidth: 30, textAlign: 'center' }}>
-                  ×{qty % 1 === 0 ? qty : qty.toFixed(1)}
-                </span>
-                <button className="qty-btn" onClick={() => setQty(q => Math.max(0.5, Math.round((q - 0.5) * 10) / 10))}>−</button>
-                <button className="qty-btn" onClick={() => setQty(q => Math.round((q + 0.5) * 10) / 10)}>+</button>
+                <button className="qty-btn" onClick={() => setQty(q => Math.max(0.1, Math.round((q - 0.1) * 10) / 10))}>−</button>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  className="inp"
+                  style={{ width: 52, textAlign: 'center', padding: '0 4px', height: 34, fontSize: 14, fontWeight: 700 }}
+                  value={qty}
+                  onFocus={e => e.target.select()}
+                  onChange={e => {
+                    const v = Number(e.target.value)
+                    if (!isNaN(v) && v > 0) setQty(Math.round(v * 10) / 10)
+                  }}
+                />
+                <button className="qty-btn" onClick={() => setQty(q => Math.round((q + 0.1) * 10) / 10)}>+</button>
               </div>
             </div>
           </div>
