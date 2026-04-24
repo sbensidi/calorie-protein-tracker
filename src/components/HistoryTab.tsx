@@ -989,7 +989,6 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                     onClick={() => setOffset7(o => o - 1)}
                     disabled={offset7 === 0}
                     aria-label={lang === 'he' ? 'שבוע הבא' : 'Next week'}
-                    style={{ opacity: offset7 === 0 ? 0.3 : 1 }}
                   >
                     <span className="icon icon-sm">{lang === 'he' ? 'chevron_left' : 'chevron_right'}</span>
                   </button>
@@ -1120,7 +1119,6 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                     onClick={() => setOffset30(o => o - 1)}
                     disabled={offset30 === 0}
                     aria-label={lang === 'he' ? '30 הימים הבאים' : 'Next 30 days'}
-                    style={{ opacity: offset30 === 0 ? 0.3 : 1 }}
                   >
                     <span className="icon icon-sm">{lang === 'he' ? 'chevron_left' : 'chevron_right'}</span>
                   </button>
