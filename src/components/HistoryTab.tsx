@@ -1016,7 +1016,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                               paddingBottom: 3, overflow: 'hidden',
                             }}>
                               {barHeight >= 20 && (
-                                <span style={{ fontSize: 9, fontWeight: 800, color: 'rgba(0,0,0,0.65)', lineHeight: 1 }}>
+                                <span style={{ fontSize: 9, fontWeight: 800, color: 'var(--text-on-brand)', lineHeight: 1 }}>
                                   {isCal ? Math.round(val) : Math.round(val * 10) / 10}
                                 </span>
                               )}

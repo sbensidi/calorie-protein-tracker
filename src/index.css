@@ -47,6 +47,7 @@
   /* Special */
   --modal-backdrop: rgba(0,0,0,0.65);
   --scanner-bg:     #04060a;
+  --text-on-brand:  rgba(255,255,255,0.90);
 }
 
 [data-theme="light"] {
@@ -96,6 +97,7 @@
   /* Special */
   --modal-backdrop: rgba(0,0,0,0.40);
   --scanner-bg:     #0e1117;
+  --text-on-brand:  rgba(0,0,0,0.65);
 }
 
 /* Accessibility: focus ring */
