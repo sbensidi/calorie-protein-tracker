@@ -225,6 +225,7 @@ export default function App() {
             getGoalForDate={getGoalForDate}
             composedEntries={composedEntries}
             composedGroups={composedGroups}
+            fluidGoalMl={profile.fluidGoalMl}
           />
         )}
       </div>
