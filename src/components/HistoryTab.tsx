@@ -76,7 +76,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
     () => (localStorage.getItem('history-filter') as StatusFilter) ?? 'all'
   )
   const [sortAsc, setSortAsc] = useState(false)
-  const [chartMetric, setChartMetric] = useState<'cal' | 'prot'>('cal')
+  const [chartMetric, setChartMetric] = useState<'cal' | 'prot' | 'fluid'>('cal')
   const [offset7,  setOffset7]  = useState(0) // weeks back (0 = current week)
   const [offset30, setOffset30] = useState(0) // months back (0 = current 30d)
   // Persist search per view
@@ -884,7 +884,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
         start7.setDate(start7.getDate() - 6)
         const range7Label = `${fmt(start7)} – ${fmt(end7)}`
 
-        const barDays: Array<{ label: string; dateKey: string; cal: number; prot: number; goalCal: number; goalProt: number; hasData: boolean }> = []
+        const barDays: Array<{ label: string; dateKey: string; cal: number; prot: number; fluid: number; goalCal: number; goalProt: number; goalFluid: number; hasData: boolean }> = []
         for (let i = 6; i >= 0; i--) {
           const d = new Date(end7)
           d.setDate(d.getDate() - i)
@@ -894,7 +894,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
           const dayLabel = lang === 'he'
             ? ['א׳', 'ב׳', 'ג׳', 'ד׳', 'ה׳', 'ו׳', 'ש׳'][d.getDay()]
             : ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'][d.getDay()]
-          barDays.push({ label: dayLabel, dateKey: dKey, cal: data?.totalCalories ?? 0, prot: data?.totalProtein ?? 0, goalCal: g.calories, goalProt: g.protein, hasData: !!data })
+          barDays.push({ label: dayLabel, dateKey: dKey, cal: data?.totalCalories ?? 0, prot: data?.totalProtein ?? 0, fluid: fluidForDate(dKey), goalCal: g.calories, goalProt: g.protein, goalFluid: fluidGoalMl, hasData: !!data })
         }
 
         const last7 = barDays.filter(b => b.hasData).map(b => b.dateKey)
@@ -968,10 +968,16 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
 
         // Chart values derived from chartMetric toggle
         const isCal   = chartMetric === 'cal'
-        const maxVal  = Math.max(...barDays.map(b => Math.max(isCal ? b.cal : b.prot, isCal ? b.goalCal : b.goalProt)), 1)
-        const barColor     = isCal ? 'var(--blue)'    : 'var(--green)'
-        const goalDashColor= isCal ? 'rgba(59,130,246,0.35)' : 'rgba(16,185,129,0.35)'
-        const goalLegendColor = isCal ? 'rgba(59,130,246,0.5)' : 'rgba(16,185,129,0.5)'
+        const isProt  = chartMetric === 'prot'
+        const isFluid = chartMetric === 'fluid'
+        const maxVal  = Math.max(...barDays.map(b => {
+          const val  = isCal ? b.cal  : isProt ? b.prot  : b.fluid
+          const goal = isCal ? b.goalCal : isProt ? b.goalProt : b.goalFluid
+          return Math.max(val, goal)
+        }), 1)
+        const barColor        = isCal ? 'var(--blue)'             : isProt ? 'var(--green)'             : 'var(--blue)'
+        const goalDashColor   = isCal ? 'rgba(59,130,246,0.35)'  : isProt ? 'rgba(16,185,129,0.35)'  : 'rgba(59,130,246,0.25)'
+        const goalLegendColor = isCal ? 'rgba(59,130,246,0.5)'   : isProt ? 'rgba(16,185,129,0.5)'   : 'rgba(59,130,246,0.4)'
 
         return (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14, paddingBottom: 80 }}>
@@ -1044,12 +1050,12 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                   </div>
                   {fluidDays7.length > 0 && (
                     <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
-                      <div style={{ flex: 1, background: 'var(--bg-card)', border: '1px solid var(--cyan)', borderRadius: 12, padding: '12px 10px', textAlign: 'center' }}>
+                      <div style={{ flex: 1, background: 'var(--bg-card)', border: '1px solid rgba(59,130,246,0.3)', borderRadius: 12, padding: '12px 10px', textAlign: 'center' }}>
                         <p style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-3)', margin: '0 0 6px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
                           {lang === 'he' ? '💧 נוזלים ממוצע' : '💧 Avg fluid'}
                         </p>
                         <p style={{ fontSize: 0, margin: 0 }}>
-                          <span style={{ fontSize: 22, fontWeight: 800, color: 'var(--cyan-hi)' }}>
+                          <span style={{ fontSize: 22, fontWeight: 800, color: 'var(--blue-hi)' }}>
                             {avg7FluidMl >= 1000 ? (avg7FluidMl / 1000).toFixed(1) : avg7FluidMl}
                           </span>
                           <span style={{ fontSize: 10, color: 'var(--text-3)', marginInlineStart: 3 }}>
@@ -1060,11 +1066,11 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                           {lang === 'he' ? `${fluidDays7.length} ימים עם נוזלים` : `${fluidDays7.length} days logged`}
                         </p>
                       </div>
-                      <div style={{ flex: 1, background: 'var(--bg-card)', border: '1px solid var(--cyan)', borderRadius: 12, padding: '12px 10px', textAlign: 'center' }}>
+                      <div style={{ flex: 1, background: 'var(--bg-card)', border: '1px solid rgba(59,130,246,0.3)', borderRadius: 12, padding: '12px 10px', textAlign: 'center' }}>
                         <p style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-3)', margin: '0 0 6px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
                           {lang === 'he' ? '💧 יעד נוזלים' : '💧 Fluid goal'}
                         </p>
-                        <p style={{ fontSize: 22, fontWeight: 800, color: pct7Fluid >= 70 ? 'var(--cyan-hi)' : pct7Fluid >= 40 ? 'var(--amber)' : 'var(--red)', margin: 0 }}>
+                        <p style={{ fontSize: 22, fontWeight: 800, color: pct7Fluid >= 70 ? 'var(--blue-hi)' : pct7Fluid >= 40 ? 'var(--amber)' : 'var(--red)', margin: 0 }}>
                           {pct7Fluid}%
                         </p>
                         <p style={{ fontSize: 10, color: 'var(--text-3)', margin: '2px 0 0' }}>
@@ -1086,18 +1092,18 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                     {range7Label}
                   </p>
                   <div style={{ display: 'flex', background: 'var(--surface-2)', borderRadius: 8, padding: 2, gap: 2 }}>
-                    {(['cal', 'prot'] as const).map(m => (
+                    {(['cal', 'prot', 'fluid'] as const).map(m => (
                       <button
                         key={m}
                         onClick={() => setChartMetric(m)}
                         style={{
                           padding: '3px 10px', borderRadius: 6, border: 'none', cursor: 'pointer',
                           fontFamily: 'inherit', fontSize: 11, fontWeight: 700, transition: 'all .15s',
-                          background: chartMetric === m ? (m === 'cal' ? 'var(--blue)' : 'var(--green)') : 'transparent',
+                          background: chartMetric === m ? (m === 'prot' ? 'var(--green)' : 'var(--blue)') : 'transparent',
                           color: chartMetric === m ? '#fff' : 'var(--text-3)',
                         }}
                       >
-                        {m === 'cal' ? (lang === 'he' ? 'קל׳' : 'Cal') : (lang === 'he' ? 'חל׳' : 'Prot')}
+                        {m === 'cal' ? (lang === 'he' ? 'קל׳' : 'Cal') : m === 'prot' ? (lang === 'he' ? 'חל׳' : 'Prot') : '💧'}
                       </button>
                     ))}
                   </div>
@@ -1105,20 +1111,28 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
 
                 <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4, height: barH + 20 }}>
                   {barDays.map(b => {
-                    const val      = isCal ? b.cal      : b.prot
-                    const goalVal  = isCal ? b.goalCal  : b.goalProt
-                    const barHeight  = b.hasData ? Math.max(4, Math.round((val     / maxVal) * barH)) : 0
-                    const goalHeight = Math.max(2, Math.round((goalVal / maxVal) * barH))
-                    const overGoal   = b.hasData && val > goalVal
+                    const val      = isCal ? b.cal  : isProt ? b.prot  : b.fluid
+                    const goalVal  = isCal ? b.goalCal : isProt ? b.goalProt : b.goalFluid
+                    const hasBar   = b.hasData || (isFluid && b.fluid > 0)
+                    const barHeight  = hasBar ? Math.max(4, Math.round((val / maxVal) * barH)) : 0
+                    const goalHeight = goalVal > 0 ? Math.max(2, Math.round((goalVal / maxVal) * barH)) : 0
+                    // For fluid: over-goal is good (green), not amber
+                    const overGoal = hasBar && val > goalVal && goalVal > 0
+                    const barBg    = isFluid
+                      ? (overGoal ? 'var(--green)' : barColor)
+                      : (overGoal ? 'var(--amber)' : barColor)
+                    const valLabel = isFluid
+                      ? (val >= 1000 ? `${(val / 1000).toFixed(1)}` : `${Math.round(val)}`)
+                      : isCal ? `${Math.round(val)}` : `${Math.round(val * 10) / 10}`
                     return (
                       <div key={b.dateKey} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
                         <div style={{ position: 'relative', width: '100%', height: barH, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
-                          <div style={{ position: 'absolute', bottom: goalHeight, left: 0, right: 0, borderTop: `1.5px dashed ${goalDashColor}` }} />
-                          {b.hasData && (
+                          {goalHeight > 0 && <div style={{ position: 'absolute', bottom: goalHeight, left: 0, right: 0, borderTop: `1.5px dashed ${goalDashColor}` }} />}
+                          {hasBar && (
                             <div style={{
                               width: '70%', height: barHeight,
                               borderRadius: '4px 4px 0 0',
-                              background: overGoal ? 'var(--amber)' : barColor,
+                              background: barBg,
                               opacity: 0.85,
                               transition: 'height .3s ease',
                               display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
@@ -1126,7 +1140,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                             }}>
                               {barHeight >= 20 && (
                                 <span style={{ fontSize: 9, fontWeight: 800, color: 'var(--text-on-brand)', lineHeight: 1 }}>
-                                  {isCal ? Math.round(val) : Math.round(val * 10) / 10}
+                                  {valLabel}
                                 </span>
                               )}
                             </div>
@@ -1137,24 +1151,36 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                     )
                   })}
                 </div>
-                <div style={{ display: 'flex', gap: 14, marginTop: 8, paddingTop: 8, borderTop: '1px solid var(--border)' }}>
+                <div style={{ display: 'flex', gap: 14, marginTop: 8, paddingTop: 8, borderTop: '1px solid var(--border)', flexWrap: 'wrap' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, color: 'var(--text-3)' }}>
                     <div style={{ width: 12, height: 3, background: barColor, borderRadius: 2 }} />
-                    {isCal ? (lang === 'he' ? 'קלוריות' : 'Calories') : (lang === 'he' ? 'חלבון' : 'Protein')}
+                    {isCal ? (lang === 'he' ? 'קלוריות' : 'Calories') : isProt ? (lang === 'he' ? 'חלבון' : 'Protein') : (lang === 'he' ? 'נוזלים' : 'Fluid')}
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, color: 'var(--text-3)' }}>
-                    <div style={{ width: 12, borderTop: `1.5px dashed ${goalLegendColor}` }} />
-                    {lang === 'he' ? 'יעד' : 'Goal'}
-                    <span style={{ fontWeight: 700, color: 'var(--text-2)' }}>
-                      {isCal
-                        ? `${todayGoal.calories.toLocaleString()} ${t(lang, 'caloriesUnit')}`
-                        : `${todayGoal.protein}${t(lang, 'proteinUnit')}`}
-                    </span>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, color: 'var(--text-3)' }}>
-                    <div style={{ width: 12, height: 3, background: 'var(--amber)', borderRadius: 2 }} />
-                    {lang === 'he' ? 'חריגה' : 'Over goal'}
-                  </div>
+                  {(!isFluid || fluidGoalMl > 0) && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, color: 'var(--text-3)' }}>
+                      <div style={{ width: 12, borderTop: `1.5px dashed ${goalLegendColor}` }} />
+                      {lang === 'he' ? 'יעד' : 'Goal'}
+                      <span style={{ fontWeight: 700, color: 'var(--text-2)' }}>
+                        {isCal
+                          ? `${todayGoal.calories.toLocaleString()} ${t(lang, 'caloriesUnit')}`
+                          : isProt
+                            ? `${todayGoal.protein}${t(lang, 'proteinUnit')}`
+                            : fmtMl(fluidGoalMl)}
+                      </span>
+                    </div>
+                  )}
+                  {!isFluid && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, color: 'var(--text-3)' }}>
+                      <div style={{ width: 12, height: 3, background: 'var(--amber)', borderRadius: 2 }} />
+                      {lang === 'he' ? 'חריגה' : 'Over goal'}
+                    </div>
+                  )}
+                  {isFluid && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, color: 'var(--text-3)' }}>
+                      <div style={{ width: 12, height: 3, background: 'var(--green)', borderRadius: 2 }} />
+                      {lang === 'he' ? 'הגעת ליעד' : 'Reached goal'}
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -1207,12 +1233,12 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                   </div>
                   {fluidDays30.length > 0 && (
                     <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
-                      <div style={{ flex: 1, background: 'var(--bg-card)', border: '1px solid var(--cyan)', borderRadius: 12, padding: '12px 10px', textAlign: 'center' }}>
+                      <div style={{ flex: 1, background: 'var(--bg-card)', border: '1px solid rgba(59,130,246,0.3)', borderRadius: 12, padding: '12px 10px', textAlign: 'center' }}>
                         <p style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-3)', margin: '0 0 6px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
                           {lang === 'he' ? '💧 נוזלים ממוצע' : '💧 Avg fluid'}
                         </p>
                         <p style={{ fontSize: 0, margin: 0 }}>
-                          <span style={{ fontSize: 22, fontWeight: 800, color: 'var(--cyan-hi)' }}>
+                          <span style={{ fontSize: 22, fontWeight: 800, color: 'var(--blue-hi)' }}>
                             {avg30FluidMl >= 1000 ? (avg30FluidMl / 1000).toFixed(1) : avg30FluidMl}
                           </span>
                           <span style={{ fontSize: 10, color: 'var(--text-3)', marginInlineStart: 3 }}>
@@ -1223,11 +1249,11 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                           {lang === 'he' ? `${fluidDays30.length} ימים עם נוזלים` : `${fluidDays30.length} days logged`}
                         </p>
                       </div>
-                      <div style={{ flex: 1, background: 'var(--bg-card)', border: '1px solid var(--cyan)', borderRadius: 12, padding: '12px 10px', textAlign: 'center' }}>
+                      <div style={{ flex: 1, background: 'var(--bg-card)', border: '1px solid rgba(59,130,246,0.3)', borderRadius: 12, padding: '12px 10px', textAlign: 'center' }}>
                         <p style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-3)', margin: '0 0 6px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
                           {lang === 'he' ? '💧 יעד נוזלים' : '💧 Fluid goal'}
                         </p>
-                        <p style={{ fontSize: 22, fontWeight: 800, color: pct30Fluid >= 70 ? 'var(--cyan-hi)' : pct30Fluid >= 40 ? 'var(--amber)' : 'var(--red)', margin: 0 }}>
+                        <p style={{ fontSize: 22, fontWeight: 800, color: pct30Fluid >= 70 ? 'var(--blue-hi)' : pct30Fluid >= 40 ? 'var(--amber)' : 'var(--red)', margin: 0 }}>
                           {pct30Fluid}%
                         </p>
                         <p style={{ fontSize: 10, color: 'var(--text-3)', margin: '2px 0 0' }}>

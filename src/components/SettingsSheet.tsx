@@ -703,7 +703,7 @@ function ProfileScreen({ lang, profile, onSave, onApplyGoals, onBack, onNavigate
       {/* ── Fluid detection settings ────────────────────────── */}
       <div style={{ height: 1, background: 'var(--border)', margin: '18px 0 16px' }} />
       <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-2)', marginBottom: 14, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
-        {lang === 'he' ? 'זיהוי נוזלים' : 'Fluid detection'}
+        {lang === 'he' ? 'סף זיהוי נוזלים' : 'Fluid detection threshold'}
       </p>
 
       {/* fluid threshold + zero-cal toggle on one row */}
