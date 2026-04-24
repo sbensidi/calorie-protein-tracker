@@ -65,6 +65,19 @@ export function ToastContainer({ toasts, onDismiss, lang }: ToastContainerProps)
             <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: 'var(--text)', lineHeight: 1.4 }}>
               {toast.message}
             </span>
+            {toast.action && (
+              <button
+                onClick={() => { toast.action!.onClick(); onDismiss(toast.id) }}
+                style={{
+                  background: 'none', border: `1px solid ${c.border}`,
+                  borderRadius: 8, cursor: 'pointer', padding: '3px 10px',
+                  fontSize: 12, fontWeight: 700, color: c.icon,
+                  flexShrink: 0, fontFamily: 'inherit',
+                }}
+              >
+                {toast.action.label}
+              </button>
+            )}
             <button
               onClick={() => onDismiss(toast.id)}
               aria-label={lang === 'he' ? 'סגור הודעה' : 'Dismiss'}

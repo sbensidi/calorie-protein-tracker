@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { supabase } from '../lib/supabase'
 import type { FoodHistory } from '../types'
 
@@ -60,13 +60,20 @@ export function useFoodHistory(userId: string | null) {
     fetchHistory()
   }, [userId, fetchHistory])
 
+  // Precompute lowercase names once per history change, not on every keystroke
+  const historyLower = useMemo(
+    () => history.map(h => ({ item: h, nameLower: h.name.toLowerCase() })),
+    [history],
+  )
+
   const getSuggestions = useCallback((query: string): FoodHistory[] => {
     if (!query.trim()) return []
     const q = query.toLowerCase()
-    return history
-      .filter(h => h.name.toLowerCase().includes(q))
-      .slice(0, 5)
-  }, [history])
+    return historyLower
+      .filter(({ nameLower }) => nameLower.includes(q))
+      .slice(0, 8)
+      .map(({ item }) => item)
+  }, [historyLower])
 
   return { history, error, upsertHistory, getSuggestions }
 }

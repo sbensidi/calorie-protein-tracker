@@ -1,5 +1,6 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { useLockBodyScroll } from '../hooks/useLockBodyScroll'
+import { useFocusTrap } from '../hooks/useFocusTrap'
 import { useSheetScroll } from '../hooks/useSheetScroll'
 import { SheetHandle } from './SheetHandle'
 import type { Lang, DayKey } from '../lib/i18n'
@@ -293,13 +294,14 @@ function MainScreen({ lang, connected, theme, onProfile, onGoals, onToggleLang, 
 
 // ── Profile Screen ────────────────────────────────────────────────────────────
 
-function ProfileScreen({ lang, profile, onSave, onApplyGoals, onBack, showToast }: {
-  lang:         Lang
-  profile:      UserProfile
-  onSave:       (updates: Partial<UserProfile>) => void
-  onApplyGoals: (calories: number, protein: number) => void
-  onBack:       () => void
-  showToast:    (msg: string, type: 'success' | 'error' | 'info') => void
+function ProfileScreen({ lang, profile, onSave, onApplyGoals, onBack, onNavigateToGoals, showToast }: {
+  lang:               Lang
+  profile:            UserProfile
+  onSave:             (updates: Partial<UserProfile>) => void
+  onApplyGoals:       (calories: number, protein: number) => void
+  onBack:             () => void
+  onNavigateToGoals:  () => void
+  showToast:          (msg: string, type: 'success' | 'error' | 'info') => void
 }) {
   const [draft, setDraft] = useState<UserProfile>({ ...profile })
   const [saved, setSaved]     = useState(false)
@@ -333,6 +335,8 @@ function ProfileScreen({ lang, profile, onSave, onApplyGoals, onBack, showToast 
     setApplied(true)
     setTimeout(() => setApplied(false), 2000)
     showToast(lang === 'he' ? 'היעדים הוחלו' : 'Goals applied', 'success')
+    // Auto-navigate to goals screen so user can review what was applied
+    setTimeout(() => onNavigateToGoals(), 600)
   }
 
   const bmiColor  = bmiCategory === 'normal' ? 'var(--green-hi)' : bmiCategory === 'obese' ? 'var(--red)' : 'var(--amber)'
@@ -908,11 +912,14 @@ export function SettingsSheet({
   const [screen, setScreen] = useState<Screen>('main')
   useLockBodyScroll(isOpen)
   const { scrollRef, scrolledDown, onScroll } = useSheetScroll()
+  const sheetRef = useRef<HTMLDivElement>(null)
 
   const handleClose = () => {
     setScreen('main')
     onClose()
   }
+
+  useFocusTrap(sheetRef, isOpen)
 
   useEffect(() => {
     if (!isOpen) return
@@ -946,7 +953,7 @@ export function SettingsSheet({
         display: 'flex', justifyContent: 'center', alignItems: 'flex-end',
         pointerEvents: 'none',
       }}>
-      <div style={{
+      <div ref={sheetRef} style={{
         width: '100%', maxWidth: 560,
         pointerEvents: 'all',
         background: 'var(--bg)',
@@ -990,6 +997,7 @@ export function SettingsSheet({
               onSave={onSaveProfile}
               onApplyGoals={(cal, prot) => onSaveGoals({ default_calories: cal, default_protein: prot })}
               onBack={() => setScreen('main')}
+              onNavigateToGoals={() => setScreen('goals')}
               showToast={showToast}
             />
           )}

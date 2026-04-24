@@ -8,6 +8,7 @@ import { BarcodeScanner } from './BarcodeScanner'
 import type { BarcodeScannerHandle } from './BarcodeScanner'
 import { ErrorBoundary } from './ErrorBoundary'
 import type { BarcodeProduct } from '../lib/barcodeApi'
+import { FoodHistoryModal } from './FoodHistoryModal'
 
 type EntryMode = 'manual' | 'scan'
 
@@ -69,9 +70,9 @@ export function FoodEntryForm({ lang, history, getSuggestions, onAdd, onUpsertHi
   // Dropdown
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [suggestions,  setSuggestions]  = useState<FoodHistory[]>([])
-  const inputRef       = useRef<HTMLInputElement>(null)
-  const dropdownRef    = useRef<HTMLDivElement>(null)
-  const lastCalcRef    = useRef(0)  // debounce: timestamp of last calculate call
+  const inputRef    = useRef<HTMLInputElement>(null)
+  const dropdownRef = useRef<HTMLDivElement>(null)
+  const lastCalcRef = useRef(0)  // debounce: timestamp of last calculate call
 
   // Composed entry pending confirmation
   const [pendingComposed, setPendingComposed] = useState<ComposedEntry | null>(null)
@@ -80,7 +81,6 @@ export function FoodEntryForm({ lang, history, getSuggestions, onAdd, onUpsertHi
   const [historyModalOpen, setHistoryModalOpen] = useState(false)
   useLockBodyScroll(historyModalOpen)
   const [historySearch,    setHistorySearch]    = useState('')
-  const historySearchRef = useRef<HTMLInputElement>(null)
 
   // Derived mode — whichever field has a value wins; both empty = grams mode (AI guesses portion)
   const amountMode: 'g' | 'unit' = unitsStr ? 'unit' : 'g'
@@ -113,7 +113,6 @@ export function FoodEntryForm({ lang, history, getSuggestions, onAdd, onUpsertHi
     setHistorySearch('')
     setHistoryModalOpen(true)
     setDropdownOpen(false)
-    setTimeout(() => historySearchRef.current?.focus(), 50)
   }
 
   const handleHistorySelect = (item: FoodHistory) => {
@@ -809,156 +808,18 @@ export function FoodEntryForm({ lang, history, getSuggestions, onAdd, onUpsertHi
 
     {/* ── Food history modal ──────────────────────────────────── */}
 
-    {historyModalOpen && (() => {
-      const q = historySearch.trim().toLowerCase()
-      const filtered = q
-        ? history.filter(h => h.name.toLowerCase().includes(q))
-        : [...history].sort((a, b) => b.use_count - a.use_count)
-      return (
-        <div
-          className="compose-modal-backdrop"
-          onClick={() => setHistoryModalOpen(false)}
-        >
-          <div
-            className="compose-modal"
-            style={{ maxWidth: 440, padding: 0, overflow: 'hidden', maxHeight: '80vh', display: 'flex', flexDirection: 'column' }}
-            onClick={e => e.stopPropagation()}
-          >
-            {/* Header */}
-            <div style={{ padding: '14px 14px 0', display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span className="icon icon-sm" style={{ color: 'var(--text-3)' }}>manage_search</span>
-              <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-2)', flex: 1 }}>
-                {lang === 'he' ? 'היסטוריית מזונות' : 'Food history'}
-              </span>
-              <button
-                onClick={() => setHistoryModalOpen(false)}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 4 }}
-              >
-                <span className="icon icon-sm">close</span>
-              </button>
-            </div>
-
-            {/* Search */}
-            <div style={{ padding: '10px 14px' }}>
-              <div style={{ position: 'relative' }}>
-                <input
-                  ref={historySearchRef}
-                  className="inp"
-                  style={{ paddingInlineStart: 36, height: 40, fontSize: 13 }}
-                  placeholder={lang === 'he' ? 'חיפוש...' : 'Search...'}
-                  value={historySearch}
-                  onChange={e => setHistorySearch(e.target.value)}
-                  dir={lang === 'he' ? 'rtl' : 'ltr'}
-                />
-                <span className="icon icon-sm" style={{
-                  position: 'absolute', top: '50%', transform: 'translateY(-50%)',
-                  ...(isRTL ? { right: 10 } : { left: 10 }),
-                  color: 'var(--text-3)', pointerEvents: 'none',
-                }}>search</span>
-                {historySearch && (
-                  <button
-                    onClick={() => setHistorySearch('')}
-                    style={{
-                      position: 'absolute', top: '50%', transform: 'translateY(-50%)',
-                      ...(isRTL ? { left: 8 } : { right: 8 }),
-                      background: 'none', border: 'none', cursor: 'pointer',
-                      color: 'var(--text-3)', padding: 2, display: 'flex',
-                    }}
-                  >
-                    <span className="icon icon-sm">close</span>
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* List */}
-            <div style={{ overflowY: 'auto', flex: 1, borderTop: '1px solid var(--border)' }}>
-
-              {/* Composed dishes section */}
-              {composedEntries && composedEntries.filter(e => !q || e.name.toLowerCase().includes(q)).length > 0 && (
-                <>
-                  <div style={{ padding: '8px 14px 4px', fontSize: 10, fontWeight: 700, color: 'var(--text-3)', letterSpacing: '0.07em', textTransform: 'uppercase' }}>
-                    {lang === 'he' ? 'מנות שהרכבתי' : 'My composed dishes'}
-                  </div>
-                  {composedEntries.filter(e => !q || e.name.toLowerCase().includes(q)).map((entry) => (
-                    <button
-                      key={entry.id}
-                      onClick={() => handleComposedSelect(entry)}
-                      style={{
-                        display: 'flex', alignItems: 'center', width: '100%',
-                        padding: '10px 14px', background: 'transparent', border: 'none',
-                        borderBottom: '1px solid var(--border)',
-                        cursor: 'pointer', gap: 10, textAlign: 'start', fontFamily: 'inherit',
-                        transition: 'background .12s',
-                      }}
-                      onMouseEnter={e => (e.currentTarget.style.background = 'rgba(139,92,246,0.05)')}
-                      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                    >
-                      <span className="icon icon-sm" style={{ color: 'var(--purple)', flexShrink: 0 }}>restaurant</span>
-                      <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {entry.name}
-                      </span>
-                      <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-                        <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--blue-hi)' }}>{entry.calories}</span>
-                        <span style={{ fontSize: 11, color: 'var(--text-3)' }}>{t(lang, 'caloriesUnit')}</span>
-                        <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--green-hi)', marginInlineStart: 4 }}>{entry.protein}</span>
-                        <span style={{ fontSize: 11, color: 'var(--text-3)' }}>{t(lang, 'proteinUnit')}</span>
-                      </div>
-                    </button>
-                  ))}
-                  {filtered.length > 0 && (
-                    <div style={{ padding: '8px 14px 4px', fontSize: 10, fontWeight: 700, color: 'var(--text-3)', letterSpacing: '0.07em', textTransform: 'uppercase' }}>
-                      {lang === 'he' ? 'היסטוריה' : 'History'}
-                    </div>
-                  )}
-                </>
-              )}
-
-              {filtered.length === 0 && (!composedEntries || composedEntries.length === 0 || q) ? (
-                <div style={{ padding: '32px 0', textAlign: 'center', color: 'var(--text-3)', fontSize: 13 }}>
-                  {lang === 'he' ? 'לא נמצאו תוצאות' : 'No results found'}
-                </div>
-              ) : filtered.map((item, i) => {
-                const itemIsUnit = item.grams < 0
-                const amtDisplay = itemIsUnit
-                  ? `${Math.abs(item.grams)} ${unitLabel}`
-                  : `${item.grams}g`
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => handleHistorySelect(item)}
-                    style={{
-                      display: 'flex', alignItems: 'center', width: '100%',
-                      padding: '10px 14px', background: 'transparent', border: 'none',
-                      borderBottom: i < filtered.length - 1 ? '1px solid var(--border)' : 'none',
-                      cursor: 'pointer', gap: 10, textAlign: 'start', fontFamily: 'inherit',
-                      transition: 'background .12s',
-                    }}
-                    onMouseEnter={e => (e.currentTarget.style.background = 'var(--inp-bg)')}
-                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                  >
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {item.name}
-                      </p>
-                      <p style={{ fontSize: 11, color: 'var(--text-3)', margin: '2px 0 0' }}>
-                        {amtDisplay} · {item.use_count} {lang === 'he' ? 'שימושים' : 'uses'}
-                      </p>
-                    </div>
-                    <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-                      <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--blue-hi)' }}>{Math.round(item.calories)}</span>
-                      <span style={{ fontSize: 11, color: 'var(--text-3)' }}>{t(lang, 'caloriesUnit')}</span>
-                      <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--green-hi)', marginInlineStart: 4 }}>{Math.round(item.protein * 10) / 10}</span>
-                      <span style={{ fontSize: 11, color: 'var(--text-3)' }}>{t(lang, 'proteinUnit')}</span>
-                    </div>
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-        </div>
-      )
-    })()}
+    {historyModalOpen && (
+      <FoodHistoryModal
+        lang={lang}
+        history={history}
+        composedEntries={composedEntries}
+        search={historySearch}
+        onSearchChange={setHistorySearch}
+        onClose={() => setHistoryModalOpen(false)}
+        onSelectHistory={handleHistorySelect}
+        onSelectComposed={handleComposedSelect}
+      />
+    )}
     </>
   )
 }

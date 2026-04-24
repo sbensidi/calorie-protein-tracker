@@ -1,5 +1,6 @@
-import { useMemo, useState, useCallback, useEffect } from 'react'
+import { useMemo, useState, useCallback, useEffect, useRef } from 'react'
 import { useLockBodyScroll } from '../hooks/useLockBodyScroll'
+import { useFocusTrap } from '../hooks/useFocusTrap'
 import { useSheetScroll } from '../hooks/useSheetScroll'
 import { SheetHandle } from './SheetHandle'
 import type { Meal, FoodHistory, ComposedGroup } from '../types'
@@ -60,7 +61,7 @@ interface TodayTabProps {
   composedGroups: ComposedGroup[]
   onUpsertGroup: (group: ComposedGroup) => void
   onRemoveGroup: (id: string) => void
-  showToast: (message: string, type: 'success' | 'error' | 'info') => void
+  showToast: (message: string, type: 'success' | 'error' | 'info', options?: { action?: { label: string; onClick: () => void }; durationMs?: number }) => void
 }
 
 export function TodayTab({
@@ -70,11 +71,17 @@ export function TodayTab({
 }: TodayTabProps) {
   const todayMeals = useMemo(() => meals.filter(m => m.date === today()), [meals])
 
+  // ── Pending deletes (undo support) — declared before mealsByType ────────────
+  const [pendingDeleteIds, setPendingDeleteIds] = useState<Set<string>>(new Set())
+  const pendingTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map())
+
   const mealsByType = useMemo(() => {
     const grouped: Record<MealType, Meal[]> = { breakfast: [], lunch: [], dinner: [], snack: [] }
-    todayMeals.forEach(m => { if (grouped[m.meal_type as MealType]) grouped[m.meal_type as MealType].push(m) })
+    todayMeals
+      .filter(m => !pendingDeleteIds.has(m.id))
+      .forEach(m => { if (grouped[m.meal_type as MealType]) grouped[m.meal_type as MealType].push(m) })
     return grouped
-  }, [todayMeals])
+  }, [todayMeals, pendingDeleteIds])
 
   const visibleTypes = useMemo(
     () => MEAL_TYPES.filter(t => mealsByType[t].length > 0),
@@ -121,6 +128,40 @@ export function TodayTab({
   const clearSelection = (type: MealType) => {
     setSelectedIds(prev => { const n = { ...prev }; delete n[type]; return n })
   }
+
+  const scheduleDeletes = useCallback((mealIds: string[], groupIds: string[]) => {
+    const allIds = [...mealIds, ...groupIds]
+    setPendingDeleteIds(prev => new Set([...prev, ...allIds]))
+
+    // Schedule actual deletion after 4s
+    const timerId = setTimeout(() => {
+      mealIds.forEach(id => onDeleteMeal(id))
+      groupIds.forEach(id => onRemoveGroup(id))
+      setPendingDeleteIds(prev => {
+        const next = new Set(prev)
+        allIds.forEach(id => next.delete(id))
+        return next
+      })
+      allIds.forEach(id => pendingTimersRef.current.delete(id))
+    }, 4000)
+
+    allIds.forEach(id => pendingTimersRef.current.set(id, timerId))
+
+    return () => {
+      clearTimeout(timerId)
+      setPendingDeleteIds(prev => {
+        const next = new Set(prev)
+        allIds.forEach(id => next.delete(id))
+        return next
+      })
+      allIds.forEach(id => pendingTimersRef.current.delete(id))
+    }
+  }, [onDeleteMeal, onRemoveGroup])
+
+  // Clean up timers on unmount
+  useEffect(() => {
+    return () => { pendingTimersRef.current.forEach(t => clearTimeout(t)) }
+  }, [])
 
   const dissolveGroup = (groupId: string) => onRemoveGroup(groupId)
 
@@ -214,27 +255,46 @@ export function TodayTab({
   const handleDeleteSelected = (type: MealType) => {
     const sel = selectedIds[type]
     if (!sel) return
-    let count = 0
-    // Delete standalone meals
-    mealsByType[type]
+
+    // Collect standalone meal IDs and group IDs (groups track their child meal IDs internally)
+    const standaloneMealIds = mealsByType[type]
       .filter(m => sel.has(m.id) && !composedGroups.some(g => g.mealIds.includes(m.id)))
-      .forEach(m => { onDeleteMeal(m.id); count++ })
-    // Delete composed groups (dissolve + delete all children)
-    composedGroups
-      .filter(g => sel.has(g.id))
-      .forEach(g => {
-        g.mealIds.forEach(id => onDeleteMeal(id))
-        dissolveGroup(g.id)
-        count++
-      })
+      .map(m => m.id)
+
+    const selectedGroups = composedGroups.filter(g => sel.has(g.id))
+    const groupMealIds   = selectedGroups.flatMap(g => g.mealIds)
+    const groupIds       = selectedGroups.map(g => g.id)
+
+    const allMealIds = [...standaloneMealIds, ...groupMealIds]
+    const count = standaloneMealIds.length + selectedGroups.length
+    if (count === 0) return
+
     clearSelection(type)
-    if (count > 0) showToast(lang === 'he' ? `נמחקו ${count} פריטים` : `Deleted ${count} item${count !== 1 ? 's' : ''}`, 'info')
+
+    // Schedule deletion with undo support
+    const cancelFn = scheduleDeletes(allMealIds, groupIds)
+
+    showToast(
+      lang === 'he' ? `נמחקו ${count} פריטים` : `Deleted ${count} item${count !== 1 ? 's' : ''}`,
+      'info',
+      {
+        action: {
+          label: lang === 'he' ? 'בטל' : 'Undo',
+          onClick: cancelFn,
+        },
+        durationMs: 4000,
+      },
+    )
   }
 
   // ── Entry sheet ──────────────────────────────────────────────
   const [entryOpen, setEntryOpen] = useState(false)
+  const entrySheetRef   = useRef<HTMLDivElement>(null)
+  const composeModalRef = useRef<HTMLDivElement>(null)
   const anyModalOpen = entryOpen || !!composeModal || !!addIngredientModal
   useLockBodyScroll(anyModalOpen)
+  useFocusTrap(entrySheetRef,   entryOpen)
+  useFocusTrap(composeModalRef, !!composeModal)
 
   // Escape key closes the topmost open modal
   useEffect(() => {
@@ -265,8 +325,9 @@ export function TodayTab({
     const totalCal  = Math.round(typeMeals.reduce((s, m) => s + m.calories, 0))
     const totalProt = Math.round(typeMeals.reduce((s, m) => s + m.protein, 0) * 10) / 10
 
-    // Split items: composed groups vs standalone
+    // Split items: composed groups vs standalone (exclude pending deletes)
     const groupsHere = composedGroups.filter(g =>
+      !pendingDeleteIds.has(g.id) &&
       g.mealIds.some(id => typeMeals.find(m => m.id === id))
     )
     const composedMealIdSet = new Set(groupsHere.flatMap(g => g.mealIds))
@@ -490,7 +551,7 @@ export function TodayTab({
 
     return (
       <div className="compose-modal-backdrop" onClick={() => setComposeModal(null)}>
-        <div className="compose-modal" onClick={e => e.stopPropagation()}>
+        <div ref={composeModalRef} className="compose-modal" onClick={e => e.stopPropagation()}>
           {/* Title */}
           <div>
             <p style={{ fontSize: 16, fontWeight: 800, textAlign: 'center', margin: 0 }}>{t(lang, 'dishName')}</p>
@@ -576,9 +637,16 @@ export function TodayTab({
       )}
 
       {!loading && todayMeals.length === 0 && (
-        <div style={{ textAlign: 'center', padding: '32px 0', color: 'var(--text-3)' }}>
-          <span className="icon" style={{ fontSize: 32, display: 'block', marginBottom: 8 }}>restaurant_menu</span>
+        <div style={{ textAlign: 'center', padding: '32px 0 24px', color: 'var(--text-3)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+          <span className="icon" style={{ fontSize: 36, display: 'block' }}>restaurant_menu</span>
           <p style={{ fontSize: 14, margin: 0 }}>{t(lang, 'noMealsToday')}</p>
+          <button
+            className="btn-primary"
+            onClick={() => setEntryOpen(true)}
+            style={{ marginTop: 4, fontSize: 13, height: 40, padding: '0 20px' }}
+          >
+            {lang === 'he' ? '+ הוסף ארוחה' : '+ Add meal'}
+          </button>
         </div>
       )}
 
@@ -644,7 +712,7 @@ export function TodayTab({
         display: 'flex', justifyContent: 'center', alignItems: 'flex-end',
         pointerEvents: 'none',
       }}>
-        <div style={{
+        <div ref={entrySheetRef} style={{
           width: '100%', maxWidth: 560,
           pointerEvents: 'all',
           background: 'var(--bg)',

@@ -74,7 +74,10 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
     () => (localStorage.getItem('history-filter') as StatusFilter) ?? 'all'
   )
   const [sortAsc, setSortAsc] = useState(false)
-  const [search, setSearch] = useState('')
+  // Persist search per view
+  const [searchByView, setSearchByView] = useState<Record<'cal' | 'list', string>>({ cal: '', list: '' })
+  const search = searchByView[view]
+  const setSearch = (val: string) => setSearchByView(prev => ({ ...prev, [view]: val }))
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [expandedGroupIds, setExpandedGroupIds] = useState<Set<string>>(new Set())
   const toggleGroupExpand = (id: string) =>
@@ -98,6 +101,13 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
   }, [view])
   const [historyModalOpen, setHistoryModalOpen] = useState(false)
   useLockBodyScroll(historyModalOpen)
+
+  useEffect(() => {
+    if (!historyModalOpen) return
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setHistoryModalOpen(false) }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [historyModalOpen])
   const [historySearch,    setHistorySearch]    = useState('')
   const historySearchRef = useRef<HTMLInputElement>(null)
   const searchInputRef   = useRef<HTMLInputElement>(null)
@@ -527,9 +537,9 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                   >
                     <span>{day}</span>
                     {data && (
-                      <div style={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-                        {data.calOk  && <span className="icon" style={{ fontSize: 10, color: 'var(--blue-hi)'  }}>check</span>}
-                        {data.protOk && <span className="icon" style={{ fontSize: 10, color: 'var(--green-hi)' }}>check</span>}
+                      <div style={{ display: 'flex', gap: 2, alignItems: 'center' }} aria-label={[data.calOk ? (lang === 'he' ? 'קלוריות בסדר' : 'calories ok') : '', data.protOk ? (lang === 'he' ? 'חלבון הושג' : 'protein met') : ''].filter(Boolean).join(', ')}>
+                        {data.calOk  && <span className="icon" aria-hidden="true" style={{ fontSize: 10, color: 'var(--blue-hi)'  }}>check</span>}
+                        {data.protOk && <span className="icon" aria-hidden="true" style={{ fontSize: 10, color: 'var(--green-hi)' }}>check</span>}
                       </div>
                     )}
                   </div>
@@ -867,7 +877,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
         {/* List button */}
         <button
           className="fab-pill-btn"
-          onClick={() => { switchView('list'); setSelectedDate(null); setSearch('') }}
+          onClick={() => { switchView('list'); setSelectedDate(null) }}
           style={{
             width: fabBtnSize, height: fabBtnSize, borderRadius: 999,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -881,7 +891,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
         {/* Calendar button */}
         <button
           className="fab-pill-btn"
-          onClick={() => { switchView('cal'); setSelectedDate(null); setSearch('') }}
+          onClick={() => { switchView('cal'); setSelectedDate(null) }}
           style={{
             width: fabBtnSize, height: fabBtnSize, borderRadius: 999,
             display: 'flex', alignItems: 'center', justifyContent: 'center',

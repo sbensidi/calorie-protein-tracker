@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Settings</title>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#060810;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:40px 16px}
+.mi{font-family:'Material Symbols Rounded';font-style:normal;font-size:18px;line-height:1;vertical-align:middle;font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24;user-select:none}
+.mio{font-family:'Material Symbols Rounded';font-style:normal;font-size:18px;line-height:1;vertical-align:middle;font-variation-settings:'FILL' 0,'wght' 300,'GRAD' 0,'opsz' 24;user-select:none}
+.phone{width:375px;height:760px;background:#0f1117;border-radius:44px;border:2px solid #1e2535;overflow:hidden;position:relative;box-shadow:0 60px 160px rgba(0,0,0,.8),0 0 0 1px rgba(255,255,255,.04);isolation:isolate;-webkit-mask-image:-webkit-radial-gradient(white,black)}
+.hdr{display:flex;align-items:center;justify-content:space-between;padding:18px 18px 12px;border-bottom:1px solid #1a2030;background:#0f1117;position:relative;z-index:2}
+.htitle{font-size:16px;font-weight:800;color:#e2e8f0}
+.hsub{font-size:10px;color:#3d4f6b;margin-top:2px}
+.gear{width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.05);border:1px solid #1e2535;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#64748b;transition:.15s}
+.gear.on{background:rgba(255,255,255,.1);color:#e2e8f0}
+.tabs{display:flex;padding:10px 16px 8px;gap:7px;background:#0f1117}
+.tab{flex:1;padding:8px 0;border-radius:10px;font-size:12px;font-weight:600;color:#3d4f6b;background:transparent;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;font-family:inherit}
+.tab.on{background:#182038;color:#60a5fa;border:1px solid rgba(59,130,246,.18)}
+.bg{padding:14px 16px;pointer-events:none;transition:filter .3s,opacity .3s}
+.fk{border-radius:14px;background:#1a1f2e;border:1px solid #1e2535;margin-bottom:10px}
+.ov{position:absolute;inset:0;background:rgba(0,0,0,0);pointer-events:none;transition:background .35s;z-index:9}
+.ov.on{background:rgba(0,0,0,.55);pointer-events:auto}
+.sheet{position:absolute;bottom:-700px;left:0;right:0;background:#131825;border-radius:24px 24px 0 0;border-top:1px solid #1e2535;transition:top .4s cubic-bezier(.32,.72,0,1),bottom .4s cubic-bezier(.32,.72,0,1);z-index:10;display:flex;flex-direction:column;max-height:680px}
+.sheet.on{top:80px}
+.handle{width:36px;height:4px;background:#252d40;border-radius:2px;margin:12px auto 0;flex-shrink:0}
+.screens{flex:1;overflow:hidden;position:relative}
+.scr{position:absolute;inset:0;overflow-y:auto;scrollbar-width:none;transition:left .35s cubic-bezier(.32,.72,0,1),right .35s cubic-bezier(.32,.72,0,1),opacity .25s;padding-bottom:32px}
+.scr::-webkit-scrollbar{display:none}
+.scr.hr{left:-100%;right:100%;opacity:0;pointer-events:none}
+.scr.hl{left:100%;right:-100%;opacity:0;pointer-events:none}
+.shdr{display:flex;align-items:center;justify-content:space-between;padding:14px 16px 0}
+.stitle{font-size:16px;font-weight:700;color:#e2e8f0}
+.back{display:flex;align-items:center;gap:4px;background:none;border:none;color:#60a5fa;font-size:13px;font-weight:600;cursor:pointer;padding:4px 0;font-family:inherit}
+.xbtn{width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.06);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#475569}
+.grp{margin:14px 14px 0;background:#1a1f2e;border:1px solid #1e2535;border-radius:16px;overflow:hidden}
+.glbl{font-size:9px;font-weight:700;color:#334155;text-transform:uppercase;letter-spacing:.1em;padding:10px 14px 4px}
+.row{display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:1px solid rgba(255,255,255,.04);cursor:pointer;transition:background .12s}
+.row:last-child{border-bottom:none}
+.row:active{background:rgba(255,255,255,.04)}
+.rico{width:32px;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.rcnt{flex:1;min-width:0}
+.rlbl{font-size:13px;font-weight:500;color:#e2e8f0}
+.rsub{font-size:10px;color:#3d4f6b;margin-top:2px}
+.rval{font-size:11px;color:#3d4f6b;display:flex;align-items:center;gap:3px}
+.chev{font-size:18px;color:#2a3550}
+.sout{margin:14px 14px 0;width:calc(100% - 28px);padding:13px;border-radius:14px;border:1px solid rgba(244,63,94,.18);background:rgba(244,63,94,.05);color:#f43f5e;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;font-family:inherit}
+.psec{padding:14px 16px 0}
+.flbl{font-size:9px;font-weight:700;color:#3d4f6b;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;display:block}
+.sexrow{display:flex;gap:7px;margin-bottom:14px}
+.sbtn{flex:1;padding:9px;border-radius:10px;border:1px solid #1e2535;background:#0f1117;color:#475569;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;font-family:inherit;transition:all .15s}
+.sbtn.m{background:rgba(59,130,246,.1);border-color:rgba(59,130,246,.3);color:#60a5fa}
+.sbtn.f{background:rgba(251,113,133,.1);border-color:rgba(251,113,133,.3);color:#fb7185}
+.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+.fgrid label{font-size:9px;font-weight:700;color:#3d4f6b;text-transform:uppercase;letter-spacing:.08em;display:block;margin-bottom:4px}
+.minp{width:100%;background:#0f1117;border:1px solid #1e2535;border-radius:9px;color:#e2e8f0;font-size:14px;font-weight:700;padding:8px 10px;font-family:inherit;outline:none}
+.agrid{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;margin-bottom:14px}
+.abtn{padding:7px 2px;border-radius:8px;border:1px solid #1e2535;background:#0f1117;color:#3d4f6b;font-size:8.5px;font-weight:600;text-align:center;cursor:pointer;font-family:inherit;line-height:1.3}
+.abtn.on{background:rgba(245,158,11,.12);border-color:rgba(245,158,11,.3);color:#f59e0b}
+.gbtns{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:16px}
+.gbtn{padding:9px 5px;border-radius:10px;border:1px solid #1e2535;background:#0f1117;color:#3d4f6b;font-size:10px;font-weight:600;text-align:center;cursor:pointer;font-family:inherit;line-height:1.4}
+.gbtn .mi{font-size:16px;display:block;margin-bottom:3px}
+.gbtn.lose{background:rgba(59,130,246,.1);border-color:rgba(59,130,246,.3);color:#60a5fa}
+.gbtn.keep{background:rgba(16,185,129,.1);border-color:rgba(16,185,129,.3);color:#34d399}
+.gbtn.gain{background:rgba(251,146,60,.1);border-color:rgba(251,146,60,.3);color:#fb923c}
+.rrow{display:flex;gap:8px;margin-bottom:10px}
+.rcard{flex:1;border-radius:12px;padding:10px 12px;text-align:center}
+.rlabel{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px}
+.rval2{font-size:24px;font-weight:800;line-height:1}
+.runit{font-size:9px;font-weight:600;margin-top:3px;opacity:.7}
+.exbox{background:rgba(255,255,255,.03);border:1px solid #1e2535;border-radius:10px;padding:10px 12px;font-size:10px;color:#475569;line-height:1.6;margin-bottom:12px}
+.exbox strong{color:#64748b}
+.apbtn{width:100%;padding:12px;border-radius:12px;border:none;background:linear-gradient(135deg,rgba(59,130,246,.85),rgba(16,185,129,.75));color:#fff;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;font-family:inherit;box-shadow:0 4px 20px rgba(59,130,246,.25)}
+.bfield{margin-bottom:14px}
+.bfield label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;display:flex;align-items:center;gap:5px;margin-bottom:7px}
+.bwrap{position:relative}
+.binp{width:100%;background:#0f1117;border:1.5px solid;border-radius:12px;color:#e2e8f0;font-size:28px;font-weight:800;padding:12px 14px;font-family:inherit;outline:none}
+.binp.cal{border-color:rgba(59,130,246,.25)}
+.binp.prot{border-color:rgba(16,185,129,.25)}
+.bunit{position:absolute;top:50%;transform:translateY(-50%);left:14px;font-size:11px;font-weight:600;color:#334155;pointer-events:none}
+.sugbanner{background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.18);border-radius:12px;padding:10px 12px;margin-bottom:14px;display:flex;align-items:center;gap:9px}
+.sugcnt{flex:1;min-width:0}
+.sugttl{font-size:11px;font-weight:700;color:#f59e0b;margin-bottom:2px}
+.sugval{font-size:10px;color:#64748b}
+.sugap{padding:5px 10px;border-radius:7px;border:none;background:rgba(245,158,11,.18);color:#f59e0b;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit}
+.phint{font-size:10px;color:#3d4f6b;display:flex;align-items:center;gap:4px;margin-top:6px}
+.lopt{display:flex;align-items:center;padding:14px;cursor:pointer;border-bottom:1px solid rgba(255,255,255,.04)}
+.lopt:last-child{border-bottom:none}
+.lflag{font-size:22px;margin-left:12px}
+.ltxt{flex:1}
+.lname{font-size:14px;font-weight:600;color:#e2e8f0}
+.lsub{font-size:10px;color:#3d4f6b;margin-top:1px}
+.chk{color:#34d399;font-size:20px}
+.toast{position:absolute;top:80px;left:50%;transform:translateX(-50%) translateY(-16px);background:#1a2e20;border:1px solid rgba(16,185,129,.3);border-radius:20px;padding:8px 16px;font-size:12px;font-weight:600;color:#34d399;display:flex;align-items:center;gap:6px;opacity:0;transition:opacity .3s,transform .3s;z-index:99;white-space:nowrap;pointer-events:none}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="hdr">
+    <div><div class="htitle">מעקב קלוריות</div><div class="hsub">יום שני, 21 באפריל</div></div>
+    <div class="gear" id="gear"><span class="mio">settings</span></div>
+  </div>
+  <div class="tabs">
+    <button class="tab on"><span class="mi" style="font-size:14px">today</span>היום</button>
+    <button class="tab"><span class="mio" style="font-size:14px">history</span>היסטוריה</button>
+  </div>
+  <div class="bg" id="bg">
+    <div class="fk" style="height:86px"></div>
+    <div class="fk" style="height:64px"></div>
+    <div class="fk" style="height:52px"></div>
+    <div class="fk" style="height:52px"></div>
+  </div>
+  <div class="ov" id="ov"></div>
+  <div class="toast" id="toast"><span class="mi">check_circle</span><span id="tmsg"></span></div>
+  <div class="sheet" id="sheet">
+    <div class="handle"></div>
+    <div class="screens">
+      <!-- S0 -->
+      <div class="scr" id="s0">
+        <div class="shdr"><div class="stitle">הגדרות</div><button class="xbtn" id="x0"><span class="mi" style="font-size:16px">close</span></button></div>
+        <div class="grp">
+          <div class="glbl">פרופיל ו-BMR</div>
+          <div class="row" id="r1a"><div class="rico" style="background:rgba(59,130,246,.12)"><span class="mi" style="color:#60a5fa;font-size:17px">person</span></div><div class="rcnt"><div class="rlbl">פרופיל אישי</div><div class="rsub" id="profileSub">גבר · 32 שנה · 178 ס"מ · 78 ק"ג</div></div><div class="rval"><span class="mi chev">chevron_left</span></div></div>
+          <div class="row" id="r1b"><div class="rico" style="background:rgba(245,158,11,.12)"><span class="mi" style="color:#f59e0b;font-size:17px">local_fire_department</span></div><div class="rcnt"><div class="rlbl">BMR &amp; TDEE</div><div class="rsub" id="bmrSub">BMR: 1,820 · TDEE: 2,820 קק"ל</div></div><div class="rval"><span class="mi chev">chevron_left</span></div></div>
+        </div>
+        <div class="grp">
+          <div class="glbl">יעדים יומיים</div>
+          <div class="row" id="r2a"><div class="rico" style="background:rgba(59,130,246,.12)"><span class="mi" style="color:#60a5fa;font-size:17px">bolt</span></div><div class="rcnt"><div class="rlbl">קלוריות יומיות</div><div class="rsub" id="calSub">יעד: 2,400 קק"ל</div></div><div class="rval"><span class="mi chev">chevron_left</span></div></div>
+          <div class="row" id="r2b"><div class="rico" style="background:rgba(16,185,129,.12)"><span class="mi" style="color:#34d399;font-size:17px">egg</span></div><div class="rcnt"><div class="rlbl">חלבון יומי</div><div class="rsub" id="protSub">יעד: 160 גרם</div></div><div class="rval"><span class="mi chev">chevron_left</span></div></div>
+        </div>
+        <div class="grp">
+          <div class="glbl">אפליקציה</div>
+          <div class="row" id="r3a"><div class="rico" style="background:rgba(148,163,184,.08)"><span class="mio" style="color:#64748b;font-size:17px">language</span></div><div class="rcnt"><div class="rlbl">שפה</div></div><div class="rval"><span style="font-size:12px;font-weight:700;color:#94a3b8" id="langLbl">עברית</span><span class="mi chev">chevron_left</span></div></div>
+        </div>
+        <button class="sout" id="sout"><span class="mi" style="font-size:17px">logout</span>התנתק</button>
+      </div>
+      <!-- S1 -->
+      <div class="scr hl" id="s1">
+        <div class="shdr"><button class="back" id="b1"><span class="mi">arrow_forward</span>הגדרות</button><button class="xbtn" id="x1"><span class="mi" style="font-size:16px">close</span></button></div>
+        <div style="padding:6px 16px 0;font-size:17px;font-weight:800;color:#e2e8f0">פרופיל אישי</div>
+        <div class="psec">
+          <span class="flbl" style="margin-top:10px">מין</span>
+          <div class="sexrow">
+            <button class="sbtn m" id="btnM"><span class="mi">male</span>גבר</button>
+            <button class="sbtn" id="btnF"><span class="mi">female</span>אישה</button>
+          </div>
+          <div class="fgrid">
+            <div><label>גיל</label><input class="minp" id="fAge" type="number" value="32"></div>
+            <div><label>גובה (ס"מ)</label><input class="minp" id="fHeight" type="number" value="178"></div>
+            <div><label>משקל (ק"ג)</label><input class="minp" id="fWeight" type="number" value="78"></div>
+            <div><label>מטרה</label><div style="font-size:10px;color:#3d4f6b;padding-top:8px">בחר למטה</div></div>
+          </div>
+          <div class="gbtns">
+            <button class="gbtn" id="gLose"><span class="mi">trending_down</span>הפחתה</button>
+            <button class="gbtn" id="gKeep"><span class="mi">horizontal_rule</span>שמירה</button>
+            <button class="gbtn" id="gGain"><span class="mi">trending_up</span>עלייה</button>
+          </div>
+          <span class="flbl">רמת פעילות</span>
+          <div class="agrid">
+            <button class="abtn" id="a0">יושבני</button>
+            <button class="abtn" id="a1">קל</button>
+            <button class="abtn on" id="a2">מתון</button>
+            <button class="abtn" id="a3">פעיל</button>
+            <button class="abtn" id="a4">אינטנסיבי</button>
+          </div>
+          <div class="rrow">
+            <div class="rcard" style="background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.18)"><div class="rlabel" style="color:#f59e0b">BMR</div><div class="rval2" style="color:#f59e0b" id="rBMR">1,820</div><div class="runit" style="color:#f59e0b">קק"ל/יום</div></div>
+            <div class="rcard" style="background:rgba(251,146,60,.07);border:1px solid rgba(251,146,60,.18)"><div class="rlabel" style="color:#fb923c">TDEE</div><div class="rval2" style="color:#fb923c" id="rTDEE">2,820</div><div class="runit" style="color:#fb923c">קק"ל/יום</div></div>
+            <div class="rcard" style="background:rgba(16,185,129,.07);border:1px solid rgba(16,185,129,.18)"><div class="rlabel" style="color:#34d399">חלבון</div><div class="rval2" style="color:#34d399;font-size:20px" id="rProt">140</div><div class="runit" style="color:#34d399">גרם/יום</div></div>
+          </div>
+          <div class="exbox"><strong>BMR</strong> — קלוריות שהגוף שורף במנוחה מוחלטת.<br><strong>TDEE</strong> — הוצאה יומית כוללת לפי רמת הפעילות.<br><span id="exGoal" style="color:#60a5fa">לירידה: יעד 2,320 קק"ל</span></div>
+          <button class="apbtn" id="apProf"><span class="mi">check_circle</span><span id="apLbl">החל יעדים</span></button>
+        </div>
+      </div>
+      <!-- S2 -->
+      <div class="scr hl" id="s2">
+        <div class="shdr"><button class="back" id="b2"><span class="mi">arrow_forward</span>הגדרות</button><button class="xbtn" id="x2"><span class="mi" style="font-size:16px">close</span></button></div>
+        <div style="padding:6px 16px 0;font-size:17px;font-weight:800;color:#e2e8f0">יעדים יומיים</div>
+        <div style="padding:14px 16px 0">
+          <div class="sugbanner"><span class="mi" style="font-size:20px;color:#f59e0b;flex-shrink:0">tips_and_updates</span><div class="sugcnt"><div class="sugttl">המלצה מה-TDEE שלך</div><div class="sugval" id="sugTxt">לירידה: 2,320 קק"ל · חלבון: 140 גרם</div></div><button class="sugap" id="sugAp">החל</button></div>
+          <div class="bfield"><label style="color:#60a5fa"><span class="mi" style="color:#60a5fa;font-size:14px">bolt</span>קלוריות יומיות</label><div class="bwrap"><input class="binp cal" id="gCal" type="number" value="2400"><span class="bunit">קק"ל</span></div></div>
+          <div class="bfield"><label style="color:#34d399"><span class="mi" style="color:#34d399;font-size:14px">egg</span>חלבון יומי</label><div class="bwrap"><input class="binp prot" id="gProt" type="number" value="160"><span class="bunit">גרם</span></div><div class="phint"><span class="mi" style="font-size:13px;color:#34d399">info</span><span id="protHint">המלצה: 125–172 גרם</span></div></div>
+          <button class="apbtn" id="apGoals"><span class="mi">save</span>שמור יעדים</button>
+        </div>
+      </div>
+      <!-- S3 -->
+      <div class="scr hl" id="s3">
+        <div class="shdr"><button class="back" id="b3"><span class="mi">arrow_forward</span>הגדרות</button><button class="xbtn" id="x3"><span class="mi" style="font-size:16px">close</span></button></div>
+        <div style="padding:6px 16px 14px;font-size:17px;font-weight:800;color:#e2e8f0">שפה</div>
+        <div class="grp" style="margin-top:0">
+          <div class="lopt" id="lHe"><span class="lflag">&#127470;&#127473;</span><div class="ltxt"><div class="lname">עברית</div><div class="lsub">Hebrew</div></div><span class="mi chk" id="chkHe">check_circle</span></div>
+          <div class="lopt" id="lEn"><span class="lflag">&#127482;&#127480;</span><div class="ltxt"><div class="lname">English</div><div class="lsub">אנגלית</div></div><span class="mi chk" id="chkEn" style="color:#1e2535">check_circle</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+var cur=0,ttmr=null
+var S={sex:'m',age:32,h:178,w:78,act:2,goal:'lose',sugCal:0,sugProt:0}
+var MULTS=[1.2,1.375,1.55,1.725,1.9]
+var DELTA={lose:-500,keep:0,gain:300}
+var PRATE={lose:2.0,keep:1.6,gain:2.2}
+var AADJ=[-0.2,-0.1,0,0.1,0.2]
+var GLBL={lose:'\u05dc\u05d9\u05e8\u05d9\u05d3\u05d4',keep:'\u05dc\u05e9\u05de\u05d9\u05e8\u05d4',gain:'\u05dc\u05e2\u05dc\u05d9\u05d9\u05d4'}
+var GCOL={lose:'#60a5fa',keep:'#34d399',gain:'#fb923c'}
+function q(id){return document.getElementById(id)}
+function openSheet(){q('sheet').classList.add('on');q('ov').classList.add('on');q('gear').classList.add('on');q('bg').style.cssText='filter:blur(3px);opacity:.3'}
+function closeSheet(){q('sheet').classList.remove('on');q('ov').classList.remove('on');q('gear').classList.remove('on');q('bg').style.cssText='';setTimeout(function(){if(cur){q('s'+cur).classList.add('hl');q('s0').classList.remove('hr');cur=0}},380)}
+function goTo(n){q('s0').classList.add('hr');q('s'+n).classList.remove('hl');cur=n;if(n===1)recalc();if(n===2)updateSug()}
+function goBack(){q('s'+cur).classList.add('hl');q('s0').classList.remove('hr');cur=0}
+function setSex(s){S.sex=s;q('btnM').className='sbtn'+(s==='m'?' m':'');q('btnF').className='sbtn'+(s==='f'?' f':'');recalc()}
+function setAct(i){S.act=i;for(var j=0;j<5;j++)q('a'+j).classList.toggle('on',j===i);recalc()}
+function setGoal(g){S.goal=g;q('gLose').className='gbtn'+(g==='lose'?' lose':'');q('gKeep').className='gbtn'+(g==='keep'?' keep':'');q('gGain').className='gbtn'+(g==='gain'?' gain':'');recalc()}
+function recalc(){
+  var age=parseFloat(q('fAge').value)||S.age,h=parseFloat(q('fHeight').value)||S.h,w=parseFloat(q('fWeight').value)||S.w
+  S.age=age;S.h=h;S.w=w
+  var bmr=Math.round(10*w+6.25*h-5*age+(S.sex==='m'?5:-161))
+  var tdee=Math.round(bmr*MULTS[S.act])
+  var cal=tdee+DELTA[S.goal],prot=Math.round(w*(PRATE[S.goal]+AADJ[S.act]))
+  S.sugCal=cal;S.sugProt=prot
+  q('rBMR').textContent=bmr.toLocaleString();q('rTDEE').textContent=tdee.toLocaleString();q('rProt').textContent=prot
+  var d=DELTA[S.goal],ds=d===0?'\u00b10':(d>0?'+'+d:''+d)
+  q('exGoal').style.color=GCOL[S.goal]
+  q('exGoal').textContent=GLBL[S.goal]+': \u05d9\u05e2\u05d3 '+cal.toLocaleString()+' \u05e7\u05e7"\u05dc ('+ds+')'
+  q('apLbl').textContent='\u05d4\u05d7\u05dc \u05d9\u05e2\u05d3\u05d9\u05dd ('+cal.toLocaleString()+' \u05e7\u05e7"\u05dc \u00b7 '+prot+' \u05d2\u05e8\u05dd \u05d7\u05dc\u05d1\u05d5\u05df)'
+  var sx=S.sex==='m'?'\u05d2\u05d1\u05e8':'\u05d0\u05e9\u05d4'
+  q('profileSub').textContent=sx+' \u00b7 '+age+' \u05e9\u05e0\u05d4 \u00b7 '+h+' \u05e1"\u05de \u00b7 '+w+' \u05e7"\u05d2'
+  q('bmrSub').textContent='BMR: '+bmr.toLocaleString()+' \u00b7 TDEE: '+tdee.toLocaleString()+' \u05e7\u05e7"\u05dc'
+  var lo=Math.round(w*1.6),hi=Math.round(w*2.2)
+  q('protHint').textContent='\u05d4\u05de\u05dc\u05e6\u05d4: '+lo+'\u2013'+hi+' \u05d2\u05e8\u05dd (1.6\u20132.2 \u05d2\u05e8\u05dd/\u05e7"\u05d2)'
+}
+function applyProf(){q('gCal').value=S.sugCal;q('gProt').value=S.sugProt;updateGoalSubs();toast(S.sugCal.toLocaleString()+' \u05e7\u05e7"\u05dc \u00b7 '+S.sugProt+' \u05d2\u05e8\u05dd \u05d7\u05dc\u05d1\u05d5\u05df');closeSheet()}
+function updateSug(){recalc();q('sugTxt').textContent=GLBL[S.goal]+': '+S.sugCal.toLocaleString()+' \u05e7\u05e7"\u05dc \u00b7 \u05d7\u05dc\u05d1\u05d5\u05df: '+S.sugProt+' \u05d2\u05e8\u05dd'}
+function applyTDEE(){q('gCal').value=S.sugCal;q('gProt').value=S.sugProt;updateGoalSubs()}
+function updateGoalSubs(){q('calSub').textContent='\u05d9\u05e2\u05d3: '+(parseFloat(q('gCal').value)||0).toLocaleString()+' \u05e7\u05e7"\u05dc';q('protSub').textContent='\u05d9\u05e2\u05d3: '+(parseFloat(q('gProt').value)||0)+' \u05d2\u05e8\u05dd'}
+function applyGoals(){updateGoalSubs();toast((parseFloat(q('gCal').value)||0).toLocaleString()+' \u05e7\u05e7"\u05dc');closeSheet()}
+function setLang(l){q('chkHe').style.color=l==='he'?'#34d399':'#1e2535';q('chkEn').style.color=l==='en'?'#34d399':'#1e2535';q('langLbl').textContent=l==='he'?'\u05e2\u05d1\u05e8\u05d9\u05ea':'English';setTimeout(function(){goBack()},280)}
+function toast(msg){q('tmsg').textContent=msg;q('toast').classList.add('on');clearTimeout(ttmr);ttmr=setTimeout(function(){q('toast').classList.remove('on')},2600)}
+q('gear').addEventListener('click',openSheet)
+q('ov').addEventListener('click',closeSheet)
+q('x0').addEventListener('click',closeSheet)
+q('x1').addEventListener('click',closeSheet)
+q('x2').addEventListener('click',closeSheet)
+q('x3').addEventListener('click',closeSheet)
+q('b1').addEventListener('click',goBack)
+q('b2').addEventListener('click',goBack)
+q('b3').addEventListener('click',goBack)
+q('r1a').addEventListener('click',function(){goTo(1)})
+q('r1b').addEventListener('click',function(){goTo(1)})
+q('r2a').addEventListener('click',function(){goTo(2)})
+q('r2b').addEventListener('click',function(){goTo(2)})
+q('r3a').addEventListener('click',function(){goTo(3)})
+q('sout').addEventListener('click',function(){toast('\u05de\u05ea\u05e0\u05ea\u05e7...')})
+q('btnM').addEventListener('click',function(){setSex('m')})
+q('btnF').addEventListener('click',function(){setSex('f')})
+for(var _i=0;_i<5;_i++){(function(i){q('a'+i).addEventListener('click',function(){setAct(i)})}(_i))}
+q('gLose').addEventListener('click',function(){setGoal('lose')})
+q('gKeep').addEventListener('click',function(){setGoal('keep')})
+q('gGain').addEventListener('click',function(){setGoal('gain')})
+q('fAge').addEventListener('input',recalc)
+q('fHeight').addEventListener('input',recalc)
+q('fWeight').addEventListener('input',recalc)
+q('apProf').addEventListener('click',applyProf)
+q('sugAp').addEventListener('click',applyTDEE)
+q('gCal').addEventListener('input',updateGoalSubs)
+q('gProt').addEventListener('input',updateGoalSubs)
+q('apGoals').addEventListener('click',applyGoals)
+q('lHe').addEventListener('click',function(){setLang('he')})
+q('lEn').addEventListener('click',function(){setLang('en')})
+recalc()
+setGoal('lose')
+</script>
+</body>
+</html>

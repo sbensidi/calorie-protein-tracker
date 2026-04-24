@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Settings Sheet — סקיצה</title>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0 }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: #080b12;
+  color: #e2e8f0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 32px 16px 60px;
+  gap: 40px;
+}
+
+.icon {
+  font-family: 'Material Symbols Rounded';
+  font-style: normal;
+  font-size: 18px;
+  line-height: 1;
+  vertical-align: middle;
+  font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+.icon-outlined {
+  font-family: 'Material Symbols Rounded';
+  font-style: normal;
+  font-size: 18px;
+  line-height: 1;
+  vertical-align: middle;
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+/* ── PHONE FRAME ── */
+.phone {
+  width: 375px;
+  height: 780px;
+  background: #0f1117;
+  border-radius: 40px;
+  border: 2px solid #2a3040;
+  overflow: hidden;
+  position: relative;
+  box-shadow: 0 40px 120px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.04);
+  flex-shrink: 0;
+}
+
+.section-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  text-align: center;
+  margin-bottom: 12px;
+}
+
+/* ── APP HEADER ── */
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 16px 10px;
+  border-bottom: 1px solid #1e2535;
+  background: #0f1117;
+  position: relative;
+  z-index: 1;
+}
+
+.app-header-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #e2e8f0;
+  letter-spacing: -0.01em;
+}
+.app-header-sub {
+  font-size: 10px;
+  color: #475569;
+  margin-top: 1px;
+}
+
+.gear-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid #2a3040;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s;
+  color: #94a3b8;
+}
+.gear-btn:hover { background: rgba(255,255,255,0.09) }
+
+/* ── TABS ── */
+.tab-bar {
+  display: flex;
+  padding: 10px 16px 8px;
+  gap: 6px;
+}
+.tab {
+  flex: 1;
+  padding: 8px 0;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  color: #475569;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+.tab.active {
+  background: #1a2235;
+  color: #60a5fa;
+  border: 1px solid rgba(59,130,246,0.2);
+}
+
+/* ── APP CONTENT (blurred) ── */
+.app-content {
+  padding: 12px 16px;
+  filter: blur(2px);
+  opacity: 0.35;
+  pointer-events: none;
+}
+.fake-card {
+  background: #1a1f2e;
+  border: 1px solid #2a3040;
+  border-radius: 14px;
+  padding: 14px;
+  margin-bottom: 10px;
+  height: 80px;
+}
+.fake-card-sm {
+  background: #1a1f2e;
+  border: 1px solid #2a3040;
+  border-radius: 14px;
+  padding: 14px;
+  margin-bottom: 10px;
+  height: 50px;
+}
+
+/* ── SETTINGS SHEET ── */
+.settings-sheet {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #131825;
+  border-radius: 24px 24px 0 0;
+  border-top: 1px solid #2a3040;
+  max-height: 660px;
+  overflow-y: auto;
+  scrollbar-width: none;
+  padding-bottom: 32px;
+}
+.settings-sheet::-webkit-scrollbar { display: none }
+
+.sheet-handle {
+  width: 36px;
+  height: 4px;
+  background: #2a3040;
+  border-radius: 2px;
+  margin: 12px auto 0;
+}
+
+.sheet-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px 0;
+}
+.sheet-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #e2e8f0;
+}
+.close-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.06);
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+/* ── SECTION GROUPS ── */
+.settings-group {
+  margin: 14px 14px 0;
+  background: #1a1f2e;
+  border: 1px solid #2a3040;
+  border-radius: 16px;
+  overflow: hidden;
+}
+.settings-group-label {
+  font-size: 9px;
+  font-weight: 700;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 10px 14px 4px;
+}
+.settings-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 14px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  cursor: pointer;
+}
+.settings-row:last-child { border-bottom: none }
+.settings-row-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.settings-row-content { flex: 1; min-width: 0 }
+.settings-row-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: #e2e8f0;
+}
+.settings-row-sub {
+  font-size: 10px;
+  color: #475569;
+  margin-top: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.settings-row-value {
+  font-size: 11px;
+  color: #475569;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+.chevron {
+  color: #374151;
+  font-size: 16px;
+}
+
+/* ── BMR EXPANDED SECTION ── */
+.bmr-section {
+  margin: 14px 14px 0;
+  background: #1a1f2e;
+  border: 1px solid rgba(245,158,11,0.2);
+  border-radius: 16px;
+  overflow: hidden;
+}
+.bmr-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  cursor: pointer;
+}
+.bmr-content {
+  padding: 0 14px 14px;
+  border-top: 1px solid rgba(255,255,255,0.04);
+}
+.bmr-result-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.bmr-result-card {
+  flex: 1;
+  border-radius: 12px;
+  padding: 10px 12px;
+  text-align: center;
+}
+.bmr-result-label {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 4px;
+}
+.bmr-result-value {
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1;
+}
+.bmr-result-unit {
+  font-size: 9px;
+  font-weight: 600;
+  margin-top: 2px;
+  opacity: 0.7;
+}
+.bmr-explain {
+  font-size: 10px;
+  color: #475569;
+  line-height: 1.5;
+  margin-bottom: 10px;
+  padding: 8px 10px;
+  background: rgba(255,255,255,0.03);
+  border-radius: 8px;
+}
+
+/* inputs inside settings */
+.mini-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.mini-field label {
+  font-size: 9px;
+  font-weight: 700;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  display: block;
+  margin-bottom: 4px;
+}
+.mini-input {
+  width: 100%;
+  background: #0f1117;
+  border: 1px solid #2a3040;
+  border-radius: 8px;
+  color: #e2e8f0;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 7px 10px;
+  font-family: inherit;
+  outline: none;
+}
+
+/* Activity selector */
+.activity-row {
+  display: flex;
+  gap: 5px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.act-btn {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 4px;
+  border-radius: 8px;
+  border: 1px solid #2a3040;
+  background: #0f1117;
+  color: #64748b;
+  font-size: 9px;
+  font-weight: 600;
+  text-align: center;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.act-btn.active {
+  background: rgba(245,158,11,0.12);
+  border-color: rgba(245,158,11,0.35);
+  color: #f59e0b;
+}
+
+/* Apply button */
+.apply-btn {
+  width: 100%;
+  padding: 10px;
+  border-radius: 10px;
+  border: none;
+  background: linear-gradient(135deg, rgba(59,130,246,0.9), rgba(16,185,129,0.8));
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+/* Lang toggle */
+.lang-toggle {
+  display: flex;
+  gap: 6px;
+}
+.lang-btn {
+  flex: 1;
+  padding: 7px;
+  border-radius: 8px;
+  border: 1px solid #2a3040;
+  background: #0f1117;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+}
+.lang-btn.active {
+  background: rgba(255,255,255,0.07);
+  border-color: #3a4560;
+  color: #e2e8f0;
+}
+
+/* Goal fields inside sheet */
+.goal-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 10px 14px 14px;
+}
+.goal-field label {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  display: block;
+  margin-bottom: 4px;
+}
+.lbl-blue  { color: #60a5fa }
+.lbl-green { color: #34d399 }
+.goal-input {
+  width: 100%;
+  background: #0f1117;
+  border: 1px solid rgba(59,130,246,0.3);
+  border-radius: 8px;
+  color: #e2e8f0;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 8px 10px;
+  font-family: inherit;
+  outline: none;
+}
+.goal-input.green { border-color: rgba(16,185,129,0.3) }
+
+/* Sign out */
+.signout-btn {
+  margin: 14px 14px 0;
+  width: calc(100% - 28px);
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(244,63,94,0.2);
+  background: rgba(244,63,94,0.06);
+  color: #f43f5e;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+}
+
+/* sex toggle */
+.sex-toggle {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.sex-btn {
+  flex: 1;
+  padding: 7px;
+  border-radius: 8px;
+  border: 1px solid #2a3040;
+  background: #0f1117;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+.sex-btn.active-m {
+  background: rgba(59,130,246,0.1);
+  border-color: rgba(59,130,246,0.35);
+  color: #60a5fa;
+}
+.sex-btn.active-f {
+  background: rgba(244,63,94,0.1);
+  border-color: rgba(244,63,94,0.35);
+  color: #fb7185;
+}
+
+/* ── LAYOUT FOR SIDE-BY-SIDE STATES ── */
+.layout-pair {
+  display: flex;
+  gap: 32px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.state-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.state-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: #475569;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* notification dot */
+.notif-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: #f59e0b;
+  position: absolute;
+  top: 6px; left: 6px;
+  border: 1.5px solid #0f1117;
+}
+</style>
+</head>
+<body>
+
+<div class="section-title">מצב רגיל — כפתור הגדרות ב-header</div>
+
+<!-- STATE 1: Normal app with gear icon -->
+<div class="layout-pair">
+  <div class="state-block">
+    <div class="state-label">אפליקציה רגילה</div>
+    <div class="phone">
+      <!-- Header -->
+      <div class="app-header">
+        <div>
+          <div class="app-header-title">מעקב קלוריות</div>
+          <div class="app-header-sub">יום ראשון, 20 באפריל</div>
+        </div>
+        <div style="position:relative">
+          <div class="gear-btn">
+            <span class="icon-outlined" style="font-size:18px">settings</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabs -->
+      <div class="tab-bar">
+        <button class="tab active">
+          <span class="icon" style="font-size:14px">today</span>
+          היום
+        </button>
+        <button class="tab">
+          <span class="icon" style="font-size:14px">history</span>
+          היסטוריה
+        </button>
+      </div>
+
+      <!-- Blurred content -->
+      <div class="app-content">
+        <div class="fake-card"></div>
+        <div class="fake-card"></div>
+        <div class="fake-card-sm"></div>
+        <div class="fake-card-sm"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STATE 2: Sheet open — collapsed view (all rows) -->
+  <div class="state-block">
+    <div class="state-label">Sheet פתוח — תצוגה כללית</div>
+    <div class="phone">
+      <!-- Header -->
+      <div class="app-header">
+        <div>
+          <div class="app-header-title">מעקב קלוריות</div>
+          <div class="app-header-sub">יום ראשון, 20 באפריל</div>
+        </div>
+        <div style="position:relative">
+          <div class="gear-btn" style="background:rgba(255,255,255,0.09); color:#e2e8f0">
+            <span class="icon" style="font-size:18px">settings</span>
+          </div>
+        </div>
+      </div>
+      <div class="tab-bar">
+        <button class="tab active">
+          <span class="icon" style="font-size:14px">today</span>
+          היום
+        </button>
+        <button class="tab">
+          <span class="icon" style="font-size:14px">history</span>
+          היסטוריה
+        </button>
+      </div>
+      <div class="app-content" style="height:120px; overflow:hidden">
+        <div class="fake-card"></div>
+      </div>
+
+      <!-- Settings Sheet -->
+      <div class="settings-sheet">
+        <div class="sheet-handle"></div>
+        <div class="sheet-header">
+          <div class="sheet-title">הגדרות</div>
+          <button class="close-btn">
+            <span class="icon" style="font-size:16px">close</span>
+          </button>
+        </div>
+
+        <!-- PROFILE GROUP -->
+        <div class="settings-group">
+          <div class="settings-group-label">פרופיל אישי</div>
+          <div class="settings-row">
+            <div class="settings-row-icon" style="background:rgba(59,130,246,0.12)">
+              <span class="icon" style="color:#60a5fa;font-size:16px">person</span>
+            </div>
+            <div class="settings-row-content">
+              <div class="settings-row-label">נתונים אישיים</div>
+              <div class="settings-row-sub">גבר · 32 שנה · 178 ס"מ · 78 ק"ג</div>
+            </div>
+            <div class="settings-row-value">
+              <span class="icon chevron">chevron_left</span>
+            </div>
+          </div>
+          <div class="settings-row">
+            <div class="settings-row-icon" style="background:rgba(245,158,11,0.12)">
+              <span class="icon" style="color:#f59e0b;font-size:16px">local_fire_department</span>
+            </div>
+            <div class="settings-row-content">
+              <div class="settings-row-label">BMR & TDEE</div>
+              <div class="settings-row-sub">BMR: 1,820 קק"ל · TDEE: 2,820 קק"ל</div>
+            </div>
+            <div class="settings-row-value">
+              <span class="icon chevron">chevron_left</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- GOALS GROUP -->
+        <div class="settings-group" style="border-color:#2a3040">
+          <div class="settings-group-label">יעדים יומיים</div>
+          <div class="settings-row">
+            <div class="settings-row-icon" style="background:rgba(59,130,246,0.12)">
+              <span class="icon" style="color:#60a5fa;font-size:16px">bolt</span>
+            </div>
+            <div class="settings-row-content">
+              <div class="settings-row-label">קלוריות יומיות</div>
+              <div class="settings-row-sub">יעד: 2,400 קק"ל</div>
+            </div>
+            <div class="settings-row-value">
+              <span class="icon chevron">chevron_left</span>
+            </div>
+          </div>
+          <div class="settings-row">
+            <div class="settings-row-icon" style="background:rgba(16,185,129,0.12)">
+              <span class="icon" style="color:#34d399;font-size:16px">egg</span>
+            </div>
+            <div class="settings-row-content">
+              <div class="settings-row-label">חלבון יומי</div>
+              <div class="settings-row-sub">יעד: 160 גרם</div>
+            </div>
+            <div class="settings-row-value">
+              <span class="icon chevron">chevron_left</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- APP SETTINGS -->
+        <div class="settings-group">
+          <div class="settings-group-label">אפליקציה</div>
+          <div class="settings-row">
+            <div class="settings-row-icon" style="background:rgba(148,163,184,0.1)">
+              <span class="icon" style="color:#94a3b8;font-size:16px">language</span>
+            </div>
+            <div class="settings-row-content">
+              <div class="settings-row-label">שפה</div>
+            </div>
+            <div class="settings-row-value" style="gap:6px">
+              <span style="font-size:11px;font-weight:700;color:#e2e8f0">עברית</span>
+              <span class="icon chevron">chevron_left</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- SIGN OUT -->
+        <button class="signout-btn">
+          <span class="icon" style="font-size:18px">logout</span>
+          התנתק
+        </button>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── EXPANDED: BMR SECTION ── -->
+<div class="section-title" style="margin-top:8px">Sheet — פרופיל + BMR מורחב</div>
+
+<div class="layout-pair">
+  <div class="state-block">
+    <div class="state-label">עריכת פרופיל אישי</div>
+    <div class="phone">
+      <div class="app-header">
+        <div>
+          <div class="app-header-title">מעקב קלוריות</div>
+          <div class="app-header-sub">יום ראשון, 20 באפריל</div>
+        </div>
+        <div class="gear-btn" style="background:rgba(255,255,255,0.09); color:#e2e8f0">
+          <span class="icon" style="font-size:18px">settings</span>
+        </div>
+      </div>
+      <div class="app-content" style="height:60px; overflow:hidden; opacity:0.15"></div>
+
+      <div class="settings-sheet" style="max-height:700px">
+        <div class="sheet-handle"></div>
+        <div class="sheet-header">
+          <div style="display:flex;align-items:center;gap:8px">
+            <button class="close-btn" style="background:none">
+              <span class="icon" style="font-size:18px;color:#60a5fa">arrow_forward</span>
+            </button>
+            <div class="sheet-title">פרופיל אישי</div>
+          </div>
+          <button class="close-btn">
+            <span class="icon" style="font-size:16px">close</span>
+          </button>
+        </div>
+
+        <div style="padding:14px 14px 0">
+
+          <!-- Sex toggle -->
+          <div style="font-size:9px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:6px">מין</div>
+          <div class="sex-toggle">
+            <button class="sex-btn active-m">
+              <span class="icon" style="font-size:14px">male</span>
+              גבר
+            </button>
+            <button class="sex-btn">
+              <span class="icon" style="font-size:14px">female</span>
+              אישה
+            </button>
+          </div>
+
+          <!-- Grid of fields -->
+          <div class="mini-grid">
+            <div class="mini-field">
+              <label>גיל</label>
+              <input class="mini-input" value="32" type="number">
+            </div>
+            <div class="mini-field">
+              <label>גובה (ס"מ)</label>
+              <input class="mini-input" value="178" type="number">
+            </div>
+            <div class="mini-field">
+              <label>משקל (ק"ג)</label>
+              <input class="mini-input" value="78" type="number">
+            </div>
+            <div class="mini-field">
+              <label>יעד</label>
+              <select class="mini-input" style="appearance:none">
+                <option>הפחתת משקל</option>
+                <option>שמירה</option>
+                <option>עלייה</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Activity level -->
+          <div style="font-size:9px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:6px">רמת פעילות</div>
+          <div class="activity-row">
+            <button class="act-btn">יושבני</button>
+            <button class="act-btn">קל</button>
+            <button class="act-btn active">מתון</button>
+            <button class="act-btn">פעיל</button>
+            <button class="act-btn">אינטנסיבי</button>
+          </div>
+
+          <!-- BMR/TDEE results -->
+          <div class="bmr-result-row">
+            <div class="bmr-result-card" style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2)">
+              <div class="bmr-result-label" style="color:#f59e0b">BMR</div>
+              <div class="bmr-result-value" style="color:#f59e0b">1,820</div>
+              <div class="bmr-result-unit" style="color:#f59e0b">קק"ל / יום</div>
+            </div>
+            <div class="bmr-result-card" style="background:rgba(251,146,60,0.08);border:1px solid rgba(251,146,60,0.2)">
+              <div class="bmr-result-label" style="color:#fb923c">TDEE</div>
+              <div class="bmr-result-value" style="color:#fb923c">2,820</div>
+              <div class="bmr-result-unit" style="color:#fb923c">קק"ל / יום</div>
+            </div>
+          </div>
+
+          <!-- Explanation -->
+          <div class="bmr-explain">
+            <strong style="color:#94a3b8">BMR</strong> — הקלוריות שהגוף שורף במנוחה מוחלטת (נשימה, זרימת דם).<br>
+            <strong style="color:#94a3b8">TDEE</strong> — סה"כ הוצאה יומית לפי רמת הפעילות שלך.<br>
+            <span style="color:#34d399">לירידה במשקל: 2,320 קק"ל (חוסר 500)</span>
+          </div>
+
+          <!-- Apply button -->
+          <button class="apply-btn">
+            <span class="icon" style="font-size:16px">check_circle</span>
+            החל כיעד יומי (2,320 קק"ל)
+          </button>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- GOALS EDITING STATE -->
+  <div class="state-block">
+    <div class="state-label">עריכת יעדים</div>
+    <div class="phone">
+      <div class="app-header">
+        <div>
+          <div class="app-header-title">מעקב קלוריות</div>
+          <div class="app-header-sub">יום ראשון, 20 באפריל</div>
+        </div>
+        <div class="gear-btn" style="background:rgba(255,255,255,0.09); color:#e2e8f0">
+          <span class="icon" style="font-size:18px">settings</span>
+        </div>
+      </div>
+      <div class="app-content" style="height:60px; overflow:hidden; opacity:0.15"></div>
+
+      <div class="settings-sheet" style="max-height:700px">
+        <div class="sheet-handle"></div>
+        <div class="sheet-header">
+          <div style="display:flex;align-items:center;gap:8px">
+            <button class="close-btn" style="background:none">
+              <span class="icon" style="font-size:18px;color:#60a5fa">arrow_forward</span>
+            </button>
+            <div class="sheet-title">יעדים יומיים</div>
+          </div>
+          <button class="close-btn">
+            <span class="icon" style="font-size:16px">close</span>
+          </button>
+        </div>
+
+        <div style="padding:14px">
+
+          <!-- From TDEE suggestion banner -->
+          <div style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);border-radius:12px;padding:10px 12px;margin-bottom:14px;display:flex;align-items:center;gap:10px">
+            <span class="icon" style="color:#f59e0b;font-size:20px;flex-shrink:0">tips_and_updates</span>
+            <div>
+              <div style="font-size:11px;font-weight:700;color:#f59e0b;margin-bottom:2px">המלצה מה-TDEE שלך</div>
+              <div style="font-size:10px;color:#94a3b8">לירידה: 2,320 קק"ל · לשמירה: 2,820 קק"ל</div>
+            </div>
+            <button style="margin-right:auto;padding:5px 9px;border-radius:7px;border:none;background:rgba(245,158,11,0.2);color:#f59e0b;font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap">החל</button>
+          </div>
+
+          <!-- Calories field -->
+          <div style="margin-bottom:14px">
+            <label class="lbl-blue" style="font-size:10px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;display:block;margin-bottom:6px">
+              <span class="icon" style="font-size:13px;vertical-align:middle">bolt</span>
+              קלוריות יומיות
+            </label>
+            <div style="position:relative">
+              <input class="goal-input" value="2400" type="number" style="font-size:24px;font-weight:800;padding:12px 14px;border-radius:12px;">
+              <span style="position:absolute;top:50%;transform:translateY(-50%);left:14px;font-size:11px;color:#475569">קק"ל</span>
+            </div>
+          </div>
+
+          <!-- Protein field -->
+          <div style="margin-bottom:16px">
+            <label class="lbl-green" style="font-size:10px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;display:block;margin-bottom:6px">
+              <span class="icon" style="font-size:13px;vertical-align:middle">egg</span>
+              חלבון יומי
+            </label>
+            <div style="position:relative">
+              <input class="goal-input green" value="160" type="number" style="font-size:24px;font-weight:800;padding:12px 14px;border-radius:12px;">
+              <span style="position:absolute;top:50%;transform:translateY(-50%);left:14px;font-size:11px;color:#475569">גרם</span>
+            </div>
+            <div style="font-size:10px;color:#475569;margin-top:6px;display:flex;align-items:center;gap:4px">
+              <span class="icon" style="font-size:12px">info</span>
+              המלצה לפי משקל: 125–172 גרם (1.6–2.2 גרם/ק"ג)
+            </div>
+          </div>
+
+          <button class="apply-btn">
+            <span class="icon" style="font-size:16px">save</span>
+            שמור יעדים
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Note -->
+<div style="max-width:720px;text-align:center;font-size:11px;color:#374151;line-height:1.6">
+  <strong style="color:#64748b">זרימה:</strong>
+  כפתור גלגל שיניים ב-header ← sheet נפתח עם כל הסקציות ← לחיצה על שורה פותחת תת-מסך ← בפרופיל: חישוב BMR/TDEE אוטומטי ← כפתור "החל" ממלא את היעדים
+</div>
+
+</body>
+</html>

@@ -1,8 +1,9 @@
 import { useState, useEffect, useMemo } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from './lib/supabase'
-import type { Lang } from './lib/i18n'
 import { t } from './lib/i18n'
+import type { Lang } from './lib/i18n'
+import { useAppContext } from './context/AppContext'
 import { useMeals } from './hooks/useMeals'
 import { useGoals } from './hooks/useGoals'
 import { useFoodHistory } from './hooks/useFoodHistory'
@@ -17,25 +18,13 @@ import { useProfile } from './hooks/useProfile'
 type Tab = 'today' | 'history'
 
 export default function App() {
+  const { lang, theme, toggleLang, toggleTheme } = useAppContext()
   const [session, setSession] = useState<Session | null>(null)
   const [authLoading, setAuthLoading] = useState(true)
   const [isRecovery, setIsRecovery] = useState(false)
-  const [lang, setLang] = useState<Lang>(() => {
-    return (localStorage.getItem('lang') as Lang) || 'he'
-  })
   const [tab, setTab]             = useState<Tab>('today')
   const [connected, setConnected] = useState(true)
   const [settingsOpen, setSettingsOpen] = useState(false)
-  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
-    const saved = localStorage.getItem('theme')
-    if (saved === 'dark' || saved === 'light') return saved
-    return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'
-  })
-
-  useEffect(() => {
-    document.documentElement.dataset.theme = theme
-    localStorage.setItem('theme', theme)
-  }, [theme])
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -91,12 +80,6 @@ export default function App() {
 
   const todayGoal = getGoalForDate(new Date().toISOString().slice(0, 10))
 
-  const toggleLang = () => {
-    const next: Lang = lang === 'he' ? 'en' : 'he'
-    setLang(next)
-    localStorage.setItem('lang', next)
-  }
-
   if (authLoading) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)' }}>
@@ -123,7 +106,6 @@ export default function App() {
   return (
     <div
       dir={lang === 'he' ? 'rtl' : 'ltr'}
-      data-theme={theme}
       style={{ minHeight: '100vh', background: 'var(--bg)' }}
     >
 
@@ -233,7 +215,7 @@ export default function App() {
         onToggleLang={toggleLang}
         onSignOut={() => supabase.auth.signOut()}
         theme={theme}
-        onToggleTheme={() => setTheme(t => t === 'dark' ? 'light' : 'dark')}
+        onToggleTheme={toggleTheme}
         showToast={showToast}
       />
 

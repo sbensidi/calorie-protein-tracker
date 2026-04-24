@@ -79,6 +79,7 @@ function BarcodeScanner({ lang, onResult, onNotFound }, ref) {
     detectedRef.current = false
     const reader = new BrowserMultiFormatReader()
     const stream = streamRef.current
+    let cancelled = false  // guard against stale async callbacks
 
     const init = async () => {
       try {
@@ -100,8 +101,13 @@ function BarcodeScanner({ lang, onResult, onNotFound }, ref) {
             }
           }
         )
+        if (cancelled) {
+          controls.stop()
+          return
+        }
         controlsRef.current = controls
       } catch (e: unknown) {
+        if (cancelled) return
         const msg = e instanceof Error ? e.message : ''
         setState(
           msg.toLowerCase().includes('permission') || msg.toLowerCase().includes('notallowed')
@@ -117,6 +123,7 @@ function BarcodeScanner({ lang, onResult, onNotFound }, ref) {
     // hidden when the user switches to manual mode. Keeping the stream alive
     // means no re-permission prompt when they switch back to scan.
     return () => {
+      cancelled = true
       controlsRef.current?.stop()
       controlsRef.current = null
     }
