@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
+import type { WeightUnit, VolumeUnit } from '../lib/units'
 
 export interface UserProfile {
   sex:           'm' | 'f'
@@ -8,6 +9,8 @@ export interface UserProfile {
   weight:        number   // kg
   activityLevel: 0 | 1 | 2 | 3 | 4
   goalType:      'lose' | 'maintain' | 'gain'
+  weightUnit:    WeightUnit
+  volumeUnit:    VolumeUnit
 }
 
 const LS_KEY = 'user_profile'
@@ -19,6 +22,8 @@ const DEFAULT: UserProfile = {
   weight:        70,
   activityLevel: 1,
   goalType:      'maintain',
+  weightUnit:    'g',
+  volumeUnit:    'ml',
 }
 
 function lsLoad(): UserProfile {
@@ -38,6 +43,8 @@ function dbToProfile(row: Record<string, unknown>): UserProfile {
     weight:        (row.weight as number) ?? DEFAULT.weight,
     activityLevel: (row.activity_level as 0|1|2|3|4) ?? DEFAULT.activityLevel,
     goalType:      (row.goal_type as 'lose'|'maintain'|'gain') ?? DEFAULT.goalType,
+    weightUnit:    (row.weight_unit as WeightUnit) ?? DEFAULT.weightUnit,
+    volumeUnit:    (row.volume_unit as VolumeUnit) ?? DEFAULT.volumeUnit,
   }
 }
 
@@ -50,6 +57,8 @@ function profileToDb(p: UserProfile, userId: string) {
     weight:         p.weight,
     activity_level: p.activityLevel,
     goal_type:      p.goalType,
+    weight_unit:    p.weightUnit,
+    volume_unit:    p.volumeUnit,
     updated_at:     new Date().toISOString(),
   }
 }
@@ -73,7 +82,6 @@ export function useProfile(userId: string | null) {
       localStorage.setItem(LS_KEY, JSON.stringify(p))
       setError(null)
     } else if (err?.code === 'PGRST116') {
-      // No profile yet — keep localStorage default, will be created on first save
       setError(null)
     } else if (err) {
       setError(err.message)

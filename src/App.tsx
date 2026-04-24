@@ -198,6 +198,8 @@ export default function App() {
             goalProtein={todayGoal.protein}
             getSuggestions={getSuggestions}
             searchLibrary={searchLibrary}
+            defaultWeightUnit={profile.weightUnit}
+            defaultVolumeUnit={profile.volumeUnit}
             onAddMeal={addMeal}
             onAddMealWithId={addMealWithId}
             onEditMeal={updateMeal}

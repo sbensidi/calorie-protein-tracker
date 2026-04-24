@@ -618,6 +618,50 @@ function ProfileScreen({ lang, profile, onSave, onApplyGoals, onBack, onNavigate
         </p>
       </div>
 
+      {/* Units preferences */}
+      <div style={{ height: 1, background: 'var(--border)', margin: '18px 0' }} />
+      <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-2)', marginBottom: 12, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+        {lang === 'he' ? 'יחידות מידה' : 'Units'}
+      </p>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 20 }}>
+        {/* Weight unit */}
+        <div>
+          <label style={labelStyle}>{lang === 'he' ? 'משקל' : 'Weight'}</label>
+          <div style={{ display: 'flex', gap: 6 }}>
+            {(['g', 'oz'] as const).map(u => (
+              <button
+                key={u}
+                onClick={() => set('weightUnit', u)}
+                style={{
+                  flex: 1, padding: '8px 0', borderRadius: 10, fontFamily: 'inherit',
+                  fontSize: 13, fontWeight: 700, cursor: 'pointer',
+                  background: draft.weightUnit === u ? 'rgba(59,130,246,0.18)' : 'var(--bg-card)',
+                  border: `1.5px solid ${draft.weightUnit === u ? 'var(--blue)' : 'var(--border)'}`,
+                  color: draft.weightUnit === u ? 'var(--blue-hi)' : 'var(--text-2)',
+                  transition: 'all .15s',
+                }}
+              >
+                {u}
+              </button>
+            ))}
+          </div>
+        </div>
+        {/* Volume unit */}
+        <div>
+          <label style={labelStyle}>{lang === 'he' ? 'נוזלים' : 'Volume'}</label>
+          <select
+            className="inp"
+            value={draft.volumeUnit}
+            onChange={e => set('volumeUnit', e.target.value as any)}
+            style={{ cursor: 'pointer', padding: '0 10px', height: 40 }}
+          >
+            {(['ml', 'cup', 'tbsp', 'tsp', 'fl_oz'] as const).map(u => (
+              <option key={u} value={u}>{u === 'fl_oz' ? 'fl oz' : u}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
       {/* Save Profile */}
       <button
         onClick={handleSave}

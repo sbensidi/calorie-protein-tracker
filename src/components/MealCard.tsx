@@ -2,10 +2,13 @@ import { useState } from 'react'
 import type { Meal } from '../types'
 import type { Lang } from '../lib/i18n'
 import { t } from '../lib/i18n'
+import { formatWeight } from '../lib/units'
+import type { WeightUnit } from '../lib/units'
 
 interface MealCardProps {
   meal: Meal
   lang: Lang
+  weightUnit?: WeightUnit
   showCheckbox: boolean
   selected: boolean
   onToggleSelect: () => void
@@ -14,7 +17,7 @@ interface MealCardProps {
 
 type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack'
 
-export function MealCard({ meal, lang, showCheckbox, selected, onToggleSelect, onEdit }: MealCardProps) {
+export function MealCard({ meal, lang, weightUnit = 'g', showCheckbox, selected, onToggleSelect, onEdit }: MealCardProps) {
   const [editing, setEditing] = useState(false)
   const [editName,     setEditName]     = useState(meal.name)
   const [editMealType, setEditMealType] = useState<MealType>(meal.meal_type as MealType)
@@ -139,7 +142,7 @@ export function MealCard({ meal, lang, showCheckbox, selected, onToggleSelect, o
         <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-2)', margin: '2px 0 0' }}>
           {meal.grams < 0
             ? `${Math.abs(meal.grams)} ${lang === 'he' ? 'יח׳' : 'pcs'}`
-            : `${meal.grams}g`}
+            : formatWeight(meal.grams, weightUnit)}
         </p>
       </div>
 

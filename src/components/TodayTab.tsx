@@ -52,6 +52,8 @@ interface TodayTabProps {
   goalProtein: number
   getSuggestions: (q: string) => FoodHistory[]
   searchLibrary?: (q: string) => FoodLibraryItem[]
+  defaultWeightUnit?: 'g' | 'oz'
+  defaultVolumeUnit?: 'ml' | 'cup' | 'tbsp' | 'tsp' | 'fl_oz'
   onAddMeal: (meal: Omit<Meal, 'id' | 'user_id' | 'created_at'>) => void
   onAddMealWithId: (meal: Omit<Meal, 'id' | 'user_id' | 'created_at'>) => Promise<string | null>
   onEditMeal: (id: string, updates: Partial<Meal>) => void
@@ -67,7 +69,8 @@ interface TodayTabProps {
 
 export function TodayTab({
   lang, meals, loading = false, history, goalCalories, goalProtein,
-  getSuggestions, searchLibrary, onAddMeal, onAddMealWithId, onEditMeal, onDeleteMeal, onDuplicateMeal, onUpsertHistory,
+  getSuggestions, searchLibrary, defaultWeightUnit = 'g', defaultVolumeUnit = 'ml',
+  onAddMeal, onAddMealWithId, onEditMeal, onDeleteMeal, onDuplicateMeal, onUpsertHistory,
   composedEntries, composedGroups, onUpsertGroup, onRemoveGroup, showToast,
 }: TodayTabProps) {
   const todayMeals = useMemo(() => meals.filter(m => m.date === today()), [meals])
@@ -467,6 +470,7 @@ export function TodayTab({
                 key={meal.id}
                 meal={meal}
                 lang={lang}
+                weightUnit={defaultWeightUnit}
                 showCheckbox={true}
                 selected={selSet.has(meal.id)}
                 onToggleSelect={() => toggleSelect(type, meal.id)}
@@ -665,6 +669,8 @@ export function TodayTab({
               history={history}
               getSuggestions={getSuggestions}
               searchLibrary={searchLibrary}
+              defaultWeightUnit={defaultWeightUnit}
+              defaultVolumeUnit={defaultVolumeUnit}
               defaultMealType={addIngredientModal.mealType}
               onAdd={handleAddIngredientSubmit}
               onUpsertHistory={onUpsertHistory}
@@ -749,6 +755,8 @@ export function TodayTab({
               history={history}
               getSuggestions={getSuggestions}
               searchLibrary={searchLibrary}
+              defaultWeightUnit={defaultWeightUnit}
+              defaultVolumeUnit={defaultVolumeUnit}
               onAdd={meal => { onAddMeal(meal); setEntryOpen(false) }}
               onUpsertHistory={onUpsertHistory}
               composedEntries={composedEntries}
