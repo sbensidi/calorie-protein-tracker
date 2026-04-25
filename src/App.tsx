@@ -251,6 +251,8 @@ export default function App() {
         onUpdateHistory={updateHistory}
         composedGroups={composedGroups}
         onRemoveGroup={removeGroup}
+        meals={meals}
+        onUpdateMeal={updateMeal}
       />
 
       <ToastContainer toasts={toasts} onDismiss={dismissToast} lang={lang} />

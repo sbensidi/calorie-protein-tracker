@@ -7,7 +7,7 @@ import type { Lang, DayKey } from '../lib/i18n'
 import { t, DAY_KEYS, DAY_SHORT_HE, DAY_SHORT_EN } from '../lib/i18n'
 import { toWeekIndex } from '../lib/utils'
 import type { Toast } from '../hooks/useToast'
-import type { Goal, FoodHistory, ComposedGroup } from '../types'
+import type { Goal, FoodHistory, ComposedGroup, Meal } from '../types'
 import type { UserProfile } from '../hooks/useProfile'
 import { useFoodLibrary } from '../hooks/useFoodLibrary'
 
@@ -1201,12 +1201,14 @@ function GoalsScreen({ lang, profile, goals, onSave, onSaveFluidGoal, fluidGoalM
 
 // ── Food History Screen ───────────────────────────────────────────────────────
 
-function FoodHistoryScreen({ lang, history, composedGroups, onDelete, onUpdate, onRemoveGroup, showToast }: {
+function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onUpdate, onUpdateMeal, onRemoveGroup, showToast }: {
   lang:           Lang
   history:        FoodHistory[]
   composedGroups: ComposedGroup[]
+  meals:          Meal[]
   onDelete:       (id: string) => void
   onUpdate:       (id: string, updates: Partial<Pick<FoodHistory, 'name' | 'grams' | 'calories' | 'protein'>>) => void
+  onUpdateMeal:   (id: string, updates: Partial<Pick<Meal, 'name' | 'grams' | 'calories' | 'protein'>>) => void
   onRemoveGroup:  (id: string) => void
   showToast:      (msg: string, type: 'success' | 'error' | 'info') => void
 }) {
@@ -1216,6 +1218,10 @@ function FoodHistoryScreen({ lang, history, composedGroups, onDelete, onUpdate, 
   const [tab, setTab]             = useState<'foods' | 'composed'>('foods')
   // Per-gram ratios of the item being edited — used for proportional scaling when grams changes
   const editRatios = useRef({ calPerGram: 0, protPerGram: 0 })
+  // Meal editing state for composed tab
+  const [editingMealId, setEditingMealId] = useState<string | null>(null)
+  const [mealDraft, setMealDraft]         = useState<{ name: string; grams: string; calories: string; protein: string }>({ name: '', grams: '', calories: '', protein: '' })
+  const mealEditRatios = useRef({ calPerGram: 0, protPerGram: 0 })
 
   const q = search.trim().toLowerCase()
   const filtered = q
@@ -1253,6 +1259,29 @@ function FoodHistoryScreen({ lang, history, composedGroups, onDelete, onUpdate, 
   const handleRemoveGroup = (id: string, name: string) => {
     onRemoveGroup(id)
     showToast(lang === 'he' ? `"${name}" נמחק` : `"${name}" deleted`, 'info')
+  }
+
+  const startMealEdit = (meal: Meal) => {
+    const absGrams = Math.abs(meal.grams) || 1
+    mealEditRatios.current = { calPerGram: meal.calories / absGrams, protPerGram: meal.protein / absGrams }
+    setEditingMealId(meal.id)
+    setMealDraft({ name: meal.name, grams: String(meal.grams), calories: String(Math.round(meal.calories)), protein: String(Math.round(meal.protein * 10) / 10) })
+  }
+  const handleMealGramsChange = (val: string) => {
+    const g = Math.abs(Number(val)) || 0
+    const { calPerGram, protPerGram } = mealEditRatios.current
+    setMealDraft(d => ({
+      ...d,
+      grams:    val,
+      calories: g > 0 ? String(Math.round(calPerGram  * g))           : d.calories,
+      protein:  g > 0 ? String(Math.round(protPerGram * g * 10) / 10) : d.protein,
+    }))
+  }
+  const saveMealEdit = () => {
+    if (!editingMealId) return
+    onUpdateMeal(editingMealId, { name: mealDraft.name, grams: Number(mealDraft.grams), calories: Number(mealDraft.calories), protein: Number(mealDraft.protein) })
+    setEditingMealId(null)
+    showToast(lang === 'he' ? 'נשמר' : 'Saved', 'success')
   }
 
   const inputSm: React.CSSProperties = { height: 34, fontSize: 12, padding: '0 8px', borderRadius: 8 }
@@ -1386,21 +1415,77 @@ function FoodHistoryScreen({ lang, history, composedGroups, onDelete, onUpdate, 
               <p style={{ fontSize: 13, margin: 0 }}>{lang === 'he' ? 'אין מנות מורכבות' : 'No composed dishes'}</p>
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              {composedGroups.map(group => (
-                <div key={group.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12 }}>
-                  <span className="icon icon-sm" style={{ color: 'var(--purple)', flexShrink: 0 }}>restaurant</span>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{group.name}</p>
-                    <p style={{ fontSize: 11, color: 'var(--text-3)', margin: '2px 0 0' }}>
-                      {group.mealIds.length} {lang === 'he' ? 'מרכיבים' : 'ingredients'}
-                    </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {composedGroups.map(group => {
+                const groupMeals = meals.filter(m => group.mealIds.includes(m.id))
+                const totalCal   = Math.round(groupMeals.reduce((s, m) => s + m.calories, 0))
+                const totalProt  = Math.round(groupMeals.reduce((s, m) => s + m.protein, 0) * 10) / 10
+                return (
+                  <div key={group.id} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
+                    {/* Group header */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderBottom: groupMeals.length > 0 ? '1px solid var(--border)' : undefined }}>
+                      <span className="icon icon-sm" style={{ color: 'var(--purple)', flexShrink: 0 }}>restaurant</span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{group.name}</p>
+                        <p style={{ fontSize: 11, color: 'var(--text-3)', margin: '2px 0 0' }}>
+                          {totalCal} {lang === 'he' ? 'קל' : 'kcal'} · {totalProt}g {lang === 'he' ? 'חלבון' : 'protein'}
+                        </p>
+                      </div>
+                      <button onClick={() => handleRemoveGroup(group.id, group.name)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--red)', padding: 6, display: 'flex', borderRadius: 8, flexShrink: 0 }}>
+                        <span className="icon icon-sm">delete</span>
+                      </button>
+                    </div>
+                    {/* Individual meals */}
+                    {groupMeals.map(meal => (
+                      <div key={meal.id} style={{ borderBottom: '1px solid var(--border-subtle, var(--border))' }}>
+                        {editingMealId === meal.id ? (
+                          <div style={{ padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                            <input
+                              type="text"
+                              className="inp"
+                              style={inputSm}
+                              value={mealDraft.name}
+                              onChange={e => setMealDraft(d => ({ ...d, name: e.target.value }))}
+                              placeholder={lang === 'he' ? 'שם' : 'Name'}
+                            />
+                            <div style={{ display: 'flex', gap: 6 }}>
+                              <input type="number" inputMode="decimal" className="inp" style={{ ...inputSm, flex: 1 }}
+                                value={mealDraft.grams} onChange={e => handleMealGramsChange(e.target.value)}
+                                placeholder={lang === 'he' ? 'גרם' : 'g'} />
+                              <input type="number" inputMode="decimal" className="inp" style={{ ...inputSm, flex: 1 }}
+                                value={mealDraft.calories} onChange={e => setMealDraft(d => ({ ...d, calories: e.target.value }))}
+                                placeholder={lang === 'he' ? 'קל׳' : 'kcal'} />
+                              <input type="number" inputMode="decimal" className="inp" style={{ ...inputSm, flex: 1 }}
+                                value={mealDraft.protein} onChange={e => setMealDraft(d => ({ ...d, protein: e.target.value }))}
+                                placeholder={lang === 'he' ? 'חלב׳' : 'prot'} />
+                            </div>
+                            <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
+                              <button onClick={() => setEditingMealId(null)} style={{ height: 32, padding: '0 12px', borderRadius: 8, background: 'var(--qty-bg)', border: '1px solid var(--border)', color: 'var(--text-2)', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit' }}>
+                                {lang === 'he' ? 'ביטול' : 'Cancel'}
+                              </button>
+                              <button onClick={saveMealEdit} className="btn-primary" style={{ height: 32, padding: '0 14px', borderRadius: 8, fontSize: 12 }}>
+                                {lang === 'he' ? 'שמור' : 'Save'}
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px' }}>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{meal.name}</p>
+                              <p style={{ fontSize: 11, color: 'var(--text-3)', margin: '1px 0 0' }}>
+                                {meal.grams}g · {Math.round(meal.calories)} {lang === 'he' ? 'קל' : 'kcal'} · {Math.round(meal.protein * 10) / 10}g
+                              </p>
+                            </div>
+                            <button onClick={() => startMealEdit(meal)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 6, display: 'flex', borderRadius: 8, flexShrink: 0 }}>
+                              <span className="icon icon-sm">edit</span>
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    ))}
                   </div>
-                  <button onClick={() => handleRemoveGroup(group.id, group.name)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--red)', padding: 6, display: 'flex', borderRadius: 8, flexShrink: 0 }}>
-                    <span className="icon icon-sm">delete</span>
-                  </button>
-                </div>
-              ))}
+                )
+              })}
             </div>
           )}
         </>
@@ -1581,11 +1666,13 @@ interface SettingsSheetProps {
   onUpdateHistory: (id: string, updates: Partial<Pick<FoodHistory, 'name' | 'grams' | 'calories' | 'protein'>>) => void
   composedGroups:  ComposedGroup[]
   onRemoveGroup:   (id: string) => void
+  meals:           Meal[]
+  onUpdateMeal:    (id: string, updates: Partial<Pick<Meal, 'name' | 'grams' | 'calories' | 'protein'>>) => void
 }
 
 export function SettingsSheet({
   isOpen, onClose, lang, connected, profile, onSaveProfile, goals, onSaveGoals, onToggleLang, onSignOut, theme, onToggleTheme, showToast,
-  history, onDeleteHistory, onUpdateHistory, composedGroups, onRemoveGroup,
+  history, onDeleteHistory, onUpdateHistory, composedGroups, onRemoveGroup, meals, onUpdateMeal,
 }: SettingsSheetProps) {
   const [screen, setScreen] = useState<Screen>('main')
   useLockBodyScroll(isOpen)
@@ -1707,8 +1794,10 @@ export function SettingsSheet({
             lang={lang}
             history={history}
             composedGroups={composedGroups}
+            meals={meals}
             onDelete={onDeleteHistory}
             onUpdate={onUpdateHistory}
+            onUpdateMeal={onUpdateMeal}
             onRemoveGroup={onRemoveGroup}
             showToast={showToast}
           />
