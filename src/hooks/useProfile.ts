@@ -29,7 +29,7 @@ const DEFAULT: UserProfile = {
   volumeUnit:         'ml',
   fluidGoalMl:        2500,
   fluidThresholdMl:   100,
-  fluidZeroCalOnly:   true,
+  fluidZeroCalOnly:   false,
 }
 
 function lsLoad(): UserProfile {

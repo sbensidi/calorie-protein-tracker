@@ -734,8 +734,8 @@ function ProfileScreen({ lang, profile, onSave, onApplyGoals, onBack, onNavigate
         {lang === 'he' ? 'סף זיהוי נוזלים' : 'Fluid detection threshold'}
       </p>
 
-      {/* fluid threshold + zero-cal toggle on one row */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20 }}>
+      {/* fluid threshold + zero-cal toggle */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
         <input
           type="number"
           inputMode="numeric"
@@ -747,7 +747,7 @@ function ProfileScreen({ lang, profile, onSave, onApplyGoals, onBack, onNavigate
         <span style={{ fontSize: 12, color: 'var(--text-3)', flexShrink: 0 }}>ml</span>
         <span style={{ flex: 1 }} />
         <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-2)', flexShrink: 0 }}>
-          {lang === 'he' ? '0 קל׳ בלבד' : '0-cal only'}
+          {lang === 'he' ? '0 קל׳ בלבד (כף/כפית)' : '0-cal only (tbsp/tsp)'}
         </span>
         <button
           onClick={() => set('fluidZeroCalOnly', !draft.fluidZeroCalOnly)}
@@ -765,6 +765,11 @@ function ProfileScreen({ lang, profile, onSave, onApplyGoals, onBack, onNavigate
           }} />
         </button>
       </div>
+      <p style={{ fontSize: 10, color: 'var(--text-3)', margin: '0 0 20px', lineHeight: 1.5 }}>
+        {lang === 'he'
+          ? 'מ"ל / כוס / אונ׳ נוזל — תמיד נוזל מעל הסף. כף/כפית — נוזל רק אם 0 קל׳ (כשהמתג מופעל).'
+          : 'ml / cup / fl oz — always counts as fluid above threshold. tbsp/tsp — only if 0-cal (when toggle is on).'}
+      </p>
 
       {/* Save Profile */}
       <button

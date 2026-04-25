@@ -313,11 +313,15 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
     ? `${foodName} ×${qty % 1 === 0 ? qty : qty.toFixed(1)}`
     : foodName
 
-  // Fluid detection: volume unit + amount > threshold + (if zeroCalOnly: cal = 0)
-  const isVolumeUnit  = entryUnit !== 'pcs' && entryUnit !== 'g' && entryUnit !== 'oz'
+  // Fluid detection: volume unit + amount > threshold
+  // ml/cup/fl_oz are unambiguous beverage units → always count as fluid above threshold,
+  // regardless of calories (coffee, juice, milk all have calories but are still fluids).
+  // tbsp/tsp can be condiments/oils → still respect fluidZeroCalOnly for those.
+  const isVolumeUnit    = entryUnit !== 'pcs' && entryUnit !== 'g' && entryUnit !== 'oz'
+  const isBeverageUnit  = entryUnit === 'ml' || entryUnit === 'cup' || entryUnit === 'fl_oz'
   const detectedFluidMl = isVolumeUnit ? toBase(numericAmount, entryUnit as UnitId) * qty : null
-  const calZeroOk     = !fluidZeroCalOnly || numCalories === 0
-  const isFluid       = detectedFluidMl !== null && detectedFluidMl >= fluidThresholdMl && calZeroOk
+  const calZeroOk       = isBeverageUnit || !fluidZeroCalOnly || numCalories === 0
+  const isFluid         = detectedFluidMl !== null && detectedFluidMl >= fluidThresholdMl && calZeroOk
 
   const handleAdd = () => {
     if (!foodName.trim() || nutrition === null) return
