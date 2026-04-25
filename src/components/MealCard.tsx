@@ -15,7 +15,7 @@ interface MealCardProps {
   onEdit: (id: string, updates: Partial<Meal>) => void
 }
 
-type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack'
+type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'beverage'
 
 export function MealCard({ meal, lang, weightUnit = 'g', showCheckbox, selected, onToggleSelect, onEdit }: MealCardProps) {
   const [editing, setEditing] = useState(false)
@@ -89,6 +89,7 @@ export function MealCard({ meal, lang, weightUnit = 'g', showCheckbox, selected,
             <option value="lunch">{t(lang, 'lunch')}</option>
             <option value="dinner">{t(lang, 'dinner')}</option>
             <option value="snack">{t(lang, 'snack')}</option>
+            <option value="beverage">{t(lang, 'beverage')}</option>
           </select>
         </div>
         <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>

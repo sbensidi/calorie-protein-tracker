@@ -4,7 +4,7 @@ export interface Meal {
   id: string
   user_id: string
   date: string
-  meal_type: 'breakfast' | 'lunch' | 'dinner' | 'snack'
+  meal_type: 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'beverage'
   name: string
   grams: number
   calories: number

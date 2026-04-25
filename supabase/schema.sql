@@ -8,7 +8,7 @@ create table if not exists meals (
   id          uuid primary key default gen_random_uuid(),
   user_id     uuid references auth.users not null,
   date        date not null,
-  meal_type   text not null check (meal_type in ('breakfast', 'lunch', 'dinner', 'snack')),
+  meal_type   text not null check (meal_type in ('breakfast', 'lunch', 'dinner', 'snack', 'beverage')),
   name        text not null,
   grams       numeric not null,
   calories    numeric not null,

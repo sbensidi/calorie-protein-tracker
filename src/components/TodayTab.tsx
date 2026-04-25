@@ -12,15 +12,16 @@ import { MealCard } from './MealCard'
 import { ComposedMealCard } from './ComposedMealCard'
 import { DailySummary } from './DailySummary'
 
-type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack'
+type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'beverage'
 
-const MEAL_TYPES: MealType[] = ['breakfast', 'lunch', 'dinner', 'snack']
+const MEAL_TYPES: MealType[] = ['breakfast', 'lunch', 'dinner', 'snack', 'beverage']
 
 const MEAL_COLORS: Record<MealType, string> = {
   breakfast: 'var(--amber)',
   lunch:     'var(--green)',
   dinner:    'var(--purple)',
   snack:     'var(--red)',
+  beverage:  'var(--blue)',
 }
 
 const MEAL_ICONS: Record<MealType, string> = {
@@ -28,6 +29,7 @@ const MEAL_ICONS: Record<MealType, string> = {
   lunch:     'lunch_dining',
   dinner:    'nights_stay',
   snack:     'nutrition',
+  beverage:  'local_drink',
 }
 
 // ── localStorage helpers ────────────────────────────────────────
@@ -69,7 +71,6 @@ interface TodayTabProps {
   fluidGoalMl?: number
   fluidThresholdMl?: number
   fluidZeroCalOnly?: boolean
-  beverageKeywords?: string[]
 }
 
 export function TodayTab({
@@ -77,7 +78,7 @@ export function TodayTab({
   getSuggestions, searchLibrary, defaultWeightUnit = 'g', defaultVolumeUnit = 'ml',
   onAddMeal, onAddMealWithId, onEditMeal, onDeleteMeal, onDuplicateMeal, onUpsertHistory, onTouchHistory,
   composedEntries, composedGroups, onUpsertGroup, onRemoveGroup, showToast,
-  fluidGoalMl = 2500, fluidThresholdMl = 100, fluidZeroCalOnly = true, beverageKeywords = [],
+  fluidGoalMl = 2500, fluidThresholdMl = 100, fluidZeroCalOnly = true,
 }: TodayTabProps) {
   const todayMeals    = useMemo(() => meals.filter(m => m.date === today()), [meals])
   const fluidTodayMl  = useMemo(() => todayMeals.reduce((s, m) => s + (m.fluid_ml ?? 0), 0), [todayMeals])
@@ -88,7 +89,7 @@ export function TodayTab({
   const pendingTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map())
 
   const mealsByType = useMemo(() => {
-    const grouped: Record<MealType, Meal[]> = { breakfast: [], lunch: [], dinner: [], snack: [] }
+    const grouped: Record<MealType, Meal[]> = { breakfast: [], lunch: [], dinner: [], snack: [], beverage: [] }
     todayMeals
       .filter(m => !pendingDeleteIds.has(m.id))
       .forEach(m => { if (grouped[m.meal_type as MealType]) grouped[m.meal_type as MealType].push(m) })
@@ -693,7 +694,6 @@ export function TodayTab({
               onTouchHistory={onTouchHistory}
               fluidThresholdMl={fluidThresholdMl}
               fluidZeroCalOnly={fluidZeroCalOnly}
-              beverageKeywords={beverageKeywords}
             />
           </div>
         </div>
@@ -784,7 +784,6 @@ export function TodayTab({
               onAddComposed={id => { handleAddComposed(id); setEntryOpen(false) }}
               fluidThresholdMl={fluidThresholdMl}
               fluidZeroCalOnly={fluidZeroCalOnly}
-              beverageKeywords={beverageKeywords}
             />
           </div>
         </div>

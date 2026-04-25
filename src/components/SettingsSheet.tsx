@@ -354,59 +354,6 @@ function MainScreen({ lang, connected, theme, onProfile, onGoals, onFoodHistory,
   )
 }
 
-// ── Beverage Keywords Editor ──────────────────────────────────────────────────
-
-function BeverageKeywordsEditor({ lang, keywords, onChange }: { lang: Lang; keywords: string[]; onChange: (kws: string[]) => void }) {
-  const [inputVal, setInputVal] = useState('')
-  const isRTL = lang === 'he'
-
-  const add = () => {
-    const kw = inputVal.trim()
-    if (!kw || keywords.includes(kw)) { setInputVal(''); return }
-    onChange([...keywords, kw])
-    setInputVal('')
-  }
-
-  return (
-    <div style={{ marginBottom: 20 }}>
-      <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.07em', margin: '0 0 10px' }}>
-        {lang === 'he' ? 'שיווך מזון לשתייה' : 'Beverage name matching'}
-      </p>
-      <p style={{ fontSize: 11, color: 'var(--text-3)', margin: '0 0 10px', lineHeight: 1.5 }}>
-        {lang === 'he'
-          ? 'שמות מזון שמכילים מילות מפתח אלה יזוהו אוטומטית כנוזל, גם אם הם קלוריים.'
-          : 'Food names containing these keywords will auto-count as fluid, even if caloric.'}
-      </p>
-      {/* Tag list */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 10 }}>
-        {keywords.map(kw => (
-          <div key={kw} style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.25)', borderRadius: 999, padding: '3px 8px 3px 10px', fontSize: 12, color: 'var(--blue-hi)', fontWeight: 600 }}>
-            {kw}
-            <button onClick={() => onChange(keywords.filter(k => k !== kw))} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 0, display: 'flex', lineHeight: 1 }}>
-              <span className="icon" style={{ fontSize: 14 }}>close</span>
-            </button>
-          </div>
-        ))}
-      </div>
-      {/* Add input */}
-      <div style={{ display: 'flex', gap: 6 }}>
-        <input
-          className="inp"
-          value={inputVal}
-          onChange={e => setInputVal(e.target.value)}
-          onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); add() } }}
-          placeholder={lang === 'he' ? 'הוסף מילת מפתח...' : 'Add keyword...'}
-          dir={isRTL ? 'rtl' : 'ltr'}
-          style={{ flex: 1, height: 38, fontSize: 13 }}
-        />
-        <button onClick={add} className="btn-ghost" style={{ height: 38, padding: '0 14px', borderRadius: 10, fontSize: 13 }}>
-          {lang === 'he' ? 'הוסף' : 'Add'}
-        </button>
-      </div>
-    </div>
-  )
-}
-
 // ── Profile Screen ────────────────────────────────────────────────────────────
 
 function ProfileScreen({ lang, profile, onSave, onApplyGoals, onNavigateToGoals, showToast }: {
@@ -470,6 +417,10 @@ function ProfileScreen({ lang, profile, onSave, onApplyGoals, onNavigateToGoals,
 
   return (
     <>
+      <h2 style={{ fontSize: 17, fontWeight: 800, color: 'var(--text)', margin: '0 0 18px' }}>
+        {lang === 'he' ? 'פרופיל אישי' : 'Personal Profile'}
+      </h2>
+
       {/* Section: personal inputs */}
       <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.07em', margin: '0 0 12px' }}>
         {lang === 'he' ? 'פרטים אישיים' : 'Personal Details'}
@@ -789,7 +740,7 @@ function ProfileScreen({ lang, profile, onSave, onApplyGoals, onNavigateToGoals,
         <span style={{ fontSize: 12, color: 'var(--text-3)', flexShrink: 0 }}>ml</span>
         <span style={{ flex: 1 }} />
         <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-2)', flexShrink: 0 }}>
-          {lang === 'he' ? '0 קל׳ בלבד (כף/כפית)' : '0-cal only (tbsp/tsp)'}
+          {lang === 'he' ? '0 קל׳ בלבד' : '0-cal only'}
         </span>
         <button
           onClick={() => set('fluidZeroCalOnly', !draft.fluidZeroCalOnly)}
@@ -807,18 +758,11 @@ function ProfileScreen({ lang, profile, onSave, onApplyGoals, onNavigateToGoals,
           }} />
         </button>
       </div>
-      <p style={{ fontSize: 10, color: 'var(--text-3)', margin: '0 0 16px', lineHeight: 1.5 }}>
+      <p style={{ fontSize: 10, color: 'var(--text-3)', margin: '0 0 20px', lineHeight: 1.5 }}>
         {lang === 'he'
           ? 'מ"ל / כוס / אונ׳ נוזל — תמיד נוזל מעל הסף. כף/כפית — נוזל רק אם 0 קל׳ (כשהמתג מופעל).'
           : 'ml / cup / fl oz — always counts as fluid above threshold. tbsp/tsp — only if 0-cal (when toggle is on).'}
       </p>
-
-      {/* Beverage keywords */}
-      <BeverageKeywordsEditor
-        lang={lang}
-        keywords={draft.beverageKeywords ?? []}
-        onChange={kws => set('beverageKeywords', kws)}
-      />
 
       {/* Save Profile */}
       <button
@@ -942,6 +886,10 @@ function GoalsScreen({ lang, profile, goals, onSave, onSaveFluidGoal, fluidGoalM
 
   return (
     <>
+      <h2 style={{ fontSize: 17, fontWeight: 800, color: 'var(--text)', margin: '0 0 18px' }}>
+        {lang === 'he' ? 'יעדים תזונתיים' : 'Nutrition Goals'}
+      </h2>
+
       {/* Recommendations card */}
       <div style={{ background: 'rgba(59,130,246,0.06)', border: '1px solid rgba(59,130,246,0.18)', borderRadius: 12, padding: '12px 14px', marginBottom: 16 }}>
         {/* Header */}
@@ -1317,8 +1265,11 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
         )}
       </div>
 
-      {/* Scrollable list */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '4px 16px', paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 48px)' }}>
+      {/* Scrollable list with fades */}
+      <div style={{ flex: 1, position: 'relative' }}>
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 20, background: 'linear-gradient(to bottom, var(--bg), transparent)', zIndex: 2, pointerEvents: 'none' }} />
+        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 56, background: 'linear-gradient(to top, var(--bg), transparent)', zIndex: 2, pointerEvents: 'none' }} />
+      <div style={{ position: 'absolute', inset: 0, overflowY: 'auto', padding: '4px 16px', paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 48px)' }}>
 
       {tab === 'foods' && (
         <>
@@ -1491,7 +1442,8 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
         </>
       )}
 
-      </div>{/* /scrollable list */}
+      </div>{/* /scroll inner */}
+      </div>{/* /scroll wrapper with fades */}
     </div>
   )
 }
@@ -1587,7 +1539,10 @@ function LibraryScreen({ lang }: { lang: Lang }) {
       </div>
 
       {/* Scrollable results */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '4px 16px', paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 48px)' }}>
+      <div style={{ flex: 1, position: 'relative' }}>
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 20, background: 'linear-gradient(to bottom, var(--bg), transparent)', zIndex: 2, pointerEvents: 'none' }} />
+        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 56, background: 'linear-gradient(to top, var(--bg), transparent)', zIndex: 2, pointerEvents: 'none' }} />
+      <div style={{ position: 'absolute', inset: 0, overflowY: 'auto', padding: '4px 16px', paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 48px)' }}>
         {loading ? (
           <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-3)', fontSize: 13 }}>
             <span className="icon" style={{ fontSize: 24, display: 'block', marginBottom: 8, animation: 'spin 0.7s linear infinite' }}>progress_activity</span>
@@ -1640,7 +1595,8 @@ function LibraryScreen({ lang }: { lang: Lang }) {
             ))}
           </div>
         )}
-      </div>
+      </div>{/* /scroll inner */}
+      </div>{/* /scroll wrapper with fades */}
     </div>
   )
 }
