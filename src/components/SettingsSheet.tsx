@@ -1257,7 +1257,11 @@ function FoodHistoryScreen({ lang, history, composedGroups, onDelete, onUpdate, 
                           placeholder={lang === 'he' ? 'שם' : 'Name'} style={inputSm} dir={lang === 'he' ? 'rtl' : 'ltr'} />
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6 }}>
                           <div>
-                            <label style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-3)', display: 'block', marginBottom: 3 }}>{lang === 'he' ? 'גרם/יח׳' : 'g/pcs'}</label>
+                            <label style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-3)', display: 'block', marginBottom: 3 }}>
+                              {Number(editDraft.grams) < 0
+                                ? (lang === 'he' ? 'יח׳' : 'pcs')
+                                : (lang === 'he' ? 'גרם (g)' : 'Weight (g)')}
+                            </label>
                             <input className="inp" type="number" inputMode="decimal" value={editDraft.grams}
                               onFocus={e => e.target.select()}
                               onChange={e => handleGramsChange(e.target.value)}
@@ -1265,7 +1269,7 @@ function FoodHistoryScreen({ lang, history, composedGroups, onDelete, onUpdate, 
                           </div>
                           <div>
                             <label style={{ fontSize: 10, fontWeight: 600, color: 'var(--blue-hi)', display: 'flex', alignItems: 'center', gap: 3, marginBottom: 3 }}>
-                              {t(lang, 'caloriesUnit')}
+                              {lang === 'he' ? `קלוריות (${t(lang, 'caloriesUnit')})` : `Calories (${t(lang, 'caloriesUnit')})`}
                               <span className="icon" style={{ fontSize: 10, opacity: 0.6 }} title={lang === 'he' ? 'מחושב אוטומטית לפי גרם' : 'Auto-scaled from grams'}>calculate</span>
                             </label>
                             <input className="inp" type="number" inputMode="decimal" value={editDraft.calories}
@@ -1275,7 +1279,7 @@ function FoodHistoryScreen({ lang, history, composedGroups, onDelete, onUpdate, 
                           </div>
                           <div>
                             <label style={{ fontSize: 10, fontWeight: 600, color: 'var(--green-hi)', display: 'flex', alignItems: 'center', gap: 3, marginBottom: 3 }}>
-                              {t(lang, 'proteinUnit')}
+                              {lang === 'he' ? `חלבון (${t(lang, 'proteinUnit')})` : `Protein (${t(lang, 'proteinUnit')})`}
                               <span className="icon" style={{ fontSize: 10, opacity: 0.6 }} title={lang === 'he' ? 'מחושב אוטומטית לפי גרם' : 'Auto-scaled from grams'}>calculate</span>
                             </label>
                             <input className="inp" type="number" inputMode="decimal" value={editDraft.protein}

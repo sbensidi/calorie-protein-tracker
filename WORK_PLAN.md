@@ -262,6 +262,57 @@
 
 ---
 
+---
+
+## שלב 9 — UI Polish Sprint (נוסף 2026-04-25)
+> 7 פריטים מביקורת UI. ממוינים לפי מורכבות עולה. צבע-תמה (PLAN-2.8) עדיין ממתין — לא בוטל.
+
+### PLAN-9.1 · FAB order in HistoryTab — לוח שנה → רשימה → סטטיסטיקה ✅ pending
+- [ ] שנה סדר כפתורים ב-FAB Pill: כרגע [list, cal, stats] → צריך [cal, list, stats]
+- [ ] עדכן `fabViewIdx` ל: `{ cal: 0, list: 1, stats: 2 }`
+- [ ] עדכן סדר ה-DOM של הכפתורים
+
+### PLAN-9.2 · Food History Edit — labels + unit handling ✅ pending
+- [ ] הוסף label מילולי "חלבון / Protein" מעל שדה החלבון (לא רק צבע ירוק)
+- [ ] שנה label מעל שדה המשקל: "גרם / יח׳" → הצג גם "מ״ל" אם הערך הוא נוזל
+- [ ] כשה-grams שמורים בDB הם בפועל ml (fluid item) — הצג זאת בבירור
+
+### PLAN-9.3 · MealCard Edit — add weight + unit fields ✅ pending
+- [ ] הוסף `editGrams: string` state ל-MealCard
+- [ ] הוסף שורה שנייה בעריכה: [משקל input] [כפתור g/pcs toggle]
+- [ ] `saveEdit` יכלול גם `grams` ב-updates
+- [ ] אם המנה היא fluid — הצג ml במקום grams
+
+### PLAN-9.4 · Statistics view — 5 שיפורים ✅ pending
+- [ ] **border כחול על fluid cards**: הסר border מיוחד — תן לכל הכרטיסים border אחיד
+- [ ] **כרטיסי avg כלחיצים**: לחיצה על Avg Cal/Prot/Fluid → מחליף את `chartMetric`
+- [ ] **קווי הפרדה**: הוסף `<hr>` עדין (1px, var(--border)) בין 3 החלקים: יעד יומי | 7 ימים | 30 ימים
+- [ ] **banner תובנה לתוך חלק 7-ימים**: העבר את ה-insight note לתוך ה-section הרלוונטי
+- [ ] **banner תובנה ל-30 ימים**: הוסף תובנה מקבילה לסקציית 30 הימים
+
+### PLAN-9.5 · Profile page — ארגון מחדש ✅ pending
+- [ ] הוסף קווי הפרדה בין סוגי מידע: נתונים בסיסיים | מדדים מחושבים | העדפות
+- [ ] היררכיה ברורה: כותרת section → inputs → ערכים מחושבים
+- [ ] TDEE/BMR/BMI — הצג בכרטיס נפרד "המדדים שלך" (לא ערבוב עם inputs)
+- [ ] יעד פעילות — ויזואל ברור (slider או radio buttons)
+
+### PLAN-9.6 · Goals page — ארגון + fluid בהתאמות שבועיות ✅ pending
+- [ ] הוסף קווי הפרדה בין: המלצות | יעדים ברירת מחדל | התאמות שבועיות
+- [ ] "פרוס את כל הימים" — הקפא (comment out) — מורכבות מיותרת לרוב המשתמשים
+  - `// FROZEN: UI too cluttered for most users. Re-enable if demand arises.`
+- [ ] הוסף שדה נוזלים להתאמות שבועיות (DayPanel) לצד קלוריות וחלבון
+
+### PLAN-9.7 · Today tab — donut card overflow fix ✅ pending
+- **Option A (scroll)**: הוסף `overflowX: 'auto'` + `scrollSnapType: 'x mandatory'` על מכל הכרטיסים
+  - כל כרטיס: `scrollSnapAlign: 'start'`, `minWidth: 140px`, `flexShrink: 0`
+- **Option B (single card)**: ביטול כרטיסי משנה — כרטיס אחד עם 3 metrics בשורה אחת
+  - רוחב מלא, פחות עמוק, ללא borders פנימיים
+  - Layout: [donut small] metric1 · metric2 · metric3 בשורה אחת
+- **יישום**: כתוב את שתי החלופות בקוד, השאר את הנוכחית כ-Option B, הוסף Option A
+- **החלטה**: בחר לאחר בדיקה ויזואלית
+
+---
+
 ## דגלים: מה לא לשנות
 - לוגיקת RTL/i18n — עובדת טוב, לא לגעת
 - theme system החדש (data-theme) — תקין

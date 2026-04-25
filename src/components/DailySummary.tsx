@@ -46,10 +46,11 @@ export function DailySummary({ meals, date, goalCalories, goalProtein, lang, flu
         {formatDate(date, lang)}
       </p>
 
-      <div style={{ display: 'flex', gap: 10 }}>
+      {/* Option A — horizontal scroll (active). Option B — single unified card: see commented block below. */}
+      <div style={{ display: 'flex', gap: 10, overflowX: 'auto', scrollSnapType: 'x mandatory', paddingBottom: 4, marginBottom: -4 }}>
 
         {/* ── Calories card ── */}
-        <div style={{ flex: 1, background: 'rgba(59,130,246,0.07)', border: '1px solid rgba(59,130,246,0.14)', borderRadius: 10, padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div style={{ flex: '0 0 auto', minWidth: 130, scrollSnapAlign: 'start', background: 'rgba(59,130,246,0.07)', border: '1px solid rgba(59,130,246,0.14)', borderRadius: 10, padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <div style={{ flex: 1, minWidth: 0 }}>
               <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--blue-hi)', marginBottom: 3, letterSpacing: '0.05em' }}>
@@ -69,7 +70,7 @@ export function DailySummary({ meals, date, goalCalories, goalProtein, lang, flu
         </div>
 
         {/* ── Protein card ── */}
-        <div style={{ flex: 1, background: 'rgba(16,185,129,0.07)', border: '1px solid rgba(16,185,129,0.14)', borderRadius: 10, padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div style={{ flex: '0 0 auto', minWidth: 130, scrollSnapAlign: 'start', background: 'rgba(16,185,129,0.07)', border: '1px solid rgba(16,185,129,0.14)', borderRadius: 10, padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <div style={{ flex: 1, minWidth: 0 }}>
               <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--green-hi)', marginBottom: 3, letterSpacing: '0.05em' }}>
@@ -99,7 +100,7 @@ export function DailySummary({ meals, date, goalCalories, goalProtein, lang, flu
             ? fluidOver ? `חרגת ב-${fmtMl(Math.abs(remFluid))}` : `נותרו ${fmtMl(Math.abs(remFluid))}`
             : fluidOver ? `${fmtMl(Math.abs(remFluid))} over` : `${fmtMl(Math.abs(remFluid))} remaining`
           return (
-            <div style={{ flex: 1, background: 'rgba(59,130,246,0.07)', border: '1px solid rgba(59,130,246,0.14)', borderRadius: 10, padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div style={{ flex: '0 0 auto', minWidth: 130, scrollSnapAlign: 'start', background: 'rgba(59,130,246,0.07)', border: '1px solid rgba(59,130,246,0.14)', borderRadius: 10, padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--blue-hi)', marginBottom: 3, letterSpacing: '0.05em' }}>
@@ -125,6 +126,30 @@ export function DailySummary({ meals, date, goalCalories, goalProtein, lang, flu
         })()}
 
       </div>
+
+      {/*
+      ── OPTION B (single unified card) — activate by replacing the scroll container above ──
+      Switch to this if Option A (scroll) feels awkward after testing.
+
+      <div style={{ display: 'flex', gap: 16, alignItems: 'center', justifyContent: 'space-around' }}>
+        {[
+          { value: totalCalories, goal: goalCalories, label: t(lang, 'calories').toUpperCase(), unit: t(lang, 'caloriesUnit'), type: 'calories' as const, color: 'var(--blue-hi)' },
+          { value: totalProtein,  goal: goalProtein,  label: t(lang, 'protein').toUpperCase(),  unit: t(lang, 'proteinUnit'),  type: 'protein'  as const, color: 'var(--green-hi)' },
+          ...(fluidGoalMl > 0 ? [{ value: fluidTodayMl, goal: fluidGoalMl, label: lang === 'he' ? 'נוזלים' : 'FLUID', unit: 'ml', type: 'fluid' as const, color: 'var(--blue-hi)' }] : []),
+        ].map(m => (
+          <div key={m.type} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+            <DonutProgress value={m.value} goal={m.goal} type={m.type} size={64} strokeWidth={5} />
+            <div style={{ textAlign: 'center' }}>
+              <p style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-3)', margin: '0 0 2px', letterSpacing: '0.06em' }}>{m.label}</p>
+              <p style={{ fontSize: 13, fontWeight: 800, color: m.color, margin: 0 }}>
+                {typeof m.value === 'number' ? m.value.toLocaleString() : m.value}
+                <span style={{ fontSize: 9, color: 'var(--text-3)', marginInlineStart: 2 }}>{m.unit}</span>
+              </p>
+            </div>
+          </div>
+        ))}
+      </div>
+      */}
     </div>
   )
 }

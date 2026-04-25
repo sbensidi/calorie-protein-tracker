@@ -23,13 +23,25 @@ export function MealCard({ meal, lang, weightUnit = 'g', showCheckbox, selected,
   const [editMealType, setEditMealType] = useState<MealType>(meal.meal_type as MealType)
   const [editCalories, setEditCalories] = useState<number | ''>(meal.calories)
   const [editProtein,  setEditProtein]  = useState<number | ''>(meal.protein)
+  // Weight: positive = grams, negative = pcs (stored as negative), fluid uses fluid_ml
+  const isPcsEntry    = meal.grams < 0
+  const isFluidEntry  = meal.fluid_ml != null && !meal.fluid_excluded
+  const [editWeight,  setEditWeight]  = useState<number | ''>(
+    isFluidEntry ? Math.round(meal.fluid_ml!) : Math.abs(meal.grams)
+  )
+  const [editWeightUnit, setEditWeightUnit] = useState<'g' | 'pcs' | 'ml'>(
+    isFluidEntry ? 'ml' : isPcsEntry ? 'pcs' : 'g'
+  )
 
   const saveEdit = () => {
+    const w = Number(editWeight) || 0
     onEdit(meal.id, {
       name:      editName,
       meal_type: editMealType,
       calories:  Number(editCalories) || 0,
       protein:   Number(editProtein)  || 0,
+      grams:     editWeightUnit === 'pcs' ? -w : w,
+      ...(editWeightUnit === 'ml' ? { fluid_ml: w } : {}),
     })
     setEditing(false)
   }
@@ -38,6 +50,8 @@ export function MealCard({ meal, lang, weightUnit = 'g', showCheckbox, selected,
     setEditMealType(meal.meal_type as MealType)
     setEditCalories(meal.calories)
     setEditProtein(meal.protein)
+    setEditWeight(isFluidEntry ? Math.round(meal.fluid_ml!) : Math.abs(meal.grams))
+    setEditWeightUnit(isFluidEntry ? 'ml' : isPcsEntry ? 'pcs' : 'g')
     setEditing(false)
   }
 
@@ -77,10 +91,10 @@ export function MealCard({ meal, lang, weightUnit = 'g', showCheckbox, selected,
             <option value="snack">{t(lang, 'snack')}</option>
           </select>
         </div>
-        <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+        <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
           <div style={{ flex: 1 }}>
             <label style={{ fontSize: 11, color: 'var(--blue-hi)', fontWeight: 600, display: 'block', marginBottom: 4 }}>
-              {t(lang, 'calories')}
+              {t(lang, 'calories')} ({t(lang, 'caloriesUnit')})
             </label>
             <input
               type="number"
@@ -94,7 +108,7 @@ export function MealCard({ meal, lang, weightUnit = 'g', showCheckbox, selected,
           </div>
           <div style={{ flex: 1 }}>
             <label style={{ fontSize: 11, color: 'var(--green-hi)', fontWeight: 600, display: 'block', marginBottom: 4 }}>
-              {t(lang, 'protein')}
+              {lang === 'he' ? 'חלבון (ג׳)' : 'Protein (g)'}
             </label>
             <input
               type="number"
@@ -106,6 +120,33 @@ export function MealCard({ meal, lang, weightUnit = 'g', showCheckbox, selected,
               onChange={e => setEditProtein(e.target.value === '' ? '' : Number(e.target.value))}
               onFocus={() => { if (editProtein === 0) setEditProtein('') }}
             />
+          </div>
+          <div style={{ flex: 1 }}>
+            <label style={{ fontSize: 11, color: 'var(--text-2)', fontWeight: 600, display: 'block', marginBottom: 4 }}>
+              {lang === 'he' ? 'משקל' : 'Weight'}
+            </label>
+            <div style={{ display: 'flex', gap: 4 }}>
+              <input
+                type="number"
+                inputMode="decimal"
+                className="inp"
+                style={{ flex: 1, minWidth: 0 }}
+                value={editWeight}
+                placeholder="0"
+                onChange={e => setEditWeight(e.target.value === '' ? '' : Number(e.target.value))}
+                onFocus={e => e.target.select()}
+              />
+              <select
+                className="inp"
+                style={{ width: 52, padding: '0 4px', flexShrink: 0, fontSize: 12 }}
+                value={editWeightUnit}
+                onChange={e => setEditWeightUnit(e.target.value as 'g' | 'pcs' | 'ml')}
+              >
+                <option value="g">g</option>
+                <option value="ml">ml</option>
+                <option value="pcs">{lang === 'he' ? 'יח׳' : 'pcs'}</option>
+              </select>
+            </div>
           </div>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>

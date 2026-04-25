@@ -447,9 +447,9 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
 
   // ── Pill FAB values (computed once, stable across renders) ──────────
   const fabBtnSize = 38, fabPad = 5, fabGap = 2
-  // 3-button FAB: [list, cal, stats] in DOM order (RTL reverses visual order)
-  // In LTR: list=0, cal=1, stats=2. In RTL: list appears rightmost (idx 0), cal center (1), stats left (2).
-  const fabViewIdx: Record<'list' | 'cal' | 'stats', number> = { list: 0, cal: 1, stats: 2 }
+  // 3-button FAB: [cal, list, stats] in DOM order (RTL reverses visual order)
+  // In LTR: cal=0, list=1, stats=2. In RTL: cal appears rightmost (idx 0), list center (1), stats left (2).
+  const fabViewIdx: Record<'list' | 'cal' | 'stats', number> = { cal: 0, list: 1, stats: 2 }
   const fabIndicatorLeft = isRTL
     ? fabPad + (2 - fabViewIdx[view]) * (fabBtnSize + fabGap)
     : fabPad + fabViewIdx[view] * (fabBtnSize + fabGap)
@@ -949,11 +949,19 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
 
         const barH    = 80
 
-        const StatCard = ({ label, value, unit, color, border, pct, successDays, totalDays, pctColor }: {
-          label: string; value: number | string; unit: string; color: string; border?: string;
+        const StatCard = ({ label, value, unit, color, pct, successDays, totalDays, pctColor, metric }: {
+          label: string; value: number | string; unit: string; color: string;
           pct?: number; successDays?: number; totalDays?: number; pctColor?: string
+          metric?: 'cal' | 'prot' | 'fluid'
         }) => (
-          <div style={{ flex: 1, background: 'var(--bg-card)', border: `1px solid ${border ?? 'var(--border)'}`, borderRadius: 12, padding: '12px 10px', textAlign: 'center' }}>
+          <div
+            onClick={metric ? () => setChartMetric(metric) : undefined}
+            style={{
+              flex: 1, background: 'var(--bg-card)', border: `1px solid ${metric && chartMetric === metric ? 'rgba(59,130,246,0.4)' : 'var(--border)'}`,
+              borderRadius: 12, padding: '12px 10px', textAlign: 'center',
+              cursor: metric ? 'pointer' : 'default',
+              transition: 'border-color .15s',
+            }}>
             <p style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-3)', margin: '0 0 6px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{label}</p>
             <p style={{ fontSize: 0, margin: 0 }}>
               <span style={{ fontSize: 22, fontWeight: 800, color }}>{typeof value === 'number' ? value.toLocaleString() : value}</span>
@@ -995,6 +1003,10 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
         const goalDashColor   = isCal ? 'rgba(59,130,246,0.35)'  : isProt ? 'rgba(16,185,129,0.35)'  : 'rgba(59,130,246,0.25)'
         const goalLegendColor = isCal ? 'rgba(59,130,246,0.5)'   : isProt ? 'rgba(16,185,129,0.5)'   : 'rgba(59,130,246,0.4)'
 
+        const Divider = () => (
+          <div style={{ height: 1, background: 'var(--border)', margin: '2px 0' }} />
+        )
+
         return (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14, paddingBottom: 80 }}>
 
@@ -1023,6 +1035,8 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                 )}
               </div>
             </div>
+
+            <Divider />
 
             {/* 7-day section */}
             <div>
@@ -1063,24 +1077,37 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                       value={avg7Cal} unit={t(lang, 'caloriesUnit')} color="var(--blue-hi)"
                       pct={pct7Cal} successDays={calOkDays7} totalDays={last7.length}
                       pctColor={pct7Cal >= 70 ? 'var(--green-hi)' : pct7Cal >= 40 ? 'var(--amber)' : 'var(--red)'}
+                      metric="cal"
                     />
                     <StatCard
                       label={lang === 'he' ? 'חל׳ ממוצע' : 'Avg prot'}
                       value={avg7Prot} unit={t(lang, 'proteinUnit')} color="var(--green-hi)"
                       pct={pct7Prot} successDays={protOkDays7} totalDays={last7.length}
                       pctColor={pct7Prot >= 70 ? 'var(--green-hi)' : pct7Prot >= 40 ? 'var(--amber)' : 'var(--red)'}
+                      metric="prot"
                     />
                     {fluidGoalMl > 0 && (
                       <StatCard
                         label={lang === 'he' ? 'נוזלים ממוצע' : 'Avg fluid'}
                         value={avg7FluidMl >= 1000 ? (avg7FluidMl / 1000).toFixed(1) : avg7FluidMl}
                         unit={avg7FluidMl >= 1000 ? (lang === 'he' ? 'ל׳' : 'L') : 'ml'}
-                        color="var(--blue-hi)" border="rgba(59,130,246,0.3)"
+                        color="var(--blue-hi)"
                         pct={pct7Fluid} successDays={goalDays7Fluid} totalDays={last7.length}
                         pctColor={pct7Fluid >= 70 ? 'var(--blue-hi)' : pct7Fluid >= 40 ? 'var(--amber)' : 'var(--red)'}
+                        metric="fluid"
                       />
                     )}
                   </div>
+                  {/* 7-day insight */}
+                  {last7.length >= 3 && (
+                    <div style={{ background: 'rgba(59,130,246,0.06)', border: '1px solid rgba(59,130,246,0.15)', borderRadius: 10, padding: '8px 12px', marginTop: 8 }}>
+                      <p style={{ fontSize: 11, color: 'var(--text-2)', margin: 0, lineHeight: 1.6 }}>
+                        {lang === 'he'
+                          ? `ב-7 הימים האחרונים צרכת בממוצע ${avg7Cal.toLocaleString()} קק״ל ו-${avg7Prot}ג׳ חלבון. עמדת ביעד קלוריות ב-${pct7Cal}% וחלבון ב-${pct7Prot}% מהימים.`
+                          : `Over the last 7 days you averaged ${avg7Cal.toLocaleString()} kcal and ${avg7Prot}g protein. You hit your calorie goal on ${pct7Cal}% and protein goal on ${pct7Prot}% of days.`}
+                      </p>
+                    </div>
+                  )}
                 </>
               )}
             </div>
@@ -1187,6 +1214,8 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
               </div>
             )}
 
+            <Divider />
+
             {/* 30-day section */}
             <div>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
@@ -1226,38 +1255,40 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                       value={avg30Cal} unit={t(lang, 'caloriesUnit')} color="var(--blue-hi)"
                       pct={pct30Cal} successDays={calOkDays30} totalDays={last30.length}
                       pctColor={pct30Cal >= 70 ? 'var(--green-hi)' : pct30Cal >= 40 ? 'var(--amber)' : 'var(--red)'}
+                      metric="cal"
                     />
                     <StatCard
                       label={lang === 'he' ? 'חל׳ ממוצע' : 'Avg prot'}
                       value={avg30Prot} unit={t(lang, 'proteinUnit')} color="var(--green-hi)"
                       pct={pct30Prot} successDays={protOkDays30} totalDays={last30.length}
                       pctColor={pct30Prot >= 70 ? 'var(--green-hi)' : pct30Prot >= 40 ? 'var(--amber)' : 'var(--red)'}
+                      metric="prot"
                     />
                     {fluidGoalMl > 0 && (
                       <StatCard
                         label={lang === 'he' ? 'נוזלים ממוצע' : 'Avg fluid'}
                         value={avg30FluidMl >= 1000 ? (avg30FluidMl / 1000).toFixed(1) : avg30FluidMl}
                         unit={avg30FluidMl >= 1000 ? (lang === 'he' ? 'ל׳' : 'L') : 'ml'}
-                        color="var(--blue-hi)" border="rgba(59,130,246,0.3)"
+                        color="var(--blue-hi)"
                         pct={pct30Fluid} successDays={goalDays30Fluid} totalDays={last30.length}
                         pctColor={pct30Fluid >= 70 ? 'var(--blue-hi)' : pct30Fluid >= 40 ? 'var(--amber)' : 'var(--red)'}
+                        metric="fluid"
                       />
                     )}
                   </div>
+                  {/* 30-day insight */}
+                  {last30.length >= 7 && (
+                    <div style={{ background: 'rgba(59,130,246,0.06)', border: '1px solid rgba(59,130,246,0.15)', borderRadius: 10, padding: '8px 12px', marginTop: 8 }}>
+                      <p style={{ fontSize: 11, color: 'var(--text-2)', margin: 0, lineHeight: 1.6 }}>
+                        {lang === 'he'
+                          ? `ב-30 הימים האחרונים צרכת בממוצע ${avg30Cal.toLocaleString()} קק״ל ו-${avg30Prot}ג׳ חלבון. עמדת ביעד קלוריות ב-${pct30Cal}% וחלבון ב-${pct30Prot}% מהימים.`
+                          : `Over the last 30 days you averaged ${avg30Cal.toLocaleString()} kcal and ${avg30Prot}g protein. You hit your calorie goal on ${pct30Cal}% and protein goal on ${pct30Prot}% of days.`}
+                      </p>
+                    </div>
+                  )}
                 </>
               )}
             </div>
-
-            {/* Insight note */}
-            {last7.length >= 3 && (
-              <div style={{ background: 'rgba(59,130,246,0.07)', border: '1px solid rgba(59,130,246,0.18)', borderRadius: 12, padding: '10px 14px' }}>
-                <p style={{ fontSize: 12, color: 'var(--text-2)', margin: 0, lineHeight: 1.6 }}>
-                  {lang === 'he'
-                    ? `ב-7 הימים האחרונים צרכת בממוצע ${avg7Cal.toLocaleString()} קק״ל ו-${avg7Prot}ג׳ חלבון. עמדת ביעד קלוריות ב-${pct7Cal}% וחלבון ב-${pct7Prot}% מהימים.`
-                    : `Over the last 7 days you averaged ${avg7Cal.toLocaleString()} kcal and ${avg7Prot}g protein. You hit your calorie goal on ${pct7Cal}% and protein goal on ${pct7Prot}% of days.`}
-                </p>
-              </div>
-            )}
           </div>
         )
       })()}
@@ -1293,20 +1324,6 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
           transition: 'left 0.28s cubic-bezier(.34,1.56,.64,1)',
           pointerEvents: 'none',
         }} />
-        {/* List button */}
-        <button
-          className="fab-pill-btn"
-          onClick={() => { switchView('list'); setSelectedDate(null) }}
-          style={{
-            width: fabBtnSize, height: fabBtnSize, borderRadius: 999,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            border: 'none', background: 'transparent', cursor: 'pointer',
-            position: 'relative', zIndex: 1,
-            color: view === 'list' ? 'var(--blue-hi)' : 'var(--text-3)',
-          }}
-        >
-          <span className="icon" style={{ fontSize: 20 }}>format_list_bulleted</span>
-        </button>
         {/* Calendar button */}
         <button
           className="fab-pill-btn"
@@ -1320,6 +1337,20 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
           }}
         >
           <span className="icon" style={{ fontSize: 20 }}>calendar_month</span>
+        </button>
+        {/* List button */}
+        <button
+          className="fab-pill-btn"
+          onClick={() => { switchView('list'); setSelectedDate(null) }}
+          style={{
+            width: fabBtnSize, height: fabBtnSize, borderRadius: 999,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            border: 'none', background: 'transparent', cursor: 'pointer',
+            position: 'relative', zIndex: 1,
+            color: view === 'list' ? 'var(--blue-hi)' : 'var(--text-3)',
+          }}
+        >
+          <span className="icon" style={{ fontSize: 20 }}>format_list_bulleted</span>
         </button>
         {/* Stats button */}
         <button
