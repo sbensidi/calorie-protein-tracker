@@ -269,7 +269,7 @@ function MainScreen({ lang, connected, theme, onProfile, onGoals, onFoodHistory,
               {lang === 'he' ? 'ספריית מזונות' : 'Food Library'}
             </p>
             <p style={{ fontSize: 11, color: 'var(--text-3)', margin: '2px 0 0' }}>
-              {lang === 'he' ? 'עיון ב-120+ מזונות מובנים' : 'Browse 120+ built-in foods'}
+              {lang === 'he' ? 'עיון ב-150+ מזונות מובנים' : 'Browse 150+ built-in foods'}
             </p>
           </div>
           <span className="icon icon-sm" style={{ color: 'var(--text-3)', flexShrink: 0 }}>{chevron}</span>
@@ -1379,15 +1379,15 @@ const LIBRARY_CATEGORIES_HE: Record<string, string> = {
   vegetable: 'ירקות', fruit: 'פירות', protein_meat: 'עוף ובשר',
   protein_fish: 'דגים', egg_dairy: 'ביצים ויוגורט', cheese: 'גבינות',
   nuts: 'אגוזים ופיצוחים', grain: 'דגנים', legume: 'קטניות',
-  oil_fat: 'שמנים ושומנים', sauce_spread: 'רטבים וממרחים', beverage: 'משקאות',
+  oil_fat: 'שמנים ושומנים', sauce_spread: 'רטבים וממרחים', beverage: 'משקאות', soup: 'מרקים',
 }
 const LIBRARY_CATEGORIES_EN: Record<string, string> = {
   vegetable: 'Vegetables', fruit: 'Fruits', protein_meat: 'Chicken & Meat',
   protein_fish: 'Fish', egg_dairy: 'Eggs & Dairy', cheese: 'Cheeses',
   nuts: 'Nuts & Seeds', grain: 'Grains', legume: 'Legumes',
-  oil_fat: 'Oils & Fats', sauce_spread: 'Sauces & Spreads', beverage: 'Beverages',
+  oil_fat: 'Oils & Fats', sauce_spread: 'Sauces & Spreads', beverage: 'Beverages', soup: 'Soups',
 }
-const CATEGORY_ORDER = ['protein_meat', 'protein_fish', 'egg_dairy', 'cheese', 'vegetable', 'fruit', 'grain', 'legume', 'nuts', 'oil_fat', 'sauce_spread', 'beverage']
+const CATEGORY_ORDER = ['protein_meat', 'protein_fish', 'egg_dairy', 'cheese', 'vegetable', 'fruit', 'grain', 'legume', 'nuts', 'oil_fat', 'sauce_spread', 'beverage', 'soup']
 
 function LibraryScreen({ lang, onBack }: { lang: Lang; onBack: () => void }) {
   const { library, loading } = useFoodLibrary()
@@ -1496,9 +1496,23 @@ function LibraryScreen({ lang, onBack }: { lang: Lang; onBack: () => void }) {
                 </p>
               </div>
               <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
-                <span style={{ fontSize: 11, color: 'var(--blue-hi)', fontWeight: 600 }}>{item.calories_per_100g} {lang === 'he' ? 'קל' : 'cal'}</span>
-                <span style={{ fontSize: 11, color: 'var(--green-hi)', fontWeight: 600 }}>{item.protein_per_100g}g</span>
-                <span style={{ fontSize: 10, color: 'var(--text-3)' }}>/{lang === 'he' ? '100' : '100'}g</span>
+                {(() => {
+                  const ss = item.serving_size ?? 100
+                  const su = item.serving_unit ?? 'g'
+                  const perServing = su !== 'g' && su !== 'oz'
+                  const cal = perServing ? Math.round(item.calories_per_100g * ss / 100) : item.calories_per_100g
+                  const prot = perServing ? Math.round(item.protein_per_100g * ss / 100 * 10) / 10 : item.protein_per_100g
+                  const unitLabel = perServing
+                    ? (su === 'cup' ? (lang === 'he' ? 'לכוס' : '/cup') : su === 'ml' ? '/100ml' : `/${su}`)
+                    : '/100g'
+                  return (
+                    <>
+                      <span style={{ fontSize: 11, color: 'var(--blue-hi)', fontWeight: 600 }}>{cal} {lang === 'he' ? 'קל' : 'cal'}</span>
+                      <span style={{ fontSize: 11, color: 'var(--green-hi)', fontWeight: 600 }}>{prot}g</span>
+                      <span style={{ fontSize: 10, color: 'var(--text-3)' }}>{unitLabel}</span>
+                    </>
+                  )
+                })()}
               </div>
             </div>
           ))}
