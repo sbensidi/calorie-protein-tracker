@@ -1,14 +1,16 @@
 import { memo } from 'react'
+import type { ReactNode } from 'react'
 
 interface DonutProgressProps {
-  value:        number
-  goal:         number
-  type:         'calories' | 'protein' | 'fluid'
-  size?:        number
-  strokeWidth?: number
+  value:           number
+  goal:            number
+  type:            'calories' | 'protein' | 'fluid'
+  size?:           number
+  strokeWidth?:    number
+  centerContent?:  ReactNode
 }
 
-export const DonutProgress = memo(function DonutProgress({ value, goal, type, size = 56, strokeWidth = 5 }: DonutProgressProps) {
+export const DonutProgress = memo(function DonutProgress({ value, goal, type, size = 56, strokeWidth = 5, centerContent }: DonutProgressProps) {
   const pct     = goal > 0 ? Math.min(1, value / goal) : 0
   const realPct = goal > 0 ? Math.round((value / goal) * 100) : 0
 
@@ -115,20 +117,22 @@ export const DonutProgress = memo(function DonutProgress({ value, goal, type, si
         />
       </svg>
 
-      {/* Percentage label */}
+      {/* Center content — custom or default % */}
       <div style={{
         position: 'absolute', inset: 0,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
       }}>
-        <span style={{
-          fontSize: size < 48 ? 9 : 10,
-          fontWeight: 800,
-          color: fillColor,
-          lineHeight: 1,
-          letterSpacing: '-0.02em',
-        }}>
-          {realPct}%
-        </span>
+        {centerContent ?? (
+          <span style={{
+            fontSize: size < 48 ? 9 : 10,
+            fontWeight: 800,
+            color: fillColor,
+            lineHeight: 1,
+            letterSpacing: '-0.02em',
+          }}>
+            {realPct}%
+          </span>
+        )}
       </div>
     </div>
   )
