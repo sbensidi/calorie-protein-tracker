@@ -571,6 +571,19 @@ function ProfileScreen({ lang, profile, onSave, onApplyGoals, onBack, onNavigate
           </span>
         </div>
         <div style={{ height: 1, background: 'var(--border)' }} />
+        {/* BMI row */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '11px 14px' }}>
+          <div style={{ minWidth: 0 }}>
+            <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-2)', margin: '0 0 2px' }}>BMI</p>
+            <p style={{ fontSize: 10, color: 'var(--text-3)', margin: 0, lineHeight: 1.4 }}>
+              {lang === 'he' ? 'תת משקל < 18.5 | תקין 18.5–24.9 | עודף 25–29.9 | השמנה ≥ 30' : 'Under < 18.5 | Normal 18.5–24.9 | Over 25–29.9 | Obese ≥ 30'}
+            </p>
+          </div>
+          <span style={{ fontSize: 18, fontWeight: 800, color: bmiColor, flexShrink: 0, marginInlineStart: 10 }}>
+            {bmi} <span style={{ fontSize: 12, fontWeight: 600 }}>— {bmiLabel}</span>
+          </span>
+        </div>
+        <div style={{ height: 1, background: 'var(--border)' }} />
         {/* Fluid row */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '11px 14px' }}>
           <div style={{ minWidth: 0 }}>
@@ -586,19 +599,6 @@ function ProfileScreen({ lang, profile, onSave, onApplyGoals, onBack, onNavigate
             <span style={{ fontSize: 10, fontWeight: 400 }}>
               {suggestedFluidMl >= 1000 ? (lang === 'he' ? 'ל׳' : 'L') : 'ml'}
             </span>
-          </span>
-        </div>
-        <div style={{ height: 1, background: 'var(--border)' }} />
-        {/* BMI row */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '11px 14px' }}>
-          <div style={{ minWidth: 0 }}>
-            <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-2)', margin: '0 0 2px' }}>BMI</p>
-            <p style={{ fontSize: 10, color: 'var(--text-3)', margin: 0, lineHeight: 1.4 }}>
-              {lang === 'he' ? 'תת משקל < 18.5 | תקין 18.5–24.9 | עודף 25–29.9 | השמנה ≥ 30' : 'Under < 18.5 | Normal 18.5–24.9 | Over 25–29.9 | Obese ≥ 30'}
-            </p>
-          </div>
-          <span style={{ fontSize: 18, fontWeight: 800, color: bmiColor, flexShrink: 0, marginInlineStart: 10 }}>
-            {bmi} <span style={{ fontSize: 12, fontWeight: 600 }}>— {bmiLabel}</span>
           </span>
         </div>
       </div>

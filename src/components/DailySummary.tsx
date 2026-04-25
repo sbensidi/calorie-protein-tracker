@@ -2,7 +2,8 @@ import type { Meal } from '../types'
 import type { Lang } from '../lib/i18n'
 import { t, formatDate } from '../lib/i18n'
 import { DonutProgress } from './DonutProgress'
-import { StatusBadge } from './StatusBadge'
+// StatusBadge used only in Option A (scroll) — kept for easy re-activation
+// import { StatusBadge } from './StatusBadge'
 
 interface DailySummaryProps {
   meals:        Meal[]
@@ -14,28 +15,12 @@ interface DailySummaryProps {
   fluidTodayMl?: number
 }
 
-function remainingLabel(remaining: number, unit: string, lang: Lang): { text: string; over: boolean } {
-  const over = remaining < 0
-  const abs  = Math.abs(remaining)
-  if (lang === 'he') {
-    return over
-      ? { text: `חרגת ב־${abs} ${unit}`, over: true }
-      : { text: `נותרו ${abs} ${unit}`,   over: false }
-  }
-  return over
-    ? { text: `${abs} ${unit} over`,      over: true }
-    : { text: `${abs} ${unit} remaining`, over: false }
-}
+// remainingLabel / remCal / remProt used only in Option A (scroll) — kept for easy re-activation
+// function remainingLabel(remaining: number, unit: string, lang: Lang): { text: string; over: boolean } { ... }
 
 export function DailySummary({ meals, date, goalCalories, goalProtein, lang, fluidGoalMl = 0, fluidTodayMl = 0 }: DailySummaryProps) {
   const totalCalories = Math.round(meals.reduce((s, m) => s + m.calories, 0))
   const totalProtein  = Math.round(meals.reduce((s, m) => s + m.protein,  0) * 10) / 10
-
-  const remCal  = Math.round(goalCalories - totalCalories)
-  const remProt = Math.round((goalProtein  - totalProtein) * 10) / 10
-
-  const calLabel  = remainingLabel(remCal,  t(lang, 'caloriesUnit'), lang)
-  const protLabel = remainingLabel(remProt, t(lang, 'proteinUnit'),  lang)
 
   return (
     <div
@@ -46,10 +31,32 @@ export function DailySummary({ meals, date, goalCalories, goalProtein, lang, flu
         {formatDate(date, lang)}
       </p>
 
-      {/* Option A — horizontal scroll (active). Option B — single unified card: see commented block below. */}
+      {/* Option B — single unified card (active). Option A — horizontal scroll: see commented block below. */}
+      <div style={{ display: 'flex', gap: 16, alignItems: 'center', justifyContent: 'space-around' }}>
+        {[
+          { value: totalCalories, goal: goalCalories, label: t(lang, 'calories').toUpperCase(), unit: t(lang, 'caloriesUnit'), type: 'calories' as const, color: 'var(--blue-hi)' },
+          { value: totalProtein,  goal: goalProtein,  label: t(lang, 'protein').toUpperCase(),  unit: t(lang, 'proteinUnit'),  type: 'protein'  as const, color: 'var(--green-hi)' },
+          ...(fluidGoalMl > 0 ? [{ value: fluidTodayMl, goal: fluidGoalMl, label: lang === 'he' ? 'נוזלים' : 'FLUID', unit: 'ml', type: 'fluid' as const, color: 'var(--blue-hi)' }] : []),
+        ].map(m => (
+          <div key={m.type} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+            <DonutProgress value={m.value} goal={m.goal} type={m.type} size={64} strokeWidth={5} />
+            <div style={{ textAlign: 'center' }}>
+              <p style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-3)', margin: '0 0 2px', letterSpacing: '0.06em' }}>{m.label}</p>
+              <p style={{ fontSize: 13, fontWeight: 800, color: m.color, margin: 0 }}>
+                {typeof m.value === 'number' ? m.value.toLocaleString() : m.value}
+                <span style={{ fontSize: 9, color: 'var(--text-3)', marginInlineStart: 2 }}>{m.unit}</span>
+              </p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/*
+      ── OPTION A (horizontal scroll) — activate by replacing the unified card above ──
+      Switch to this if Option B feels too cramped when fluid card is shown.
+
       <div style={{ display: 'flex', gap: 10, overflowX: 'auto', scrollSnapType: 'x mandatory', paddingBottom: 4, marginBottom: -4 }}>
 
-        {/* ── Calories card ── */}
         <div style={{ flex: '0 0 auto', minWidth: 130, scrollSnapAlign: 'start', background: 'rgba(59,130,246,0.07)', border: '1px solid rgba(59,130,246,0.14)', borderRadius: 10, padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <div style={{ flex: 1, minWidth: 0 }}>
@@ -69,7 +76,6 @@ export function DailySummary({ meals, date, goalCalories, goalProtein, lang, flu
           <StatusBadge status={calLabel.over ? 'over' : 'under'} text={calLabel.text} lang={lang} />
         </div>
 
-        {/* ── Protein card ── */}
         <div style={{ flex: '0 0 auto', minWidth: 130, scrollSnapAlign: 'start', background: 'rgba(16,185,129,0.07)', border: '1px solid rgba(16,185,129,0.14)', borderRadius: 10, padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <div style={{ flex: 1, minWidth: 0 }}>
@@ -89,7 +95,6 @@ export function DailySummary({ meals, date, goalCalories, goalProtein, lang, flu
           <StatusBadge status={protLabel.over ? 'over' : 'under'} text={protLabel.text} lang={lang} />
         </div>
 
-        {/* ── Fluid card (only when goal is set) ── */}
         {fluidGoalMl > 0 && (() => {
           const fmtMl = (ml: number) => ml >= 1000
             ? `${(ml / 1000).toFixed(1)}${lang === 'he' ? 'ל׳' : 'L'}`
@@ -125,29 +130,6 @@ export function DailySummary({ meals, date, goalCalories, goalProtein, lang, flu
           )
         })()}
 
-      </div>
-
-      {/*
-      ── OPTION B (single unified card) — activate by replacing the scroll container above ──
-      Switch to this if Option A (scroll) feels awkward after testing.
-
-      <div style={{ display: 'flex', gap: 16, alignItems: 'center', justifyContent: 'space-around' }}>
-        {[
-          { value: totalCalories, goal: goalCalories, label: t(lang, 'calories').toUpperCase(), unit: t(lang, 'caloriesUnit'), type: 'calories' as const, color: 'var(--blue-hi)' },
-          { value: totalProtein,  goal: goalProtein,  label: t(lang, 'protein').toUpperCase(),  unit: t(lang, 'proteinUnit'),  type: 'protein'  as const, color: 'var(--green-hi)' },
-          ...(fluidGoalMl > 0 ? [{ value: fluidTodayMl, goal: fluidGoalMl, label: lang === 'he' ? 'נוזלים' : 'FLUID', unit: 'ml', type: 'fluid' as const, color: 'var(--blue-hi)' }] : []),
-        ].map(m => (
-          <div key={m.type} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-            <DonutProgress value={m.value} goal={m.goal} type={m.type} size={64} strokeWidth={5} />
-            <div style={{ textAlign: 'center' }}>
-              <p style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-3)', margin: '0 0 2px', letterSpacing: '0.06em' }}>{m.label}</p>
-              <p style={{ fontSize: 13, fontWeight: 800, color: m.color, margin: 0 }}>
-                {typeof m.value === 'number' ? m.value.toLocaleString() : m.value}
-                <span style={{ fontSize: 9, color: 'var(--text-3)', marginInlineStart: 2 }}>{m.unit}</span>
-              </p>
-            </div>
-          </div>
-        ))}
       </div>
       */}
     </div>
