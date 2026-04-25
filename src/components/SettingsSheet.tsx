@@ -1707,7 +1707,7 @@ export function SettingsSheet({
         borderLeft: '1px solid var(--border)',
         borderRight: '1px solid var(--border)',
         borderRadius: '20px 20px 0 0',
-        maxHeight: '92vh',
+        height: 'min(90vh, 720px)',
         display: 'flex', flexDirection: 'column',
         transform: isOpen ? 'translateY(0)' : 'translateY(105%)',
         transition: 'transform 0.35s cubic-bezier(.22,.9,.36,1)',

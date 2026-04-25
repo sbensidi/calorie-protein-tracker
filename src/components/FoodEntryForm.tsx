@@ -820,11 +820,22 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
                   </button>
                 )
               } else {
-                const item = s.item
-                const grams = item.serving_size ?? 100
-                const cal   = Math.round(item.calories_per_100g * grams / 100)
-                const prot  = Math.round(item.protein_per_100g  * grams / 100 * 10) / 10
-                const name  = lang === 'he' ? item.name_he : item.name_en
+                const item        = s.item
+                const unit        = (item.serving_unit as UnitId) in UNITS ? (item.serving_unit as UnitId) : 'g'
+                const servingBase = item.serving_size ?? 100
+                const gramsForNutrition = item.density
+                  ? mlToGrams(toBase(servingBase, unit), item.density)
+                  : toBase(servingBase, unit)
+                const cal  = Math.round(item.calories_per_100g * gramsForNutrition / 100)
+                const prot = Math.round(item.protein_per_100g  * gramsForNutrition / 100 * 10) / 10
+                const name = lang === 'he' ? item.name_he : item.name_en
+                const amtDisplay = unit === 'g' ? `${servingBase}g`
+                  : unit === 'ml' ? `${servingBase}ml`
+                  : unit === 'cup' ? `${servingBase} ${lang === 'he' ? 'כוס' : 'cup'}`
+                  : unit === 'fl_oz' ? `${servingBase} fl oz`
+                  : unit === 'tbsp' ? `${servingBase} ${lang === 'he' ? 'כף' : 'tbsp'}`
+                  : unit === 'tsp'  ? `${servingBase} ${lang === 'he' ? 'כפית' : 'tsp'}`
+                  : `${servingBase}${unit}`
                 return (
                   <button
                     key={`lib-${item.id}`}
@@ -843,7 +854,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
                     <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {name}
                     </span>
-                    <span style={{ fontSize: 11, color: 'var(--text-2)', flexShrink: 0 }}>{grams}g</span>
+                    <span style={{ fontSize: 11, color: 'var(--text-2)', flexShrink: 0 }}>{amtDisplay}</span>
                     <span style={{ fontSize: 11, color: 'var(--blue-hi)', flexShrink: 0, fontWeight: 600 }}>{cal}</span>
                     <span style={{ fontSize: 11, color: 'var(--green-hi)', flexShrink: 0, fontWeight: 600 }}>{prot}g</span>
                   </button>
