@@ -20,7 +20,7 @@ export interface Goal {
   user_id: string
   default_calories: number
   default_protein: number
-  weekly_overrides: Record<string, { calories: number; protein: number }>
+  weekly_overrides: Record<string, { calories: number; protein: number; fluid_ml?: number }>
   updated_at: string
 }
 

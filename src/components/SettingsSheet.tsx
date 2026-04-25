@@ -35,17 +35,20 @@ interface DayPanelProps {
   isCustom:       boolean
   calVal:         number
   protVal:        number
+  fluidVal:       number
   calDiff:        string | null
   protDiff:       string | null
+  fluidDiff:      string | null
   onChangeCal:    (v: string) => void
   onChangeProt:   (v: string) => void
+  onChangeFluid:  (v: string) => void
   onReset:        () => void
 }
 
 function DayPanel({
   dayKey, compact = false, lang, todayKey,
-  isCustom, calVal, protVal, calDiff, protDiff,
-  onChangeCal, onChangeProt, onReset,
+  isCustom, calVal, protVal, fluidVal, calDiff, protDiff, fluidDiff,
+  onChangeCal, onChangeProt, onChangeFluid, onReset,
 }: DayPanelProps) {
   const isToday = dayKey === todayKey
 
@@ -135,6 +138,34 @@ function DayPanel({
                 color: protDiff.startsWith('(+') ? 'var(--green-hi)' : 'var(--red)',
               }}>
                 {protDiff}
+              </span>
+            )}
+          </div>
+        </div>
+        <div style={{ flex: 1 }}>
+          {!compact && (
+            <label style={{ fontSize: 11, color: 'var(--blue-hi)', fontWeight: 600, display: 'block', marginBottom: 5 }}>
+              {lang === 'he' ? 'נוזלים' : 'Fluid'}
+            </label>
+          )}
+          <div style={{ position: 'relative' }}>
+            <input
+              type="number"
+              inputMode="numeric"
+              className="inp"
+              style={{ height: compact ? 38 : undefined, fontSize: compact ? 13 : undefined, paddingInlineEnd: fluidDiff ? 52 : undefined, borderColor: 'rgba(59,130,246,0.35)' }}
+              value={fluidVal === 0 ? '' : fluidVal}
+              placeholder="0"
+              onFocus={e => e.target.select()}
+              onChange={e => onChangeFluid(e.target.value)}
+            />
+            {fluidDiff && (
+              <span style={{
+                position: 'absolute', insetInlineEnd: 8, top: '50%', transform: 'translateY(-50%)',
+                fontSize: 10, fontWeight: 600, pointerEvents: 'none',
+                color: fluidDiff.startsWith('(+') ? 'var(--green-hi)' : 'var(--red)',
+              }}>
+                {fluidDiff}
               </span>
             )}
           </div>
@@ -397,6 +428,11 @@ function ProfileScreen({ lang, profile, onSave, onApplyGoals, onBack, onNavigate
         </h2>
       </div>
 
+      {/* Section: personal inputs */}
+      <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.07em', margin: '0 0 12px' }}>
+        {lang === 'he' ? 'פרטים אישיים' : 'Personal Details'}
+      </p>
+
       {/* Sex */}
       <div style={{ marginBottom: 14 }}>
         <label style={labelStyle}>{t(lang, 'sex')}</label>
@@ -501,61 +537,70 @@ function ProfileScreen({ lang, profile, onSave, onApplyGoals, onBack, onNavigate
         </div>
       </div>
 
-      {/* Divider */}
-      <div style={{ height: 1, background: 'var(--border)', marginBottom: 18 }} />
+      {/* Separator */}
+      <div style={{ height: 1, background: 'var(--border)', margin: '4px 0 18px' }} />
 
-      {/* BMR */}
-      <div style={{ marginBottom: 14 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 4 }}>
-          <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-2)' }}>
-            {lang === 'he' ? 'BMR — חילוף חומרים בסיסי' : 'BMR — Basal Metabolic Rate'}
-          </span>
-          <span style={{ fontSize: 19, fontWeight: 800, color: 'var(--text)' }}>
-            {bmr.toLocaleString()} <span style={{ fontSize: 11, fontWeight: 400 }}>{t(lang, 'caloriesUnit')}</span>
+      {/* Section: computed metrics */}
+      <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.07em', margin: '0 0 10px' }}>
+        {lang === 'he' ? 'המדדים שלך' : 'Your Metrics'}
+      </p>
+      <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden', marginBottom: 16 }}>
+        {/* BMR row */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '11px 14px' }}>
+          <div style={{ minWidth: 0 }}>
+            <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-2)', margin: '0 0 2px' }}>BMR</p>
+            <p style={{ fontSize: 10, color: 'var(--text-3)', margin: 0, lineHeight: 1.4 }}>
+              {lang === 'he' ? 'חילוף חומרים בסיסי — ללא פעילות' : 'Basal Metabolic Rate — at rest'}
+            </p>
+          </div>
+          <span style={{ fontSize: 18, fontWeight: 800, color: 'var(--text)', flexShrink: 0, marginInlineStart: 10 }}>
+            {bmr.toLocaleString()} <span style={{ fontSize: 10, fontWeight: 400 }}>{t(lang, 'caloriesUnit')}</span>
           </span>
         </div>
-        <p style={{ fontSize: 11, color: 'var(--text-3)', margin: 0, lineHeight: 1.5 }}>
-          {lang === 'he'
-            ? 'קלוריות שהגוף שורף במנוחה מוחלטת — לב, נשימה, תפקוד תאים — ללא כל פעילות.'
-            : 'Calories burned at complete rest — heart, breathing, cell function — with zero activity.'}
-        </p>
-      </div>
-
-      {/* TDEE */}
-      <div style={{ marginBottom: 14 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 4 }}>
-          <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-2)' }}>
-            {lang === 'he' ? 'TDEE — הוצאה אנרגטית יומית' : 'TDEE — Total Daily Energy Expenditure'}
-          </span>
-          <span style={{ fontSize: 19, fontWeight: 800, color: 'var(--blue-hi)' }}>
-            {tdee.toLocaleString()} <span style={{ fontSize: 11, fontWeight: 400 }}>{t(lang, 'caloriesUnit')}</span>
+        <div style={{ height: 1, background: 'var(--border)' }} />
+        {/* TDEE row */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '11px 14px' }}>
+          <div style={{ minWidth: 0 }}>
+            <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--blue-hi)', margin: '0 0 2px' }}>TDEE</p>
+            <p style={{ fontSize: 10, color: 'var(--text-3)', margin: 0, lineHeight: 1.4 }}>
+              {lang === 'he' ? 'הוצאה יומית כוללת כולל פעילות' : 'Total daily expenditure incl. activity'}
+            </p>
+          </div>
+          <span style={{ fontSize: 18, fontWeight: 800, color: 'var(--blue-hi)', flexShrink: 0, marginInlineStart: 10 }}>
+            {tdee.toLocaleString()} <span style={{ fontSize: 10, fontWeight: 400 }}>{t(lang, 'caloriesUnit')}</span>
           </span>
         </div>
-        <p style={{ fontSize: 11, color: 'var(--text-3)', margin: 0, lineHeight: 1.5 }}>
-          {lang === 'he'
-            ? 'BMR × מכפיל פעילות — כמה קלוריות אתה באמת שורף ביום כולל כל הפעילות שלך.'
-            : 'BMR × activity multiplier — actual daily calories burned including all your activities.'}
-        </p>
-      </div>
-
-      {/* Recommended fluid */}
-      <div style={{ marginBottom: 18 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 4 }}>
-          <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-2)' }}>
-            {lang === 'he' ? 'נוזלים מומלצים ביום' : 'Recommended daily fluid'}
-          </span>
-          <span style={{ fontSize: 19, fontWeight: 800, color: 'var(--blue-hi)' }}>
+        <div style={{ height: 1, background: 'var(--border)' }} />
+        {/* Fluid row */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '11px 14px' }}>
+          <div style={{ minWidth: 0 }}>
+            <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-2)', margin: '0 0 2px' }}>
+              {lang === 'he' ? 'נוזלים מומלצים' : 'Recommended fluid'}
+            </p>
+            <p style={{ fontSize: 10, color: 'var(--text-3)', margin: 0, lineHeight: 1.4 }}>
+              {lang === 'he' ? `35מ״ל × ${draft.weight}ק״ג` : `35 ml × ${draft.weight} kg`}
+            </p>
+          </div>
+          <span style={{ fontSize: 18, fontWeight: 800, color: 'var(--text)', flexShrink: 0, marginInlineStart: 10 }}>
             {suggestedFluidMl >= 1000 ? (suggestedFluidMl / 1000).toFixed(1) : suggestedFluidMl}{' '}
-            <span style={{ fontSize: 11, fontWeight: 400 }}>
+            <span style={{ fontSize: 10, fontWeight: 400 }}>
               {suggestedFluidMl >= 1000 ? (lang === 'he' ? 'ל׳' : 'L') : 'ml'}
             </span>
           </span>
         </div>
-        <p style={{ fontSize: 11, color: 'var(--text-3)', margin: 0, lineHeight: 1.5 }}>
-          {lang === 'he'
-            ? `35מ״ל × ${draft.weight}ק״ג — כמות הידרציה מינימלית מומלצת למניעת התייבשות.`
-            : `35ml × ${draft.weight}kg — minimum recommended hydration to prevent dehydration.`}
-        </p>
+        <div style={{ height: 1, background: 'var(--border)' }} />
+        {/* BMI row */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '11px 14px' }}>
+          <div style={{ minWidth: 0 }}>
+            <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-2)', margin: '0 0 2px' }}>BMI</p>
+            <p style={{ fontSize: 10, color: 'var(--text-3)', margin: 0, lineHeight: 1.4 }}>
+              {lang === 'he' ? 'תת משקל < 18.5 | תקין 18.5–24.9 | עודף 25–29.9 | השמנה ≥ 30' : 'Under < 18.5 | Normal 18.5–24.9 | Over 25–29.9 | Obese ≥ 30'}
+            </p>
+          </div>
+          <span style={{ fontSize: 18, fontWeight: 800, color: bmiColor, flexShrink: 0, marginInlineStart: 10 }}>
+            {bmi} <span style={{ fontSize: 12, fontWeight: 600 }}>— {bmiLabel}</span>
+          </span>
+        </div>
       </div>
 
       {/* Suggestion card */}
@@ -639,25 +684,8 @@ function ProfileScreen({ lang, profile, onSave, onApplyGoals, onBack, onNavigate
         </button>
       </div>
 
-      {/* BMI */}
-      <div style={{ marginBottom: 22 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 4 }}>
-          <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-2)' }}>
-            {lang === 'he' ? 'BMI — מדד מסת גוף' : 'BMI — Body Mass Index'}
-          </span>
-          <span style={{ fontSize: 18, fontWeight: 800, color: bmiColor }}>
-            {bmi} — <span style={{ fontSize: 13 }}>{bmiLabel}</span>
-          </span>
-        </div>
-        <p style={{ fontSize: 11, color: 'var(--text-3)', margin: 0 }}>
-          {lang === 'he'
-            ? 'תת משקל < 18.5 | תקין 18.5–24.9 | עודף משקל 25–29.9 | השמנה ≥ 30'
-            : 'Underweight < 18.5 | Normal 18.5–24.9 | Overweight 25–29.9 | Obese ≥ 30'}
-        </p>
-      </div>
-
       {/* Units preferences */}
-      <div style={{ height: 1, background: 'var(--border)', margin: '18px 0' }} />
+      <div style={{ height: 1, background: 'var(--border)', margin: '4px 0 18px' }} />
       <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-2)', marginBottom: 12, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
         {lang === 'he' ? 'יחידות מידה' : 'Units'}
       </p>
@@ -768,9 +796,8 @@ function GoalsScreen({ lang, profile, goals, onSave, onSaveFluidGoal, fluidGoalM
   const [defCal,       setDefCal]       = useState(goals?.default_calories ?? 1700)
   const [defProt,      setDefProt]      = useState(goals?.default_protein  ?? 160)
   const [defFluidGoal, setDefFluidGoal] = useState(fluidGoalMl)
-  const [overrides, setOverrides] = useState<Record<string, { calories: number; protein: number }>>(goals?.weekly_overrides ?? {})
-  const [saved, setSaved]     = useState(false)
-  const [expandAll, setExpandAll] = useState(false)
+  const [overrides, setOverrides] = useState<Record<string, { calories: number; protein: number; fluid_ml?: number }>>(goals?.weekly_overrides ?? {})
+  const [saved, setSaved] = useState(false)
 
   const todayKey    = DAY_KEYS[new Date().getDay()]
   const [selectedDay, setSelectedDay] = useState<DayKey>(todayKey)
@@ -808,12 +835,37 @@ function GoalsScreen({ lang, profile, goals, onSave, onSaveFluidGoal, fluidGoalM
     return diff > 0 ? `(+${diff}${unit})` : `(${diff}${unit})`
   }
 
+  const getFluidVal = (dayKey: DayKey) => {
+    const entry = overrides[toWeekIndex(dayKey)]
+    return entry?.fluid_ml ?? defFluidGoal
+  }
+
+  const getFluidDiff = (dayKey: DayKey): string | null => {
+    if (!hasOverride(dayKey)) return null
+    const entry = overrides[toWeekIndex(dayKey)]
+    if (entry?.fluid_ml == null) return null
+    const diff = entry.fluid_ml - defFluidGoal
+    if (diff === 0) return null
+    return diff > 0 ? `(+${diff})` : `(${diff})`
+  }
+
   const setDayOverride = (dayKey: DayKey, field: 'calories' | 'protein', value: string) => {
     const idx = toWeekIndex(dayKey)
     setOverrides(prev => ({
       ...prev,
-      [idx]: { calories: prev[idx]?.calories ?? defCal, protein: prev[idx]?.protein ?? defProt, [field]: Number(value) },
+      [idx]: { calories: prev[idx]?.calories ?? defCal, protein: prev[idx]?.protein ?? defProt, fluid_ml: prev[idx]?.fluid_ml, [field]: Number(value) },
     }))
+  }
+
+  const setFluidDayOverride = (dayKey: DayKey, value: string) => {
+    const idx = toWeekIndex(dayKey)
+    setOverrides(prev => {
+      const existing = prev[idx]
+      return {
+        ...prev,
+        [idx]: { calories: existing?.calories ?? defCal, protein: existing?.protein ?? defProt, fluid_ml: Number(value) },
+      }
+    })
   }
 
   const resetDay = (dayKey: DayKey) => {
@@ -936,6 +988,9 @@ function GoalsScreen({ lang, profile, goals, onSave, onSaveFluidGoal, fluidGoalM
         </button>
       </div>
 
+      {/* Separator */}
+      <div style={{ height: 1, background: 'var(--border)', margin: '4px 0 16px' }} />
+
       {/* Default goals */}
       <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-2)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 10 }}>
         {t(lang, 'defaultGoals')}
@@ -1009,6 +1064,9 @@ function GoalsScreen({ lang, profile, goals, onSave, onSaveFluidGoal, fluidGoalM
         </div>
       </div>
 
+      {/* Separator */}
+      <div style={{ height: 1, background: 'var(--border)', margin: '4px 0 16px' }} />
+
       {/* Weekly overrides */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
         <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-2)', textTransform: 'uppercase', letterSpacing: '0.07em', margin: 0 }}>
@@ -1066,47 +1124,20 @@ function GoalsScreen({ lang, profile, goals, onSave, onSaveFluidGoal, fluidGoalM
         isCustom={hasOverride(selectedDay)}
         calVal={getVal(selectedDay, 'calories')}
         protVal={getVal(selectedDay, 'protein')}
+        fluidVal={getFluidVal(selectedDay)}
         calDiff={getDiff(selectedDay, 'calories')}
         protDiff={getDiff(selectedDay, 'protein')}
+        fluidDiff={getFluidDiff(selectedDay)}
         onChangeCal={v => setDayOverride(selectedDay, 'calories', v)}
         onChangeProt={v => setDayOverride(selectedDay, 'protein', v)}
+        onChangeFluid={v => setFluidDayOverride(selectedDay, v)}
         onReset={() => resetDay(selectedDay)}
       />
 
-      {/* Expand / collapse all days */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '14px 0 0' }}>
-        <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
-        <button
-          onClick={() => setExpandAll(e => !e)}
-          style={{ fontSize: 11, fontWeight: 600, color: 'var(--blue)', background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.25)', borderRadius: 20, padding: '4px 12px', cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 4, whiteSpace: 'nowrap' }}
-        >
-          <span className="icon icon-sm">{expandAll ? 'unfold_less' : 'unfold_more'}</span>
-          {t(lang, expandAll ? 'collapseAllDays' : 'expandAllDays')}
-        </button>
-        <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
-      </div>
-
-      {expandAll && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 12 }}>
-          {DAY_KEYS.map(dayKey => (
-            <DayPanel
-              key={dayKey}
-              dayKey={dayKey}
-              compact
-              lang={lang}
-              todayKey={todayKey}
-              isCustom={hasOverride(dayKey)}
-              calVal={getVal(dayKey, 'calories')}
-              protVal={getVal(dayKey, 'protein')}
-              calDiff={getDiff(dayKey, 'calories')}
-              protDiff={getDiff(dayKey, 'protein')}
-              onChangeCal={v => setDayOverride(dayKey, 'calories', v)}
-              onChangeProt={v => setDayOverride(dayKey, 'protein', v)}
-              onReset={() => resetDay(dayKey)}
-            />
-          ))}
-        </div>
-      )}
+      {/* PLAN-9.6: "expand all days" feature frozen — the day-picker grid above
+          provides the same editing surface; showing all 7 panels at once felt
+          cluttered and offered no clear UX benefit over the tab-style picker.
+          Keeping the code here for possible future revival. */}
 
       {/* Save */}
       <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
