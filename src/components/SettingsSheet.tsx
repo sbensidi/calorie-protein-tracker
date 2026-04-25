@@ -1170,6 +1170,7 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
   const [editingMealId, setEditingMealId] = useState<string | null>(null)
   const [mealDraft, setMealDraft]         = useState<{ name: string; grams: string; calories: string; protein: string }>({ name: '', grams: '', calories: '', protein: '' })
   const mealEditRatios = useRef({ calPerGram: 0, protPerGram: 0 })
+  const [expandedGroupId, setExpandedGroupId] = useState<string | null>(null)
 
   const q = search.trim().toLowerCase()
   const filtered = q
@@ -1371,23 +1372,30 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
                 const groupMeals = meals.filter(m => group.mealIds.includes(m.id))
                 const totalCal   = Math.round(groupMeals.reduce((s, m) => s + m.calories, 0))
                 const totalProt  = Math.round(groupMeals.reduce((s, m) => s + m.protein, 0) * 10) / 10
+                const isExpanded = expandedGroupId === group.id
                 return (
                   <div key={group.id} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
-                    {/* Group header */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderBottom: groupMeals.length > 0 ? '1px solid var(--border)' : undefined }}>
-                      <span className="icon icon-sm" style={{ color: 'var(--purple)', flexShrink: 0 }}>restaurant</span>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{group.name}</p>
-                        <p style={{ fontSize: 11, color: 'var(--text-3)', margin: '2px 0 0' }}>
-                          {totalCal} {lang === 'he' ? 'קל' : 'kcal'} · {totalProt}g {lang === 'he' ? 'חלבון' : 'protein'}
-                        </p>
-                      </div>
+                    {/* Group header — tap to expand/collapse */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderBottom: isExpanded && groupMeals.length > 0 ? '1px solid var(--border)' : undefined }}>
+                      <button
+                        onClick={() => setExpandedGroupId(isExpanded ? null : group.id)}
+                        style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 10, background: 'none', border: 'none', cursor: 'pointer', padding: 0, minWidth: 0, textAlign: 'start' }}
+                      >
+                        <span className="icon icon-sm" style={{ color: 'var(--purple)', flexShrink: 0 }}>restaurant</span>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{group.name}</p>
+                          <p style={{ fontSize: 11, color: 'var(--text-3)', margin: '2px 0 0' }}>
+                            {totalCal} {lang === 'he' ? 'קל' : 'kcal'} · {totalProt}g {lang === 'he' ? 'חלבון' : 'protein'} · {groupMeals.length} {lang === 'he' ? 'מרכיבים' : 'items'}
+                          </p>
+                        </div>
+                        <span className="icon icon-sm" style={{ color: 'var(--text-3)', flexShrink: 0, transition: 'transform .2s', transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>expand_more</span>
+                      </button>
                       <button onClick={() => handleRemoveGroup(group.id, group.name)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--red)', padding: 6, display: 'flex', borderRadius: 8, flexShrink: 0 }}>
                         <span className="icon icon-sm">delete</span>
                       </button>
                     </div>
-                    {/* Individual meals */}
-                    {groupMeals.map(meal => (
+                    {/* Individual meals — shown only when expanded */}
+                    {isExpanded && groupMeals.map(meal => (
                       <div key={meal.id} style={{ borderBottom: '1px solid var(--border-subtle, var(--border))' }}>
                         {editingMealId === meal.id ? (
                           <div style={{ padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 6 }}>
