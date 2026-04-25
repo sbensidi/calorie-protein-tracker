@@ -356,12 +356,11 @@ function MainScreen({ lang, connected, theme, onProfile, onGoals, onFoodHistory,
 
 // ── Profile Screen ────────────────────────────────────────────────────────────
 
-function ProfileScreen({ lang, profile, onSave, onApplyGoals, onBack, onNavigateToGoals, showToast }: {
+function ProfileScreen({ lang, profile, onSave, onApplyGoals, onNavigateToGoals, showToast }: {
   lang:               Lang
   profile:            UserProfile
   onSave:             (updates: Partial<UserProfile>) => void
   onApplyGoals:       (calories: number, protein: number) => void
-  onBack:             () => void
   onNavigateToGoals:  () => void
   showToast:          (msg: string, type: 'success' | 'error' | 'info') => void
 }) {
@@ -418,16 +417,6 @@ function ProfileScreen({ lang, profile, onSave, onApplyGoals, onBack, onNavigate
 
   return (
     <>
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '8px 0 18px' }}>
-        <button onClick={onBack} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, color: 'var(--text-2)', display: 'flex' }}>
-          <span className="icon">{lang === 'he' ? 'arrow_forward' : 'arrow_back'}</span>
-        </button>
-        <h2 style={{ fontSize: 16, fontWeight: 800, color: 'var(--text)', margin: 0 }}>
-          {t(lang, 'personalProfile')}
-        </h2>
-      </div>
-
       {/* Section: personal inputs */}
       <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.07em', margin: '0 0 12px' }}>
         {lang === 'he' ? 'פרטים אישיים' : 'Personal Details'}
@@ -788,7 +777,7 @@ function ProfileScreen({ lang, profile, onSave, onApplyGoals, onBack, onNavigate
 
 // ── Goals Screen ──────────────────────────────────────────────────────────────
 
-function GoalsScreen({ lang, profile, goals, onSave, onSaveFluidGoal, fluidGoalMl = 2500, onBack, showToast }: {
+function GoalsScreen({ lang, profile, goals, onSave, onSaveFluidGoal, fluidGoalMl = 2500, showToast }: {
   lang:              Lang
   profile:           UserProfile
   goals:             Goal | null
@@ -894,16 +883,6 @@ function GoalsScreen({ lang, profile, goals, onSave, onSaveFluidGoal, fluidGoalM
 
   return (
     <>
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '8px 0 18px' }}>
-        <button onClick={onBack} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, color: 'var(--text-2)', display: 'flex' }}>
-          <span className="icon">{lang === 'he' ? 'arrow_forward' : 'arrow_back'}</span>
-        </button>
-        <h2 style={{ fontSize: 16, fontWeight: 800, color: 'var(--text)', margin: 0 }}>
-          {t(lang, 'dailyGoalsLabel')}
-        </h2>
-      </div>
-
       {/* Recommendations card */}
       <div style={{ background: 'rgba(59,130,246,0.06)', border: '1px solid rgba(59,130,246,0.18)', borderRadius: 12, padding: '12px 14px', marginBottom: 16 }}>
         {/* Header */}
@@ -1166,14 +1145,13 @@ function GoalsScreen({ lang, profile, goals, onSave, onSaveFluidGoal, fluidGoalM
 
 // ── Food History Screen ───────────────────────────────────────────────────────
 
-function FoodHistoryScreen({ lang, history, composedGroups, onDelete, onUpdate, onRemoveGroup, onBack, showToast }: {
+function FoodHistoryScreen({ lang, history, composedGroups, onDelete, onUpdate, onRemoveGroup, showToast }: {
   lang:           Lang
   history:        FoodHistory[]
   composedGroups: ComposedGroup[]
   onDelete:       (id: string) => void
   onUpdate:       (id: string, updates: Partial<Pick<FoodHistory, 'name' | 'grams' | 'calories' | 'protein'>>) => void
   onRemoveGroup:  (id: string) => void
-  onBack:         () => void
   showToast:      (msg: string, type: 'success' | 'error' | 'info') => void
 }) {
   const [search, setSearch]       = useState('')
@@ -1224,31 +1202,25 @@ function FoodHistoryScreen({ lang, history, composedGroups, onDelete, onUpdate, 
   const inputSm: React.CSSProperties = { height: 34, fontSize: 12, padding: '0 8px', borderRadius: 8 }
 
   return (
-    <>
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '8px 0 14px' }}>
-        <button onClick={onBack} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, color: 'var(--text-2)', display: 'flex' }}>
-          <span className="icon">{lang === 'he' ? 'arrow_forward' : 'arrow_back'}</span>
-        </button>
-        <h2 style={{ fontSize: 16, fontWeight: 800, color: 'var(--text)', margin: 0, flex: 1 }}>
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      {/* Sticky top: title + tabs + search */}
+      <div style={{ flexShrink: 0, padding: '12px 16px 0', background: 'var(--bg)' }}>
+        <h2 style={{ fontSize: 16, fontWeight: 800, color: 'var(--text)', margin: '0 0 12px' }}>
           {lang === 'he' ? 'ניהול מזונות' : 'Manage foods'}
         </h2>
-      </div>
 
-      {/* Tab switcher */}
-      <div className="tab-bar" style={{ marginBottom: 12 }}>
-        {(['foods', 'composed'] as const).map(key => (
-          <button key={key} onClick={() => setTab(key)} className={`tab-btn ${tab === key ? 'active' : ''}`} style={{ fontSize: 12 }}>
-            {key === 'foods'
-              ? (lang === 'he' ? `מזונות (${history.length})` : `Foods (${history.length})`)
-              : (lang === 'he' ? `מנות (${composedGroups.length})` : `Dishes (${composedGroups.length})`)}
-          </button>
-        ))}
-      </div>
+        {/* Tab switcher */}
+        <div className="tab-bar" style={{ marginBottom: 10 }}>
+          {(['foods', 'composed'] as const).map(key => (
+            <button key={key} onClick={() => setTab(key)} className={`tab-btn ${tab === key ? 'active' : ''}`} style={{ fontSize: 12 }}>
+              {key === 'foods'
+                ? (lang === 'he' ? `מזונות (${history.length})` : `Foods (${history.length})`)
+                : (lang === 'he' ? `מנות (${composedGroups.length})` : `Dishes (${composedGroups.length})`)}
+            </button>
+          ))}
+        </div>
 
-      {tab === 'foods' && (
-        <>
-          {/* Search */}
+        {tab === 'foods' && (
           <div style={{ position: 'relative', marginBottom: 10 }}>
             <span className="icon" style={{ position: 'absolute', top: '50%', transform: 'translateY(-50%)', ...(lang === 'he' ? { right: 10 } : { left: 10 }), color: 'var(--text-3)', fontSize: 18, pointerEvents: 'none' }}>search</span>
             <input className="inp" type="text" value={search} onChange={e => setSearch(e.target.value)}
@@ -1257,6 +1229,14 @@ function FoodHistoryScreen({ lang, history, composedGroups, onDelete, onUpdate, 
               style={lang === 'he' ? { paddingRight: 36 } : { paddingLeft: 36 }}
             />
           </div>
+        )}
+      </div>
+
+      {/* Scrollable list */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: '4px 16px', paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 48px)' }}>
+
+      {tab === 'foods' && (
+        <>
 
           {filtered.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '32px 0', color: 'var(--text-3)' }}>
@@ -1369,7 +1349,9 @@ function FoodHistoryScreen({ lang, history, composedGroups, onDelete, onUpdate, 
           )}
         </>
       )}
-    </>
+
+      </div>{/* /scrollable list */}
+    </div>
   )
 }
 
@@ -1389,13 +1371,14 @@ const LIBRARY_CATEGORIES_EN: Record<string, string> = {
 }
 const CATEGORY_ORDER = ['protein_meat', 'protein_fish', 'egg_dairy', 'cheese', 'vegetable', 'fruit', 'grain', 'legume', 'nuts', 'oil_fat', 'sauce_spread', 'beverage', 'soup']
 
-function LibraryScreen({ lang, onBack }: { lang: Lang; onBack: () => void }) {
+function LibraryScreen({ lang }: { lang: Lang }) {
   const { library, loading } = useFoodLibrary()
   const [search, setSearch] = useState('')
   const [activeCategory, setActiveCategory] = useState<string | null>(null)
 
   const categories = useCallback(() => CATEGORY_ORDER, [])()
   const catLabels = lang === 'he' ? LIBRARY_CATEGORIES_HE : LIBRARY_CATEGORIES_EN
+  const isRTL = lang === 'he'
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
@@ -1406,119 +1389,118 @@ function LibraryScreen({ lang, onBack }: { lang: Lang; onBack: () => void }) {
     })
   }, [library, search, activeCategory])
 
-  const isRTL   = lang === 'he'
-
   return (
-    <>
-      {/* Back header */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '8px 0 16px' }}>
-        <button onClick={onBack} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-2)', padding: 4, display: 'flex', borderRadius: 8 }}>
-          <span className="icon icon-sm">{isRTL ? 'arrow_forward' : 'arrow_back'}</span>
-        </button>
-        <h2 style={{ fontSize: 17, fontWeight: 800, color: 'var(--text)', margin: 0, flex: 1 }}>
-          {lang === 'he' ? 'ספריית מזונות' : 'Food Library'}
-        </h2>
-        <span style={{ fontSize: 11, color: 'var(--text-3)' }}>
-          {library.length} {lang === 'he' ? 'פריטים' : 'items'}
-        </span>
-      </div>
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      {/* Sticky top: title + search + chips */}
+      <div style={{ flexShrink: 0, padding: '12px 16px 0', background: 'var(--bg)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', marginBottom: 12 }}>
+          <h2 style={{ fontSize: 17, fontWeight: 800, color: 'var(--text)', margin: 0, flex: 1 }}>
+            {lang === 'he' ? 'ספריית מזונות' : 'Food Library'}
+          </h2>
+          <span style={{ fontSize: 11, color: 'var(--text-3)' }}>
+            {library.length} {lang === 'he' ? 'פריטים' : 'items'}
+          </span>
+        </div>
 
-      {/* Search */}
-      <div style={{ position: 'relative', marginBottom: 12 }}>
-        <span className="icon icon-sm" style={{ position: 'absolute', top: '50%', transform: 'translateY(-50%)', ...(isRTL ? { right: 10 } : { left: 10 }), color: 'var(--text-3)', pointerEvents: 'none' }}>search</span>
-        <input
-          className="inp"
-          type="search"
-          placeholder={lang === 'he' ? 'חיפוש מזון...' : 'Search food...'}
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          style={{ ...(isRTL ? { paddingRight: 34 } : { paddingLeft: 34 }) }}
-        />
-      </div>
+        {/* Search */}
+        <div style={{ position: 'relative', marginBottom: 10 }}>
+          <span className="icon icon-sm" style={{ position: 'absolute', top: '50%', transform: 'translateY(-50%)', ...(isRTL ? { right: 10 } : { left: 10 }), color: 'var(--text-3)', pointerEvents: 'none' }}>search</span>
+          <input
+            className="inp"
+            type="search"
+            placeholder={lang === 'he' ? 'חיפוש מזון...' : 'Search food...'}
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            style={{ ...(isRTL ? { paddingRight: 34 } : { paddingLeft: 34 }) }}
+          />
+        </div>
 
-      {/* Category chips */}
-      <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 6, marginBottom: 12, scrollbarWidth: 'none' }}>
-        <button
-          onClick={() => setActiveCategory(null)}
-          style={{
-            padding: '5px 12px', borderRadius: 999, border: 'none', cursor: 'pointer', fontFamily: 'inherit',
-            fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap', transition: 'background .12s, color .12s',
-            background: activeCategory === null ? 'var(--blue)' : 'var(--surface-2)',
-            color: activeCategory === null ? '#fff' : 'var(--text-2)',
-          }}
-        >
-          {lang === 'he' ? 'הכל' : 'All'}
-        </button>
-        {categories.map(cat => (
+        {/* Category chips */}
+        <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 10, scrollbarWidth: 'none' }}>
           <button
-            key={cat}
-            onClick={() => setActiveCategory(activeCategory === cat ? null : cat)}
+            onClick={() => setActiveCategory(null)}
             style={{
               padding: '5px 12px', borderRadius: 999, border: 'none', cursor: 'pointer', fontFamily: 'inherit',
               fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap', transition: 'background .12s, color .12s',
-              background: activeCategory === cat ? 'var(--blue)' : 'var(--surface-2)',
-              color: activeCategory === cat ? '#fff' : 'var(--text-2)',
+              background: activeCategory === null ? 'var(--blue)' : 'var(--surface-2)',
+              color: activeCategory === null ? '#fff' : 'var(--text-2)',
             }}
           >
-            {catLabels[cat] ?? cat}
+            {lang === 'he' ? 'הכל' : 'All'}
           </button>
-        ))}
-      </div>
-
-      {/* Results */}
-      {loading ? (
-        <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-3)', fontSize: 13 }}>
-          <span className="icon" style={{ fontSize: 24, display: 'block', marginBottom: 8, animation: 'spin 0.7s linear infinite' }}>progress_activity</span>
-          {lang === 'he' ? 'טוען...' : 'Loading...'}
-        </div>
-      ) : filtered.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-3)', fontSize: 13 }}>
-          <span className="icon" style={{ fontSize: 24, display: 'block', marginBottom: 8, opacity: 0.4 }}>search_off</span>
-          {lang === 'he' ? 'לא נמצאו תוצאות' : 'No results found'}
-        </div>
-      ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-          {filtered.map((item, i) => (
-            <div
-              key={item.id}
+          {categories.map(cat => (
+            <button
+              key={cat}
+              onClick={() => setActiveCategory(activeCategory === cat ? null : cat)}
               style={{
-                display: 'flex', alignItems: 'center', gap: 10,
-                padding: '10px 4px',
-                borderBottom: i < filtered.length - 1 ? '1px solid var(--border)' : 'none',
+                padding: '5px 12px', borderRadius: 999, border: 'none', cursor: 'pointer', fontFamily: 'inherit',
+                fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap', transition: 'background .12s, color .12s',
+                background: activeCategory === cat ? 'var(--blue)' : 'var(--surface-2)',
+                color: activeCategory === cat ? '#fff' : 'var(--text-2)',
               }}
             >
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {lang === 'he' ? item.name_he : item.name_en}
-                </p>
-                <p style={{ fontSize: 11, color: 'var(--text-3)', margin: '2px 0 0' }}>
-                  {catLabels[item.category] ?? item.category}
-                </p>
-              </div>
-              <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
-                {(() => {
-                  const ss = item.serving_size ?? 100
-                  const su = item.serving_unit ?? 'g'
-                  const perServing = su !== 'g' && su !== 'oz'
-                  const cal = perServing ? Math.round(item.calories_per_100g * ss / 100) : item.calories_per_100g
-                  const prot = perServing ? Math.round(item.protein_per_100g * ss / 100 * 10) / 10 : item.protein_per_100g
-                  const unitLabel = perServing
-                    ? (su === 'cup' ? (lang === 'he' ? 'לכוס' : '/cup') : su === 'ml' ? '/100ml' : `/${su}`)
-                    : '/100g'
-                  return (
-                    <>
-                      <span style={{ fontSize: 11, color: 'var(--blue-hi)', fontWeight: 600 }}>{cal} {lang === 'he' ? 'קל' : 'cal'}</span>
-                      <span style={{ fontSize: 11, color: 'var(--green-hi)', fontWeight: 600 }}>{prot}g</span>
-                      <span style={{ fontSize: 10, color: 'var(--text-3)' }}>{unitLabel}</span>
-                    </>
-                  )
-                })()}
-              </div>
-            </div>
+              {catLabels[cat] ?? cat}
+            </button>
           ))}
         </div>
-      )}
-    </>
+      </div>
+
+      {/* Scrollable results */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: '4px 16px', paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 48px)' }}>
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-3)', fontSize: 13 }}>
+            <span className="icon" style={{ fontSize: 24, display: 'block', marginBottom: 8, animation: 'spin 0.7s linear infinite' }}>progress_activity</span>
+            {lang === 'he' ? 'טוען...' : 'Loading...'}
+          </div>
+        ) : filtered.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-3)', fontSize: 13 }}>
+            <span className="icon" style={{ fontSize: 24, display: 'block', marginBottom: 8, opacity: 0.4 }}>search_off</span>
+            {lang === 'he' ? 'לא נמצאו תוצאות' : 'No results found'}
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+            {filtered.map((item, i) => (
+              <div
+                key={item.id}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 10,
+                  padding: '10px 4px',
+                  borderBottom: i < filtered.length - 1 ? '1px solid var(--border)' : 'none',
+                }}
+              >
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {isRTL ? item.name_he : item.name_en}
+                  </p>
+                  <p style={{ fontSize: 11, color: 'var(--text-3)', margin: '2px 0 0' }}>
+                    {catLabels[item.category] ?? item.category}
+                  </p>
+                </div>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
+                  {(() => {
+                    const ss = item.serving_size ?? 100
+                    const su = item.serving_unit ?? 'g'
+                    const perServing = su !== 'g' && su !== 'oz'
+                    const cal = perServing ? Math.round(item.calories_per_100g * ss / 100) : item.calories_per_100g
+                    const prot = perServing ? Math.round(item.protein_per_100g * ss / 100 * 10) / 10 : item.protein_per_100g
+                    const unitLabel = perServing
+                      ? (su === 'cup' ? (isRTL ? 'לכוס' : '/cup') : su === 'ml' ? '/100ml' : `/${su}`)
+                      : '/100g'
+                    return (
+                      <>
+                        <span style={{ fontSize: 11, color: 'var(--blue-hi)', fontWeight: 600 }}>{cal} {isRTL ? 'קל' : 'cal'}</span>
+                        <span style={{ fontSize: 11, color: 'var(--green-hi)', fontWeight: 600 }}>{prot}g</span>
+                        <span style={{ fontSize: 10, color: 'var(--text-3)' }}>{unitLabel}</span>
+                      </>
+                    )
+                  })()}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
   )
 }
 
@@ -1607,73 +1589,77 @@ export function SettingsSheet({
         transition: 'transform 0.35s cubic-bezier(.22,.9,.36,1)',
       }}>
 
-        <SheetHandle scrolledDown={scrolledDown} onClose={handleClose} />
+        <SheetHandle
+          scrolledDown={scrolledDown}
+          onClose={handleClose}
+          onBack={screen !== 'main' ? () => setScreen('main') : undefined}
+          isRTL={lang === 'he'}
+        />
 
-        <div
-          ref={scrollRef}
-          onScroll={onScroll}
-          style={{
-            flex: 1, overflowY: 'auto',
-            padding: '20px 16px',
-            paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 48px)',
-          }}
-        >
-          {screen === 'main' && (
-            <MainScreen
-              lang={lang}
-              connected={connected}
-              theme={theme}
-              onProfile={() => setScreen('profile')}
-              onGoals={() => setScreen('goals')}
-              onFoodHistory={() => setScreen('foodHistory')}
-              onLibrary={() => setScreen('library')}
-              onToggleLang={onToggleLang}
-              onToggleTheme={onToggleTheme}
-              onSignOut={() => { handleClose(); onSignOut() }}
-            />
-          )}
-          {screen === 'profile' && (
-            <ProfileScreen
-              lang={lang}
-              profile={profile}
-              onSave={onSaveProfile}
-              onApplyGoals={(cal, prot) => onSaveGoals({ default_calories: cal, default_protein: prot })}
-              onBack={() => setScreen('main')}
-              onNavigateToGoals={() => setScreen('goals')}
-              showToast={showToast}
-            />
-          )}
-          {screen === 'goals' && (
-            <GoalsScreen
-              lang={lang}
-              profile={profile}
-              goals={goals}
-              onSave={onSaveGoals}
-              onSaveFluidGoal={ml => onSaveProfile({ fluidGoalMl: ml })}
-              fluidGoalMl={profile.fluidGoalMl}
-              onBack={() => setScreen('main')}
-              showToast={showToast}
-            />
-          )}
-          {screen === 'foodHistory' && (
-            <FoodHistoryScreen
-              lang={lang}
-              history={history}
-              composedGroups={composedGroups}
-              onDelete={onDeleteHistory}
-              onUpdate={onUpdateHistory}
-              onRemoveGroup={onRemoveGroup}
-              onBack={() => setScreen('main')}
-              showToast={showToast}
-            />
-          )}
-          {screen === 'library' && (
-            <LibraryScreen
-              lang={lang}
-              onBack={() => setScreen('main')}
-            />
-          )}
-        </div>
+        {/* Scrollable screens (main / profile / goals) */}
+        {(screen === 'main' || screen === 'profile' || screen === 'goals') && (
+          <div
+            ref={scrollRef}
+            onScroll={onScroll}
+            style={{
+              flex: 1, overflowY: 'auto',
+              padding: '20px 16px',
+              paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 48px)',
+            }}
+          >
+            {screen === 'main' && (
+              <MainScreen
+                lang={lang}
+                connected={connected}
+                theme={theme}
+                onProfile={() => setScreen('profile')}
+                onGoals={() => setScreen('goals')}
+                onFoodHistory={() => setScreen('foodHistory')}
+                onLibrary={() => setScreen('library')}
+                onToggleLang={onToggleLang}
+                onToggleTheme={onToggleTheme}
+                onSignOut={() => { handleClose(); onSignOut() }}
+              />
+            )}
+            {screen === 'profile' && (
+              <ProfileScreen
+                lang={lang}
+                profile={profile}
+                onSave={onSaveProfile}
+                onApplyGoals={(cal, prot) => onSaveGoals({ default_calories: cal, default_protein: prot })}
+                onNavigateToGoals={() => setScreen('goals')}
+                showToast={showToast}
+              />
+            )}
+            {screen === 'goals' && (
+              <GoalsScreen
+                lang={lang}
+                profile={profile}
+                goals={goals}
+                onSave={onSaveGoals}
+                onSaveFluidGoal={ml => onSaveProfile({ fluidGoalMl: ml })}
+                fluidGoalMl={profile.fluidGoalMl}
+                showToast={showToast}
+              />
+            )}
+          </div>
+        )}
+
+        {/* Self-scrolling screens (library / foodHistory) */}
+        {screen === 'foodHistory' && (
+          <FoodHistoryScreen
+            lang={lang}
+            history={history}
+            composedGroups={composedGroups}
+            onDelete={onDeleteHistory}
+            onUpdate={onUpdateHistory}
+            onRemoveGroup={onRemoveGroup}
+            showToast={showToast}
+          />
+        )}
+        {screen === 'library' && (
+          <LibraryScreen lang={lang} />
+        )}
       </div>
       </div>
     </>

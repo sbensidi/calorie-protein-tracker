@@ -19,9 +19,11 @@
 interface SheetHandleProps {
   scrolledDown: boolean
   onClose?: () => void
+  onBack?: () => void
+  isRTL?: boolean
 }
 
-export function SheetHandle({ scrolledDown, onClose }: SheetHandleProps) {
+export function SheetHandle({ scrolledDown, onClose, onBack, isRTL }: SheetHandleProps) {
   return (
     <div style={{ position: 'relative', flexShrink: 0 }}>
       {/* Bar itself */}
@@ -33,6 +35,19 @@ export function SheetHandle({ scrolledDown, onClose }: SheetHandleProps) {
         borderBottom: '1px solid var(--border)',
       }}>
         <div style={{ width: 36, height: 4, borderRadius: 2, background: 'var(--surface-6)' }} />
+
+        {onBack && (
+          <button
+            onClick={onBack}
+            style={{
+              position: 'absolute', insetInlineStart: 12,
+              background: 'none', border: 'none', cursor: 'pointer',
+              color: 'var(--text-2)', padding: 4, display: 'flex',
+            }}
+          >
+            <span className="icon icon-sm">{isRTL ? 'arrow_forward' : 'arrow_back'}</span>
+          </button>
+        )}
 
         {onClose && (
           <button
