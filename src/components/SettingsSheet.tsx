@@ -760,8 +760,8 @@ function ProfileScreen({ lang, profile, onSave, onApplyGoals, onNavigateToGoals,
       </div>
       <p style={{ fontSize: 10, color: 'var(--text-3)', margin: '0 0 20px', lineHeight: 1.5 }}>
         {lang === 'he'
-          ? 'מ"ל / כוס / אונ׳ נוזל — תמיד נוזל מעל הסף. כף/כפית — נוזל רק אם 0 קל׳ (כשהמתג מופעל).'
-          : 'ml / cup / fl oz — always counts as fluid above threshold. tbsp/tsp — only if 0-cal (when toggle is on).'}
+          ? 'כשהמתג דלוק — רק נוזלים עם 0 קלוריות יחושבו ליעד (מים, סודה, קפה שחור...).'
+          : 'When enabled — only zero-calorie fluids count toward your goal (water, soda, black coffee...).'}
       </p>
 
       {/* Save Profile */}
