@@ -784,7 +784,6 @@ function GoalsScreen({ lang, profile, goals, onSave, onSaveFluidGoal, fluidGoalM
   onSave:            (updates: Partial<Goal>) => void
   onSaveFluidGoal?:  (ml: number) => void
   fluidGoalMl?:      number
-  onBack:            () => void
   showToast:         (msg: string, type: 'success' | 'error' | 'info') => void
 }) {
   const [defCal,       setDefCal]       = useState(goals?.default_calories ?? 1700)
@@ -1125,9 +1124,6 @@ function GoalsScreen({ lang, profile, goals, onSave, onSaveFluidGoal, fluidGoalM
 
       {/* Save */}
       <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
-        <button className="btn-ghost" onClick={onBack} style={{ height: 48, fontSize: 14, borderRadius: 12, flex: 1 }}>
-          {t(lang, 'cancel')}
-        </button>
         <button
           className={saved ? 'btn-confirm' : 'btn-primary'}
           onClick={handleSave}
