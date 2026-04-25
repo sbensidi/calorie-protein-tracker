@@ -1163,7 +1163,7 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
   const [search, setSearch]       = useState('')
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editDraft, setEditDraft] = useState<{ name: string; grams: string; calories: string; protein: string }>({ name: '', grams: '', calories: '', protein: '' })
-  const [tab, setTab]             = useState<'foods' | 'composed'>('foods')
+  const [filter, setFilter]       = useState<'all' | 'foods' | 'composed'>('all')
   // Per-gram ratios of the item being edited — used for proportional scaling when grams changes
   const editRatios = useRef({ calPerGram: 0, protPerGram: 0 })
   // Meal editing state for composed tab
@@ -1237,24 +1237,13 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
 
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-      {/* Sticky top: title + tabs + search */}
+      {/* Sticky top: title + search + filter chips */}
       <div style={{ flexShrink: 0, padding: '12px 16px 0', background: 'var(--bg)' }}>
-        <h2 style={{ fontSize: 16, fontWeight: 800, color: 'var(--text)', margin: '0 0 12px' }}>
+        <h2 style={{ fontSize: 16, fontWeight: 800, color: 'var(--text)', margin: '0 0 10px' }}>
           {lang === 'he' ? 'ניהול מזונות' : 'Manage foods'}
         </h2>
 
-        {/* Tab switcher */}
-        <div className="tab-bar" style={{ marginBottom: 10 }}>
-          {(['foods', 'composed'] as const).map(key => (
-            <button key={key} onClick={() => setTab(key)} className={`tab-btn ${tab === key ? 'active' : ''}`} style={{ fontSize: 12 }}>
-              {key === 'foods'
-                ? (lang === 'he' ? `מזונות (${history.length})` : `Foods (${history.length})`)
-                : (lang === 'he' ? `מנות (${composedGroups.length})` : `Dishes (${composedGroups.length})`)}
-            </button>
-          ))}
-        </div>
-
-        {tab === 'foods' && (
+        {filter !== 'composed' && (
           <div style={{ position: 'relative', marginBottom: 10 }}>
             <span className="icon" style={{ position: 'absolute', top: '50%', transform: 'translateY(-50%)', ...(lang === 'he' ? { right: 10 } : { left: 10 }), color: 'var(--text-3)', fontSize: 18, pointerEvents: 'none' }}>search</span>
             <input className="inp" type="text" value={search} onChange={e => setSearch(e.target.value)}
@@ -1264,6 +1253,28 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
             />
           </div>
         )}
+
+        {/* Filter chips */}
+        <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 10, scrollbarWidth: 'none' }}>
+          {([
+            { key: 'all',      labelHe: `הכל (${history.length + composedGroups.length})`,  labelEn: `All (${history.length + composedGroups.length})` },
+            { key: 'foods',    labelHe: `מזונות (${history.length})`,                        labelEn: `Foods (${history.length})` },
+            { key: 'composed', labelHe: `מנות (${composedGroups.length})`,                   labelEn: `Dishes (${composedGroups.length})` },
+          ] as const).map(({ key, labelHe, labelEn }) => (
+            <button
+              key={key}
+              onClick={() => setFilter(key)}
+              style={{
+                padding: '5px 12px', borderRadius: 999, border: 'none', cursor: 'pointer', fontFamily: 'inherit',
+                fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap', transition: 'background .12s, color .12s',
+                background: filter === key ? 'var(--blue)' : 'var(--surface-2)',
+                color: filter === key ? '#fff' : 'var(--text-2)',
+              }}
+            >
+              {lang === 'he' ? labelHe : labelEn}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Scrollable list with fades */}
@@ -1272,9 +1283,13 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
         <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 56, background: 'linear-gradient(to top, var(--bg), transparent)', zIndex: 2, pointerEvents: 'none' }} />
       <div style={{ flex: 1, overflowY: 'auto', minHeight: 0, padding: '4px 16px', paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 48px)' }}>
 
-      {tab === 'foods' && (
+      {(filter === 'all' || filter === 'foods') && (
         <>
-
+          {filter === 'all' && history.length > 0 && (
+            <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '4px 0 8px' }}>
+              {lang === 'he' ? 'מזונות' : 'Foods'}
+            </p>
+          )}
           {filtered.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '32px 0', color: 'var(--text-3)' }}>
               <span className="icon" style={{ fontSize: 28, display: 'block', marginBottom: 8 }}>search_off</span>
@@ -1359,8 +1374,13 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
         </>
       )}
 
-      {tab === 'composed' && (
+      {(filter === 'all' || filter === 'composed') && (
         <>
+          {filter === 'all' && (
+            <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '12px 0 8px' }}>
+              {lang === 'he' ? 'מנות' : 'Dishes'}
+            </p>
+          )}
           {composedGroups.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '32px 0', color: 'var(--text-3)' }}>
               <span className="icon" style={{ fontSize: 28, display: 'block', marginBottom: 8 }}>restaurant</span>
@@ -1481,6 +1501,12 @@ function LibraryScreen({ lang }: { lang: Lang }) {
   const catLabels = lang === 'he' ? LIBRARY_CATEGORIES_HE : LIBRARY_CATEGORIES_EN
   const isRTL = lang === 'he'
 
+  const categoryCounts = useMemo(() => {
+    const counts: Record<string, number> = {}
+    library.forEach(item => { counts[item.category] = (counts[item.category] ?? 0) + 1 })
+    return counts
+  }, [library])
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
     return library.filter(item => {
@@ -1518,21 +1544,12 @@ function LibraryScreen({ lang }: { lang: Lang }) {
 
         {/* Category chips */}
         <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 10, scrollbarWidth: 'none' }}>
-          <button
-            onClick={() => setActiveCategory(null)}
-            style={{
-              padding: '5px 12px', borderRadius: 999, border: 'none', cursor: 'pointer', fontFamily: 'inherit',
-              fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap', transition: 'background .12s, color .12s',
-              background: activeCategory === null ? 'var(--blue)' : 'var(--surface-2)',
-              color: activeCategory === null ? '#fff' : 'var(--text-2)',
-            }}
-          >
-            {lang === 'he' ? 'הכל' : 'All'}
-          </button>
-          {categories.map(cat => (
+          {[{ cat: null, label: lang === 'he' ? `הכל (${library.length})` : `All (${library.length})` },
+            ...categories.filter(c => categoryCounts[c]).map(c => ({ cat: c, label: `${catLabels[c] ?? c} (${categoryCounts[c]})` }))
+          ].map(({ cat, label }) => (
             <button
-              key={cat}
-              onClick={() => setActiveCategory(activeCategory === cat ? null : cat)}
+              key={cat ?? '__all'}
+              onClick={() => setActiveCategory(cat)}
               style={{
                 padding: '5px 12px', borderRadius: 999, border: 'none', cursor: 'pointer', fontFamily: 'inherit',
                 fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap', transition: 'background .12s, color .12s',
@@ -1540,7 +1557,7 @@ function LibraryScreen({ lang }: { lang: Lang }) {
                 color: activeCategory === cat ? '#fff' : 'var(--text-2)',
               }}
             >
-              {catLabels[cat] ?? cat}
+              {label}
             </button>
           ))}
         </div>
