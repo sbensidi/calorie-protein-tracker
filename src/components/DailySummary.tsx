@@ -107,14 +107,12 @@ export function DailySummary({ meals, date, goalCalories, goalProtein, lang, flu
                 }
               />
               <div style={{ textAlign: 'center', width: '100%' }}>
-                <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)', margin: '0 0 2px' }}>
+                <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)', margin: '0 0 2px', display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: 4 }}>
+                  <span style={{ fontSize: 10, fontWeight: 700, color: m.color, opacity: 0.8 }}>{pct}%</span>
                   {m.label}
                 </p>
-                <p style={{ fontSize: 10, fontWeight: 500, color: m.over ? 'var(--red)' : 'var(--text-3)', margin: '0 0 1px', lineHeight: 1.3 }}>
+                <p style={{ fontSize: 10, fontWeight: 500, color: m.over ? 'var(--red)' : 'var(--text-3)', margin: 0, lineHeight: 1.3 }}>
                   {m.remaining}
-                </p>
-                <p style={{ fontSize: 10, fontWeight: 700, color: m.color, margin: 0, opacity: 0.7 }}>
-                  {pct}%
                 </p>
               </div>
             </div>
