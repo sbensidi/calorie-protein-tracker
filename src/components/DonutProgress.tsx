@@ -8,9 +8,10 @@ interface DonutProgressProps {
   size?:           number
   strokeWidth?:    number
   centerContent?:  ReactNode
+  style?:          React.CSSProperties
 }
 
-export const DonutProgress = memo(function DonutProgress({ value, goal, type, size = 56, strokeWidth = 5, centerContent }: DonutProgressProps) {
+export const DonutProgress = memo(function DonutProgress({ value, goal, type, size = 56, strokeWidth = 5, centerContent, style }: DonutProgressProps) {
   const pct     = goal > 0 ? Math.min(1, value / goal) : 0
   const realPct = goal > 0 ? Math.round((value / goal) * 100) : 0
 
@@ -67,11 +68,12 @@ export const DonutProgress = memo(function DonutProgress({ value, goal, type, si
     <div
       role="img"
       aria-label={`${type === 'calories' ? 'Calories' : type === 'protein' ? 'Protein' : 'Fluid'}: ${realPct}% of goal`}
-      style={{ position: 'relative', width: size, height: size, flexShrink: 0 }}
+      style={{ position: 'relative', width: size, height: size, flexShrink: 0, ...style }}
     >
       <svg
-        width={size}
-        height={size}
+        viewBox={`0 0 ${size} ${size}`}
+        width="100%"
+        height="100%"
         aria-hidden="true"
         style={{ transform: 'rotate(-90deg)', display: 'block' }}
       >
