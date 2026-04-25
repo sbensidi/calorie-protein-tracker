@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { supabase } from '../lib/supabase'
 import type { FoodLibraryItem } from '../types'
 
-const CACHE_KEY = 'food_library_cache_v2'
+const CACHE_KEY = 'food_library_cache_v3'
 const CACHE_TTL = 1000 * 60 * 60 * 24 // 24h — library rarely changes
 
 function loadCache(): FoodLibraryItem[] | null {
@@ -16,6 +16,7 @@ function loadCache(): FoodLibraryItem[] | null {
 }
 
 function saveCache(data: FoodLibraryItem[]) {
+  if (data.length === 0) return
   try { localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data })) } catch { /* ignore */ }
 }
 
@@ -25,7 +26,7 @@ export function useFoodLibrary() {
 
   useEffect(() => {
     const cached = loadCache()
-    if (cached) { setLibrary(cached); setLoading(false); return }
+    if (cached && cached.length > 0) { setLibrary(cached); setLoading(false); return }
     supabase
       .from('food_library')
       .select('id, name_he, name_en, category, calories_per_100g, protein_per_100g, fat_per_100g, carbs_per_100g, fiber_per_100g, serving_size, serving_unit, density')
