@@ -77,7 +77,7 @@ export default function App() {
   const { profile, saveProfile, error: profileError } = useProfile(userId)
   const { meals, loading: mealsLoading, error: mealsError, addMeal, addMealWithId, updateMeal, deleteMeal, duplicateMeal } = useMeals(userId)
   const { goals, error: goalsError, saveGoals, getGoalForDate } = useGoals(userId)
-  const { history, error: historyError, upsertHistory, getSuggestions, deleteHistory, updateHistory } = useFoodHistory(userId)
+  const { history, error: historyError, upsertHistory, touchHistory, getSuggestions, deleteHistory, updateHistory } = useFoodHistory(userId)
   const { groups: composedGroups, error: groupsError, upsert: upsertGroup, remove: removeGroup } = useComposedGroups(userId)
 
   // Surface hook errors as toasts
@@ -209,6 +209,7 @@ export default function App() {
             onDeleteMeal={deleteMeal}
             onDuplicateMeal={duplicateMeal}
             onUpsertHistory={upsertHistory}
+            onTouchHistory={touchHistory}
             composedEntries={composedEntries}
             composedGroups={composedGroups}
             onUpsertGroup={upsertGroup}

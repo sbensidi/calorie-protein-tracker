@@ -111,5 +111,21 @@ export function useFoodHistory(userId: string | null) {
     else fetchHistory()
   }, [fetchHistory])
 
-  return { history, error, upsertHistory, getSuggestions, deleteHistory, updateHistory }
+  // Increments use_count + last_used on an existing record without creating new rows.
+  // Used when the user selects from history and re-adds the same food.
+  const touchHistory = useCallback(async (id: string) => {
+    const existing = historyRef.current.find(h => h.id === id)
+    if (!existing) return
+    const next = historyRef.current.map(h =>
+      h.id === id ? { ...h, use_count: h.use_count + 1, last_used: new Date().toISOString() } : h
+    )
+    historyRef.current = next
+    setHistory(next)
+    await supabase
+      .from('food_history')
+      .update({ use_count: existing.use_count + 1, last_used: new Date().toISOString() })
+      .eq('id', id)
+  }, [])
+
+  return { history, error, upsertHistory, touchHistory, getSuggestions, deleteHistory, updateHistory }
 }

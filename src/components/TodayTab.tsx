@@ -60,6 +60,7 @@ interface TodayTabProps {
   onDeleteMeal: (id: string) => void
   onDuplicateMeal: (meal: Meal) => void
   onUpsertHistory: (item: Pick<FoodHistory, 'name' | 'grams' | 'calories' | 'protein'>) => void
+  onTouchHistory?: (id: string) => void
   composedEntries: ComposedEntry[]
   composedGroups: ComposedGroup[]
   onUpsertGroup: (group: ComposedGroup) => void
@@ -73,7 +74,7 @@ interface TodayTabProps {
 export function TodayTab({
   lang, meals, loading = false, history, goalCalories, goalProtein,
   getSuggestions, searchLibrary, defaultWeightUnit = 'g', defaultVolumeUnit = 'ml',
-  onAddMeal, onAddMealWithId, onEditMeal, onDeleteMeal, onDuplicateMeal, onUpsertHistory,
+  onAddMeal, onAddMealWithId, onEditMeal, onDeleteMeal, onDuplicateMeal, onUpsertHistory, onTouchHistory,
   composedEntries, composedGroups, onUpsertGroup, onRemoveGroup, showToast,
   fluidGoalMl = 2500, fluidThresholdMl = 100, fluidZeroCalOnly = true,
 }: TodayTabProps) {
@@ -688,6 +689,7 @@ export function TodayTab({
               defaultMealType={addIngredientModal.mealType}
               onAdd={handleAddIngredientSubmit}
               onUpsertHistory={onUpsertHistory}
+              onTouchHistory={onTouchHistory}
               fluidThresholdMl={fluidThresholdMl}
               fluidZeroCalOnly={fluidZeroCalOnly}
             />
@@ -775,6 +777,7 @@ export function TodayTab({
               defaultVolumeUnit={defaultVolumeUnit}
               onAdd={meal => { onAddMeal(meal); setEntryOpen(false) }}
               onUpsertHistory={onUpsertHistory}
+              onTouchHistory={onTouchHistory}
               composedEntries={composedEntries}
               onAddComposed={id => { handleAddComposed(id); setEntryOpen(false) }}
               fluidThresholdMl={fluidThresholdMl}

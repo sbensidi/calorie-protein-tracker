@@ -46,6 +46,7 @@ interface FoodEntryFormProps {
   defaultVolumeUnit?: 'ml' | 'cup' | 'tbsp' | 'tsp' | 'fl_oz'
   onAdd: (meal: Omit<Meal, 'id' | 'user_id' | 'created_at'>) => void
   onUpsertHistory: (item: Pick<FoodHistory, 'name' | 'grams' | 'calories' | 'protein'>) => void
+  onTouchHistory?: (id: string) => void
   defaultMealType?: MealType
   composedEntries?: ComposedEntry[]
   onAddComposed?: (composedId: string) => void
@@ -54,7 +55,7 @@ interface FoodEntryFormProps {
   fluidZeroCalOnly?: boolean
 }
 
-export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, defaultWeightUnit = 'g', defaultVolumeUnit: _defaultVolumeUnit = 'ml', onAdd, onUpsertHistory, defaultMealType, composedEntries, onAddComposed, fluidThresholdMl = 100, fluidZeroCalOnly = true }: FoodEntryFormProps) {
+export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, defaultWeightUnit = 'g', defaultVolumeUnit: _defaultVolumeUnit = 'ml', onAdd, onUpsertHistory, onTouchHistory, defaultMealType, composedEntries, onAddComposed, fluidThresholdMl = 100, fluidZeroCalOnly = true }: FoodEntryFormProps) {
   const [mode, setMode]               = useState<EntryMode>(
     () => (localStorage.getItem('entry-mode') as EntryMode) ?? 'scan'
   )
@@ -98,6 +99,8 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
   const [historySearch,    setHistorySearch]    = useState('')
 
   const [fluidExcluded, setFluidExcluded] = useState(false)
+  // Track if the current form state came from a history selection (to avoid re-inserting)
+  const [selectedHistoryId, setSelectedHistoryId] = useState<string | null>(null)
 
   const isPcs        = entryUnit === 'pcs'
   const amountMode: 'g' | 'unit' = isPcs ? 'unit' : 'g'
@@ -120,6 +123,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
     setFoodName(v)
     openDropdown(v)
     setNutrition(null)
+    setSelectedHistoryId(null)   // user is typing a new name — no longer a history selection
   }
 
   const handleFocus = () => { openDropdown(foodName) }
@@ -183,6 +187,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
     setDropdownOpen(false)
     setQty(1)
     setAiError(null)
+    setSelectedHistoryId(item.id)   // remember this came from history
     inputRef.current?.blur()
   }
 
@@ -195,6 +200,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
     setCalculating(true)
     setAiError(null)
     setDropdownOpen(false)
+    setSelectedHistoryId(null)   // AI recalculation — treat as new entry
     try {
       const result = await calculateNutrition(foodName, numericAmount, history, amountMode)
       if (result === null) {
@@ -233,6 +239,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
     setSuggestions([])
     setEntryUnit(defaultWeightUnit)
     setFluidExcluded(false)
+    setSelectedHistoryId(null)
     libraryDensityRef.current = null
   }
 
@@ -325,9 +332,15 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
       fluid_ml:       isFluid && !fluidExcluded ? detectedFluidMl : null,
       fluid_excluded: false,
     })
-    const historyGrams = isPcs ? -numericAmount : numericAmount
-    if (historyGrams !== 0) {
-      onUpsertHistory({ name: foodName, grams: historyGrams, calories: numCalories, protein: numProtein })
+    // If the item came from history, just bump its use_count — don't create a new row.
+    // If new (AI / library / manual), upsert normally (creates or updates by name+grams).
+    if (selectedHistoryId && onTouchHistory) {
+      onTouchHistory(selectedHistoryId)
+    } else {
+      const historyGrams = isPcs ? -numericAmount : numericAmount
+      if (historyGrams !== 0) {
+        onUpsertHistory({ name: foodName, grams: historyGrams, calories: numCalories, protein: numProtein })
+      }
     }
     // Reset
     setFoodName('')
@@ -341,6 +354,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
     setEditProtein('')
     setEntryUnit(defaultWeightUnit)
     setFluidExcluded(false)
+    setSelectedHistoryId(null)
     libraryDensityRef.current = null
   }
 
