@@ -203,6 +203,7 @@ export default function App() {
             fluidGoalMl={profile.fluidGoalMl}
             fluidThresholdMl={profile.fluidThresholdMl}
             fluidZeroCalOnly={profile.fluidZeroCalOnly}
+            beverageKeywords={profile.beverageKeywords}
             onAddMeal={addMeal}
             onAddMealWithId={addMealWithId}
             onEditMeal={updateMeal}

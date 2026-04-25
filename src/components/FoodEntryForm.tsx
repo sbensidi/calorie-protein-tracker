@@ -53,9 +53,10 @@ interface FoodEntryFormProps {
   fluidGoalMl?: number
   fluidThresholdMl?: number
   fluidZeroCalOnly?: boolean
+  beverageKeywords?: string[]
 }
 
-export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, defaultWeightUnit = 'g', defaultVolumeUnit: _defaultVolumeUnit = 'ml', onAdd, onUpsertHistory, onTouchHistory, defaultMealType, composedEntries, onAddComposed, fluidThresholdMl = 100, fluidZeroCalOnly = true }: FoodEntryFormProps) {
+export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, defaultWeightUnit = 'g', defaultVolumeUnit: _defaultVolumeUnit = 'ml', onAdd, onUpsertHistory, onTouchHistory, defaultMealType, composedEntries, onAddComposed, fluidThresholdMl = 100, fluidZeroCalOnly = true, beverageKeywords = [] }: FoodEntryFormProps) {
   const [mode, setMode]               = useState<EntryMode>(
     () => (localStorage.getItem('entry-mode') as EntryMode) ?? 'scan'
   )
@@ -319,8 +320,10 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
   // tbsp/tsp can be condiments/oils → still respect fluidZeroCalOnly for those.
   const isVolumeUnit    = entryUnit !== 'pcs' && entryUnit !== 'g' && entryUnit !== 'oz'
   const isBeverageUnit  = entryUnit === 'ml' || entryUnit === 'cup' || entryUnit === 'fl_oz'
+  const isNamedBeverage = beverageKeywords.length > 0 && foodName.trim().length > 0 &&
+    beverageKeywords.some(kw => foodName.toLowerCase().includes(kw.toLowerCase()))
   const detectedFluidMl = isVolumeUnit ? toBase(numericAmount, entryUnit as UnitId) * qty : null
-  const calZeroOk       = isBeverageUnit || !fluidZeroCalOnly || numCalories === 0
+  const calZeroOk       = isBeverageUnit || isNamedBeverage || !fluidZeroCalOnly || numCalories === 0
   const isFluid         = detectedFluidMl !== null && detectedFluidMl >= fluidThresholdMl && calZeroOk
 
   const handleAdd = () => {

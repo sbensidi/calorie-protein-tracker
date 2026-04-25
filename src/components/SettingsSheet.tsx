@@ -354,6 +354,59 @@ function MainScreen({ lang, connected, theme, onProfile, onGoals, onFoodHistory,
   )
 }
 
+// ── Beverage Keywords Editor ──────────────────────────────────────────────────
+
+function BeverageKeywordsEditor({ lang, keywords, onChange }: { lang: Lang; keywords: string[]; onChange: (kws: string[]) => void }) {
+  const [inputVal, setInputVal] = useState('')
+  const isRTL = lang === 'he'
+
+  const add = () => {
+    const kw = inputVal.trim()
+    if (!kw || keywords.includes(kw)) { setInputVal(''); return }
+    onChange([...keywords, kw])
+    setInputVal('')
+  }
+
+  return (
+    <div style={{ marginBottom: 20 }}>
+      <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.07em', margin: '0 0 10px' }}>
+        {lang === 'he' ? 'שיווך מזון לשתייה' : 'Beverage name matching'}
+      </p>
+      <p style={{ fontSize: 11, color: 'var(--text-3)', margin: '0 0 10px', lineHeight: 1.5 }}>
+        {lang === 'he'
+          ? 'שמות מזון שמכילים מילות מפתח אלה יזוהו אוטומטית כנוזל, גם אם הם קלוריים.'
+          : 'Food names containing these keywords will auto-count as fluid, even if caloric.'}
+      </p>
+      {/* Tag list */}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 10 }}>
+        {keywords.map(kw => (
+          <div key={kw} style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.25)', borderRadius: 999, padding: '3px 8px 3px 10px', fontSize: 12, color: 'var(--blue-hi)', fontWeight: 600 }}>
+            {kw}
+            <button onClick={() => onChange(keywords.filter(k => k !== kw))} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 0, display: 'flex', lineHeight: 1 }}>
+              <span className="icon" style={{ fontSize: 14 }}>close</span>
+            </button>
+          </div>
+        ))}
+      </div>
+      {/* Add input */}
+      <div style={{ display: 'flex', gap: 6 }}>
+        <input
+          className="inp"
+          value={inputVal}
+          onChange={e => setInputVal(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); add() } }}
+          placeholder={lang === 'he' ? 'הוסף מילת מפתח...' : 'Add keyword...'}
+          dir={isRTL ? 'rtl' : 'ltr'}
+          style={{ flex: 1, height: 38, fontSize: 13 }}
+        />
+        <button onClick={add} className="btn-ghost" style={{ height: 38, padding: '0 14px', borderRadius: 10, fontSize: 13 }}>
+          {lang === 'he' ? 'הוסף' : 'Add'}
+        </button>
+      </div>
+    </div>
+  )
+}
+
 // ── Profile Screen ────────────────────────────────────────────────────────────
 
 function ProfileScreen({ lang, profile, onSave, onApplyGoals, onNavigateToGoals, showToast }: {
@@ -754,11 +807,18 @@ function ProfileScreen({ lang, profile, onSave, onApplyGoals, onNavigateToGoals,
           }} />
         </button>
       </div>
-      <p style={{ fontSize: 10, color: 'var(--text-3)', margin: '0 0 20px', lineHeight: 1.5 }}>
+      <p style={{ fontSize: 10, color: 'var(--text-3)', margin: '0 0 16px', lineHeight: 1.5 }}>
         {lang === 'he'
           ? 'מ"ל / כוס / אונ׳ נוזל — תמיד נוזל מעל הסף. כף/כפית — נוזל רק אם 0 קל׳ (כשהמתג מופעל).'
           : 'ml / cup / fl oz — always counts as fluid above threshold. tbsp/tsp — only if 0-cal (when toggle is on).'}
       </p>
+
+      {/* Beverage keywords */}
+      <BeverageKeywordsEditor
+        lang={lang}
+        keywords={draft.beverageKeywords ?? []}
+        onChange={kws => set('beverageKeywords', kws)}
+      />
 
       {/* Save Profile */}
       <button

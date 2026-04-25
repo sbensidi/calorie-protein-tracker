@@ -98,6 +98,8 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
       const y = window.scrollY
       const delta = y - lastScrollY.current
       if (Math.abs(delta) < 4) return
+      // Close search dropdown when user scrolls (fixes touch-scroll on mobile)
+      setDropdownOpen(false)
       if (delta > 0 && y > 80) setScrolledDown(true)
       else if (delta < 0)      setScrolledDown(false)
       lastScrollY.current = y
@@ -590,6 +592,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
               position: 'sticky', top: TOPBAR_H, zIndex: 10,
               background: 'var(--bg)', paddingTop: 10, paddingBottom: 6,
               display: 'flex', flexDirection: 'column', gap: 10,
+              touchAction: 'pan-y',
             }}>
               <div style={{ display: 'flex', gap: 6, alignItems: 'stretch' }}>
                 <button

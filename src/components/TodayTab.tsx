@@ -69,6 +69,7 @@ interface TodayTabProps {
   fluidGoalMl?: number
   fluidThresholdMl?: number
   fluidZeroCalOnly?: boolean
+  beverageKeywords?: string[]
 }
 
 export function TodayTab({
@@ -76,7 +77,7 @@ export function TodayTab({
   getSuggestions, searchLibrary, defaultWeightUnit = 'g', defaultVolumeUnit = 'ml',
   onAddMeal, onAddMealWithId, onEditMeal, onDeleteMeal, onDuplicateMeal, onUpsertHistory, onTouchHistory,
   composedEntries, composedGroups, onUpsertGroup, onRemoveGroup, showToast,
-  fluidGoalMl = 2500, fluidThresholdMl = 100, fluidZeroCalOnly = true,
+  fluidGoalMl = 2500, fluidThresholdMl = 100, fluidZeroCalOnly = true, beverageKeywords = [],
 }: TodayTabProps) {
   const todayMeals    = useMemo(() => meals.filter(m => m.date === today()), [meals])
   const fluidTodayMl  = useMemo(() => todayMeals.reduce((s, m) => s + (m.fluid_ml ?? 0), 0), [todayMeals])
@@ -692,6 +693,7 @@ export function TodayTab({
               onTouchHistory={onTouchHistory}
               fluidThresholdMl={fluidThresholdMl}
               fluidZeroCalOnly={fluidZeroCalOnly}
+              beverageKeywords={beverageKeywords}
             />
           </div>
         </div>
@@ -782,6 +784,7 @@ export function TodayTab({
               onAddComposed={id => { handleAddComposed(id); setEntryOpen(false) }}
               fluidThresholdMl={fluidThresholdMl}
               fluidZeroCalOnly={fluidZeroCalOnly}
+              beverageKeywords={beverageKeywords}
             />
           </div>
         </div>

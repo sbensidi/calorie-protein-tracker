@@ -14,9 +14,17 @@ export interface UserProfile {
   fluidGoalMl:        number
   fluidThresholdMl:   number
   fluidZeroCalOnly:   boolean
+  beverageKeywords:   string[] // names/keywords that auto-detect as fluid
 }
 
 const LS_KEY = 'user_profile'
+
+const DEFAULT_BEVERAGE_KEYWORDS = [
+  'קפה', 'תה', 'מים', 'מיץ', 'שייק', 'מרק', 'לאטה', 'קפוצ׳ינו', 'אספרסו',
+  'חלב', 'סודה', 'משקה', 'בירה', 'יין', 'קוקטייל', 'לימונדה', 'קולה',
+  'coffee', 'tea', 'water', 'juice', 'shake', 'soup', 'latte', 'cappuccino',
+  'milk', 'soda', 'drink', 'beer', 'wine', 'lemonade', 'cola', 'espresso',
+]
 
 const DEFAULT: UserProfile = {
   sex:                'm',
@@ -30,7 +38,10 @@ const DEFAULT: UserProfile = {
   fluidGoalMl:        2500,
   fluidThresholdMl:   100,
   fluidZeroCalOnly:   false,
+  beverageKeywords:   DEFAULT_BEVERAGE_KEYWORDS,
 }
+
+export { DEFAULT_BEVERAGE_KEYWORDS }
 
 function lsLoad(): UserProfile {
   try {
@@ -53,7 +64,8 @@ function dbToProfile(row: Record<string, unknown>): UserProfile {
     volumeUnit:       (row.volume_unit as VolumeUnit) ?? DEFAULT.volumeUnit,
     fluidGoalMl:      (row.fluid_goal_ml as number)       ?? DEFAULT.fluidGoalMl,
     fluidThresholdMl: (row.fluid_threshold_ml as number)  ?? DEFAULT.fluidThresholdMl,
-    fluidZeroCalOnly: (row.fluid_zero_cal_only as boolean) ?? DEFAULT.fluidZeroCalOnly,
+    fluidZeroCalOnly:  (row.fluid_zero_cal_only as boolean) ?? DEFAULT.fluidZeroCalOnly,
+    beverageKeywords:  DEFAULT.beverageKeywords, // not stored in DB — comes from localStorage
   }
 }
 
