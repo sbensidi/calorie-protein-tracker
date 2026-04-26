@@ -132,7 +132,7 @@ export function DailySummary({ meals, date, goalCalories, goalProtein, lang, flu
 
       <div style={{ display:'flex', gap:10, overflowX:'auto', scrollSnapType:'x mandatory', paddingBottom:4, marginBottom:-4 }}>
 
-        <div style={{ flex:'0 0 auto', minWidth:130, scrollSnapAlign:'start', background:'rgba(59,130,246,0.07)', border:'1px solid rgba(59,130,246,0.14)', borderRadius:10, padding:'10px 12px', display:'flex', flexDirection:'column', gap:8 }}>
+        <div style={{ flex:'0 0 auto', minWidth:130, scrollSnapAlign:'start', background:'var(--blue-fill)', border:'1px solid color-mix(in srgb, var(--blue) 14%, transparent)', borderRadius:10, padding:'10px 12px', display:'flex', flexDirection:'column', gap:8 }}>
           <div style={{ display:'flex', alignItems:'center', gap:10 }}>
             <div style={{ flex:1, minWidth:0 }}>
               <p style={{ fontSize:10, fontWeight:700, color:'var(--blue-hi)', marginBottom:3, letterSpacing:'0.05em' }}>{t(lang,'calories').toUpperCase()}</p>

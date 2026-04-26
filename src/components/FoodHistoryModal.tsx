@@ -66,7 +66,7 @@ export function FoodHistoryModal({
         <div style={{ padding: '14px 14px 0', display: 'flex', alignItems: 'center', gap: 8 }}>
           <span className="icon icon-sm" style={{ color: 'var(--text-3)' }}>manage_search</span>
           <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-2)', flex: 1 }}>
-            {lang === 'he' ? 'היסטוריית מזונות' : 'Food history'}
+            {t(lang, 'foodHistory')}
           </span>
           <button
             onClick={onClose}
@@ -86,7 +86,7 @@ export function FoodHistoryModal({
             startIcon="search"
             isRTL={isRTL}
             style={{ height: 40, fontSize: 13 }}
-            placeholder={lang === 'he' ? 'חיפוש...' : 'Search...'}
+            placeholder={t(lang, 'search')}
             dir={isRTL ? 'rtl' : 'ltr'}
           />
         </div>
@@ -98,7 +98,7 @@ export function FoodHistoryModal({
           {matchedComposed.length > 0 && (
             <>
               <div style={{ padding: '8px 14px 4px', fontSize: 10, fontWeight: 700, color: 'var(--text-3)', letterSpacing: '0.07em', textTransform: 'uppercase' }}>
-                {lang === 'he' ? 'מנות שהרכבתי' : 'My composed dishes'}
+                {t(lang, 'myDishes')}
               </div>
               {matchedComposed.map((entry) => (
                 <button
@@ -111,7 +111,7 @@ export function FoodHistoryModal({
                     cursor: 'pointer', gap: 10, textAlign: 'start', fontFamily: 'inherit',
                     transition: 'background .12s',
                   }}
-                  onMouseEnter={e => (e.currentTarget.style.background = 'rgba(139,92,246,0.05)')}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'var(--purple-tint)')}
                   onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                 >
                   <span className="icon icon-sm" style={{ color: 'var(--purple)', flexShrink: 0 }}>restaurant</span>
@@ -136,12 +136,13 @@ export function FoodHistoryModal({
 
           {filtered.length === 0 && matchedComposed.length === 0 ? (
             <div style={{ padding: '32px 0', textAlign: 'center', color: 'var(--text-3)', fontSize: 13 }}>
-              {lang === 'he' ? 'לא נמצאו תוצאות' : 'No results found'}
+              {t(lang, 'noResultsFound')}
             </div>
           ) : filtered.map((item, i) => {
-            const itemIsUnit = item.grams < 0
-            const amtDisplay = itemIsUnit
-              ? `${Math.abs(item.grams)} ${unitLabel}`
+            const itemIsUnit  = item.grams < 0
+            const itemIsFluid = item.fluid_ml != null && item.fluid_ml > 0
+            const amtDisplay  = itemIsUnit  ? `${Math.abs(item.grams)} ${unitLabel}`
+              : itemIsFluid ? (item.fluid_ml! >= 1000 ? `${(item.fluid_ml! / 1000).toFixed(1)}${lang === 'he' ? 'ל׳' : 'L'}` : `${Math.round(item.fluid_ml!)}ml`)
               : `${item.grams}g`
             return (
               <button
@@ -162,7 +163,7 @@ export function FoodHistoryModal({
                     {item.name}
                   </p>
                   <p style={{ fontSize: 11, color: 'var(--text-3)', margin: '2px 0 0' }}>
-                    {amtDisplay} · {item.use_count} {lang === 'he' ? 'שימושים' : 'uses'}
+                    {amtDisplay} · {item.use_count} {t(lang, 'uses')}
                   </p>
                 </div>
                 <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>

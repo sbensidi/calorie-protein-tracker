@@ -1,5 +1,4 @@
--- Run this in your Supabase SQL editor:
--- https://supabase.com/dashboard/project/aduwnjejyiviegrrmbzi/sql
+-- Run this in your Supabase SQL editor
 
 -- meals: fluid tracking columns
 alter table meals

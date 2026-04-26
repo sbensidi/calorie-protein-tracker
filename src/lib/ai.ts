@@ -32,15 +32,6 @@ export async function calculateNutrition(
     if (import.meta.env.DEV) console.error('Groq error:', err)
   }
 
-  if (amountType === 'g') {
-    try {
-      const result = await callUSDA(foodName, amount)
-      if (result) return result
-    } catch (err) {
-      if (import.meta.env.DEV) console.error('USDA fallback error:', err)
-    }
-  }
-
   return null
 }
 
@@ -158,23 +149,3 @@ async function callGroqDirect(
   return null
 }
 
-async function callUSDA(foodName: string, grams: number): Promise<NutritionResult | null> {
-  const url = `https://api.nal.usda.gov/fdc/v1/foods/search?query=${encodeURIComponent(foodName)}&pageSize=1&api_key=DEMO_KEY`
-  const res = await fetch(url)
-  if (!res.ok) return null
-  const data = await res.json()
-  const food = data.foods?.[0]
-  if (!food) return null
-
-  const nutrients = food.foodNutrients as Array<{ nutrientName: string; value: number }>
-  const energyNutrient  = nutrients.find(n =>
-    n.nutrientName.toLowerCase().includes('energy') && !n.nutrientName.toLowerCase().includes('kj')
-  )
-  const proteinNutrient = nutrients.find(n => n.nutrientName.toLowerCase() === 'protein')
-
-  const scale    = grams / 100
-  const calories = energyNutrient  ? Math.round(energyNutrient.value  * scale) : 0
-  const protein  = proteinNutrient ? Math.round(proteinNutrient.value * scale * 10) / 10 : 0
-
-  return { calories, protein }
-}

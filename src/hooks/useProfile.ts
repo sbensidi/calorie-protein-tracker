@@ -105,16 +105,20 @@ export function useProfile(userId: string | null) {
   useEffect(() => { fetchProfile() }, [fetchProfile])
 
   const saveProfile = useCallback(async (updates: Partial<UserProfile>) => {
+    const prev = profile
     const next = { ...profile, ...updates }
     setProfile(next)
     localStorage.setItem(LS_KEY, JSON.stringify(next))
     if (!userId) return
+    setError(null)
     const { error: err } = await supabase
       .from('profiles')
       .upsert(profileToDb(next, userId), { onConflict: 'id' })
     if (err) {
       import.meta.env.DEV && console.error('Save profile error:', err)
       setError(err.message)
+      setProfile(prev)
+      localStorage.setItem(LS_KEY, JSON.stringify(prev))
     } else {
       setError(null)
     }

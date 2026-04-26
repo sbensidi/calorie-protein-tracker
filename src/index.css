@@ -26,13 +26,20 @@
   --purple:    #8b5cf6;
   --indigo:    #6366f1;
   --indigo-hi: #a5b4fc;
-  /* Tints */
+  /* Tints — base (0.10) */
   --blue-tint:   rgba(59,130,246,0.10);
   --green-tint:  rgba(16,185,129,0.10);
   --red-tint:    rgba(244,63,94,0.10);
   --amber-tint:  rgba(245,158,11,0.10);
   --indigo-tint: rgba(99,102,241,0.12);
   --purple-tint: rgba(139,92,246,0.10);
+  --cyan-tint:   rgba(6,182,212,0.10);
+  /* Semantic fills — subtle card/panel backgrounds */
+  --blue-fill:    rgba(59,130,246,0.07);
+  --green-fill:   rgba(16,185,129,0.07);
+  --cyan-fill:    rgba(6,182,212,0.07);
+  --indigo-fill:  rgba(99,102,241,0.07);
+  --amber-fill:   rgba(245,158,11,0.07);
   /* Neutral surfaces (white overlay on dark bg) */
   --surface-1:   rgba(255,255,255,0.03);
   --surface-2:   rgba(255,255,255,0.05);
@@ -79,13 +86,20 @@
   --purple:    #6d28d9;
   --indigo:    #4338ca;
   --indigo-hi: #3730a3;
-  /* Tints (same formula, slightly stronger on light) */
+  /* Tints — base (0.10) */
   --blue-tint:   rgba(37,99,235,0.10);
   --green-tint:  rgba(5,150,105,0.10);
   --red-tint:    rgba(220,38,38,0.10);
   --amber-tint:  rgba(180,83,9,0.10);
   --indigo-tint: rgba(67,56,202,0.12);
   --purple-tint: rgba(109,40,217,0.10);
+  --cyan-tint:   rgba(8,145,178,0.10);
+  /* Semantic fills */
+  --blue-fill:    rgba(37,99,235,0.07);
+  --green-fill:   rgba(5,150,105,0.07);
+  --cyan-fill:    rgba(8,145,178,0.07);
+  --indigo-fill:  rgba(67,56,202,0.07);
+  --amber-fill:   rgba(180,83,9,0.07);
   /* Neutral surfaces (dark overlay on light bg) */
   --surface-1:   rgba(0,0,0,0.02);
   --surface-2:   rgba(0,0,0,0.04);
@@ -145,6 +159,12 @@ body {
   font-family: 'Heebo', system-ui, sans-serif;
   color: var(--text);
   -webkit-font-smoothing: antialiased;
+}
+
+/* iOS: suppress grey tap flash and remove 300ms click delay */
+button, a, [role="button"], input, select, textarea {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 
 /* Material Symbols */
@@ -245,7 +265,7 @@ input[type="number"] { -moz-appearance: textfield; }
   color: var(--text);
   padding: 0 12px;
   height: 46px;
-  font-size: 14px;
+  font-size: 16px; /* ≥16px prevents iOS auto-zoom on focus */
   font-family: inherit;
   transition: border-color .2s, box-shadow .2s;
   width: 100%;
@@ -342,7 +362,7 @@ input[type="number"] { -moz-appearance: textfield; }
   transition: color 0.22s ease, transform 0.12s ease;
 }
 .tab-btn.active {
-  color: var(--text);
+  color: #fff;
 }
 .tab-btn:active {
   transform: scale(0.94);
@@ -354,8 +374,8 @@ input[type="number"] { -moz-appearance: textfield; }
   top: 3px;
   bottom: 3px;
   border-radius: 9px;
-  background: var(--bg-card2);
-  border: 1px solid var(--border-hi);
+  background: var(--blue);
+  box-shadow: 0 2px 10px rgba(59,130,246,0.35);
   pointer-events: none;
   z-index: 0;
   transition: left 0.28s cubic-bezier(.34,1.56,.64,1), width 0.28s cubic-bezier(.34,1.56,.64,1);

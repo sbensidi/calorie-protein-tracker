@@ -4,12 +4,14 @@ import { useFocusTrap } from '../hooks/useFocusTrap'
 import { useSheetScroll } from '../hooks/useSheetScroll'
 import { SheetHandle } from './SheetHandle'
 import type { Lang, DayKey } from '../lib/i18n'
-import { t, DAY_KEYS, DAY_SHORT_HE, DAY_SHORT_EN } from '../lib/i18n'
+import { t, dir, DAY_KEYS, DAY_SHORT_HE, DAY_SHORT_EN } from '../lib/i18n'
 import { toWeekIndex } from '../lib/utils'
 import type { Toast } from '../hooks/useToast'
 import type { Goal, FoodHistory, ComposedGroup, Meal } from '../types'
 import type { UserProfile } from '../hooks/useProfile'
 import { useFoodLibrary } from '../hooks/useFoodLibrary'
+import { UNITS, toBase, mlToGrams } from '../lib/units'
+import type { UnitId } from '../lib/units'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -145,7 +147,7 @@ function DayPanel({
         <div style={{ flex: 1 }}>
           {!compact && (
             <label style={{ fontSize: 11, color: 'var(--blue-hi)', fontWeight: 600, display: 'block', marginBottom: 5 }}>
-              {lang === 'he' ? 'נוזלים' : 'Fluid'}
+              {t(lang, 'fluid')}
             </label>
           )}
           <div style={{ position: 'relative' }}>
@@ -252,7 +254,7 @@ function MainScreen({ lang, connected, theme, onProfile, onGoals, onFoodHistory,
           <span className="icon" style={{ fontSize: 22, color: 'var(--amber)', flexShrink: 0 }}>manage_search</span>
           <div style={{ flex: 1, textAlign: 'start' }}>
             <p style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', margin: 0 }}>
-              {lang === 'he' ? 'ניהול מזונות' : 'Manage foods'}
+              {t(lang, 'foodManagement')}
             </p>
             <p style={{ fontSize: 11, color: 'var(--text-3)', margin: '2px 0 0' }}>
               {lang === 'he' ? 'עריכה ומחיקת מזונות מההיסטוריה' : 'Edit or delete saved food items'}
@@ -266,7 +268,7 @@ function MainScreen({ lang, connected, theme, onProfile, onGoals, onFoodHistory,
           <span className="icon" style={{ fontSize: 22, color: 'var(--green-hi)', flexShrink: 0 }}>menu_book</span>
           <div style={{ flex: 1, textAlign: 'start' }}>
             <p style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', margin: 0 }}>
-              {lang === 'he' ? 'ספריית מזונות' : 'Food Library'}
+              {t(lang, 'foodLibrary')}
             </p>
             <p style={{ fontSize: 11, color: 'var(--text-3)', margin: '2px 0 0' }}>
               {lang === 'he' ? 'עיון ב-150+ מזונות מובנים' : 'Browse 150+ built-in foods'}
@@ -303,7 +305,7 @@ function MainScreen({ lang, connected, theme, onProfile, onGoals, onFoodHistory,
           </span>
           <div style={{ flex: 1, textAlign: 'start' }}>
             <p style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', margin: 0 }}>
-              {lang === 'he' ? 'מצב תצוגה' : 'Appearance'}
+              {t(lang, 'appearance')}
             </p>
           </div>
           {/* Toggle pill */}
@@ -396,7 +398,7 @@ function ProfileScreen({ lang, profile, onSave, onApplyGoals, onNavigateToGoals,
     onApplyGoals(suggestedCal, suggestedProt)
     setApplied(true)
     setTimeout(() => setApplied(false), 2000)
-    showToast(lang === 'he' ? 'היעדים הוחלו' : 'Goals applied', 'success')
+    showToast(t(lang, 'goalsApplied'), 'success')
     setTimeout(() => onNavigateToGoals(), 600)
   }
 
@@ -418,12 +420,12 @@ function ProfileScreen({ lang, profile, onSave, onApplyGoals, onNavigateToGoals,
   return (
     <>
       <h2 style={{ fontSize: 17, fontWeight: 800, color: 'var(--text)', margin: '0 0 18px' }}>
-        {lang === 'he' ? 'פרופיל אישי' : 'Personal Profile'}
+        {t(lang, 'personalProfile')}
       </h2>
 
       {/* Section: personal inputs */}
       <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.07em', margin: '0 0 12px' }}>
-        {lang === 'he' ? 'פרטים אישיים' : 'Personal Details'}
+        {t(lang, 'personalDetails')}
       </p>
 
       {/* Sex */}
@@ -507,7 +509,7 @@ function ProfileScreen({ lang, profile, onSave, onApplyGoals, onNavigateToGoals,
             const active = draft.goalType === g
             const colors = {
               lose:     { bg: 'rgba(59,130,246,0.18)',  border: 'var(--blue)',  text: 'var(--blue-hi)'  },
-              maintain: { bg: 'rgba(99,102,241,0.18)',  border: '#6366f1',      text: '#a5b4fc'         },
+              maintain: { bg: 'color-mix(in srgb, var(--indigo) 18%, transparent)', border: 'var(--indigo)', text: 'var(--indigo-hi)' },
               gain:     { bg: 'rgba(16,185,129,0.18)',  border: 'var(--green)', text: 'var(--green-hi)' },
             }[g]
             return (
@@ -535,7 +537,7 @@ function ProfileScreen({ lang, profile, onSave, onApplyGoals, onNavigateToGoals,
 
       {/* Section: computed metrics */}
       <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.07em', margin: '0 0 10px' }}>
-        {lang === 'he' ? 'המדדים שלך' : 'Your Metrics'}
+        {t(lang, 'yourMetrics')}
       </p>
       <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden', marginBottom: 16 }}>
         {/* BMR row */}
@@ -604,7 +606,7 @@ function ProfileScreen({ lang, profile, onSave, onApplyGoals, onNavigateToGoals,
         {/* Suggested Calories */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
           <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-2)' }}>
-            {lang === 'he' ? 'יעד קלוריות מומלץ' : 'Suggested Calorie Goal'}
+            {t(lang, 'suggestedCalGoal')}
           </span>
           <span style={{ fontSize: 21, fontWeight: 800, color: 'var(--blue-hi)' }}>
             {suggestedCal.toLocaleString()} <span style={{ fontSize: 11, fontWeight: 400 }}>{t(lang, 'caloriesUnit')}</span>
@@ -635,7 +637,7 @@ function ProfileScreen({ lang, profile, onSave, onApplyGoals, onNavigateToGoals,
         {/* Suggested Protein */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
           <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-2)' }}>
-            {lang === 'he' ? 'יעד חלבון מומלץ' : 'Suggested Protein Goal'}
+            {t(lang, 'suggestedProtGoal')}
           </span>
           <span style={{ fontSize: 21, fontWeight: 800, color: 'var(--green-hi)' }}>
             {suggestedProt} <span style={{ fontSize: 11, fontWeight: 400 }}>{t(lang, 'proteinUnit')}</span>
@@ -650,7 +652,7 @@ function ProfileScreen({ lang, profile, onSave, onApplyGoals, onNavigateToGoals,
         {/* Suggested Fluid */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
           <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-2)' }}>
-            {lang === 'he' ? 'יעד נוזלים מומלץ' : 'Suggested Fluid Goal'}
+            {t(lang, 'suggestedFluidGoal')}
           </span>
           <span style={{ fontSize: 21, fontWeight: 800, color: 'var(--blue-hi)' }}>
             {suggestedFluidMl >= 1000 ? (suggestedFluidMl / 1000).toFixed(1) : suggestedFluidMl}{' '}
@@ -671,7 +673,7 @@ function ProfileScreen({ lang, profile, onSave, onApplyGoals, onNavigateToGoals,
           style={{ width: '100%', height: 44 }}
         >
           {applied
-            ? <><span className="icon icon-sm" style={{ verticalAlign: 'middle', marginInlineEnd: 4 }}>check</span>{lang === 'he' ? 'הוחל!' : 'Applied!'}</>
+            ? <><span className="icon icon-sm" style={{ verticalAlign: 'middle', marginInlineEnd: 4 }}>check</span>{t(lang, 'appliedBang')}</>
             : t(lang, 'applyGoals')
           }
         </button>
@@ -680,12 +682,12 @@ function ProfileScreen({ lang, profile, onSave, onApplyGoals, onNavigateToGoals,
       {/* Units preferences */}
       <div style={{ height: 1, background: 'var(--border)', margin: '4px 0 18px' }} />
       <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-2)', marginBottom: 12, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
-        {lang === 'he' ? 'יחידות מידה' : 'Units'}
+        {t(lang, 'unitsLabel')}
       </p>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 20 }}>
         {/* Weight unit */}
         <div>
-          <label style={labelStyle}>{lang === 'he' ? 'משקל' : 'Weight'}</label>
+          <label style={labelStyle}>{t(lang, 'weight')}</label>
           <div style={{ display: 'flex', gap: 6 }}>
             {(['g', 'oz'] as const).map(u => (
               <button
@@ -707,7 +709,7 @@ function ProfileScreen({ lang, profile, onSave, onApplyGoals, onNavigateToGoals,
         </div>
         {/* Volume unit */}
         <div>
-          <label style={labelStyle}>{lang === 'he' ? 'נוזלים' : 'Volume'}</label>
+          <label style={labelStyle}>{t(lang, 'volume')}</label>
           <select
             className="inp"
             value={draft.volumeUnit}
@@ -877,7 +879,7 @@ function GoalsScreen({ lang, profile, goals, onSave, onSaveFluidGoal, fluidGoalM
     onSaveFluidGoal?.(defFluidGoal)
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
-    showToast(lang === 'he' ? 'היעדים נשמרו' : 'Goals saved', 'success')
+    showToast(t(lang, 'goalsSaved'), 'success')
   }
 
   const labelStyle: React.CSSProperties = {
@@ -887,7 +889,7 @@ function GoalsScreen({ lang, profile, goals, onSave, onSaveFluidGoal, fluidGoalM
   return (
     <>
       <h2 style={{ fontSize: 17, fontWeight: 800, color: 'var(--text)', margin: '0 0 18px' }}>
-        {lang === 'he' ? 'יעדים תזונתיים' : 'Nutrition Goals'}
+        {t(lang, 'nutritionGoals')}
       </h2>
 
       {/* Recommendations card */}
@@ -896,7 +898,7 @@ function GoalsScreen({ lang, profile, goals, onSave, onSaveFluidGoal, fluidGoalM
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
           <span className="icon icon-sm" style={{ color: 'var(--blue-hi)' }}>auto_fix_high</span>
           <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--blue-hi)', margin: 0 }}>
-            {lang === 'he' ? 'המלצות מהפרופיל שלך' : 'Recommendations from your profile'}
+            {t(lang, 'profileRecs')}
           </p>
           <span style={{ fontSize: 10, color: 'var(--text-3)', marginInlineStart: 'auto' }}>
             TDEE {tdee.toLocaleString()} {lang === 'he' ? 'קק״ל' : 'kcal'}
@@ -975,7 +977,7 @@ function GoalsScreen({ lang, profile, goals, onSave, onSaveFluidGoal, fluidGoalM
             color: 'var(--blue-hi)',
           }}
         >
-          {lang === 'he' ? 'החל את כל ההמלצות' : 'Apply All Recommendations'}
+          {t(lang, 'applyAll')}
         </button>
       </div>
 
@@ -1088,9 +1090,9 @@ function GoalsScreen({ lang, profile, goals, onSave, onSaveFluidGoal, fluidGoalM
                 display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5,
                 padding: '8px 2px 6px', borderRadius: 10, cursor: 'pointer',
                 fontFamily: 'inherit', position: 'relative',
-                border: `1.5px solid ${isSelected ? '#6366f1' : isCustom ? 'rgba(99,102,241,0.45)' : isToday ? 'rgba(59,130,246,0.5)' : 'var(--border)'}`,
-                background: isSelected ? 'rgba(99,102,241,0.15)' : isCustom ? 'rgba(99,102,241,0.06)' : isToday ? 'rgba(59,130,246,0.07)' : 'transparent',
-                boxShadow: isSelected ? '0 0 0 3px rgba(99,102,241,0.2)' : 'none',
+                border: `1.5px solid ${isSelected ? 'var(--indigo)' : isCustom ? 'color-mix(in srgb, var(--indigo) 45%, transparent)' : isToday ? 'color-mix(in srgb, var(--blue) 50%, transparent)' : 'var(--border)'}`,
+                background: isSelected ? 'color-mix(in srgb, var(--indigo) 15%, transparent)' : isCustom ? 'var(--indigo-tint)' : isToday ? 'var(--blue-tint)' : 'transparent',
+                boxShadow: isSelected ? '0 0 0 3px color-mix(in srgb, var(--indigo) 20%, transparent)' : 'none',
                 transition: 'all .15s',
               }}
             >
@@ -1099,10 +1101,10 @@ function GoalsScreen({ lang, profile, goals, onSave, onSaveFluidGoal, fluidGoalM
                   {t(lang, 'today')}
                 </span>
               )}
-              <span style={{ fontSize: 10, fontWeight: 700, color: isSelected ? 'var(--text)' : isCustom ? '#a5b4fc' : isToday ? 'var(--blue-hi)' : 'var(--text-3)' }}>
+              <span style={{ fontSize: 10, fontWeight: 700, color: isSelected ? 'var(--text)' : isCustom ? 'var(--indigo-hi)' : isToday ? 'var(--blue-hi)' : 'var(--text-3)' }}>
                 {dayShort(dayKey)}
               </span>
-              <div style={{ width: 5, height: 5, borderRadius: '50%', background: isCustom ? '#6366f1' : isToday ? 'var(--blue)' : 'var(--border)' }} />
+              <div style={{ width: 5, height: 5, borderRadius: '50%', background: isCustom ? 'var(--indigo)' : isToday ? 'var(--blue)' : 'var(--border)' }} />
             </button>
           )
         })}
@@ -1138,7 +1140,7 @@ function GoalsScreen({ lang, profile, goals, onSave, onSaveFluidGoal, fluidGoalM
           style={{ height: 48, fontSize: 14, borderRadius: 12, flex: 1 }}
         >
           {saved
-            ? <><span className="icon icon-sm" style={{ verticalAlign: 'middle', marginInlineEnd: 4 }}>check</span>{lang === 'he' ? 'נשמר!' : 'Saved!'}</>
+            ? <><span className="icon icon-sm" style={{ verticalAlign: 'middle', marginInlineEnd: 4 }}>check</span>{t(lang, 'savedBang')}</>
             : t(lang, 'saveGoals')
           }
         </button>
@@ -1163,7 +1165,7 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
   const [search, setSearch]       = useState('')
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editDraft, setEditDraft] = useState<{ name: string; grams: string; calories: string; protein: string }>({ name: '', grams: '', calories: '', protein: '' })
-  const [filter, setFilter]       = useState<'all' | 'foods' | 'composed'>('all')
+  const [filter, setFilter]       = useState<'all' | 'foods' | 'beverage' | 'composed'>('all')
   // Per-gram ratios of the item being edited — used for proportional scaling when grams changes
   const editRatios = useRef({ calPerGram: 0, protPerGram: 0 })
   // Meal editing state for composed tab
@@ -1173,9 +1175,11 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
   const [expandedGroupId, setExpandedGroupId] = useState<string | null>(null)
 
   const q = search.trim().toLowerCase()
+  const beverageHistory = history.filter(h => h.fluid_ml != null && h.fluid_ml > 0)
+  const baseHistory = filter === 'beverage' ? beverageHistory : history
   const filtered = q
-    ? history.filter(h => h.name.toLowerCase().includes(q))
-    : [...history].sort((a, b) => b.use_count - a.use_count)
+    ? baseHistory.filter(h => h.name.toLowerCase().includes(q))
+    : [...baseHistory].sort((a, b) => b.use_count - a.use_count)
 
   const startEdit = (item: FoodHistory) => {
     const absGrams = Math.abs(item.grams) || 1
@@ -1199,7 +1203,7 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
     if (!editingId) return
     onUpdate(editingId, { name: editDraft.name, grams: Number(editDraft.grams), calories: Number(editDraft.calories), protein: Number(editDraft.protein) })
     setEditingId(null)
-    showToast(lang === 'he' ? 'נשמר' : 'Saved', 'success')
+    showToast(t(lang, 'saved'), 'success')
   }
   const handleDelete = (id: string, name: string) => {
     onDelete(id)
@@ -1230,7 +1234,7 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
     if (!editingMealId) return
     onUpdateMeal(editingMealId, { name: mealDraft.name, grams: Number(mealDraft.grams), calories: Number(mealDraft.calories), protein: Number(mealDraft.protein) })
     setEditingMealId(null)
-    showToast(lang === 'he' ? 'נשמר' : 'Saved', 'success')
+    showToast(t(lang, 'saved'), 'success')
   }
 
   const inputSm: React.CSSProperties = { height: 34, fontSize: 12, padding: '0 8px', borderRadius: 8 }
@@ -1240,26 +1244,34 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
       {/* Sticky top: title + search + filter chips */}
       <div style={{ flexShrink: 0, padding: '12px 16px 0', background: 'var(--bg)' }}>
         <h2 style={{ fontSize: 16, fontWeight: 800, color: 'var(--text)', margin: '0 0 10px' }}>
-          {lang === 'he' ? 'ניהול מזונות' : 'Manage foods'}
+          {t(lang, 'foodManagement')}
         </h2>
 
-        {filter !== 'composed' && (
-          <div style={{ position: 'relative', marginBottom: 10 }}>
-            <span className="icon" style={{ position: 'absolute', top: '50%', transform: 'translateY(-50%)', ...(lang === 'he' ? { right: 10 } : { left: 10 }), color: 'var(--text-3)', fontSize: 18, pointerEvents: 'none' }}>search</span>
-            <input className="inp" type="text" value={search} onChange={e => setSearch(e.target.value)}
-              placeholder={lang === 'he' ? 'חיפוש...' : 'Search...'}
-              dir={lang === 'he' ? 'rtl' : 'ltr'}
-              style={lang === 'he' ? { paddingRight: 36 } : { paddingLeft: 36 }}
-            />
-          </div>
-        )}
+        <div style={{ position: 'relative', marginBottom: 10 }}>
+          <span className="icon" style={{ position: 'absolute', top: '50%', transform: 'translateY(-50%)', ...(lang === 'he' ? { right: 10 } : { left: 10 }), color: 'var(--text-3)', fontSize: 18, pointerEvents: 'none' }}>search</span>
+          <input className="inp" type="text" value={search} onChange={e => setSearch(e.target.value)}
+            placeholder={t(lang, 'search')}
+            dir={dir(lang)}
+            style={lang === 'he' ? { paddingRight: 36, paddingLeft: search ? 32 : 12 } : { paddingLeft: 36, paddingRight: search ? 32 : 12 }}
+          />
+          {search && (
+            <button
+              onMouseDown={e => { e.preventDefault(); setSearch('') }}
+              tabIndex={-1}
+              style={{ position: 'absolute', ...(lang === 'he' ? { left: 0 } : { right: 0 }), top: 0, bottom: 0, width: 32, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            >
+              <span className="icon icon-sm">close</span>
+            </button>
+          )}
+        </div>
 
         {/* Filter chips */}
         <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 10, scrollbarWidth: 'none' }}>
           {([
-            { key: 'all',      labelHe: `הכל (${history.length + composedGroups.length})`,  labelEn: `All (${history.length + composedGroups.length})` },
-            { key: 'foods',    labelHe: `מזונות (${history.length})`,                        labelEn: `Foods (${history.length})` },
-            { key: 'composed', labelHe: `מנות (${composedGroups.length})`,                   labelEn: `Dishes (${composedGroups.length})` },
+            { key: 'all',      labelHe: `הכל (${history.length + composedGroups.length})`,   labelEn: `All (${history.length + composedGroups.length})` },
+            { key: 'foods',    labelHe: `מזונות (${history.length})`,                         labelEn: `Foods (${history.length})` },
+            { key: 'beverage', labelHe: `שתייה (${beverageHistory.length})`,                  labelEn: `Drinks (${beverageHistory.length})` },
+            { key: 'composed', labelHe: `מנות (${composedGroups.length})`,                    labelEn: `Dishes (${composedGroups.length})` },
           ] as const).map(({ key, labelHe, labelEn }) => (
             <button
               key={key}
@@ -1283,11 +1295,16 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
         <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 56, background: 'linear-gradient(to top, var(--bg), transparent)', zIndex: 2, pointerEvents: 'none' }} />
       <div style={{ flex: 1, overflowY: 'auto', minHeight: 0, padding: '4px 16px', paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 48px)' }}>
 
-      {(filter === 'all' || filter === 'foods') && (
+      {(filter === 'all' || filter === 'foods' || filter === 'beverage') && (
         <>
-          {filter === 'all' && history.length > 0 && (
+          {filter === 'all' && history.length > 0 && beverageHistory.length < history.length && (
             <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '4px 0 8px' }}>
               {lang === 'he' ? 'מזונות' : 'Foods'}
+            </p>
+          )}
+          {filter === 'beverage' && beverageHistory.length > 0 && (
+            <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--cyan-hi)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '4px 0 8px' }}>
+              {lang === 'he' ? 'שתייה' : 'Drinks'}
             </p>
           )}
           {filtered.length === 0 ? (
@@ -1301,7 +1318,9 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
                 const isEditing = editingId === item.id
                 const amtLabel  = item.grams < 0
                   ? `${Math.abs(item.grams)} ${lang === 'he' ? 'יח׳' : 'pcs'}`
-                  : `${item.grams}g`
+                  : item.fluid_ml != null && item.fluid_ml > 0
+                    ? (item.fluid_ml >= 1000 ? `${(item.fluid_ml / 1000).toFixed(1)}${lang === 'he' ? 'ל׳' : 'L'}` : `${Math.round(item.fluid_ml)}ml`)
+                    : `${item.grams}g`
                 return (
                   <div key={item.id} style={{ background: 'var(--bg-card)', border: `1px solid ${isEditing ? 'var(--blue)' : 'var(--border)'}`, borderRadius: 12, overflow: 'hidden', transition: 'border-color .15s' }}>
                     {!isEditing ? (
@@ -1321,8 +1340,16 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
                       </div>
                     ) : (
                       <div style={{ padding: 10, display: 'flex', flexDirection: 'column', gap: 6 }}>
-                        <input className="inp" value={editDraft.name} onChange={e => setEditDraft(d => ({ ...d, name: e.target.value }))}
-                          placeholder={lang === 'he' ? 'שם' : 'Name'} style={inputSm} dir={lang === 'he' ? 'rtl' : 'ltr'} />
+                        <div style={{ position: 'relative' }}>
+                          <input className="inp" value={editDraft.name} onChange={e => setEditDraft(d => ({ ...d, name: e.target.value }))}
+                            placeholder={lang === 'he' ? 'שם' : 'Name'} style={{ ...inputSm, paddingInlineEnd: editDraft.name ? 28 : 8 }} dir={dir(lang)} />
+                          {editDraft.name && (
+                            <button onMouseDown={e => { e.preventDefault(); setEditDraft(d => ({ ...d, name: '' })) }} tabIndex={-1}
+                              style={{ position: 'absolute', insetInlineEnd: 0, top: 0, bottom: 0, width: 28, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                              <span className="icon icon-sm">close</span>
+                            </button>
+                          )}
+                        </div>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6 }}>
                           <div>
                             <label style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-3)', display: 'block', marginBottom: 3 }}>
@@ -1330,30 +1357,54 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
                                 ? (lang === 'he' ? 'יח׳' : 'pcs')
                                 : (lang === 'he' ? 'גרם (g)' : 'Weight (g)')}
                             </label>
-                            <input className="inp" type="number" inputMode="decimal" value={editDraft.grams}
-                              onFocus={e => e.target.select()}
-                              onChange={e => handleGramsChange(e.target.value)}
-                              style={{ ...inputSm, borderColor: 'rgba(59,130,246,0.5)' }} />
+                            <div style={{ position: 'relative' }}>
+                              <input className="inp" type="number" inputMode="decimal" value={editDraft.grams}
+                                onFocus={e => e.target.select()}
+                                onChange={e => handleGramsChange(e.target.value)}
+                                style={{ ...inputSm, borderColor: 'rgba(59,130,246,0.5)', paddingInlineEnd: editDraft.grams ? 28 : 8 }} />
+                              {editDraft.grams && (
+                                <button onMouseDown={e => { e.preventDefault(); setEditDraft(d => ({ ...d, grams: '' })) }} tabIndex={-1}
+                                  style={{ position: 'absolute', insetInlineEnd: 0, top: 0, bottom: 0, width: 28, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                  <span className="icon icon-sm">close</span>
+                                </button>
+                              )}
+                            </div>
                           </div>
                           <div>
                             <label style={{ fontSize: 10, fontWeight: 600, color: 'var(--blue-hi)', display: 'flex', alignItems: 'center', gap: 3, marginBottom: 3 }}>
                               {lang === 'he' ? `קלוריות (${t(lang, 'caloriesUnit')})` : `Calories (${t(lang, 'caloriesUnit')})`}
                               <span className="icon" style={{ fontSize: 10, opacity: 0.6 }} title={lang === 'he' ? 'מחושב אוטומטית לפי גרם' : 'Auto-scaled from grams'}>calculate</span>
                             </label>
-                            <input className="inp" type="number" inputMode="decimal" value={editDraft.calories}
-                              onFocus={e => e.target.select()}
-                              onChange={e => setEditDraft(d => ({ ...d, calories: e.target.value }))}
-                              style={inputSm} />
+                            <div style={{ position: 'relative' }}>
+                              <input className="inp" type="number" inputMode="decimal" value={editDraft.calories}
+                                onFocus={e => e.target.select()}
+                                onChange={e => setEditDraft(d => ({ ...d, calories: e.target.value }))}
+                                style={{ ...inputSm, paddingInlineEnd: editDraft.calories ? 28 : 8 }} />
+                              {editDraft.calories && (
+                                <button onMouseDown={e => { e.preventDefault(); setEditDraft(d => ({ ...d, calories: '' })) }} tabIndex={-1}
+                                  style={{ position: 'absolute', insetInlineEnd: 0, top: 0, bottom: 0, width: 28, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                  <span className="icon icon-sm">close</span>
+                                </button>
+                              )}
+                            </div>
                           </div>
                           <div>
                             <label style={{ fontSize: 10, fontWeight: 600, color: 'var(--green-hi)', display: 'flex', alignItems: 'center', gap: 3, marginBottom: 3 }}>
                               {lang === 'he' ? `חלבון (${t(lang, 'proteinUnit')})` : `Protein (${t(lang, 'proteinUnit')})`}
                               <span className="icon" style={{ fontSize: 10, opacity: 0.6 }} title={lang === 'he' ? 'מחושב אוטומטית לפי גרם' : 'Auto-scaled from grams'}>calculate</span>
                             </label>
-                            <input className="inp" type="number" inputMode="decimal" value={editDraft.protein}
-                              onFocus={e => e.target.select()}
-                              onChange={e => setEditDraft(d => ({ ...d, protein: e.target.value }))}
-                              style={inputSm} />
+                            <div style={{ position: 'relative' }}>
+                              <input className="inp" type="number" inputMode="decimal" value={editDraft.protein}
+                                onFocus={e => e.target.select()}
+                                onChange={e => setEditDraft(d => ({ ...d, protein: e.target.value }))}
+                                style={{ ...inputSm, paddingInlineEnd: editDraft.protein ? 28 : 8 }} />
+                              {editDraft.protein && (
+                                <button onMouseDown={e => { e.preventDefault(); setEditDraft(d => ({ ...d, protein: '' })) }} tabIndex={-1}
+                                  style={{ position: 'absolute', insetInlineEnd: 0, top: 0, bottom: 0, width: 28, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                  <span className="icon icon-sm">close</span>
+                                </button>
+                              )}
+                            </div>
                           </div>
                         </div>
                         <div style={{ display: 'flex', gap: 6 }}>
@@ -1381,14 +1432,16 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
               {lang === 'he' ? 'מנות' : 'Dishes'}
             </p>
           )}
-          {composedGroups.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '32px 0', color: 'var(--text-3)' }}>
-              <span className="icon" style={{ fontSize: 28, display: 'block', marginBottom: 8 }}>restaurant</span>
-              <p style={{ fontSize: 13, margin: 0 }}>{lang === 'he' ? 'אין מנות מורכבות' : 'No composed dishes'}</p>
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {composedGroups.map(group => {
+          {(() => {
+            const filteredGroups = q ? composedGroups.filter(g => g.name.toLowerCase().includes(q)) : composedGroups
+            return filteredGroups.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '32px 0', color: 'var(--text-3)' }}>
+                <span className="icon" style={{ fontSize: 28, display: 'block', marginBottom: 8 }}>{composedGroups.length === 0 ? 'restaurant' : 'search_off'}</span>
+                <p style={{ fontSize: 13, margin: 0 }}>{composedGroups.length === 0 ? (lang === 'he' ? 'אין מנות מורכבות' : 'No composed dishes') : (lang === 'he' ? 'לא נמצאו תוצאות' : 'No results')}</p>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {filteredGroups.map(group => {
                 const groupMeals = meals.filter(m => group.mealIds.includes(m.id))
                 const totalCal   = Math.round(groupMeals.reduce((s, m) => s + m.calories, 0))
                 const totalProt  = Math.round(groupMeals.reduce((s, m) => s + m.protein, 0) * 10) / 10
@@ -1419,24 +1472,56 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
                       <div key={meal.id} style={{ borderBottom: '1px solid var(--border-subtle, var(--border))' }}>
                         {editingMealId === meal.id ? (
                           <div style={{ padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 6 }}>
-                            <input
-                              type="text"
-                              className="inp"
-                              style={inputSm}
-                              value={mealDraft.name}
-                              onChange={e => setMealDraft(d => ({ ...d, name: e.target.value }))}
-                              placeholder={lang === 'he' ? 'שם' : 'Name'}
-                            />
+                            <div style={{ position: 'relative' }}>
+                              <input
+                                type="text"
+                                className="inp"
+                                style={{ ...inputSm, paddingInlineEnd: mealDraft.name ? 28 : 8 }}
+                                value={mealDraft.name}
+                                onChange={e => setMealDraft(d => ({ ...d, name: e.target.value }))}
+                                placeholder={lang === 'he' ? 'שם' : 'Name'}
+                              />
+                              {mealDraft.name && (
+                                <button onMouseDown={e => { e.preventDefault(); setMealDraft(d => ({ ...d, name: '' })) }} tabIndex={-1}
+                                  style={{ position: 'absolute', insetInlineEnd: 0, top: 0, bottom: 0, width: 28, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                  <span className="icon icon-sm">close</span>
+                                </button>
+                              )}
+                            </div>
                             <div style={{ display: 'flex', gap: 6 }}>
-                              <input type="number" inputMode="decimal" className="inp" style={{ ...inputSm, flex: 1 }}
-                                value={mealDraft.grams} onChange={e => handleMealGramsChange(e.target.value)}
-                                placeholder={lang === 'he' ? 'גרם' : 'g'} />
-                              <input type="number" inputMode="decimal" className="inp" style={{ ...inputSm, flex: 1 }}
-                                value={mealDraft.calories} onChange={e => setMealDraft(d => ({ ...d, calories: e.target.value }))}
-                                placeholder={lang === 'he' ? 'קל׳' : 'kcal'} />
-                              <input type="number" inputMode="decimal" className="inp" style={{ ...inputSm, flex: 1 }}
-                                value={mealDraft.protein} onChange={e => setMealDraft(d => ({ ...d, protein: e.target.value }))}
-                                placeholder={lang === 'he' ? 'חלב׳' : 'prot'} />
+                              <div style={{ flex: 1, position: 'relative' }}>
+                                <input type="number" inputMode="decimal" className="inp" style={{ ...inputSm, width: '100%', paddingInlineEnd: mealDraft.grams ? 28 : 8 }}
+                                  value={mealDraft.grams} onChange={e => handleMealGramsChange(e.target.value)}
+                                  placeholder={lang === 'he' ? 'גרם' : 'g'} />
+                                {mealDraft.grams && (
+                                  <button onMouseDown={e => { e.preventDefault(); setMealDraft(d => ({ ...d, grams: '' })) }} tabIndex={-1}
+                                    style={{ position: 'absolute', insetInlineEnd: 0, top: 0, bottom: 0, width: 28, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <span className="icon icon-sm">close</span>
+                                  </button>
+                                )}
+                              </div>
+                              <div style={{ flex: 1, position: 'relative' }}>
+                                <input type="number" inputMode="decimal" className="inp" style={{ ...inputSm, width: '100%', paddingInlineEnd: mealDraft.calories ? 28 : 8 }}
+                                  value={mealDraft.calories} onChange={e => setMealDraft(d => ({ ...d, calories: e.target.value }))}
+                                  placeholder={lang === 'he' ? 'קל׳' : 'kcal'} />
+                                {mealDraft.calories && (
+                                  <button onMouseDown={e => { e.preventDefault(); setMealDraft(d => ({ ...d, calories: '' })) }} tabIndex={-1}
+                                    style={{ position: 'absolute', insetInlineEnd: 0, top: 0, bottom: 0, width: 28, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <span className="icon icon-sm">close</span>
+                                  </button>
+                                )}
+                              </div>
+                              <div style={{ flex: 1, position: 'relative' }}>
+                                <input type="number" inputMode="decimal" className="inp" style={{ ...inputSm, width: '100%', paddingInlineEnd: mealDraft.protein ? 28 : 8 }}
+                                  value={mealDraft.protein} onChange={e => setMealDraft(d => ({ ...d, protein: e.target.value }))}
+                                  placeholder={lang === 'he' ? 'חלב׳' : 'prot'} />
+                                {mealDraft.protein && (
+                                  <button onMouseDown={e => { e.preventDefault(); setMealDraft(d => ({ ...d, protein: '' })) }} tabIndex={-1}
+                                    style={{ position: 'absolute', insetInlineEnd: 0, top: 0, bottom: 0, width: 28, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <span className="icon icon-sm">close</span>
+                                  </button>
+                                )}
+                              </div>
                             </div>
                             <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
                               <button onClick={() => setEditingMealId(null)} style={{ height: 32, padding: '0 12px', borderRadius: 8, background: 'var(--qty-bg)', border: '1px solid var(--border)', color: 'var(--text-2)', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit' }}>
@@ -1466,7 +1551,8 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
                 )
               })}
             </div>
-          )}
+            )
+          })()}
         </>
       )}
 
@@ -1483,14 +1569,16 @@ const LIBRARY_CATEGORIES_HE: Record<string, string> = {
   protein_fish: 'דגים', egg_dairy: 'ביצים ויוגורט', cheese: 'גבינות',
   nuts: 'אגוזים ופיצוחים', grain: 'דגנים', legume: 'קטניות',
   oil_fat: 'שמנים ושומנים', sauce_spread: 'רטבים וממרחים', beverage: 'משקאות', soup: 'מרקים',
+  alcohol: 'משקאות אלכוהוליים',
 }
 const LIBRARY_CATEGORIES_EN: Record<string, string> = {
   vegetable: 'Vegetables', fruit: 'Fruits', protein_meat: 'Chicken & Meat',
   protein_fish: 'Fish', egg_dairy: 'Eggs & Dairy', cheese: 'Cheeses',
   nuts: 'Nuts & Seeds', grain: 'Grains', legume: 'Legumes',
   oil_fat: 'Oils & Fats', sauce_spread: 'Sauces & Spreads', beverage: 'Beverages', soup: 'Soups',
+  alcohol: 'Alcoholic Drinks',
 }
-const CATEGORY_ORDER = ['protein_meat', 'protein_fish', 'egg_dairy', 'cheese', 'vegetable', 'fruit', 'grain', 'legume', 'nuts', 'oil_fat', 'sauce_spread', 'beverage', 'soup']
+const CATEGORY_ORDER = ['protein_meat', 'protein_fish', 'egg_dairy', 'cheese', 'vegetable', 'fruit', 'grain', 'legume', 'nuts', 'oil_fat', 'sauce_spread', 'beverage', 'soup', 'alcohol']
 
 function LibraryScreen({ lang }: { lang: Lang }) {
   const { library, loading } = useFoodLibrary()
@@ -1522,7 +1610,7 @@ function LibraryScreen({ lang }: { lang: Lang }) {
       <div style={{ flexShrink: 0, padding: '12px 16px 0', background: 'var(--bg)' }}>
         <div style={{ display: 'flex', alignItems: 'center', marginBottom: 12 }}>
           <h2 style={{ fontSize: 17, fontWeight: 800, color: 'var(--text)', margin: 0, flex: 1 }}>
-            {lang === 'he' ? 'ספריית מזונות' : 'Food Library'}
+            {t(lang, 'foodLibrary')}
           </h2>
           <span style={{ fontSize: 11, color: 'var(--text-3)' }}>
             {library.length} {lang === 'he' ? 'פריטים' : 'items'}
@@ -1534,12 +1622,21 @@ function LibraryScreen({ lang }: { lang: Lang }) {
           <span className="icon icon-sm" style={{ position: 'absolute', top: '50%', transform: 'translateY(-50%)', ...(isRTL ? { right: 10 } : { left: 10 }), color: 'var(--text-3)', pointerEvents: 'none' }}>search</span>
           <input
             className="inp"
-            type="search"
+            type="text"
             placeholder={lang === 'he' ? 'חיפוש מזון...' : 'Search food...'}
             value={search}
             onChange={e => setSearch(e.target.value)}
-            style={{ ...(isRTL ? { paddingRight: 34 } : { paddingLeft: 34 }) }}
+            style={{ ...(isRTL ? { paddingRight: 34, paddingLeft: search ? 32 : 12 } : { paddingLeft: 34, paddingRight: search ? 32 : 12 }) }}
           />
+          {search && (
+            <button
+              onMouseDown={e => { e.preventDefault(); setSearch('') }}
+              tabIndex={-1}
+              style={{ position: 'absolute', ...(isRTL ? { left: 0 } : { right: 0 }), top: 0, bottom: 0, width: 32, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            >
+              <span className="icon icon-sm">close</span>
+            </button>
+          )}
         </div>
 
         {/* Category chips */}
@@ -1576,7 +1673,7 @@ function LibraryScreen({ lang }: { lang: Lang }) {
         ) : filtered.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-3)', fontSize: 13 }}>
             <span className="icon" style={{ fontSize: 24, display: 'block', marginBottom: 8, opacity: 0.4 }}>search_off</span>
-            {lang === 'he' ? 'לא נמצאו תוצאות' : 'No results found'}
+            {t(lang, 'noResultsFound')}
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
@@ -1599,14 +1696,25 @@ function LibraryScreen({ lang }: { lang: Lang }) {
                 </div>
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
                   {(() => {
-                    const ss = item.serving_size ?? 100
-                    const su = item.serving_unit ?? 'g'
-                    const perServing = su !== 'g' && su !== 'oz'
-                    const cal = perServing ? Math.round(item.calories_per_100g * ss / 100) : item.calories_per_100g
-                    const prot = perServing ? Math.round(item.protein_per_100g * ss / 100 * 10) / 10 : item.protein_per_100g
-                    const unitLabel = perServing
-                      ? (su === 'cup' ? (isRTL ? 'לכוס' : '/cup') : su === 'ml' ? '/100ml' : `/${su}`)
-                      : '/100g'
+                    const ss   = item.serving_size ?? 100
+                    const su   = (item.serving_unit ?? 'g') as UnitId
+                    const isVolume = su in UNITS && UNITS[su].type === 'volume'
+                    const isWeight = su === 'g' || su === 'oz'
+                    const grams = isVolume
+                      ? mlToGrams(toBase(ss, su), item.density ?? 1)
+                      : isWeight
+                        ? toBase(ss, su)
+                        : ss
+                    const cal  = Math.round(item.calories_per_100g * grams / 100)
+                    const prot = Math.round(item.protein_per_100g  * grams / 100 * 10) / 10
+                    const unitLabel = isWeight
+                      ? '/100g'
+                      : su === 'cup'   ? (isRTL ? 'לכוס'    : '/cup')
+                      : su === 'ml'    ? `/${ss}ml`
+                      : su === 'fl_oz' ? `/${ss} fl oz`
+                      : su === 'tbsp'  ? (isRTL ? `/${ss} כף`   : `/${ss} tbsp`)
+                      : su === 'tsp'   ? (isRTL ? `/${ss} כפית` : `/${ss} tsp`)
+                      : `/${ss}${su}`
                     return (
                       <>
                         <span style={{ fontSize: 11, color: 'var(--blue-hi)', fontWeight: 600 }}>{cal} {isRTL ? 'קל' : 'cal'}</span>

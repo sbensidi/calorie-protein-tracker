@@ -1,7 +1,7 @@
-import { useState, useEffect, useMemo, useRef } from 'react'
+import { useState, useEffect, useMemo, useRef, useCallback, lazy, Suspense } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from './lib/supabase'
-import { t } from './lib/i18n'
+import { t, dir, today } from './lib/i18n'
 import type { Lang } from './lib/i18n'
 import { useAppContext } from './context/AppContext'
 import { useMeals } from './hooks/useMeals'
@@ -11,10 +11,12 @@ import { useComposedGroups } from './hooks/useComposedGroups'
 import { useFoodLibrary } from './hooks/useFoodLibrary'
 import { useToast } from './hooks/useToast'
 import { TodayTab } from './components/TodayTab'
-import { HistoryTab } from './components/HistoryTab'
-import { SettingsSheet } from './components/SettingsSheet'
 import { ToastContainer } from './components/ToastContainer'
 import { useProfile } from './hooks/useProfile'
+import { ErrorBoundary } from './components/ErrorBoundary'
+
+const HistoryTab   = lazy(() => import('./components/HistoryTab').then(m => ({ default: m.HistoryTab })))
+const SettingsSheet = lazy(() => import('./components/SettingsSheet').then(m => ({ default: m.SettingsSheet })))
 
 type Tab = 'today' | 'history'
 
@@ -26,13 +28,23 @@ export default function App() {
   const [tab, setTab]             = useState<Tab>('today')
   const [connected, setConnected] = useState(true)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [expiredSession, setExpiredSession] = useState(false)
+  const hadSession      = useRef(false)
+  const userSignedOut   = useRef(false)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) hadSession.current = true
       setSession(session)
       setAuthLoading(false)
     })
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      // I9: detect unexpected session expiry (not user-initiated signout)
+      if (event === 'SIGNED_OUT' && hadSession.current && !userSignedOut.current) {
+        setExpiredSession(true)
+      }
+      if (session) hadSession.current = true
+      userSignedOut.current = false
       setSession(session)
       if (event === 'PASSWORD_RECOVERY') setIsRecovery(true)
       if (event === 'SIGNED_IN' && isRecovery) setIsRecovery(false)
@@ -78,12 +90,50 @@ export default function App() {
   const { meals, loading: mealsLoading, error: mealsError, addMeal, addMealWithId, updateMeal, deleteMeal, duplicateMeal } = useMeals(userId)
   const { goals, error: goalsError, saveGoals, getGoalForDate } = useGoals(userId)
   const { history, error: historyError, upsertHistory, touchHistory, getSuggestions, deleteHistory, updateHistory } = useFoodHistory(userId)
-  const { groups: composedGroups, error: groupsError, upsert: upsertGroup, remove: removeGroup } = useComposedGroups(userId)
+  const { groups: composedGroups, error: groupsError, upsert: upsertGroup, remove: removeGroup, pruneMealId } = useComposedGroups(userId)
 
-  // Surface hook errors as toasts
+  // I9: show toast when session expired unexpectedly
+  useEffect(() => {
+    if (!expiredSession) return
+    showToast(
+      lang === 'he' ? 'פג תוקף הסשן — אנא התחבר שוב' : 'Session expired — please sign in again',
+      'error',
+      { durationMs: 8000 },
+    )
+    setExpiredSession(false)
+  }, [expiredSession]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // C4: delete meal and prune it from any composed groups
+  const handleDeleteMeal = useCallback(async (id: string) => {
+    await deleteMeal(id)
+    await pruneMealId(id)
+  }, [deleteMeal, pruneMealId])
+
+  // C5: show a non-intrusive toast when a new SW version takes over (skip first install)
+  useEffect(() => {
+    if (!('serviceWorker' in navigator)) return
+    const existingCtrl = navigator.serviceWorker.controller
+    const handler = () => {
+      if (!existingCtrl) return
+      showToast(
+        lang === 'he' ? 'גרסה חדשה מותקנת' : 'App updated',
+        'info',
+        { action: { label: lang === 'he' ? 'טען מחדש' : 'Reload', onClick: () => window.location.reload() }, durationMs: 15000 },
+      )
+    }
+    navigator.serviceWorker.addEventListener('controllerchange', handler)
+    return () => navigator.serviceWorker.removeEventListener('controllerchange', handler)
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Surface hook errors as toasts — use a ref so the same error string re-triggers when it resets to null then back
+  const lastShownError = useRef<string | null>(null)
   useEffect(() => {
     const err = mealsError || goalsError || historyError || groupsError || profileError
-    if (err) showToast(lang === 'he' ? 'שגיאה בתקשורת עם השרת' : 'Server error. Please try again.', 'error')
+    if (err && err !== lastShownError.current) {
+      lastShownError.current = err
+      showToast(lang === 'he' ? 'שגיאה בתקשורת עם השרת' : 'Server error. Please try again.', 'error')
+    }
+    if (!err) lastShownError.current = null
   }, [mealsError, goalsError, historyError, groupsError, profileError]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const composedEntries = useMemo(() =>
@@ -98,7 +148,7 @@ export default function App() {
     }).filter(e => e.name),
   [composedGroups, meals])
 
-  const todayGoal = getGoalForDate(new Date().toISOString().slice(0, 10))
+  const todayGoal = getGoalForDate(today())
 
   if (authLoading) {
     return (
@@ -125,7 +175,7 @@ export default function App() {
 
   return (
     <div
-      dir={lang === 'he' ? 'rtl' : 'ltr'}
+      dir={dir(lang)}
       style={{ minHeight: '100vh', background: 'var(--bg)' }}
     >
 
@@ -134,6 +184,7 @@ export default function App() {
         position: 'sticky', top: 0, zIndex: 30,
         background: 'var(--bg)',
         borderBottom: '1px solid var(--border)',
+        paddingTop: 'env(safe-area-inset-top)',
       }}>
         <div style={{ maxWidth: 560, margin: '0 auto', padding: '0 16px' }}>
           <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', height: 56 }}>
@@ -159,8 +210,22 @@ export default function App() {
         </div>
       </div>
 
+      {/* ── I8: offline indicator ────────────────────────────────── */}
+      {!connected && (
+        <div style={{
+          background: 'rgba(244,63,94,0.10)',
+          borderBottom: '1px solid rgba(244,63,94,0.2)',
+          padding: '6px 16px',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+          fontSize: 12, fontWeight: 600, color: 'var(--red)',
+        }}>
+          <span className="icon icon-sm">wifi_off</span>
+          {lang === 'he' ? 'אין חיבור לרשת — הנתונים יסונכרנו כשהחיבור יחזור' : 'Offline — changes will sync when connection is restored'}
+        </div>
+      )}
+
       {/* ── Scrollable content ────────────────────────────────────── */}
-      <div style={{ maxWidth: 560, margin: '0 auto', padding: '16px 16px 80px' }}>
+      <div style={{ maxWidth: 560, margin: '0 auto', padding: '16px 16px calc(80px + env(safe-area-inset-bottom, 0px))' }}>
 
         {/* Tab bar */}
         <div className="tab-bar" style={{ marginBottom: 20, gridTemplateColumns: 'repeat(2, 1fr)' }}>
@@ -189,70 +254,80 @@ export default function App() {
         </div>
 
         {tab === 'today' && (
-          <TodayTab
-            lang={lang}
-            meals={meals}
-            loading={mealsLoading}
-            history={history}
-            goalCalories={todayGoal.calories}
-            goalProtein={todayGoal.protein}
-            getSuggestions={getSuggestions}
-            searchLibrary={searchLibrary}
-            defaultWeightUnit={profile.weightUnit}
-            defaultVolumeUnit={profile.volumeUnit}
-            fluidGoalMl={profile.fluidGoalMl}
-            fluidThresholdMl={profile.fluidThresholdMl}
-            fluidZeroCalOnly={profile.fluidZeroCalOnly}
-            onAddMeal={addMeal}
-            onAddMealWithId={addMealWithId}
-            onEditMeal={updateMeal}
-            onDeleteMeal={deleteMeal}
-            onDuplicateMeal={duplicateMeal}
-            onUpsertHistory={upsertHistory}
-            onTouchHistory={touchHistory}
-            composedEntries={composedEntries}
-            composedGroups={composedGroups}
-            onUpsertGroup={upsertGroup}
-            onRemoveGroup={removeGroup}
-            showToast={showToast}
-          />
+          <ErrorBoundary label={lang === 'he' ? 'היום' : 'Today'} lang={lang}>
+            <TodayTab
+              lang={lang}
+              meals={meals}
+              loading={mealsLoading}
+              history={history}
+              goalCalories={todayGoal.calories}
+              goalProtein={todayGoal.protein}
+              getSuggestions={getSuggestions}
+              searchLibrary={searchLibrary}
+              defaultWeightUnit={profile.weightUnit}
+              defaultVolumeUnit={profile.volumeUnit}
+              fluidGoalMl={profile.fluidGoalMl}
+              fluidThresholdMl={profile.fluidThresholdMl}
+              fluidZeroCalOnly={profile.fluidZeroCalOnly}
+              onAddMeal={addMeal}
+              onAddMealWithId={addMealWithId}
+              onEditMeal={updateMeal}
+              onDeleteMeal={handleDeleteMeal}
+              onDuplicateMeal={duplicateMeal}
+              onUpsertHistory={upsertHistory}
+              onTouchHistory={touchHistory}
+              composedEntries={composedEntries}
+              composedGroups={composedGroups}
+              onUpsertGroup={upsertGroup}
+              onRemoveGroup={removeGroup}
+              showToast={showToast}
+            />
+          </ErrorBoundary>
         )}
         {tab === 'history' && (
-          <HistoryTab
-            lang={lang}
-            meals={meals}
-            history={history}
-            getSuggestions={getSuggestions}
-            getGoalForDate={getGoalForDate}
-            composedEntries={composedEntries}
-            composedGroups={composedGroups}
-            fluidGoalMl={profile.fluidGoalMl}
-          />
+          <ErrorBoundary label={lang === 'he' ? 'היסטוריה' : 'History'} lang={lang}>
+            <Suspense fallback={null}>
+              <HistoryTab
+                lang={lang}
+                meals={meals}
+                history={history}
+                getSuggestions={getSuggestions}
+                getGoalForDate={getGoalForDate}
+                composedEntries={composedEntries}
+                composedGroups={composedGroups}
+                fluidGoalMl={profile.fluidGoalMl}
+              />
+            </Suspense>
+          </ErrorBoundary>
         )}
       </div>
 
-      <SettingsSheet
-        isOpen={settingsOpen}
-        onClose={() => setSettingsOpen(false)}
-        lang={lang}
-        profile={profile}
-        onSaveProfile={saveProfile}
-        goals={goals}
-        onSaveGoals={saveGoals}
-        connected={connected}
-        onToggleLang={toggleLang}
-        onSignOut={() => supabase.auth.signOut()}
-        theme={theme}
-        onToggleTheme={toggleTheme}
-        showToast={showToast}
-        history={history}
-        onDeleteHistory={deleteHistory}
-        onUpdateHistory={updateHistory}
-        composedGroups={composedGroups}
-        onRemoveGroup={removeGroup}
-        meals={meals}
-        onUpdateMeal={updateMeal}
-      />
+      <ErrorBoundary label={lang === 'he' ? 'הגדרות' : 'Settings'} lang={lang}>
+        <Suspense fallback={null}>
+        <SettingsSheet
+          isOpen={settingsOpen}
+          onClose={() => setSettingsOpen(false)}
+          lang={lang}
+          profile={profile}
+          onSaveProfile={saveProfile}
+          goals={goals}
+          onSaveGoals={saveGoals}
+          connected={connected}
+          onToggleLang={toggleLang}
+          onSignOut={() => { userSignedOut.current = true; supabase.auth.signOut() }}
+          theme={theme}
+          onToggleTheme={toggleTheme}
+          showToast={showToast}
+          history={history}
+          onDeleteHistory={deleteHistory}
+          onUpdateHistory={updateHistory}
+          composedGroups={composedGroups}
+          onRemoveGroup={removeGroup}
+          meals={meals}
+          onUpdateMeal={updateMeal}
+        />
+        </Suspense>
+      </ErrorBoundary>
 
       <ToastContainer toasts={toasts} onDismiss={dismissToast} lang={lang} />
     </div>
@@ -286,7 +361,7 @@ function UpdatePasswordPage({ lang, onDone, onToggleLang }: { lang: Lang; onDone
 
   return (
     <div
-      dir={lang === 'he' ? 'rtl' : 'ltr'}
+      dir={dir(lang)}
       style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 16px' }}
     >
       <div style={{ width: '100%', maxWidth: 380 }} className="fade-up">
@@ -393,7 +468,7 @@ function AuthPage({ lang, onToggleLang }: { lang: Lang; onToggleLang: () => void
 
   return (
     <div
-      dir={lang === 'he' ? 'rtl' : 'ltr'}
+      dir={dir(lang)}
       style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 16px' }}
     >
       <div style={{ width: '100%', maxWidth: 380 }} className="fade-up">

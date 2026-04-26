@@ -10,6 +10,7 @@ function isFoodHistory(x: unknown): x is FoodHistory {
     typeof (x as FoodHistory).grams    === 'number' &&
     typeof (x as FoodHistory).calories === 'number' &&
     typeof (x as FoodHistory).protein  === 'number'
+    // fluid_ml is optional (null for non-fluids)
   )
 }
 
@@ -49,29 +50,36 @@ export function useFoodHistory(userId: string | null) {
     return () => { supabase.removeChannel(channel) }
   }, [userId, fetchHistory])
 
-  const upsertHistory = useCallback(async (item: Pick<FoodHistory, 'name' | 'grams' | 'calories' | 'protein'>) => {
+  const upsertHistory = useCallback(async (item: Pick<FoodHistory, 'name' | 'grams' | 'calories' | 'protein' | 'fluid_ml'>) => {
     if (!userId) return
-    // Check if exists
-    const { data: existing } = await supabase
+    setError(null)
+    // Match on name + grams (+ fluid_ml when it's a fluid, to distinguish e.g. 240ml vs 240g)
+    let query = supabase
       .from('food_history')
       .select('id, use_count')
       .eq('user_id', userId)
       .eq('name', item.name)
       .eq('grams', item.grams)
-      .single()
+    query = item.fluid_ml != null
+      ? query.eq('fluid_ml', item.fluid_ml)
+      : query.is('fluid_ml', null)
+    const { data: existing } = await query.single()
 
     if (existing) {
-      await supabase
+      const { error: err } = await supabase
         .from('food_history')
-        .update({ use_count: existing.use_count + 1, last_used: new Date().toISOString(), calories: item.calories, protein: item.protein })
+        .update({ use_count: existing.use_count + 1, last_used: new Date().toISOString(), calories: item.calories, protein: item.protein, fluid_ml: item.fluid_ml ?? null })
         .eq('id', existing.id)
+      if (err) { import.meta.env.DEV && console.error('upsert food_history (update):', err); setError(err.message); return }
     } else {
-      await supabase.from('food_history').insert({
+      const { error: err } = await supabase.from('food_history').insert({
         user_id: userId,
         ...item,
+        fluid_ml: item.fluid_ml ?? null,
         use_count: 1,
         last_used: new Date().toISOString(),
       })
+      if (err) { import.meta.env.DEV && console.error('upsert food_history (insert):', err); setError(err.message); return }
     }
     fetchHistory()
   }, [userId, fetchHistory])
@@ -92,24 +100,28 @@ export function useFoodHistory(userId: string | null) {
   }, [historyLower])
 
   const deleteHistory = useCallback(async (id: string) => {
+    if (!userId) return
+    setError(null)
     const prev = historyRef.current
     const next  = prev.filter(h => h.id !== id)
     historyRef.current = next
     setHistory(next)
-    const { error: err } = await supabase.from('food_history').delete().eq('id', id)
+    const { error: err } = await supabase.from('food_history').delete().eq('id', id).eq('user_id', userId)
     if (err) { import.meta.env.DEV && console.error('delete food_history:', err); setError(err.message); historyRef.current = prev; setHistory(prev) }
     else fetchHistory()
-  }, [fetchHistory])
+  }, [userId, fetchHistory])
 
   const updateHistory = useCallback(async (id: string, updates: Partial<Pick<FoodHistory, 'name' | 'grams' | 'calories' | 'protein'>>) => {
+    if (!userId) return
+    setError(null)
     const prev = historyRef.current
     const next  = prev.map(h => h.id === id ? { ...h, ...updates } : h)
     historyRef.current = next
     setHistory(next)
-    const { error: err } = await supabase.from('food_history').update(updates).eq('id', id)
+    const { error: err } = await supabase.from('food_history').update(updates).eq('id', id).eq('user_id', userId)
     if (err) { import.meta.env.DEV && console.error('update food_history:', err); setError(err.message); historyRef.current = prev; setHistory(prev) }
     else fetchHistory()
-  }, [fetchHistory])
+  }, [userId, fetchHistory])
 
   // Increments use_count + last_used on an existing record without creating new rows.
   // Used when the user selects from history and re-adds the same food.

@@ -165,27 +165,66 @@ export default async function handler(req: Request): Promise<Response> {
     { role: 'user', content: userMsg },
   ])
 
-  if (!text) {
-    return new Response(JSON.stringify({ error: 'Empty response' }), { status: 502 })
+  let groqCalories: number | null = null
+  let groqProtein: number | null = null
+
+  if (text) {
+    const match = text.match(/\{[^{}]*"calories"[^{}]*"protein"[^{}]*\}|\{[^{}]*"protein"[^{}]*"calories"[^{}]*\}/)
+    if (match) {
+      try {
+        const parsed = JSON.parse(match[0])
+        if (typeof parsed.calories === 'number' && typeof parsed.protein === 'number') {
+          groqCalories = parsed.calories
+          groqProtein  = parsed.protein
+        }
+      } catch { /* fall through to USDA */ }
+    }
   }
 
-  const match = text.match(/\{[^{}]*"calories"[^{}]*"protein"[^{}]*\}|\{[^{}]*"protein"[^{}]*"calories"[^{}]*\}/)
-  if (!match) {
-    return new Response(JSON.stringify({ error: 'Parse error' }), { status: 502 })
+  // Scale Groq result if we have one
+  if (groqCalories !== null && groqProtein !== null) {
+    const scale = amountType === 'unit' ? amount : amount / 100
+    return new Response(
+      JSON.stringify({
+        calories: Math.round(groqCalories * scale),
+        protein:  Math.round(groqProtein  * scale * 10) / 10,
+      }),
+      { headers: { 'Content-Type': 'application/json' } }
+    )
   }
 
-  const parsed = JSON.parse(match[0])
-  if (typeof parsed.calories !== 'number' || typeof parsed.protein !== 'number') {
-    return new Response(JSON.stringify({ error: 'Invalid nutrition data' }), { status: 502 })
+  // Groq failed — USDA fallback (grams mode only; USDA doesn't do per-piece)
+  if (amountType === 'g') {
+    const usdaKey = process.env.USDA_API_KEY ?? 'DEMO_KEY'
+    try {
+      const usdaRes = await fetch(
+        `https://api.nal.usda.gov/fdc/v1/foods/search?query=${encodeURIComponent(queryName)}&pageSize=1&api_key=${usdaKey}`
+      )
+      if (usdaRes.ok) {
+        const usdaData = await usdaRes.json()
+        const food = usdaData.foods?.[0]
+        if (food) {
+          const nutrients = food.foodNutrients as Array<{ nutrientName: string; value: number }>
+          const energyN  = nutrients.find((n: { nutrientName: string }) =>
+            n.nutrientName.toLowerCase().includes('energy') && !n.nutrientName.toLowerCase().includes('kj')
+          )
+          const proteinN = nutrients.find((n: { nutrientName: string }) =>
+            n.nutrientName.toLowerCase() === 'protein'
+          )
+          if (energyN || proteinN) {
+            const scale = amount / 100
+            return new Response(
+              JSON.stringify({
+                calories: Math.round((energyN?.value  ?? 0) * scale),
+                protein:  Math.round((proteinN?.value ?? 0) * scale * 10) / 10,
+              }),
+              { headers: { 'Content-Type': 'application/json' } }
+            )
+          }
+        }
+      }
+    } catch { /* ignore */ }
   }
 
-  // Model returns per-100g (grams mode) or per-1-piece (unit mode) — scale to actual amount
-  const scale = amountType === 'unit' ? amount : amount / 100
-  return new Response(
-    JSON.stringify({
-      calories: Math.round(parsed.calories * scale),
-      protein:  Math.round(parsed.protein  * scale * 10) / 10,
-    }),
-    { headers: { 'Content-Type': 'application/json' } }
-  )
+  return new Response(JSON.stringify({ error: 'No nutrition data found' }), { status: 502 })
 }

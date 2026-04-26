@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase'
 import type { Meal } from '../types'
 import { today } from '../lib/i18n'
 
-const MEAL_TYPES = new Set(['breakfast', 'lunch', 'dinner', 'snack'])
+const MEAL_TYPES = new Set(['breakfast', 'lunch', 'dinner', 'snack', 'beverage'])
 
 function isMeal(x: unknown): x is Meal {
   if (typeof x !== 'object' || x === null) return false
@@ -61,6 +61,7 @@ export function useMeals(userId: string | null) {
 
   const addMeal = useCallback(async (meal: Omit<Meal, 'id' | 'user_id' | 'created_at'>) => {
     if (!userId) return
+    setError(null)
     const { error: err } = await supabase.from('meals').insert({
       ...meal,
       user_id: userId,
@@ -72,6 +73,7 @@ export function useMeals(userId: string | null) {
 
   const addMealWithId = useCallback(async (meal: Omit<Meal, 'id' | 'user_id' | 'created_at'>): Promise<string | null> => {
     if (!userId) return null
+    setError(null)
     const id = crypto.randomUUID()
     const { error: err } = await supabase.from('meals').insert({
       ...meal,
@@ -85,19 +87,24 @@ export function useMeals(userId: string | null) {
   }, [userId, fetchMeals])
 
   const updateMeal = useCallback(async (id: string, updates: Partial<Meal>) => {
-    const { error: err } = await supabase.from('meals').update(updates).eq('id', id)
+    if (!userId) return
+    setError(null)
+    const { error: err } = await supabase.from('meals').update(updates).eq('id', id).eq('user_id', userId)
     if (err) { import.meta.env.DEV && console.error('Update meal error:', err); setError(err.message) }
     else fetchMeals()
-  }, [fetchMeals])
+  }, [userId, fetchMeals])
 
   const deleteMeal = useCallback(async (id: string) => {
-    const { error: err } = await supabase.from('meals').delete().eq('id', id)
+    if (!userId) return
+    setError(null)
+    const { error: err } = await supabase.from('meals').delete().eq('id', id).eq('user_id', userId)
     if (err) { import.meta.env.DEV && console.error('Delete meal error:', err); setError(err.message) }
     else fetchMeals()
-  }, [fetchMeals])
+  }, [userId, fetchMeals])
 
   const duplicateMeal = useCallback(async (meal: Meal) => {
     if (!userId) return
+    setError(null)
     const { error: err } = await supabase.from('meals').insert({
       user_id: userId,
       date: today(),
@@ -106,6 +113,8 @@ export function useMeals(userId: string | null) {
       grams: meal.grams,
       calories: meal.calories,
       protein: meal.protein,
+      fluid_ml: meal.fluid_ml ?? null,
+      fluid_excluded: meal.fluid_excluded ?? false,
       time_logged: new Date().toTimeString().slice(0, 8),
     })
     if (err) { import.meta.env.DEV && console.error('Duplicate meal error:', err); setError(err.message) }

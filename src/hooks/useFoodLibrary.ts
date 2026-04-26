@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { supabase } from '../lib/supabase'
 import type { FoodLibraryItem } from '../types'
 
-const CACHE_KEY = 'food_library_cache_v3'
+const CACHE_KEY = 'food_library_cache_v6'
 const CACHE_TTL = 1000 * 60 * 60 * 24 // 24h — library rarely changes
 
 function loadCache(): FoodLibraryItem[] | null {

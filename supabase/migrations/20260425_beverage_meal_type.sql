@@ -1,5 +1,4 @@
--- Run this in your Supabase SQL editor:
--- https://supabase.com/dashboard/project/aduwnjejyiviegrrmbzi/sql
+-- Run this in your Supabase SQL editor
 
 -- Add 'beverage' to the allowed meal_type values
 ALTER TABLE meals DROP CONSTRAINT IF EXISTS meals_meal_type_check;

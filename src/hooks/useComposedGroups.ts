@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import type { ComposedGroup } from '../types'
 
@@ -25,6 +25,7 @@ function rowToGroup(row: DbRow): ComposedGroup {
 export function useComposedGroups(userId: string | null) {
   const [groups, setGroups] = useState<ComposedGroup[]>(lsLoad)
   const [error, setError] = useState<string | null>(null)
+  const groupsRef = useRef<ComposedGroup[]>(groups)
 
   const fetch = useCallback(async () => {
     if (!userId) return
@@ -34,6 +35,7 @@ export function useComposedGroups(userId: string | null) {
       .eq('user_id', userId)
     if (err) { import.meta.env.DEV && console.error('fetch composed_groups:', err); setError(err.message); return }
     const loaded = ((data ?? []) as DbRow[]).map(rowToGroup)
+    groupsRef.current = loaded
     setGroups(loaded)
     lsSave(loaded)
     setError(null)
@@ -56,6 +58,7 @@ export function useComposedGroups(userId: string | null) {
     setGroups(prev => {
       const exists = prev.some(g => g.id === group.id)
       const next = exists ? prev.map(g => g.id === group.id ? group : g) : [...prev, group]
+      groupsRef.current = next
       lsSave(next)
       return next
     })
@@ -72,17 +75,40 @@ export function useComposedGroups(userId: string | null) {
   }, [userId, fetch])
 
   const remove = useCallback(async (id: string) => {
-    // Optimistic update — remove locally first
+    if (!userId) return
     setGroups(prev => {
       const next = prev.filter(g => g.id !== id)
+      groupsRef.current = next
       lsSave(next)
       return next
     })
-    if (!userId) return
-    const { error: err } = await supabase.from('composed_groups').delete().eq('id', id)
+    const { error: err } = await supabase.from('composed_groups').delete().eq('id', id).eq('user_id', userId)
     if (err) { import.meta.env.DEV && console.error('delete composed_group:', err); setError(err.message) }
     else fetch()
   }, [userId, fetch])
 
-  return { groups, error, upsert, remove, refetch: fetch }
+  // C4: when a meal is deleted, remove it from all groups (delete group if it becomes empty)
+  const pruneMealId = useCallback(async (mealId: string) => {
+    const current = groupsRef.current
+    const affected = current.filter(g => g.mealIds.includes(mealId))
+    if (affected.length === 0) return
+
+    const next = current
+      .map(g => ({ ...g, mealIds: g.mealIds.filter(id => id !== mealId) }))
+      .filter(g => g.mealIds.length > 0)
+
+    groupsRef.current = next
+    setGroups(next)
+    lsSave(next)
+
+    if (!userId) return
+    await Promise.all(affected.map(g => {
+      const nextIds = g.mealIds.filter(id => id !== mealId)
+      return nextIds.length === 0
+        ? supabase.from('composed_groups').delete().eq('id', g.id).eq('user_id', userId)
+        : supabase.from('composed_groups').update({ meal_ids: nextIds }).eq('id', g.id).eq('user_id', userId)
+    }))
+  }, [userId])
+
+  return { groups, error, upsert, remove, pruneMealId, refetch: fetch }
 }

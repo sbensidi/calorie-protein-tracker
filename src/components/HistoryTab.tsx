@@ -3,7 +3,7 @@ import { useDebounce } from '../hooks/useDebounce'
 import { useLockBodyScroll } from '../hooks/useLockBodyScroll'
 import type { Meal, FoodHistory, ComposedGroup } from '../types'
 import type { Lang } from '../lib/i18n'
-import { t, formatDate, today, HE_MONTHS, EN_MONTHS } from '../lib/i18n'
+import { t, dir, formatDate, today, HE_MONTHS, EN_MONTHS } from '../lib/i18n'
 import { DonutProgress } from './DonutProgress'
 import type { ComposedEntry } from './FoodEntryForm'
 
@@ -76,7 +76,12 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
     () => (localStorage.getItem('history-filter') as StatusFilter) ?? 'all'
   )
   const [sortAsc, setSortAsc] = useState(false)
-  const [chartMetric, setChartMetric] = useState<'cal' | 'prot' | 'fluid'>('cal')
+  const [chartMetric7,  setChartMetric7]  = useState<'cal' | 'prot' | 'fluid'>('cal')
+  const [chartMetric30, setChartMetric30] = useState<'cal' | 'prot' | 'fluid'>('cal')
+  const [statsPeriod, setStatsPeriod] = useState<'week' | 'month'>(
+    () => (localStorage.getItem('stats-period') as 'week' | 'month') ?? 'week'
+  )
+  const switchStatsPeriod = (p: 'week' | 'month') => { setStatsPeriod(p); localStorage.setItem('stats-period', p) }
   const [offset7,  setOffset7]  = useState(0) // weeks back (0 = current week)
   const [offset30, setOffset30] = useState(0) // months back (0 = current 30d)
   // Persist search per view
@@ -243,8 +248,8 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
     const protDiff = Math.abs(data.totalProtein - data.goal.protein).toFixed(1)
     const protUnit = t(lang, 'proteinUnit')
 
-    const calHint  = data.calOk  ? `${t(lang, 'goal')}: ${data.goal.calories}` : `+${calDiff} ${lang === 'he' ? 'מעל היעד' : 'over goal'}`
-    const protHint = data.protOk ? `${t(lang, 'goal')}: ${data.goal.protein}`  : `${protDiff}${protUnit} ${lang === 'he' ? 'מתחת ליעד' : 'under goal'}`
+    const calHint  = data.calOk  ? `${t(lang, 'goal')}: ${data.goal.calories}` : `+${calDiff} ${t(lang, 'overGoalShort')}`
+    const protHint = data.protOk ? `${t(lang, 'goal')}: ${data.goal.protein}`  : `${protDiff}${protUnit} ${t(lang, 'underGoalShort')}`
 
     return (
       <>
@@ -597,7 +602,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
               <div style={{ display: 'flex', gap: 6, alignItems: 'stretch' }}>
                 <button
                   onClick={() => setSortAsc(v => !v)}
-                  title={sortAsc ? (lang === 'he' ? 'ישן לחדש' : 'Oldest first') : (lang === 'he' ? 'חדש לישן' : 'Newest first')}
+                  title={sortAsc ? (t(lang, 'sortOldFirst')) : (t(lang, 'sortNewFirst'))}
                   style={{
                     flexShrink: 0, width: 36, borderRadius: 10, cursor: 'pointer',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -621,7 +626,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                     setTimeout(() => historySearchRef.current?.focus(), 50)
                   }}
                   tabIndex={-1}
-                  title={lang === 'he' ? 'היסטוריית מזונות' : 'Food history'}
+                  title={t(lang, 'foodHistory')}
                   style={{
                     position: 'absolute',
                     ...(isRTL ? { left: 0 } : { right: 0 }),
@@ -644,7 +649,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                   ref={searchInputRef}
                   type="text"
                   className="inp"
-                  dir={lang === 'he' ? 'rtl' : 'ltr'}
+                  dir={dir(lang)}
                   value={search}
                   onChange={e => { setSearch(e.target.value); setDropdownOpen(true) }}
                   onFocus={() => setDropdownOpen(true)}
@@ -688,7 +693,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                       {matchedComposed.map(entry => (
                         <button key={entry.id} onMouseDown={() => { setSearch(entry.name); setDropdownOpen(false) }}
                           style={{ display: 'flex', alignItems: 'center', width: '100%', padding: '9px 12px', background: 'transparent', border: 'none', borderBottom: '1px solid var(--border)', cursor: 'pointer', gap: 10, textAlign: 'start', fontFamily: 'inherit', transition: 'background .12s' }}
-                          onMouseEnter={e => (e.currentTarget.style.background = 'rgba(139,92,246,0.05)')}
+                          onMouseEnter={e => (e.currentTarget.style.background = 'var(--purple-tint)')}
                           onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                         >
                           <span className="icon icon-sm" style={{ color: 'var(--purple)', flexShrink: 0 }}>restaurant</span>
@@ -769,7 +774,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                   <div style={{ padding: '14px 14px 0', display: 'flex', alignItems: 'center', gap: 8 }}>
                     <span className="icon icon-sm" style={{ color: 'var(--text-3)' }}>manage_search</span>
                     <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-2)', flex: 1 }}>
-                      {lang === 'he' ? 'היסטוריית מזונות' : 'Food history'}
+                      {t(lang, 'foodHistory')}
                     </span>
                     <button onClick={() => setHistoryModalOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 4 }}>
                       <span className="icon icon-sm">close</span>
@@ -779,9 +784,9 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                     <div style={{ position: 'relative' }}>
                       <input ref={historySearchRef} className="inp"
                         style={{ paddingInlineStart: 36, height: 40, fontSize: 13 }}
-                        placeholder={lang === 'he' ? 'חיפוש...' : 'Search...'}
+                        placeholder={t(lang, 'search')}
                         value={historySearch} onChange={e => setHistorySearch(e.target.value)}
-                        dir={lang === 'he' ? 'rtl' : 'ltr'}
+                        dir={dir(lang)}
                       />
                       <span className="icon icon-sm" style={{
                         position: 'absolute', top: '50%', transform: 'translateY(-50%)',
@@ -804,7 +809,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                     {composedEntries.filter(e => !q || e.name.toLowerCase().includes(q)).length > 0 && (
                       <>
                         <div style={{ padding: '8px 14px 4px', fontSize: 10, fontWeight: 700, color: 'var(--text-3)', letterSpacing: '0.07em', textTransform: 'uppercase' }}>
-                          {lang === 'he' ? 'מנות שהרכבתי' : 'My composed dishes'}
+                          {t(lang, 'myDishes')}
                         </div>
                         {composedEntries.filter(e => !q || e.name.toLowerCase().includes(q)).map(entry => (
                           <button key={entry.id}
@@ -832,10 +837,14 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                     )}
                     {filtered.length === 0 && composedEntries.filter(e => !q || e.name.toLowerCase().includes(q)).length === 0 ? (
                       <div style={{ padding: '32px 0', textAlign: 'center', color: 'var(--text-3)', fontSize: 13 }}>
-                        {lang === 'he' ? 'לא נמצאו תוצאות' : 'No results found'}
+                        {t(lang, 'noResultsFound')}
                       </div>
                     ) : filtered.map((item, i) => {
-                      const amtDisplay = item.grams < 0 ? `${Math.abs(item.grams)} ${unitLabel}` : `${item.grams}g`
+                      const amtDisplay = item.grams < 0
+                        ? `${Math.abs(item.grams)} ${unitLabel}`
+                        : item.fluid_ml != null && item.fluid_ml > 0
+                          ? (item.fluid_ml >= 1000 ? `${(item.fluid_ml / 1000).toFixed(1)}${lang === 'he' ? 'ל׳' : 'L'}` : `${Math.round(item.fluid_ml)}ml`)
+                          : `${item.grams}g`
                       return (
                         <button key={item.id}
                           onClick={() => { setSearch(item.name); setHistoryModalOpen(false); setHistorySearch('') }}
@@ -846,7 +855,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</p>
                             <p style={{ fontSize: 11, color: 'var(--text-3)', margin: '2px 0 0' }}>
-                              {amtDisplay} · {item.use_count} {lang === 'he' ? 'שימושים' : 'uses'}
+                              {amtDisplay} · {item.use_count} {t(lang, 'uses')}
                             </p>
                           </div>
                           <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
@@ -913,6 +922,18 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
         start30.setDate(start30.getDate() - 29)
         const range30Label = `${fmt(start30)} – ${fmt(end30)}`
 
+        // Smart 30-day title: show month name(s) + year
+        const HE_MONTHS_SHORT = ['ינו׳','פבר׳','מרץ','אפר׳','מאי','יוני','יולי','אוג׳','ספט׳','אוק׳','נוב׳','דצמ׳']
+        const EN_MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+        const sm30 = start30.getMonth(), em30 = end30.getMonth()
+        const sy30 = start30.getFullYear(), ey30 = end30.getFullYear()
+        const monthNames = lang === 'he' ? HE_MONTHS_SHORT : EN_MONTHS_SHORT
+        const month30Title = sm30 === em30 && sy30 === ey30
+          ? `${monthNames[em30]} ${ey30}`
+          : sy30 === ey30
+            ? `${monthNames[sm30]}–${monthNames[em30]} ${ey30}`
+            : `${monthNames[sm30]} ${sy30}–${monthNames[em30]} ${ey30}`
+
         const last30 = sortedDates.filter(d => {
           const t = new Date(d).getTime()
           return t >= start30.setHours(0,0,0,0) && t <= end30.setHours(23,59,59,999)
@@ -952,17 +973,19 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
 
         const barH    = 80
 
-        const StatCard = ({ label, value, unit, color, pct, successDays, totalDays, pctColor, metric }: {
+        const StatCard = ({ label, value, unit, color, pct, successDays, totalDays, pctColor, metric, onSelect, isActive }: {
           label: string; value: number | string; unit: string; color: string;
           pct?: number; successDays?: number; totalDays?: number; pctColor?: string
           metric?: 'cal' | 'prot' | 'fluid'
+          onSelect?: (m: 'cal' | 'prot' | 'fluid') => void
+          isActive?: boolean
         }) => (
           <div
-            onClick={metric ? () => setChartMetric(metric) : undefined}
+            onClick={metric && onSelect ? () => onSelect(metric) : undefined}
             style={{
-              flex: 1, background: 'var(--bg-card)', border: `1px solid ${metric && chartMetric === metric ? 'rgba(59,130,246,0.4)' : 'var(--border)'}`,
+              flex: 1, background: 'var(--bg-card)', border: `1px solid ${isActive ? 'rgba(59,130,246,0.4)' : 'var(--border)'}`,
               borderRadius: 12, padding: '12px 10px', textAlign: 'center',
-              cursor: metric ? 'pointer' : 'default',
+              cursor: metric && onSelect ? 'pointer' : 'default',
               transition: 'border-color .15s',
             }}>
             <p style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-3)', margin: '0 0 6px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{label}</p>
@@ -985,7 +1008,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
           return (
             <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-3)' }}>
               <span className="icon" style={{ fontSize: 32, display: 'block', marginBottom: 8 }}>bar_chart</span>
-              <p style={{ fontSize: 14, margin: 0 }}>{lang === 'he' ? 'אין מספיק נתונים עדיין' : 'Not enough data yet'}</p>
+              <p style={{ fontSize: 14, margin: 0 }}>{t(lang, 'noEnoughData')}</p>
             </div>
           )
         }
@@ -993,22 +1016,43 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
         // Today's goal for reference row
         const todayGoal = getGoalForDate(nowKey)
 
-        // Chart values derived from chartMetric toggle
-        const isCal   = chartMetric === 'cal'
-        const isProt  = chartMetric === 'prot'
-        const isFluid = chartMetric === 'fluid'
-        const maxVal  = Math.max(...barDays.map(b => {
-          const val  = isCal ? b.cal  : isProt ? b.prot  : b.fluid
-          const goal = isCal ? b.goalCal : isProt ? b.goalProt : b.goalFluid
+        // Chart values derived from chartMetric7 toggle (7-day bar chart)
+        const isCal7   = chartMetric7 === 'cal'
+        const isProt7  = chartMetric7 === 'prot'
+        const isFluid7 = chartMetric7 === 'fluid'
+        const maxVal7  = Math.max(...barDays.map(b => {
+          const val  = isCal7 ? b.cal  : isProt7 ? b.prot  : b.fluid
+          const goal = isCal7 ? b.goalCal : isProt7 ? b.goalProt : b.goalFluid
           return Math.max(val, goal)
         }), 1)
-        const barColor        = isCal ? 'var(--blue)'             : isProt ? 'var(--green)'             : 'var(--blue)'
-        const goalDashColor   = isCal ? 'rgba(59,130,246,0.35)'  : isProt ? 'rgba(16,185,129,0.35)'  : 'rgba(59,130,246,0.25)'
-        const goalLegendColor = isCal ? 'rgba(59,130,246,0.5)'   : isProt ? 'rgba(16,185,129,0.5)'   : 'rgba(59,130,246,0.4)'
+        const barColor7        = isCal7 ? 'var(--blue)'            : isProt7 ? 'var(--green)'            : 'var(--blue)'
+        const goalDashColor7   = isCal7 ? 'rgba(59,130,246,0.35)' : isProt7 ? 'rgba(16,185,129,0.35)' : 'rgba(59,130,246,0.25)'
+        const goalLegendColor7 = isCal7 ? 'rgba(59,130,246,0.5)'  : isProt7 ? 'rgba(16,185,129,0.5)'  : 'rgba(59,130,246,0.4)'
 
-        const Divider = () => (
-          <div style={{ height: 1, background: 'var(--border)', margin: '2px 0' }} />
-        )
+        // Chart values derived from chartMetric30 toggle (30-day line chart)
+        const isCal30   = chartMetric30 === 'cal'
+        const isProt30  = chartMetric30 === 'prot'
+        const isFluid30 = chartMetric30 === 'fluid'
+
+        // Build full 30-day array (all days, hasData=false for missing days)
+        const lineDays30: Array<{ dateKey: string; label: string; cal: number; prot: number; fluid: number; hasData: boolean }> = []
+        for (let i = 29; i >= 0; i--) {
+          const d = new Date(end30)
+          d.setDate(d.getDate() - i)
+          const dKey = toKey(d)
+          const data30 = grouped.get(dKey)
+          lineDays30.push({ dateKey: dKey, label: fmt(d), cal: data30?.totalCalories ?? 0, prot: data30?.totalProtein ?? 0, fluid: fluidForDate(dKey), hasData: !!data30 })
+        }
+
+        const lineGoal30 = isCal30 ? getGoalForDate(nowKey).calories : isProt30 ? getGoalForDate(nowKey).protein : fluidGoalMl
+        const lineVals30 = lineDays30.map(d => isCal30 ? d.cal : isProt30 ? d.prot : d.fluid)
+        const lineMax30  = Math.max(...lineVals30, lineGoal30, 1)
+        const lineColorRaw30  = isCal30 ? 'var(--blue)' : isProt30 ? 'var(--green)' : 'var(--blue)'
+        const goalLineColor30 = isCal30
+          ? 'color-mix(in srgb, var(--blue) 45%, transparent)'
+          : isProt30
+          ? 'color-mix(in srgb, var(--green) 45%, transparent)'
+          : 'color-mix(in srgb, var(--blue) 35%, transparent)'
 
         return (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14, paddingBottom: 80 }}>
@@ -1039,22 +1083,45 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
               </div>
             </div>
 
-            <Divider />
+            {/* ── Period toggle ─────────────────────────────────── */}
+            <div style={{
+              display: 'grid', gridTemplateColumns: '1fr 1fr',
+              gap: 3, background: 'var(--bg-card2)', border: '1px solid var(--border-hi)',
+              borderRadius: 999, padding: 3, position: 'relative',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.2), inset 0 1px 0 var(--surface-2)',
+            }}>
+              {(['week', 'month'] as const).map(p => (
+                <button key={p} onClick={() => switchStatsPeriod(p)} style={{
+                  padding: '8px 0', borderRadius: 999, border: statsPeriod === p ? '1px solid rgba(59,130,246,0.4)' : '1px solid transparent', cursor: 'pointer',
+                  fontFamily: 'inherit', fontSize: 13, fontWeight: 700, transition: 'all .22s',
+                  background: statsPeriod === p ? 'rgba(59,130,246,0.18)' : 'transparent',
+                  color: statsPeriod === p ? 'var(--blue-hi)' : 'var(--text-3)',
+                  boxShadow: statsPeriod === p ? '0 0 14px rgba(59,130,246,0.25)' : 'none',
+                }}>
+                  {p === 'week' ? (t(lang, 'week')) : (t(lang, 'month'))}
+                </button>
+              ))}
+            </div>
 
             {/* 7-day section */}
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+            {statsPeriod === 'week' && <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                  <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-2)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
-                    {lang === 'he' ? `7 ימים — ${last7.length} עם נתונים` : `7 days — ${last7.length} with data`}
+                  <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.01em' }}>
+                    {range7Label}
+                    <span style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-3)', marginInlineStart: 6 }}>
+                      · {last7.length} {t(lang, 'daysWithData')}
+                    </span>
                   </span>
-                  <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-3)' }}>{range7Label}</span>
+                  <span style={{ fontSize: 11, fontWeight: 500, color: 'var(--text-3)' }}>
+                    {t(lang, 'week')}
+                  </span>
                 </div>
                 <div style={{ display: 'flex', gap: 4 }}>
                   <button
                     className="icon-btn"
                     onClick={() => setOffset7(o => o + 1)}
-                    aria-label={lang === 'he' ? 'שבוע קודם' : 'Previous week'}
+                    aria-label={t(lang, 'prevWeek')}
                   >
                     <span className="icon icon-sm">{lang === 'he' ? 'chevron_right' : 'chevron_left'}</span>
                   </button>
@@ -1062,7 +1129,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                     className="icon-btn"
                     onClick={() => setOffset7(o => o - 1)}
                     disabled={offset7 === 0}
-                    aria-label={lang === 'he' ? 'שבוע הבא' : 'Next week'}
+                    aria-label={t(lang, 'nextWeek')}
                   >
                     <span className="icon icon-sm">{lang === 'he' ? 'chevron_left' : 'chevron_right'}</span>
                   </button>
@@ -1070,40 +1137,135 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
               </div>
               {last7.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '20px 0', color: 'var(--text-3)' }}>
-                  <p style={{ fontSize: 13, margin: 0 }}>{lang === 'he' ? 'אין נתונים בטווח זה' : 'No data in this range'}</p>
+                  <p style={{ fontSize: 13, margin: 0 }}>{t(lang, 'noDataInRange')}</p>
                 </div>
               ) : (
                 <>
                   <div style={{ display: 'flex', gap: 6 }}>
                     <StatCard
-                      label={lang === 'he' ? 'קל׳ ממוצע' : 'Avg cal'}
+                      label={t(lang, 'avgCal')}
                       value={avg7Cal} unit={t(lang, 'caloriesUnit')} color="var(--blue-hi)"
                       pct={pct7Cal} successDays={calOkDays7} totalDays={last7.length}
                       pctColor={pct7Cal >= 70 ? 'var(--green-hi)' : pct7Cal >= 40 ? 'var(--amber)' : 'var(--red)'}
-                      metric="cal"
+                      metric="cal" onSelect={setChartMetric7} isActive={chartMetric7 === 'cal'}
                     />
                     <StatCard
-                      label={lang === 'he' ? 'חל׳ ממוצע' : 'Avg prot'}
+                      label={t(lang, 'avgProt')}
                       value={avg7Prot} unit={t(lang, 'proteinUnit')} color="var(--green-hi)"
                       pct={pct7Prot} successDays={protOkDays7} totalDays={last7.length}
                       pctColor={pct7Prot >= 70 ? 'var(--green-hi)' : pct7Prot >= 40 ? 'var(--amber)' : 'var(--red)'}
-                      metric="prot"
+                      metric="prot" onSelect={setChartMetric7} isActive={chartMetric7 === 'prot'}
                     />
                     {fluidGoalMl > 0 && (
                       <StatCard
-                        label={lang === 'he' ? 'נוזלים ממוצע' : 'Avg fluid'}
+                        label={t(lang, 'avgFluid')}
                         value={avg7FluidMl >= 1000 ? (avg7FluidMl / 1000).toFixed(1) : avg7FluidMl}
                         unit={avg7FluidMl >= 1000 ? (lang === 'he' ? 'ל׳' : 'L') : 'ml'}
                         color="var(--blue-hi)"
                         pct={pct7Fluid} successDays={goalDays7Fluid} totalDays={last7.length}
                         pctColor={pct7Fluid >= 70 ? 'var(--blue-hi)' : pct7Fluid >= 40 ? 'var(--amber)' : 'var(--red)'}
-                        metric="fluid"
+                        metric="fluid" onSelect={setChartMetric7} isActive={chartMetric7 === 'fluid'}
                       />
                     )}
                   </div>
+                  {/* Bar chart */}
+                  <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: '14px 12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                      <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-2)', margin: 0 }}>
+                        {range7Label}
+                      </p>
+                      <div style={{ display: 'flex', background: 'var(--surface-2)', borderRadius: 8, padding: 2, gap: 2 }}>
+                        {(['cal', 'prot', 'fluid'] as const).map(m => (
+                          <button
+                            key={m}
+                            onClick={() => setChartMetric7(m)}
+                            style={{
+                              padding: '3px 10px', borderRadius: 6, border: 'none', cursor: 'pointer',
+                              fontFamily: 'inherit', fontSize: 11, fontWeight: 700, transition: 'all .15s',
+                              background: chartMetric7 === m ? (m === 'prot' ? 'var(--green)' : 'var(--blue)') : 'transparent',
+                              color: chartMetric7 === m ? '#fff' : 'var(--text-3)',
+                            }}
+                          >
+                            {m === 'cal' ? (t(lang, 'calShort')) : m === 'prot' ? (t(lang, 'protShort')) : (t(lang, 'fluid'))}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4, height: barH + 20 }}>
+                      {barDays.map(b => {
+                        const val      = isCal7 ? b.cal  : isProt7 ? b.prot  : b.fluid
+                        const goalVal  = isCal7 ? b.goalCal : isProt7 ? b.goalProt : b.goalFluid
+                        const hasBar   = b.hasData || (isFluid7 && b.fluid > 0)
+                        const barHeight  = hasBar ? Math.max(4, Math.round((val / maxVal7) * barH)) : 0
+                        const goalHeight = goalVal > 0 ? Math.max(2, Math.round((goalVal / maxVal7) * barH)) : 0
+                        const overGoal = hasBar && val > goalVal && goalVal > 0
+                        const barBg    = isFluid7
+                          ? (overGoal ? 'var(--green)' : barColor7)
+                          : (overGoal ? 'var(--amber)' : barColor7)
+                        const valLabel = isFluid7
+                          ? (val >= 1000 ? `${(val / 1000).toFixed(1)}` : `${Math.round(val)}`)
+                          : isCal7 ? `${Math.round(val)}` : `${Math.round(val * 10) / 10}`
+                        return (
+                          <div key={b.dateKey} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                            <div style={{ position: 'relative', width: '100%', height: barH, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+                              {goalHeight > 0 && <div style={{ position: 'absolute', bottom: goalHeight, left: 0, right: 0, borderTop: `1.5px dashed ${goalDashColor7}` }} />}
+                              {hasBar && (
+                                <div style={{
+                                  width: '70%', height: barHeight,
+                                  borderRadius: '4px 4px 0 0',
+                                  background: barBg, opacity: 0.85,
+                                  transition: 'height .3s ease',
+                                  display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+                                  paddingBottom: 3, overflow: 'hidden',
+                                }}>
+                                  {barHeight >= 20 && (
+                                    <span style={{ fontSize: 9, fontWeight: 800, color: 'var(--text-on-brand)', lineHeight: 1 }}>
+                                      {valLabel}
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                            <span style={{ fontSize: 9, fontWeight: 600, color: 'var(--text-3)' }}>{b.label}</span>
+                          </div>
+                        )
+                      })}
+                    </div>
+                    <div style={{ display: 'flex', gap: 14, marginTop: 8, paddingTop: 8, borderTop: '1px solid var(--border)', flexWrap: 'wrap' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, color: 'var(--text-3)' }}>
+                        <div style={{ width: 12, height: 3, background: barColor7, borderRadius: 2 }} />
+                        {isCal7 ? (lang === 'he' ? 'קלוריות' : 'Calories') : isProt7 ? (lang === 'he' ? 'חלבון' : 'Protein') : (t(lang, 'fluid'))}
+                      </div>
+                      {(!isFluid7 || fluidGoalMl > 0) && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, color: 'var(--text-3)' }}>
+                          <div style={{ width: 12, borderTop: `1.5px dashed ${goalLegendColor7}` }} />
+                          {lang === 'he' ? 'יעד' : 'Goal'}
+                          <span style={{ fontWeight: 700, color: 'var(--text-2)' }}>
+                            {isCal7
+                              ? `${todayGoal.calories.toLocaleString()} ${t(lang, 'caloriesUnit')}`
+                              : isProt7
+                                ? `${todayGoal.protein}${t(lang, 'proteinUnit')}`
+                                : fmtMl(fluidGoalMl)}
+                          </span>
+                        </div>
+                      )}
+                      {!isFluid7 && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, color: 'var(--text-3)' }}>
+                          <div style={{ width: 12, height: 3, background: 'var(--amber)', borderRadius: 2 }} />
+                          {lang === 'he' ? 'חריגה' : 'Over goal'}
+                        </div>
+                      )}
+                      {isFluid7 && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, color: 'var(--text-3)' }}>
+                          <div style={{ width: 12, height: 3, background: 'var(--green)', borderRadius: 2 }} />
+                          {t(lang, 'reachedGoal')}
+                        </div>
+                      )}
+                    </div>
+                  </div>
                   {/* 7-day insight */}
                   {last7.length >= 3 && (
-                    <div style={{ background: 'rgba(59,130,246,0.06)', border: '1px solid rgba(59,130,246,0.15)', borderRadius: 10, padding: '8px 12px', marginTop: 8 }}>
+                    <div style={{ background: 'rgba(59,130,246,0.06)', border: '1px solid rgba(59,130,246,0.15)', borderRadius: 10, padding: '8px 12px' }}>
                       <p style={{ fontSize: 11, color: 'var(--text-2)', margin: 0, lineHeight: 1.6 }}>
                         {lang === 'he'
                           ? `ב-7 הימים האחרונים צרכת בממוצע ${avg7Cal.toLocaleString()} קק״ל ו-${avg7Prot}ג׳ חלבון. עמדת ביעד קלוריות ב-${pct7Cal}% וחלבון ב-${pct7Prot}% מהימים.`
@@ -1113,126 +1275,25 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                   )}
                 </>
               )}
-            </div>
-
-            {/* Bar chart with cal/prot toggle */}
-            {last7.length > 0 && (
-              <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: '14px 12px' }}>
-                {/* Chart header: title + toggle */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                  <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-2)', margin: 0 }}>
-                    {range7Label}
-                  </p>
-                  <div style={{ display: 'flex', background: 'var(--surface-2)', borderRadius: 8, padding: 2, gap: 2 }}>
-                    {(['cal', 'prot', 'fluid'] as const).map(m => (
-                      <button
-                        key={m}
-                        onClick={() => setChartMetric(m)}
-                        style={{
-                          padding: '3px 10px', borderRadius: 6, border: 'none', cursor: 'pointer',
-                          fontFamily: 'inherit', fontSize: 11, fontWeight: 700, transition: 'all .15s',
-                          background: chartMetric === m ? (m === 'prot' ? 'var(--green)' : 'var(--blue)') : 'transparent',
-                          color: chartMetric === m ? '#fff' : 'var(--text-3)',
-                        }}
-                      >
-                        {m === 'cal' ? (lang === 'he' ? 'קל׳' : 'Cal') : m === 'prot' ? (lang === 'he' ? 'חל׳' : 'Prot') : (lang === 'he' ? 'נוזלים' : 'Fluid')}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4, height: barH + 20 }}>
-                  {barDays.map(b => {
-                    const val      = isCal ? b.cal  : isProt ? b.prot  : b.fluid
-                    const goalVal  = isCal ? b.goalCal : isProt ? b.goalProt : b.goalFluid
-                    const hasBar   = b.hasData || (isFluid && b.fluid > 0)
-                    const barHeight  = hasBar ? Math.max(4, Math.round((val / maxVal) * barH)) : 0
-                    const goalHeight = goalVal > 0 ? Math.max(2, Math.round((goalVal / maxVal) * barH)) : 0
-                    // For fluid: over-goal is good (green), not amber
-                    const overGoal = hasBar && val > goalVal && goalVal > 0
-                    const barBg    = isFluid
-                      ? (overGoal ? 'var(--green)' : barColor)
-                      : (overGoal ? 'var(--amber)' : barColor)
-                    const valLabel = isFluid
-                      ? (val >= 1000 ? `${(val / 1000).toFixed(1)}` : `${Math.round(val)}`)
-                      : isCal ? `${Math.round(val)}` : `${Math.round(val * 10) / 10}`
-                    return (
-                      <div key={b.dateKey} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-                        <div style={{ position: 'relative', width: '100%', height: barH, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
-                          {goalHeight > 0 && <div style={{ position: 'absolute', bottom: goalHeight, left: 0, right: 0, borderTop: `1.5px dashed ${goalDashColor}` }} />}
-                          {hasBar && (
-                            <div style={{
-                              width: '70%', height: barHeight,
-                              borderRadius: '4px 4px 0 0',
-                              background: barBg,
-                              opacity: 0.85,
-                              transition: 'height .3s ease',
-                              display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
-                              paddingBottom: 3, overflow: 'hidden',
-                            }}>
-                              {barHeight >= 20 && (
-                                <span style={{ fontSize: 9, fontWeight: 800, color: 'var(--text-on-brand)', lineHeight: 1 }}>
-                                  {valLabel}
-                                </span>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                        <span style={{ fontSize: 9, fontWeight: 600, color: 'var(--text-3)' }}>{b.label}</span>
-                      </div>
-                    )
-                  })}
-                </div>
-                <div style={{ display: 'flex', gap: 14, marginTop: 8, paddingTop: 8, borderTop: '1px solid var(--border)', flexWrap: 'wrap' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, color: 'var(--text-3)' }}>
-                    <div style={{ width: 12, height: 3, background: barColor, borderRadius: 2 }} />
-                    {isCal ? (lang === 'he' ? 'קלוריות' : 'Calories') : isProt ? (lang === 'he' ? 'חלבון' : 'Protein') : (lang === 'he' ? 'נוזלים' : 'Fluid')}
-                  </div>
-                  {(!isFluid || fluidGoalMl > 0) && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, color: 'var(--text-3)' }}>
-                      <div style={{ width: 12, borderTop: `1.5px dashed ${goalLegendColor}` }} />
-                      {lang === 'he' ? 'יעד' : 'Goal'}
-                      <span style={{ fontWeight: 700, color: 'var(--text-2)' }}>
-                        {isCal
-                          ? `${todayGoal.calories.toLocaleString()} ${t(lang, 'caloriesUnit')}`
-                          : isProt
-                            ? `${todayGoal.protein}${t(lang, 'proteinUnit')}`
-                            : fmtMl(fluidGoalMl)}
-                      </span>
-                    </div>
-                  )}
-                  {!isFluid && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, color: 'var(--text-3)' }}>
-                      <div style={{ width: 12, height: 3, background: 'var(--amber)', borderRadius: 2 }} />
-                      {lang === 'he' ? 'חריגה' : 'Over goal'}
-                    </div>
-                  )}
-                  {isFluid && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, color: 'var(--text-3)' }}>
-                      <div style={{ width: 12, height: 3, background: 'var(--green)', borderRadius: 2 }} />
-                      {lang === 'he' ? 'הגעת ליעד' : 'Reached goal'}
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            <Divider />
+            </div>}
 
             {/* 30-day section */}
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+            {statsPeriod === 'month' && <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                  <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-2)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
-                    {lang === 'he' ? `30 ימים — ${last30.length} עם נתונים` : `30 days — ${last30.length} with data`}
+                  <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.01em' }}>
+                    {month30Title}
+                    <span style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-3)', marginInlineStart: 6 }}>
+                      · {last30.length} {t(lang, 'daysWithData')}
+                    </span>
                   </span>
-                  <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-3)' }}>{range30Label}</span>
+                  <span style={{ fontSize: 11, fontWeight: 500, color: 'var(--text-3)' }}>{range30Label}</span>
                 </div>
                 <div style={{ display: 'flex', gap: 4 }}>
                   <button
                     className="icon-btn"
                     onClick={() => setOffset30(o => o + 1)}
-                    aria-label={lang === 'he' ? '30 הימים הקודמים' : 'Previous 30 days'}
+                    aria-label={t(lang, 'prevMonth')}
                   >
                     <span className="icon icon-sm">{lang === 'he' ? 'chevron_right' : 'chevron_left'}</span>
                   </button>
@@ -1240,7 +1301,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                     className="icon-btn"
                     onClick={() => setOffset30(o => o - 1)}
                     disabled={offset30 === 0}
-                    aria-label={lang === 'he' ? '30 הימים הבאים' : 'Next 30 days'}
+                    aria-label={t(lang, 'nextMonth')}
                   >
                     <span className="icon icon-sm">{lang === 'he' ? 'chevron_left' : 'chevron_right'}</span>
                   </button>
@@ -1248,40 +1309,189 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
               </div>
               {last30.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '20px 0', color: 'var(--text-3)' }}>
-                  <p style={{ fontSize: 13, margin: 0 }}>{lang === 'he' ? 'אין נתונים בטווח זה' : 'No data in this range'}</p>
+                  <p style={{ fontSize: 13, margin: 0 }}>{t(lang, 'noDataInRange')}</p>
                 </div>
               ) : (
                 <>
                   <div style={{ display: 'flex', gap: 6 }}>
                     <StatCard
-                      label={lang === 'he' ? 'קל׳ ממוצע' : 'Avg cal'}
+                      label={t(lang, 'avgCal')}
                       value={avg30Cal} unit={t(lang, 'caloriesUnit')} color="var(--blue-hi)"
                       pct={pct30Cal} successDays={calOkDays30} totalDays={last30.length}
                       pctColor={pct30Cal >= 70 ? 'var(--green-hi)' : pct30Cal >= 40 ? 'var(--amber)' : 'var(--red)'}
-                      metric="cal"
+                      metric="cal" onSelect={setChartMetric30} isActive={chartMetric30 === 'cal'}
                     />
                     <StatCard
-                      label={lang === 'he' ? 'חל׳ ממוצע' : 'Avg prot'}
+                      label={t(lang, 'avgProt')}
                       value={avg30Prot} unit={t(lang, 'proteinUnit')} color="var(--green-hi)"
                       pct={pct30Prot} successDays={protOkDays30} totalDays={last30.length}
                       pctColor={pct30Prot >= 70 ? 'var(--green-hi)' : pct30Prot >= 40 ? 'var(--amber)' : 'var(--red)'}
-                      metric="prot"
+                      metric="prot" onSelect={setChartMetric30} isActive={chartMetric30 === 'prot'}
                     />
                     {fluidGoalMl > 0 && (
                       <StatCard
-                        label={lang === 'he' ? 'נוזלים ממוצע' : 'Avg fluid'}
+                        label={t(lang, 'avgFluid')}
                         value={avg30FluidMl >= 1000 ? (avg30FluidMl / 1000).toFixed(1) : avg30FluidMl}
                         unit={avg30FluidMl >= 1000 ? (lang === 'he' ? 'ל׳' : 'L') : 'ml'}
                         color="var(--blue-hi)"
                         pct={pct30Fluid} successDays={goalDays30Fluid} totalDays={last30.length}
                         pctColor={pct30Fluid >= 70 ? 'var(--blue-hi)' : pct30Fluid >= 40 ? 'var(--amber)' : 'var(--red)'}
-                        metric="fluid"
+                        metric="fluid" onSelect={setChartMetric30} isActive={chartMetric30 === 'fluid'}
                       />
                     )}
                   </div>
+
+                  {/* ── 30-day SVG line chart ─────────────────────── */}
+                  {(() => {
+                    const svgW = 320, svgH = 100
+                    const padL = 4, padR = 4, padT = 12, padB = 18
+                    const chartW = svgW - padL - padR
+                    const chartH = svgH - padT - padB
+                    const n = lineDays30.length // 30
+
+                    const xPos = (i: number) => padL + (i / (n - 1)) * chartW
+                    const yPos = (v: number) => padT + chartH - (v / lineMax30) * chartH
+
+                    // Goal line y
+                    const goalY = yPos(lineGoal30)
+
+                    // Build polyline segments — break on missing data
+                    type Seg = { x: number; y: number }[]
+                    const segments: Seg[] = []
+                    let cur: Seg = []
+                    lineDays30.forEach((d, i) => {
+                      const v = isCal30 ? d.cal : isProt30 ? d.prot : d.fluid
+                      if (d.hasData || (isFluid30 && v > 0)) {
+                        cur.push({ x: xPos(i), y: yPos(v) })
+                      } else {
+                        if (cur.length > 0) { segments.push(cur); cur = [] }
+                      }
+                    })
+                    if (cur.length > 0) segments.push(cur)
+
+                    const toPolyline = (seg: Seg) => seg.map(p => `${p.x},${p.y}`).join(' ')
+
+                    // Date labels — show ~5 evenly spaced
+                    const labelIdxs = [0, 7, 14, 21, 29]
+
+                    // Area fill — build closed path per segment
+                    const toAreaPath = (seg: Seg) => {
+                      if (seg.length < 2) return ''
+                      const bottom = padT + chartH
+                      const pts = seg.map(p => `${p.x},${p.y}`).join(' L ')
+                      return `M ${seg[0].x},${bottom} L ${pts} L ${seg[seg.length-1].x},${bottom} Z`
+                    }
+
+                    return (
+                      <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: '14px 12px' }}>
+                        {/* chart header: range + toggle */}
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                          <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-2)', margin: 0 }}>{range30Label}</p>
+                          <div style={{ display: 'flex', background: 'var(--surface-2)', borderRadius: 8, padding: 2, gap: 2 }}>
+                            {(['cal', 'prot', 'fluid'] as const).map(m => (
+                              <button
+                                key={m}
+                                onClick={() => setChartMetric30(m)}
+                                style={{
+                                  padding: '3px 10px', borderRadius: 6, border: 'none', cursor: 'pointer',
+                                  fontFamily: 'inherit', fontSize: 11, fontWeight: 700, transition: 'all .15s',
+                                  background: chartMetric30 === m ? (m === 'prot' ? 'var(--green)' : 'var(--blue)') : 'transparent',
+                                  color: chartMetric30 === m ? '#fff' : 'var(--text-3)',
+                                }}
+                              >
+                                {m === 'cal' ? (t(lang, 'calShort')) : m === 'prot' ? (t(lang, 'protShort')) : (t(lang, 'fluid'))}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* SVG line chart */}
+                        <svg
+                          viewBox={`0 0 ${svgW} ${svgH}`}
+                          style={{ width: '100%', height: 'auto', overflow: 'visible', display: 'block' }}
+                        >
+                          {/* Goal line */}
+                          <line
+                            x1={padL} y1={goalY} x2={svgW - padR} y2={goalY}
+                            style={{ stroke: goalLineColor30 }} strokeWidth={1.5} strokeDasharray="4 3"
+                          />
+
+                          {/* Area fills */}
+                          {segments.map((seg, si) => (
+                            <path
+                              key={`area-${si}`}
+                              d={toAreaPath(seg)}
+                              style={{ fill: lineColorRaw30, fillOpacity: 0.08 }}
+                            />
+                          ))}
+
+                          {/* Polylines */}
+                          {segments.map((seg, si) => (
+                            <polyline
+                              key={`line-${si}`}
+                              points={toPolyline(seg)}
+                              fill="none"
+                              style={{ stroke: lineColorRaw30 }}
+                              strokeWidth={2}
+                              strokeLinejoin="round"
+                              strokeLinecap="round"
+                            />
+                          ))}
+
+                          {/* Data dots — only on days with data */}
+                          {lineDays30.map((d, i) => {
+                            const v = isCal30 ? d.cal : isProt30 ? d.prot : d.fluid
+                            if (!d.hasData && !(isFluid30 && v > 0)) return null
+                            const overGoal = v > lineGoal30 && lineGoal30 > 0
+                            const dotColor = isFluid30
+                              ? (overGoal ? 'var(--green)' : lineColorRaw30)
+                              : (overGoal && !isFluid30 ? 'var(--amber)' : lineColorRaw30)
+                            return (
+                              <circle
+                                key={d.dateKey}
+                                cx={xPos(i)} cy={yPos(v)} r={2.5}
+                                style={{ fill: dotColor }} stroke="var(--bg-card)" strokeWidth={1.5}
+                              />
+                            )
+                          })}
+
+                          {/* X-axis date labels */}
+                          {labelIdxs.map(i => {
+                            if (i >= lineDays30.length) return null
+                            return (
+                              <text
+                                key={i}
+                                x={xPos(i)} y={svgH - 2}
+                                textAnchor="middle"
+                                fontSize={8} fill="var(--text-3)" fontFamily="inherit"
+                              >
+                                {lineDays30[i].label}
+                              </text>
+                            )
+                          })}
+                        </svg>
+
+                        {/* Legend */}
+                        <div style={{ display: 'flex', gap: 14, marginTop: 8, paddingTop: 8, borderTop: '1px solid var(--border)', flexWrap: 'wrap' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, color: 'var(--text-3)' }}>
+                            <div style={{ width: 16, height: 2, background: lineColorRaw30, borderRadius: 2 }} />
+                            {isCal30 ? (lang === 'he' ? 'קלוריות' : 'Calories') : isProt30 ? (lang === 'he' ? 'חלבון' : 'Protein') : (t(lang, 'fluid'))}
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, color: 'var(--text-3)' }}>
+                            <div style={{ width: 16, borderTop: `1.5px dashed ${goalLineColor30}` }} />
+                            {lang === 'he' ? 'יעד' : 'Goal'}
+                            <span style={{ fontWeight: 700, color: 'var(--text-2)' }}>
+                              {isCal30 ? `${lineGoal30.toLocaleString()} ${t(lang, 'caloriesUnit')}` : isProt30 ? `${lineGoal30}${t(lang, 'proteinUnit')}` : fmtMl(lineGoal30)}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })()}
+
                   {/* 30-day insight */}
                   {last30.length >= 7 && (
-                    <div style={{ background: 'rgba(59,130,246,0.06)', border: '1px solid rgba(59,130,246,0.15)', borderRadius: 10, padding: '8px 12px', marginTop: 8 }}>
+                    <div style={{ background: 'rgba(59,130,246,0.06)', border: '1px solid rgba(59,130,246,0.15)', borderRadius: 10, padding: '8px 12px' }}>
                       <p style={{ fontSize: 11, color: 'var(--text-2)', margin: 0, lineHeight: 1.6 }}>
                         {lang === 'he'
                           ? `ב-30 הימים האחרונים צרכת בממוצע ${avg30Cal.toLocaleString()} קק״ל ו-${avg30Prot}ג׳ חלבון. עמדת ביעד קלוריות ב-${pct30Cal}% וחלבון ב-${pct30Prot}% מהימים.`
@@ -1291,7 +1501,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                   )}
                 </>
               )}
-            </div>
+            </div>}
           </div>
         )
       })()}

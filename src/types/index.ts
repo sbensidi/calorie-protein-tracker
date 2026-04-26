@@ -31,6 +31,7 @@ export interface FoodHistory {
   grams: number
   calories: number
   protein: number
+  fluid_ml: number | null
   use_count: number
   last_used: string
 }

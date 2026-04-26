@@ -5,7 +5,7 @@ import { useSheetScroll } from '../hooks/useSheetScroll'
 import { SheetHandle } from './SheetHandle'
 import type { Meal, FoodHistory, FoodLibraryItem, ComposedGroup } from '../types'
 import type { Lang } from '../lib/i18n'
-import { t, today, currentTime } from '../lib/i18n'
+import { t, dir, today, currentTime } from '../lib/i18n'
 import { FoodEntryForm } from './FoodEntryForm'
 import type { ComposedEntry } from './FoodEntryForm'
 import { MealCard } from './MealCard'
@@ -61,7 +61,7 @@ interface TodayTabProps {
   onEditMeal: (id: string, updates: Partial<Meal>) => void
   onDeleteMeal: (id: string) => void
   onDuplicateMeal: (meal: Meal) => void
-  onUpsertHistory: (item: Pick<FoodHistory, 'name' | 'grams' | 'calories' | 'protein'>) => void
+  onUpsertHistory: (item: Pick<FoodHistory, 'name' | 'grams' | 'calories' | 'protein' | 'fluid_ml'>) => void
   onTouchHistory?: (id: string) => void
   composedEntries: ComposedEntry[]
   composedGroups: ComposedGroup[]
@@ -370,6 +370,8 @@ export function TodayTab({
         <div
           role="button"
           tabIndex={0}
+          aria-expanded={!isCollapsed}
+          aria-label={`${t(lang, type)} — ${isCollapsed ? (lang === 'he' ? 'פתח' : 'expand') : (lang === 'he' ? 'כווץ' : 'collapse')}`}
           onClick={() => toggleCollapse(type)}
           onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') toggleCollapse(type) }}
           style={{
@@ -518,7 +520,7 @@ export function TodayTab({
                 {/* Action buttons */}
                 <div className="group-action-bar-btns">
                   {/* Duplicate */}
-                  <button className="group-action-btn" onClick={() => handleDuplicateSelected(type)}>
+                  <button className="group-action-btn" aria-label={t(lang, 'duplicate')} onClick={() => handleDuplicateSelected(type)}>
                     <div className="group-action-btn-ico" style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)' }}>
                       <span className="icon icon-sm" style={{ color: 'var(--green-hi)' }}>content_copy</span>
                     </div>
@@ -526,7 +528,7 @@ export function TodayTab({
                   </button>
 
                   {/* Create dish */}
-                  <button className="group-action-btn" onClick={() => openComposeModal(type)}>
+                  <button className="group-action-btn" aria-label={t(lang, 'createDish')} onClick={() => openComposeModal(type)}>
                     <div className="group-action-btn-ico" style={{ background: 'var(--purple-tint)', border: '1px solid rgba(139,92,246,0.25)' }}>
                       <span className="icon icon-sm" style={{ color: 'var(--purple)' }}>restaurant</span>
                     </div>
@@ -534,7 +536,7 @@ export function TodayTab({
                   </button>
 
                   {/* Delete */}
-                  <button className="group-action-btn" onClick={() => handleDeleteSelected(type)}>
+                  <button className="group-action-btn" aria-label={t(lang, 'delete')} onClick={() => handleDeleteSelected(type)}>
                     <div className="group-action-btn-ico" style={{ background: 'var(--red-tint)', border: '1px solid rgba(244,63,94,0.2)' }}>
                       <span className="icon icon-sm" style={{ color: 'var(--red-hi)' }}>delete</span>
                     </div>
@@ -618,7 +620,7 @@ export function TodayTab({
               onChange={e => setComposeName(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter') handleCompose() }}
               autoFocus
-              dir={lang === 'he' ? 'rtl' : 'ltr'}
+              dir={dir(lang)}
             />
             {composeName && (
               <button
@@ -705,7 +707,7 @@ export function TodayTab({
         aria-label={lang === 'he' ? 'הוסף ארוחה' : 'Add meal'}
         style={{
           position: 'fixed',
-          bottom: 28,
+          bottom: 'calc(28px + env(safe-area-inset-bottom, 0px))',
           insetInlineEnd: 'max(calc((100vw - 560px) / 2 + 24px), 24px)',
           zIndex: 40,
           width: 56, height: 56, borderRadius: '50%',

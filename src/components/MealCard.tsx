@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { Meal } from '../types'
 import type { Lang } from '../lib/i18n'
-import { t } from '../lib/i18n'
+import { t, dir } from '../lib/i18n'
 import { formatWeight } from '../lib/units'
 import type { WeightUnit } from '../lib/units'
 
@@ -66,7 +66,7 @@ export function MealCard({ meal, lang, weightUnit = 'g', showCheckbox, selected,
               value={editName}
               onChange={e => setEditName(e.target.value)}
               placeholder={t(lang, 'foodName')}
-              dir={lang === 'he' ? 'rtl' : 'ltr'}
+              dir={dir(lang)}
               autoFocus
             />
             {editName && (
@@ -97,46 +97,72 @@ export function MealCard({ meal, lang, weightUnit = 'g', showCheckbox, selected,
             <label style={{ fontSize: 11, color: 'var(--blue-hi)', fontWeight: 600, display: 'block', marginBottom: 4 }}>
               {t(lang, 'calories')} ({t(lang, 'caloriesUnit')})
             </label>
-            <input
-              type="number"
-              inputMode="numeric"
-              className="inp"
-              value={editCalories}
-              placeholder="0"
-              onChange={e => setEditCalories(e.target.value === '' ? '' : Number(e.target.value))}
-              onFocus={() => { if (editCalories === 0) setEditCalories('') }}
-            />
+            <div style={{ position: 'relative' }}>
+              <input
+                type="number"
+                inputMode="numeric"
+                className="inp"
+                style={{ paddingInlineEnd: editCalories !== '' ? 32 : 12 }}
+                value={editCalories}
+                placeholder="0"
+                onChange={e => setEditCalories(e.target.value === '' ? '' : Number(e.target.value))}
+                onFocus={() => { if (editCalories === 0) setEditCalories('') }}
+              />
+              {editCalories !== '' && (
+                <button onMouseDown={e => { e.preventDefault(); setEditCalories('') }} tabIndex={-1}
+                  style={{ position: 'absolute', insetInlineEnd: 0, top: 0, bottom: 0, width: 32, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <span className="icon icon-sm">close</span>
+                </button>
+              )}
+            </div>
           </div>
           <div style={{ flex: 1 }}>
             <label style={{ fontSize: 11, color: 'var(--green-hi)', fontWeight: 600, display: 'block', marginBottom: 4 }}>
               {lang === 'he' ? 'חלבון (ג׳)' : 'Protein (g)'}
             </label>
-            <input
-              type="number"
-              inputMode="decimal"
-              step="0.1"
-              className="inp inp-green"
-              value={editProtein}
-              placeholder="0"
-              onChange={e => setEditProtein(e.target.value === '' ? '' : Number(e.target.value))}
-              onFocus={() => { if (editProtein === 0) setEditProtein('') }}
-            />
-          </div>
-          <div style={{ flex: 1 }}>
-            <label style={{ fontSize: 11, color: 'var(--text-2)', fontWeight: 600, display: 'block', marginBottom: 4 }}>
-              {lang === 'he' ? 'משקל' : 'Weight'}
-            </label>
-            <div style={{ display: 'flex', gap: 4 }}>
+            <div style={{ position: 'relative' }}>
               <input
                 type="number"
                 inputMode="decimal"
-                className="inp"
-                style={{ flex: 1, minWidth: 0 }}
-                value={editWeight}
+                step="0.1"
+                className="inp inp-green"
+                style={{ paddingInlineEnd: editProtein !== '' ? 32 : 12 }}
+                value={editProtein}
                 placeholder="0"
-                onChange={e => setEditWeight(e.target.value === '' ? '' : Number(e.target.value))}
-                onFocus={e => e.target.select()}
+                onChange={e => setEditProtein(e.target.value === '' ? '' : Number(e.target.value))}
+                onFocus={() => { if (editProtein === 0) setEditProtein('') }}
               />
+              {editProtein !== '' && (
+                <button onMouseDown={e => { e.preventDefault(); setEditProtein('') }} tabIndex={-1}
+                  style={{ position: 'absolute', insetInlineEnd: 0, top: 0, bottom: 0, width: 32, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <span className="icon icon-sm">close</span>
+                </button>
+              )}
+            </div>
+          </div>
+          <div style={{ flex: 1 }}>
+            <label style={{ fontSize: 11, color: 'var(--text-2)', fontWeight: 600, display: 'block', marginBottom: 4 }}>
+              {t(lang, 'weight')}
+            </label>
+            <div style={{ display: 'flex', gap: 4 }}>
+              <div style={{ flex: 1, minWidth: 0, position: 'relative' }}>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  className="inp"
+                  style={{ width: '100%', paddingInlineEnd: editWeight !== '' ? 32 : 12 }}
+                  value={editWeight}
+                  placeholder="0"
+                  onChange={e => setEditWeight(e.target.value === '' ? '' : Number(e.target.value))}
+                  onFocus={e => e.target.select()}
+                />
+                {editWeight !== '' && (
+                  <button onMouseDown={e => { e.preventDefault(); setEditWeight('') }} tabIndex={-1}
+                    style={{ position: 'absolute', insetInlineEnd: 0, top: 0, bottom: 0, width: 32, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <span className="icon icon-sm">close</span>
+                  </button>
+                )}
+              </div>
               <select
                 className="inp"
                 style={{ width: 52, padding: '0 4px', flexShrink: 0, fontSize: 12 }}
@@ -163,7 +189,7 @@ export function MealCard({ meal, lang, weightUnit = 'g', showCheckbox, selected,
       className="meal-row"
       style={{
         display: 'flex', alignItems: 'center', gap: 10,
-        ...(selected ? { borderColor: 'rgba(139,92,246,0.3)', background: 'rgba(139,92,246,0.05)' } : {}),
+        ...(selected ? { borderColor: 'color-mix(in srgb, var(--purple) 35%, transparent)', background: 'var(--purple-tint)' } : {}),
       }}
     >
       {/* Checkbox — only shown when group is open */}
@@ -181,7 +207,7 @@ export function MealCard({ meal, lang, weightUnit = 'g', showCheckbox, selected,
         <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {meal.name}
           {meal.fluid_ml != null && !meal.fluid_excluded && (
-            <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--cyan-hi)', opacity: 0.8 }}> (💧)</span>
+            <span className="icon" style={{ fontSize: 13, color: 'var(--cyan-hi)', opacity: 0.8, verticalAlign: 'middle', marginInlineStart: 3 }}>water_drop</span>
           )}
         </p>
         <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-2)', margin: '2px 0 0' }}>
