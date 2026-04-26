@@ -13,7 +13,10 @@ function fakeMeal(overrides: Partial<Meal> = {}): Meal {
     protein: 31,
     grams: 100,
     meal_type: 'lunch',
+    time_logged: '12:00:00',
     created_at: new Date().toISOString(),
+    fluid_ml: null,
+    fluid_excluded: false,
     ...overrides,
   }
 }
