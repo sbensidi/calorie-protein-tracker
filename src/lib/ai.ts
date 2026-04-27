@@ -1,6 +1,10 @@
 import type { NutritionResult, FoodHistory } from '../types'
 import { lookupHebrew } from './hebrewFoods'
 
+export class AiNetworkError   extends Error { name = 'AiNetworkError'   }
+export class AiRateLimitError extends Error { name = 'AiRateLimitError' }
+export class AiParseError     extends Error { name = 'AiParseError'     }
+
 const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY
 const GROQ_ENDPOINT = 'https://api.groq.com/openai/v1/chat/completions'
 const GROQ_MODEL    = 'llama-3.3-70b-versatile'
@@ -29,6 +33,7 @@ export async function calculateNutrition(
       : await callGroqProxy(foodName, amount, amountType)
     if (result) return result
   } catch (err) {
+    if (err instanceof AiNetworkError || err instanceof AiRateLimitError || err instanceof AiParseError) throw err
     if (import.meta.env.DEV) console.error('Groq error:', err)
   }
 
@@ -77,13 +82,13 @@ async function callGroqProxy(
   amount: number,
   amountType: 'g' | 'unit'
 ): Promise<NutritionResult | null> {
-  const res = await fetch('/api/nutrition', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ foodName, amount, amountType }),
-  })
+  let res: Response
+  try { res = await fetch('/api/nutrition', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ foodName, amount, amountType }) }) }
+  catch { throw new AiNetworkError() }
+  if (res.status === 429) throw new AiRateLimitError()
   if (!res.ok) return null
-  const data = await res.json()
+  let data: unknown
+  try { data = await res.json() } catch { throw new AiParseError() }
   if (typeof data.calories === 'number' && typeof data.protein === 'number') {
     return { calories: data.calories, protein: data.protein }
   }
@@ -101,14 +106,14 @@ async function callGroqDirect(
   const safeName = foodName.slice(0, 100).replace(/"/g, '')
 
   const groqCall = async (messages: { role: string; content: string }[], maxTokens = 80) => {
-    const res = await fetch(GROQ_ENDPOINT, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${GROQ_API_KEY}` },
-      body: JSON.stringify({ model: GROQ_MODEL, messages, temperature: 0, max_tokens: maxTokens }),
-    })
+    let res: Response
+    try { res = await fetch(GROQ_ENDPOINT, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${GROQ_API_KEY}` }, body: JSON.stringify({ model: GROQ_MODEL, messages, temperature: 0, max_tokens: maxTokens }) }) }
+    catch { throw new AiNetworkError() }
+    if (res.status === 429) throw new AiRateLimitError()
     if (!res.ok) return null
-    const d = await res.json()
-    return d.choices?.[0]?.message?.content?.trim() ?? null
+    let d: unknown
+    try { d = await res.json() } catch { throw new AiParseError() }
+    return (d as { choices?: { message?: { content?: string } }[] })?.choices?.[0]?.message?.content?.trim() ?? null
   }
 
   // Step 1 — resolve Hebrew food name to English (dictionary first, AI fallback)
@@ -138,7 +143,8 @@ async function callGroqDirect(
   if (!text) return null
   const match = text.match(/\{[^{}]*"calories"[^{}]*"protein"[^{}]*\}|\{[^{}]*"protein"[^{}]*"calories"[^{}]*\}/)
   if (!match) return null
-  const parsed = JSON.parse(match[0])
+  let parsed: { calories?: unknown; protein?: unknown }
+  try { parsed = JSON.parse(match[0]) } catch { throw new AiParseError() }
   if (typeof parsed.calories === 'number' && typeof parsed.protein === 'number') {
     const scale = amountType === 'unit' ? amount : amount / 100
     return {

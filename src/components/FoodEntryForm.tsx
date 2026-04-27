@@ -3,7 +3,7 @@ import { useLockBodyScroll } from '../hooks/useLockBodyScroll'
 import type { FoodHistory, FoodLibraryItem, Meal, NutritionResult } from '../types'
 import type { Lang } from '../lib/i18n'
 import { t, dir, currentTime, today } from '../lib/i18n'
-import { calculateNutrition } from '../lib/ai'
+import { calculateNutrition, AiNetworkError, AiRateLimitError, AiParseError } from '../lib/ai'
 import { BarcodeScanner } from './BarcodeScanner'
 import type { BarcodeScannerHandle } from './BarcodeScanner'
 import { ErrorBoundary } from './ErrorBoundary'
@@ -80,7 +80,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
   const [editCalories, setEditCalories] = useState<number | ''>('')
   const [editProtein,  setEditProtein]  = useState<number | ''>('')
   const [qty, setQty]                 = useState(1)
-  const [aiError, setAiError]         = useState<'network' | 'notFound' | null>(null)
+  const [aiError, setAiError]         = useState<'network' | 'notFound' | 'rateLimit' | 'parseError' | null>(null)
   const libraryDensityRef             = useRef<number | null>(null) // density from library selection
 
   // Dropdown
@@ -221,8 +221,8 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
           if (currentUnitIsWeight) setEntryUnit('ml')
         }
       }
-    } catch {
-      setAiError('network')
+    } catch (err) {
+      setAiError(err instanceof AiRateLimitError ? 'rateLimit' : err instanceof AiParseError ? 'parseError' : 'network')
       setNutrition({ calories: 0, protein: 0 })
       setEditCalories('')
       setEditProtein('')
@@ -874,8 +874,10 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
       <div aria-live="polite" aria-atomic="true">
         {aiError && (
           <p style={{ fontSize: 12, color: 'var(--red)', marginTop: 8, display: 'flex', alignItems: 'center', gap: 4 }}>
-            <span className="icon icon-sm">{aiError === 'network' ? 'wifi_off' : 'search_off'}</span>
-            {t(lang, aiError === 'network' ? 'aiErrorNetwork' : 'aiErrorNotFound')}
+            <span className="icon icon-sm">
+              {aiError === 'network' ? 'wifi_off' : aiError === 'rateLimit' ? 'timer_off' : aiError === 'parseError' ? 'error' : 'search_off'}
+            </span>
+            {t(lang, aiError === 'network' ? 'aiErrorNetwork' : aiError === 'rateLimit' ? 'aiErrorRateLimit' : aiError === 'parseError' ? 'aiErrorParse' : 'aiErrorNotFound')}
           </p>
         )}
       </div>
