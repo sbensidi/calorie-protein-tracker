@@ -87,7 +87,7 @@ async function callGroqProxy(
   catch { throw new AiNetworkError() }
   if (res.status === 429) throw new AiRateLimitError()
   if (!res.ok) return null
-  let data: unknown
+  let data: Record<string, unknown>
   try { data = await res.json() } catch { throw new AiParseError() }
   if (typeof data.calories === 'number' && typeof data.protein === 'number') {
     return { calories: data.calories, protein: data.protein }
