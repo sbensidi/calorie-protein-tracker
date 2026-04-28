@@ -9,7 +9,7 @@ interface StatusBadgeProps {
 }
 
 const STYLE: Record<Status, { bg: string; color: string; icon: string }> = {
-  over:    { bg: 'rgba(244,63,94,0.15)',   color: 'var(--red)',      icon: 'arrow_upward'   },
+  over:    { bg: 'var(--red-select)',        color: 'var(--red)',      icon: 'arrow_upward'   },
   under:   { bg: 'var(--surface-3)',        color: 'var(--text-2)',   icon: 'arrow_downward' },
   success: { bg: 'var(--surface-3)',        color: 'var(--text-2)',   icon: 'arrow_downward' },
 }

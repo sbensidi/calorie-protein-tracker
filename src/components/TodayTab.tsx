@@ -712,7 +712,7 @@ export function TodayTab({
           zIndex: 40,
           width: 56, height: 56, borderRadius: '50%',
           background: 'var(--blue)',
-          color: '#fff',
+          color: 'var(--on-color)',
           border: 'none',
           cursor: 'pointer',
           display: 'flex', alignItems: 'center', justifyContent: 'center',

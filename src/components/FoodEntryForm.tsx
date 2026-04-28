@@ -496,7 +496,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
           <div style={{
             display: 'flex', alignItems: 'center', gap: 7,
             background: 'rgba(16,185,129,0.08)',
-            border: '1px solid rgba(16,185,129,0.18)',
+            border: '1px solid var(--green-select)',
             borderRadius: 10, padding: '8px 11px',
           }}>
             <span className="icon icon-sm" style={{ color: 'var(--green-hi)' }}>check_circle</span>
@@ -900,7 +900,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
                   type="number"
                   inputMode="numeric"
                   className="inp"
-                  style={{ borderColor: 'rgba(59,130,246,0.25)', ...(isRTL ? { paddingLeft: editCalories !== '' ? 32 : 12 } : { paddingRight: editCalories !== '' ? 32 : 12 }) }}
+                  style={{ borderColor: 'var(--blue-glow)', ...(isRTL ? { paddingLeft: editCalories !== '' ? 32 : 12 } : { paddingRight: editCalories !== '' ? 32 : 12 }) }}
                   value={editCalories}
                   placeholder="0"
                   onChange={e => setEditCalories(e.target.value === '' ? '' : Number(e.target.value))}
@@ -925,7 +925,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
                   inputMode="decimal"
                   step="0.1"
                   className="inp inp-green"
-                  style={{ borderColor: 'rgba(16,185,129,0.25)', ...(isRTL ? { paddingLeft: editProtein !== '' ? 32 : 12 } : { paddingRight: editProtein !== '' ? 32 : 12 }) }}
+                  style={{ borderColor: 'var(--green-glow)', ...(isRTL ? { paddingLeft: editProtein !== '' ? 32 : 12 } : { paddingRight: editProtein !== '' ? 32 : 12 }) }}
                   value={editProtein}
                   placeholder="0"
                   onChange={e => setEditProtein(e.target.value === '' ? '' : Number(e.target.value))}
@@ -967,8 +967,8 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
           {isFluid && (
             <div style={{
               display: 'flex', alignItems: 'center', gap: 8,
-              background: fluidExcluded ? 'rgba(107,127,150,0.06)' : 'rgba(59,130,246,0.07)',
-              border: `1px solid ${fluidExcluded ? 'rgba(107,127,150,0.12)' : 'rgba(59,130,246,0.18)'}`,
+              background: fluidExcluded ? 'rgba(107,127,150,0.06)' : 'var(--blue-fill)',
+              border: `1px solid ${fluidExcluded ? 'rgba(107,127,150,0.12)' : 'var(--blue-select)'}`,
               borderRadius: 9, padding: '7px 11px',
               margin: '10px 0',
               transition: 'background .2s, border-color .2s',
@@ -994,7 +994,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
                 }}
               >
                 <span style={{
-                  position: 'absolute', width: 14, height: 14, borderRadius: '50%', background: '#fff',
+                  position: 'absolute', width: 14, height: 14, borderRadius: '50%', background: 'var(--toggle-knob)',
                   top: 3, transition: 'right .2s',
                   right: fluidExcluded ? 17 : 3,
                 }} />

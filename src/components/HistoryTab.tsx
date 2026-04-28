@@ -208,10 +208,10 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
     under:   t(lang, 'underGoal'),
   }
   const filterActive: Record<StatusFilter, { bg: string; border: string; color: string }> = {
-    all:     { bg: 'var(--blue-tint)',   border: 'rgba(59,130,246,0.35)',  color: 'var(--blue-hi)' },
-    success: { bg: 'var(--green-tint)',  border: 'rgba(16,185,129,0.35)',  color: 'var(--green-hi)' },
-    over:    { bg: 'var(--amber-tint)',  border: 'rgba(245,158,11,0.35)',  color: 'var(--amber)' },
-    under:   { bg: 'var(--indigo-tint)', border: 'rgba(99,102,241,0.35)', color: 'var(--indigo-hi)' },
+    all:     { bg: 'var(--blue-tint)',   border: 'var(--blue-border)',   color: 'var(--blue-hi)' },
+    success: { bg: 'var(--green-tint)',  border: 'var(--green-border)',  color: 'var(--green-hi)' },
+    over:    { bg: 'var(--amber-tint)',  border: 'var(--amber-border)',  color: 'var(--amber)' },
+    under:   { bg: 'var(--indigo-tint)', border: 'var(--indigo-border)', color: 'var(--indigo-hi)' },
   }
 
   const StatusFilterBar = () => (
@@ -557,7 +557,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                       cursor: data ? 'pointer' : 'default',
                       color:  isToday ? 'var(--blue-hi)' : data ? 'var(--text-2)' : 'var(--text-3)',
                       background: data ? 'var(--surface-1)' : 'transparent',
-                      border: `1.5px solid ${isToday ? 'rgba(59,130,246,0.4)' : 'transparent'}`,
+                      border: `1.5px solid ${isToday ? 'var(--blue-border-hi)' : 'transparent'}`,
                       opacity: dimmed ? 0.2 : 1,
                       transition: 'opacity .15s',
                     }}
@@ -983,7 +983,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
           <div
             onClick={metric && onSelect ? () => onSelect(metric) : undefined}
             style={{
-              flex: 1, background: 'var(--bg-card)', border: `1px solid ${isActive ? 'rgba(59,130,246,0.4)' : 'var(--border)'}`,
+              flex: 1, background: 'var(--bg-card)', border: `1px solid ${isActive ? 'var(--blue-border-hi)' : 'var(--border)'}`,
               borderRadius: 12, padding: '12px 10px', textAlign: 'center',
               cursor: metric && onSelect ? 'pointer' : 'default',
               transition: 'border-color .15s',
@@ -1026,7 +1026,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
           return Math.max(val, goal)
         }), 1)
         const barColor7        = isCal7 ? 'var(--blue)'            : isProt7 ? 'var(--green)'            : 'var(--blue)'
-        const goalDashColor7   = isCal7 ? 'rgba(59,130,246,0.35)' : isProt7 ? 'rgba(16,185,129,0.35)' : 'rgba(59,130,246,0.25)'
+        const goalDashColor7   = isCal7 ? 'var(--blue-border)' : isProt7 ? 'var(--green-border)' : 'var(--blue-glow)'
         const goalLegendColor7 = isCal7 ? 'rgba(59,130,246,0.5)'  : isProt7 ? 'rgba(16,185,129,0.5)'  : 'rgba(59,130,246,0.4)'
 
         // Chart values derived from chartMetric30 toggle (30-day line chart)
@@ -1092,11 +1092,11 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
             }}>
               {(['week', 'month'] as const).map(p => (
                 <button key={p} onClick={() => switchStatsPeriod(p)} style={{
-                  padding: '8px 0', borderRadius: 999, border: statsPeriod === p ? '1px solid rgba(59,130,246,0.4)' : '1px solid transparent', cursor: 'pointer',
+                  padding: '8px 0', borderRadius: 999, border: statsPeriod === p ? `1px solid var(--blue-border-hi)` : '1px solid transparent', cursor: 'pointer',
                   fontFamily: 'inherit', fontSize: 13, fontWeight: 700, transition: 'all .22s',
-                  background: statsPeriod === p ? 'rgba(59,130,246,0.18)' : 'transparent',
+                  background: statsPeriod === p ? 'var(--blue-select)' : 'transparent',
                   color: statsPeriod === p ? 'var(--blue-hi)' : 'var(--text-3)',
-                  boxShadow: statsPeriod === p ? '0 0 14px rgba(59,130,246,0.25)' : 'none',
+                  boxShadow: statsPeriod === p ? '0 0 14px var(--blue-glow)' : 'none',
                 }}>
                   {p === 'week' ? (t(lang, 'week')) : (t(lang, 'month'))}
                 </button>
@@ -1183,7 +1183,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                               padding: '3px 10px', borderRadius: 6, border: 'none', cursor: 'pointer',
                               fontFamily: 'inherit', fontSize: 11, fontWeight: 700, transition: 'all .15s',
                               background: chartMetric7 === m ? (m === 'prot' ? 'var(--green)' : 'var(--blue)') : 'transparent',
-                              color: chartMetric7 === m ? '#fff' : 'var(--text-3)',
+                              color: chartMetric7 === m ? 'var(--on-color)' : 'var(--text-3)',
                             }}
                           >
                             {m === 'cal' ? (t(lang, 'calShort')) : m === 'prot' ? (t(lang, 'protShort')) : (t(lang, 'fluid'))}
@@ -1396,7 +1396,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                                   padding: '3px 10px', borderRadius: 6, border: 'none', cursor: 'pointer',
                                   fontFamily: 'inherit', fontSize: 11, fontWeight: 700, transition: 'all .15s',
                                   background: chartMetric30 === m ? (m === 'prot' ? 'var(--green)' : 'var(--blue)') : 'transparent',
-                                  color: chartMetric30 === m ? '#fff' : 'var(--text-3)',
+                                  color: chartMetric30 === m ? 'var(--on-color)' : 'var(--text-3)',
                                 }}
                               >
                                 {m === 'cal' ? (t(lang, 'calShort')) : m === 'prot' ? (t(lang, 'protShort')) : (t(lang, 'fluid'))}
@@ -1531,8 +1531,8 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
           width: fabBtnSize,
           height: fabBtnSize,
           borderRadius: 999,
-          background: 'rgba(59,130,246,0.18)',
-          border: '1px solid rgba(59,130,246,0.4)',
+          background: 'var(--blue-select)',
+          border: '1px solid var(--blue-border-hi)',
           boxShadow: '0 0 14px rgba(59,130,246,0.3)',
           transition: 'left 0.28s cubic-bezier(.34,1.56,.64,1)',
           pointerEvents: 'none',

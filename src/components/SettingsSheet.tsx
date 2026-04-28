@@ -56,7 +56,7 @@ function DayPanel({
 
   return (
     <div style={{
-      border: `1.5px solid ${isToday ? 'rgba(59,130,246,0.4)' : isCustom ? 'rgba(99,102,241,0.35)' : 'var(--border)'}`,
+      border: `1.5px solid ${isToday ? 'var(--blue-border-hi)' : isCustom ? 'var(--indigo-border)' : 'var(--border)'}`,
       background: isToday ? 'rgba(59,130,246,0.05)' : isCustom ? 'rgba(99,102,241,0.05)' : 'transparent',
       borderRadius: 12,
       padding: compact ? '10px 12px' : 12,
@@ -71,7 +71,7 @@ function DayPanel({
           {isToday && (
             <span style={{
               fontSize: 9, fontWeight: 700, color: 'var(--blue)',
-              background: 'rgba(59,130,246,0.12)', borderRadius: 4, padding: '2px 5px',
+              background: 'var(--blue-chip)', borderRadius: 4, padding: '2px 5px',
             }}>
               {t(lang, 'today')}
             </span>
@@ -155,7 +155,7 @@ function DayPanel({
               type="number"
               inputMode="numeric"
               className="inp"
-              style={{ height: compact ? 38 : undefined, fontSize: compact ? 13 : undefined, paddingInlineEnd: fluidDiff ? 52 : undefined, borderColor: 'rgba(59,130,246,0.35)' }}
+              style={{ height: compact ? 38 : undefined, fontSize: compact ? 13 : undefined, paddingInlineEnd: fluidDiff ? 52 : undefined, borderColor: 'var(--blue-border)' }}
               value={fluidVal === 0 ? '' : fluidVal}
               placeholder="0"
               onFocus={e => e.target.select()}
@@ -319,7 +319,7 @@ function MainScreen({ lang, connected, theme, onProfile, onGoals, onFoodHistory,
               border: 'none',
               cursor: 'pointer',
               padding: 0,
-              background: theme === 'dark' ? 'rgba(59,130,246,0.25)' : 'rgba(245,158,11,0.25)',
+              background: theme === 'dark' ? 'var(--blue-glow)' : 'var(--amber-glow)',
               transition: 'background 0.25s',
               flexShrink: 0,
             }}
@@ -334,7 +334,7 @@ function MainScreen({ lang, connected, theme, onProfile, onGoals, onFoodHistory,
               transition: 'left 0.25s cubic-bezier(.34,1.56,.64,1), background 0.25s',
               boxShadow: '0 1px 4px rgba(0,0,0,0.3)',
             }}>
-              <span className="icon" style={{ fontSize: 13, color: '#fff' }}>
+              <span className="icon" style={{ fontSize: 13, color: 'var(--on-color)' }}>
                 {theme === 'dark' ? 'dark_mode' : 'light_mode'}
               </span>
             </span>
@@ -344,7 +344,7 @@ function MainScreen({ lang, connected, theme, onProfile, onGoals, onFoodHistory,
         {/* Sign Out */}
         <button
           onClick={onSignOut}
-          style={{ ...rowBase, background: 'rgba(244,63,94,0.04)', border: '1px solid rgba(244,63,94,0.2)' }}
+          style={{ ...rowBase, background: 'rgba(244,63,94,0.04)', border: '1px solid var(--red-glow)' }}
         >
           <span className="icon" style={{ fontSize: 22, color: 'var(--red)', flexShrink: 0 }}>logout</span>
           <p style={{ fontSize: 14, fontWeight: 700, color: 'var(--red)', margin: 0, flex: 1, textAlign: 'start' }}>
@@ -439,7 +439,7 @@ function ProfileScreen({ lang, profile, onSave, onApplyGoals, onNavigateToGoals,
               style={{
                 flex: 1, padding: '10px 0', borderRadius: 10, fontFamily: 'inherit',
                 fontSize: 13, fontWeight: 700, cursor: 'pointer',
-                background: draft.sex === s ? 'rgba(59,130,246,0.18)' : 'var(--bg-card)',
+                background: draft.sex === s ? 'var(--blue-select)' : 'var(--bg-card)',
                 border: `1.5px solid ${draft.sex === s ? 'var(--blue)' : 'var(--border)'}`,
                 color: draft.sex === s ? 'var(--blue-hi)' : 'var(--text-2)',
                 transition: 'all .15s',
@@ -508,9 +508,9 @@ function ProfileScreen({ lang, profile, onSave, onApplyGoals, onNavigateToGoals,
           {(['lose', 'maintain', 'gain'] as const).map(g => {
             const active = draft.goalType === g
             const colors = {
-              lose:     { bg: 'rgba(59,130,246,0.18)',  border: 'var(--blue)',  text: 'var(--blue-hi)'  },
+              lose:     { bg: 'var(--blue-select)',  border: 'var(--blue)',  text: 'var(--blue-hi)'  },
               maintain: { bg: 'color-mix(in srgb, var(--indigo) 18%, transparent)', border: 'var(--indigo)', text: 'var(--indigo-hi)' },
-              gain:     { bg: 'rgba(16,185,129,0.18)',  border: 'var(--green)', text: 'var(--green-hi)' },
+              gain:     { bg: 'var(--green-select)', border: 'var(--green)', text: 'var(--green-hi)' },
             }[g]
             return (
               <button
@@ -600,7 +600,7 @@ function ProfileScreen({ lang, profile, onSave, onApplyGoals, onNavigateToGoals,
 
       {/* Suggestion card */}
       <div style={{
-        background: 'rgba(59,130,246,0.07)', border: '1px solid rgba(59,130,246,0.2)',
+        background: 'var(--blue-fill)', border: '1px solid rgba(59,130,246,0.2)',
         borderRadius: 12, padding: 14, marginBottom: 16,
       }}>
         {/* Suggested Calories */}
@@ -696,7 +696,7 @@ function ProfileScreen({ lang, profile, onSave, onApplyGoals, onNavigateToGoals,
                 style={{
                   flex: 1, padding: '8px 0', borderRadius: 10, fontFamily: 'inherit',
                   fontSize: 13, fontWeight: 700, cursor: 'pointer',
-                  background: draft.weightUnit === u ? 'rgba(59,130,246,0.18)' : 'var(--bg-card)',
+                  background: draft.weightUnit === u ? 'var(--blue-select)' : 'var(--bg-card)',
                   border: `1.5px solid ${draft.weightUnit === u ? 'var(--blue)' : 'var(--border)'}`,
                   color: draft.weightUnit === u ? 'var(--blue-hi)' : 'var(--text-2)',
                   transition: 'all .15s',
@@ -754,7 +754,7 @@ function ProfileScreen({ lang, profile, onSave, onApplyGoals, onNavigateToGoals,
           }}
         >
           <span style={{
-            position: 'absolute', width: 18, height: 18, borderRadius: '50%', background: '#fff',
+            position: 'absolute', width: 18, height: 18, borderRadius: '50%', background: 'var(--toggle-knob)',
             top: 4, transition: 'right .2s',
             right: draft.fluidZeroCalOnly ? 4 : 22,
           }} />
@@ -893,7 +893,7 @@ function GoalsScreen({ lang, profile, goals, onSave, onSaveFluidGoal, fluidGoalM
       </h2>
 
       {/* Recommendations card */}
-      <div style={{ background: 'rgba(59,130,246,0.06)', border: '1px solid rgba(59,130,246,0.18)', borderRadius: 12, padding: '12px 14px', marginBottom: 16 }}>
+      <div style={{ background: 'rgba(59,130,246,0.06)', border: '1px solid var(--blue-select)', borderRadius: 12, padding: '12px 14px', marginBottom: 16 }}>
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
           <span className="icon icon-sm" style={{ color: 'var(--blue-hi)' }}>auto_fix_high</span>
@@ -909,7 +909,7 @@ function GoalsScreen({ lang, profile, goals, onSave, onSaveFluidGoal, fluidGoalM
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 12 }}>
           {/* Calories */}
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-            <div style={{ width: 36, height: 36, borderRadius: 8, background: 'rgba(59,130,246,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <div style={{ width: 36, height: 36, borderRadius: 8, background: 'var(--blue-chip)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
               <span className="icon icon-sm" style={{ color: 'var(--blue-hi)' }}>local_fire_department</span>
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
@@ -929,7 +929,7 @@ function GoalsScreen({ lang, profile, goals, onSave, onSaveFluidGoal, fluidGoalM
 
           {/* Protein */}
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-            <div style={{ width: 36, height: 36, borderRadius: 8, background: 'rgba(16,185,129,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <div style={{ width: 36, height: 36, borderRadius: 8, background: 'var(--green-chip)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
               <span className="icon icon-sm" style={{ color: 'var(--green-hi)' }}>fitness_center</span>
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
@@ -1037,7 +1037,7 @@ function GoalsScreen({ lang, profile, goals, onSave, onSaveFluidGoal, fluidGoalM
           </label>
           <div style={{ position: 'relative' }}>
             <input type="number" inputMode="numeric" className="inp"
-              style={{ paddingInlineEnd: defFluidGoal > 0 ? 32 : undefined, borderColor: 'rgba(59,130,246,0.35)' }}
+              style={{ paddingInlineEnd: defFluidGoal > 0 ? 32 : undefined, borderColor: 'var(--blue-border)' }}
               value={defFluidGoal === 0 ? '' : defFluidGoal} placeholder="0"
               onFocus={e => e.target.select()}
               onChange={e => setDefFluidGoal(Number(e.target.value))} />
@@ -1097,7 +1097,7 @@ function GoalsScreen({ lang, profile, goals, onSave, onSaveFluidGoal, fluidGoalM
               }}
             >
               {isToday && (
-                <span style={{ position: 'absolute', top: -6, left: '50%', transform: 'translateX(-50%)', background: 'var(--blue)', color: '#fff', fontSize: 7, fontWeight: 700, padding: '1px 4px', borderRadius: 4, whiteSpace: 'nowrap' }}>
+                <span style={{ position: 'absolute', top: -6, left: '50%', transform: 'translateX(-50%)', background: 'var(--blue)', color: 'var(--on-color)', fontSize: 7, fontWeight: 700, padding: '1px 4px', borderRadius: 4, whiteSpace: 'nowrap' }}>
                   {t(lang, 'today')}
                 </span>
               )}
@@ -1280,7 +1280,7 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
                 padding: '5px 12px', borderRadius: 999, border: 'none', cursor: 'pointer', fontFamily: 'inherit',
                 fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap', transition: 'background .12s, color .12s',
                 background: filter === key ? 'var(--blue)' : 'var(--surface-2)',
-                color: filter === key ? '#fff' : 'var(--text-2)',
+                color: filter === key ? 'var(--on-color)' : 'var(--text-2)',
               }}
             >
               {lang === 'he' ? labelHe : labelEn}
@@ -1651,7 +1651,7 @@ function LibraryScreen({ lang }: { lang: Lang }) {
                 padding: '5px 12px', borderRadius: 999, border: 'none', cursor: 'pointer', fontFamily: 'inherit',
                 fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap', transition: 'background .12s, color .12s',
                 background: activeCategory === cat ? 'var(--blue)' : 'var(--surface-2)',
-                color: activeCategory === cat ? '#fff' : 'var(--text-2)',
+                color: activeCategory === cat ? 'var(--on-color)' : 'var(--text-2)',
               }}
             >
               {label}

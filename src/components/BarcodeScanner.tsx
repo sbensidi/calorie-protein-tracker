@@ -162,7 +162,7 @@ function BarcodeScanner({ lang, onResult, onNotFound }, ref) {
       <div className="scanner-error" style={{ gap: 14 }}>
         <div style={{
           width: 64, height: 64, borderRadius: 18,
-          background: 'rgba(59,130,246,0.12)', border: '1.5px solid rgba(59,130,246,0.3)',
+          background: 'var(--blue-chip)', border: '1.5px solid rgba(59,130,246,0.3)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
           <span className="icon" style={{ fontSize: 32, color: 'var(--blue)' }}>barcode_scanner</span>
@@ -171,7 +171,7 @@ function BarcodeScanner({ lang, onResult, onNotFound }, ref) {
           onClick={startCamera}
           style={{
             padding: '12px 28px', borderRadius: 12, fontSize: 14, fontWeight: 700,
-            background: 'var(--blue)', color: '#fff', border: 'none',
+            background: 'var(--blue)', color: 'var(--on-color)', border: 'none',
             cursor: 'pointer', fontFamily: 'inherit',
             display: 'flex', alignItems: 'center', gap: 8,
           }}

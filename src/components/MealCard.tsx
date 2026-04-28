@@ -57,7 +57,7 @@ export function MealCard({ meal, lang, weightUnit = 'g', showCheckbox, selected,
 
   if (editing) {
     return (
-      <div className="meal-row" style={{ borderColor: 'rgba(59,130,246,0.25)' }}>
+      <div className="meal-row" style={{ borderColor: 'var(--blue-glow)' }}>
         <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
           <div style={{ flex: 1, position: 'relative' }}>
             <input

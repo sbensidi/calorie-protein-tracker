@@ -252,3 +252,57 @@ Vercel נופל על TS errors שlocal editor לפעמים מסתיר.
 - **Error Boundaries**: כל tab עטוף ב-boundary עם `label` + `lang` props
 - **React.lazy**: HistoryTab ו-SettingsSheet בלבד — כבדים מספיק להצדיק
 - **AppContext**: `lang`, `theme`, `toggleLang`, `toggleTheme` — להעביר כאן, לא כprops
+
+---
+
+## 8. Design System — CSS Tokens
+
+### 8.1 אל תכתוב rgba() ישירות בקומפוננט — תמיד הוסף token ל-index.css
+```ts
+// ❌ hardcoded — לא ניתן לשנות בצורה מרוכזת
+border: 'rgba(59,130,246,0.35)'
+
+// ✅ CSS token — משתנה עם הtheme, ניתן לשינוי ממקום אחד
+border: 'var(--blue-border)'
+```
+
+### 8.2 Scale קיים — השתמש לפי עוצמה
+| אופציות blue | ערך | שימוש |
+|---|---|---|
+| `--blue-fill` | 0.07 | רקע כרטיס עדין מאוד |
+| `--blue-tint` | 0.10 | רקע chip/badge |
+| `--blue-chip` | 0.12 | רקע chip בינוני |
+| `--blue-select` | 0.18 | רקע selected state |
+| `--blue-glow` | 0.25 | border עדין / box-shadow glow |
+| `--blue-border` | 0.35 | border רגיל |
+| `--blue-border-hi` | 0.40 | border active/focus |
+
+אותו pattern קיים ל-`--green-*`, `--red-*`, `--amber-*`, `--indigo-*`.
+
+### 8.3 תמיד השתמש ב-token לאלמנטים על רקע צבעוני
+```ts
+// ❌ לא ברור אם זה נכון ב-light mode
+color: '#fff'
+
+// ✅ תמיד לבן על רקע צבעוני (כפתורי brand, badges)
+color: 'var(--on-color)'
+
+// ✅ עיגול toggle switch (תמיד לבן)
+background: 'var(--toggle-knob)'
+```
+
+### 8.4 Z-index — השתמש ב-scale במקום מספרים קסומים
+```css
+/* ב-CSS */
+z-index: var(--z-sheet);   /* 100 */
+z-index: var(--z-toast);   /* 300 */
+
+/* הscale המלא (מוגדר ב-:root ב-index.css) */
+--z-sticky:   10;  /* sticky header */
+--z-fab:      40;  /* floating action button */
+--z-dropdown: 50;  /* dropdown/tooltip */
+--z-backdrop: 99;  /* modal backdrop */
+--z-sheet:   100;  /* bottom sheet */
+--z-toast:   300;  /* toast notification */
+```
+בinline styles של React, השתמש במספר הישיר (`zIndex: 100`) — CSS vars לא עובדים ב-JS inline styles. תיעד את הscale בcomment.

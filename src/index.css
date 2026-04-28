@@ -1,5 +1,18 @@
 @import "tailwindcss";
 
+:root {
+  /* Z-index scale */
+  --z-sticky:   10;
+  --z-fab:      40;
+  --z-dropdown: 50;
+  --z-backdrop: 99;
+  --z-sheet:    100;
+  --z-toast:    300;
+  /* Always white — text / icon / knob on top of colored backgrounds */
+  --on-color:    #ffffff;
+  --toggle-knob: #ffffff;
+}
+
 [data-theme="dark"] {
   /* Backgrounds */
   --bg:        #090d14;
@@ -58,6 +71,24 @@
   --modal-backdrop: rgba(0,0,0,0.65);
   --scanner-bg:     #04060a;
   --text-on-brand:  rgba(255,255,255,0.90);
+  /* Extended opacity scale — add new tokens here instead of hardcoding rgba() in components */
+  --blue-chip:      rgba(59,130,246,0.12);
+  --blue-select:    rgba(59,130,246,0.18);
+  --blue-glow:      rgba(59,130,246,0.25);
+  --blue-border:    rgba(59,130,246,0.35);
+  --blue-border-hi: rgba(59,130,246,0.40);
+  --green-chip:     rgba(16,185,129,0.12);
+  --green-select:   rgba(16,185,129,0.18);
+  --green-glow:     rgba(16,185,129,0.25);
+  --green-border:   rgba(16,185,129,0.35);
+  --red-chip:       rgba(244,63,94,0.12);
+  --red-select:     rgba(244,63,94,0.15);
+  --red-glow:       rgba(244,63,94,0.20);
+  --red-border-lo:  rgba(244,63,94,0.25);
+  --red-border:     rgba(244,63,94,0.35);
+  --amber-glow:     rgba(245,158,11,0.25);
+  --amber-border:   rgba(245,158,11,0.35);
+  --indigo-border:  rgba(99,102,241,0.35);
 }
 
 [data-theme="light"] {
@@ -118,6 +149,24 @@
   --modal-backdrop: rgba(0,0,0,0.40);
   --scanner-bg:     #0e1117;
   --text-on-brand:  rgba(0,0,0,0.65);
+  /* Extended opacity scale */
+  --blue-chip:      rgba(37,99,235,0.12);
+  --blue-select:    rgba(37,99,235,0.18);
+  --blue-glow:      rgba(37,99,235,0.25);
+  --blue-border:    rgba(37,99,235,0.35);
+  --blue-border-hi: rgba(37,99,235,0.40);
+  --green-chip:     rgba(5,150,105,0.12);
+  --green-select:   rgba(5,150,105,0.18);
+  --green-glow:     rgba(5,150,105,0.25);
+  --green-border:   rgba(5,150,105,0.35);
+  --red-chip:       rgba(220,38,38,0.12);
+  --red-select:     rgba(220,38,38,0.15);
+  --red-glow:       rgba(220,38,38,0.20);
+  --red-border-lo:  rgba(220,38,38,0.25);
+  --red-border:     rgba(220,38,38,0.35);
+  --amber-glow:     rgba(180,83,9,0.25);
+  --amber-border:   rgba(180,83,9,0.35);
+  --indigo-border:  rgba(67,56,202,0.35);
 }
 
 /* Accessibility: focus ring */

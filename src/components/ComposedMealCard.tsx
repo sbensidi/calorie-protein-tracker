@@ -95,7 +95,7 @@ export function ComposedMealCard({
           <div style={{ flex: 1, position: 'relative' }}>
             <input
               className="inp"
-              style={{ width: '100%', height: 32, fontSize: 13, fontWeight: 700, paddingInlineStart: 8, paddingInlineEnd: nameInput ? 32 : 8, borderColor: 'rgba(59,130,246,0.4)' }}
+              style={{ width: '100%', height: 32, fontSize: 13, fontWeight: 700, paddingInlineStart: 8, paddingInlineEnd: nameInput ? 32 : 8, borderColor: 'var(--blue-border-hi)' }}
               value={nameInput}
               autoFocus
               onChange={e => setNameInput(e.target.value)}
@@ -169,7 +169,7 @@ export function ComposedMealCard({
               {editingChildId === meal.id ? (
                 /* ── Inline child edit form ── */
                 <div style={{
-                  background: 'rgba(59,130,246,0.04)', border: '1px solid rgba(59,130,246,0.18)',
+                  background: 'rgba(59,130,246,0.04)', border: '1px solid var(--blue-select)',
                   borderRadius: 8, padding: '10px 10px', display: 'flex', flexDirection: 'column', gap: 8,
                 }}>
                   <div style={{ position: 'relative' }}>
