@@ -143,31 +143,11 @@ export function MealCard({ meal, lang, weightUnit = 'g', showCheckbox, selected,
             </div>
           </div>
           <div>
-            <label style={{ fontSize: 11, color: 'var(--text-2)', fontWeight: 600, display: 'block', marginBottom: 4 }}>
+            <label style={{ fontSize: 11, color: 'var(--text-2)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4, marginBottom: 4 }}>
               {t(lang, 'weight')}
-            </label>
-            <div style={{ display: 'flex', gap: 4 }}>
-              <div style={{ flex: 1, minWidth: 0, position: 'relative' }}>
-                <input
-                  type="number"
-                  inputMode="decimal"
-                  className="inp"
-                  style={{ width: '100%', fontSize: 16, paddingInlineEnd: editWeight !== '' ? 32 : 12 }}
-                  value={editWeight}
-                  placeholder="0"
-                  onChange={e => setEditWeight(e.target.value === '' ? '' : Number(e.target.value))}
-                  onFocus={e => e.target.select()}
-                />
-                {editWeight !== '' && (
-                  <button onMouseDown={e => { e.preventDefault(); setEditWeight('') }} tabIndex={-1}
-                    style={{ position: 'absolute', insetInlineEnd: 0, top: 0, bottom: 0, width: 32, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <span className="icon icon-sm">close</span>
-                  </button>
-                )}
-              </div>
               <select
                 className="inp"
-                style={{ width: 52, padding: '0 4px', flexShrink: 0, fontSize: 16 }}
+                style={{ fontSize: 12, height: 20, padding: '0 2px', border: 'none', background: 'var(--surface-2)', borderRadius: 4, marginInlineStart: 2 }}
                 value={editWeightUnit}
                 onChange={e => setEditWeightUnit(e.target.value as 'g' | 'pcs' | 'ml')}
               >
@@ -175,6 +155,24 @@ export function MealCard({ meal, lang, weightUnit = 'g', showCheckbox, selected,
                 <option value="ml">ml</option>
                 <option value="pcs">{lang === 'he' ? 'יח׳' : 'pcs'}</option>
               </select>
+            </label>
+            <div style={{ position: 'relative' }}>
+              <input
+                type="number"
+                inputMode="decimal"
+                className="inp"
+                style={{ width: '100%', fontSize: 16, paddingInlineEnd: editWeight !== '' ? 32 : 12 }}
+                value={editWeight}
+                placeholder="0"
+                onChange={e => setEditWeight(e.target.value === '' ? '' : Number(e.target.value))}
+                onFocus={e => e.target.select()}
+              />
+              {editWeight !== '' && (
+                <button onMouseDown={e => { e.preventDefault(); setEditWeight('') }} tabIndex={-1}
+                  style={{ position: 'absolute', insetInlineEnd: 0, top: 0, bottom: 0, width: 32, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <span className="icon icon-sm">close</span>
+                </button>
+              )}
             </div>
           </div>
         </div>

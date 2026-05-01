@@ -1749,7 +1749,7 @@ function LibraryScreen({ lang }: { lang: Lang }) {
                     {catLabels[item.category] ?? item.category}
                   </p>
                 </div>
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
+                <div dir="ltr" style={{ display: 'flex', gap: 6, alignItems: 'center', flexShrink: 0 }}>
                   {(() => {
                     const ss   = item.serving_size ?? 100
                     const su   = (item.serving_unit ?? 'g') as UnitId
@@ -1762,19 +1762,21 @@ function LibraryScreen({ lang }: { lang: Lang }) {
                         : ss
                     const cal  = Math.round(item.calories_per_100g * grams / 100)
                     const prot = Math.round(item.protein_per_100g  * grams / 100 * 10) / 10
-                    const unitLabel = isWeight
+                    const perLabel = isWeight
                       ? '/100g'
-                      : su === 'cup'   ? (isRTL ? 'לכוס'    : '/cup')
+                      : su === 'cup'   ? `/${ss} cup`
                       : su === 'ml'    ? `/${ss}ml`
-                      : su === 'fl_oz' ? `/${ss} fl oz`
-                      : su === 'tbsp'  ? (isRTL ? `/${ss} כף`   : `/${ss} tbsp`)
-                      : su === 'tsp'   ? (isRTL ? `/${ss} כפית` : `/${ss} tsp`)
+                      : su === 'fl_oz' ? `/${ss}fl.oz`
+                      : su === 'tbsp'  ? `/${ss}tbsp`
+                      : su === 'tsp'   ? `/${ss}tsp`
                       : `/${ss}${su}`
                     return (
                       <>
-                        <span style={{ fontSize: 11, color: 'var(--blue-hi)', fontWeight: 600 }}>{cal} {isRTL ? 'קל' : 'cal'}</span>
-                        <span style={{ fontSize: 11, color: 'var(--green-hi)', fontWeight: 600 }}>{prot}g</span>
-                        <span style={{ fontSize: 10, color: 'var(--text-3)' }}>{unitLabel}</span>
+                        <span style={{ fontSize: 11, color: 'var(--blue-hi)', fontWeight: 700 }}>{cal}<span style={{ fontSize: 10, fontWeight: 500, marginInlineStart: 2, opacity: 0.8 }}>kcal</span></span>
+                        <span style={{ fontSize: 10, color: 'var(--text-3)' }}>·</span>
+                        <span style={{ fontSize: 11, color: 'var(--green-hi)', fontWeight: 700 }}>{prot}<span style={{ fontSize: 10, fontWeight: 500, marginInlineStart: 2, opacity: 0.8 }}>g prot</span></span>
+                        <span style={{ fontSize: 10, color: 'var(--text-3)' }}>·</span>
+                        <span style={{ fontSize: 10, color: 'var(--text-3)' }}>{perLabel}</span>
                       </>
                     )
                   })()}

@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import { useLockBodyScroll } from '../hooks/useLockBodyScroll'
 import type { FoodHistory, FoodLibraryItem, Meal, NutritionResult } from '../types'
 import type { Lang } from '../lib/i18n'
@@ -53,9 +53,10 @@ interface FoodEntryFormProps {
   fluidGoalMl?: number
   fluidThresholdMl?: number
   fluidZeroCalOnly?: boolean
+  isOpen?: boolean
 }
 
-export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, defaultWeightUnit = 'g', defaultVolumeUnit: _defaultVolumeUnit = 'ml', onAdd, onUpsertHistory, onTouchHistory, defaultMealType, composedEntries, onAddComposed, fluidThresholdMl = 100, fluidZeroCalOnly = true }: FoodEntryFormProps) {
+export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, defaultWeightUnit = 'g', defaultVolumeUnit: _defaultVolumeUnit = 'ml', onAdd, onUpsertHistory, onTouchHistory, defaultMealType, composedEntries, onAddComposed, fluidThresholdMl = 100, fluidZeroCalOnly = true, isOpen }: FoodEntryFormProps) {
   const [mode, setMode]               = useState<EntryMode>(
     () => (localStorage.getItem('entry-mode') as EntryMode) ?? 'scan'
   )
@@ -66,6 +67,13 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
     () => (localStorage.getItem('entry-mode') as EntryMode) === 'scan'
   )
   const scannerRef  = useRef<BarcodeScannerHandle>(null)
+
+  // Stop camera stream when the parent sheet closes (sheet stays mounted via CSS transform, so
+  // unmount cleanup never fires — this effect is the only reliable trigger)
+  useEffect(() => {
+    if (isOpen === false) scannerRef.current?.stop()
+  }, [isOpen])
+
   const [scanProduct,  setScanProduct]  = useState<BarcodeProduct | null>(null)
   const [scanNotFound, setScanNotFound] = useState<string | null>(null) // barcode that wasn't found
   const [scanGrams,    setScanGrams]  = useState('100')
@@ -471,7 +479,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
       </div>
     )}
 
-    <div className="card" style={{ padding: 16, marginBottom: 20 }}>
+    {!pendingComposed && <div className="card" style={{ padding: 16, marginBottom: 20 }}>
 
       {/* ── Segmented control ─────────────────────────────────── */}
       <div className="seg-control" style={{ marginBottom: 14 }}>
@@ -670,8 +678,8 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
             onBlur={handleBlur}
             dir={dir(lang)}
             style={isRTL
-              ? { paddingLeft: foodName ? 78 : 46, paddingRight: 12 }
-              : { paddingRight: foodName ? 78 : 46, paddingLeft: 12 }}
+              ? { fontSize: 16, paddingLeft: foodName ? 78 : 46, paddingRight: 12 }
+              : { fontSize: 16, paddingRight: foodName ? 78 : 46, paddingLeft: 12 }}
           />
           {/* History browse button */}
           <button
@@ -715,7 +723,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
           type="number"
           inputMode="decimal"
           className="inp"
-          style={{ textAlign: 'center' }}
+          style={{ textAlign: 'center', fontSize: 16 }}
           placeholder={(() => {
             const labels: Record<string, { he: string; en: string }> = {
               g:     { he: 'גרם',       en: 'g'     },
@@ -745,7 +753,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
             setNutrition(null)
             libraryDensityRef.current = null
           }}
-          style={{ fontSize: 13, fontWeight: 700, cursor: 'pointer', textOverflow: 'ellipsis', overflow: 'hidden' }}
+          style={{ fontSize: 16, fontWeight: 700, cursor: 'pointer', textOverflow: 'ellipsis', overflow: 'hidden' }}
         >
           {([
             { v: 'g',     he: 'גרם',        en: 'g'     },
@@ -764,6 +772,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
         {/* Row 2 col 1 — meal type */}
         <select
           className="inp"
+          style={{ fontSize: 16 }}
           value={mealType}
           onChange={e => setMealType(e.target.value as MealType)}
         >
@@ -926,6 +935,19 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
       {/* Confirmation card */}
       {nutrition !== null && (
         <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--border)' }}>
+          {/* Food name + amount — shown as header so user knows what they're confirming */}
+          {foodName && (
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 10 }}>
+              <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>
+                {foodName}
+              </span>
+              {amountStr && (
+                <span style={{ fontSize: 12, color: 'var(--text-3)', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                  {amountStr} {entryUnit}
+                </span>
+              )}
+            </div>
+          )}
           <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-2)', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 12 }}>
             {t(lang, 'confirmNutrition')}
           </p>
@@ -1074,7 +1096,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
       )}
       </div>
       )}
-    </div>
+    </div>}
 
     {/* ── Food history modal ──────────────────────────────────── */}
 

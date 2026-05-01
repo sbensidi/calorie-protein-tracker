@@ -44,9 +44,19 @@ export function FoodHistoryModal({
   }, [onClose])
 
   const q = search.trim().toLowerCase()
-  const filtered = q
+  const filteredRaw = q
     ? history.filter(h => h.name.toLowerCase().includes(q))
     : [...history].sort((a, b) => b.use_count - a.use_count)
+  // Deduplicate by name when no search query — show most-used variant per food name
+  const filtered = q ? filteredRaw : (() => {
+    const seen = new Set<string>()
+    return filteredRaw.filter(h => {
+      const key = h.name.toLowerCase()
+      if (seen.has(key)) return false
+      seen.add(key)
+      return true
+    })
+  })()
 
   const matchedComposed = composedEntries
     ? composedEntries.filter(e => !q || e.name.toLowerCase().includes(q))

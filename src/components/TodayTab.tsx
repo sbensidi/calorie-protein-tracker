@@ -786,6 +786,7 @@ export function TodayTab({
               onAddComposed={id => { handleAddComposed(id); setEntryOpen(false) }}
               fluidThresholdMl={fluidThresholdMl}
               fluidZeroCalOnly={fluidZeroCalOnly}
+              isOpen={entryOpen}
             />
           </div>
         </div>
