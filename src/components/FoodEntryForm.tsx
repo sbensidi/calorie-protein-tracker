@@ -108,7 +108,17 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
 
   const openDropdown = (query: string) => {
     const q = query.trim()
-    const histItems: CombinedSuggestion[] = (q ? getSuggestions(q) : history.slice(0, 6))
+    // Deduplicate by name (case-insensitive) — history is ordered by recency, so first occurrence = most recent
+    const base = q ? getSuggestions(q) : history
+    const seen = new Set<string>()
+    const deduped = base.filter(item => {
+      const key = item.name.toLowerCase()
+      if (seen.has(key)) return false
+      seen.add(key)
+      return true
+    })
+    const histItems: CombinedSuggestion[] = deduped
+      .slice(0, 6)
       .map(item => ({ source: 'history' as const, item }))
     const libItems: CombinedSuggestion[] = q && searchLibrary
       ? searchLibrary(q).slice(0, 4).map(item => ({ source: 'library' as const, item }))
@@ -203,7 +213,34 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
     setCalculating(true)
     setAiError(null)
     setDropdownOpen(false)
-    setSelectedHistoryId(null)   // AI recalculation — treat as new entry
+    setSelectedHistoryId(null)
+
+    // Step 2: Food library — try exact-name match before calling AI
+    if (searchLibrary && numericAmount > 0) {
+      const matches = searchLibrary(foodName)
+      const nameLower = foodName.trim().toLowerCase()
+      const exact = matches.find(item =>
+        item.name_he.toLowerCase() === nameLower ||
+        item.name_en.toLowerCase() === nameLower
+      ) ?? (matches.length === 1 ? matches[0] : null)
+      if (exact) {
+        const uid = (entryUnit !== 'pcs' && entryUnit in UNITS) ? entryUnit as UnitId : null
+        const baseAmount = uid ? toBase(numericAmount, uid) : numericAmount
+        const gramsForNutrition = uid && UNITS[uid].type === 'volume'
+          ? mlToGrams(baseAmount, exact.density ?? 1)
+          : baseAmount
+        const cal  = Math.round(exact.calories_per_100g * gramsForNutrition / 100)
+        const prot = Math.round(exact.protein_per_100g  * gramsForNutrition / 100 * 10) / 10
+        libraryDensityRef.current = exact.density ?? null
+        setNutrition({ calories: cal, protein: prot })
+        setEditCalories(cal)
+        setEditProtein(prot)
+        setCalculating(false)
+        return
+      }
+    }
+
+    // Step 3+: AI (Groq → USDA fallback inside calculateNutrition)
     try {
       const result = await calculateNutrition(foodName, numericAmount, history, amountMode)
       if (result === null) {
@@ -228,7 +265,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
       setEditProtein('')
     }
     setCalculating(false)
-  }, [foodName, numericAmount, history, amountMode, entryUnit])
+  }, [foodName, numericAmount, history, amountMode, entryUnit, searchLibrary])
 
   const handleCancelNutrition = () => {
     setFoodName('')
@@ -615,8 +652,10 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
       {/* ── Manual mode ───────────────────────────────────────── */}
       {mode === 'manual' && (
       <div style={{ position: 'relative' }}>
-      {/* Row 1: [food name (1fr)] [amount (64px)] [unit dropdown (84px)]
-          Row 2: [meal type (col 1)] [calculate (cols 2+3)] */}
+
+      {/* Input form — hidden once nutrition is confirmed (isolation: Issue 8) */}
+      {nutrition === null && (
+      <>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 64px 84px', gap: 8 }}>
 
         {/* Row 1 col 1 — food name */}
@@ -870,6 +909,8 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
           </div>
         )
       })()}
+      </>
+      )}
 
       <div aria-live="polite" aria-atomic="true">
         {aiError && (
@@ -890,21 +931,21 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
           </p>
 
           <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end', marginBottom: 12 }}>
-            {/* Calories */}
+            {/* Calories — input shows effective total; hint shows per-item base when qty > 1 */}
             <div style={{ flex: 1 }}>
               <label style={{ fontSize: 11, color: 'var(--blue-hi)', fontWeight: 600, display: 'block', marginBottom: 4 }}>
-                {t(lang, 'calories')}{qty !== 1 ? ` → ${effectiveCalories}` : ''}
+                {t(lang, 'calories')} ({t(lang, 'caloriesUnit')})
               </label>
               <div style={{ position: 'relative' }}>
                 <input
                   type="number"
                   inputMode="numeric"
                   className="inp"
-                  style={{ borderColor: 'var(--blue-glow)', ...(isRTL ? { paddingLeft: editCalories !== '' ? 32 : 12 } : { paddingRight: editCalories !== '' ? 32 : 12 }) }}
-                  value={editCalories}
+                  style={{ borderColor: 'var(--blue-glow)', fontSize: 16, ...(isRTL ? { paddingLeft: editCalories !== '' ? 32 : 12 } : { paddingRight: editCalories !== '' ? 32 : 12 }) }}
+                  value={editCalories === '' ? '' : effectiveCalories}
                   placeholder="0"
-                  onChange={e => setEditCalories(e.target.value === '' ? '' : Number(e.target.value))}
-                  onFocus={e => { if (editCalories === 0) setEditCalories(''); else e.target.select() }}
+                  onChange={e => setEditCalories(e.target.value === '' ? '' : Math.round(Number(e.target.value) / qty))}
+                  onFocus={e => { if (numCalories === 0) setEditCalories(''); else e.target.select() }}
                 />
                 {editCalories !== '' && (
                   <button onMouseDown={e => { e.preventDefault(); setEditCalories('') }} tabIndex={-1} style={clearBtnStyle()}>
@@ -912,12 +953,17 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
                   </button>
                 )}
               </div>
+              {qty > 1 && editCalories !== '' && (
+                <span style={{ fontSize: 10, color: 'var(--text-3)', display: 'block', marginTop: 3 }}>
+                  {lang === 'he' ? `${Math.round(numCalories)} לפריט` : `${Math.round(numCalories)} per item`}
+                </span>
+              )}
             </div>
 
-            {/* Protein */}
+            {/* Protein — same pattern as calories */}
             <div style={{ flex: 1 }}>
               <label style={{ fontSize: 11, color: 'var(--green-hi)', fontWeight: 600, display: 'block', marginBottom: 4 }}>
-                {t(lang, 'protein')}{qty !== 1 ? ` → ${effectiveProtein}g` : ''}
+                {lang === 'he' ? 'חלבון (ג׳)' : 'Protein (g)'}
               </label>
               <div style={{ position: 'relative' }}>
                 <input
@@ -925,11 +971,11 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
                   inputMode="decimal"
                   step="0.1"
                   className="inp inp-green"
-                  style={{ borderColor: 'var(--green-glow)', ...(isRTL ? { paddingLeft: editProtein !== '' ? 32 : 12 } : { paddingRight: editProtein !== '' ? 32 : 12 }) }}
-                  value={editProtein}
+                  style={{ borderColor: 'var(--green-glow)', fontSize: 16, ...(isRTL ? { paddingLeft: editProtein !== '' ? 32 : 12 } : { paddingRight: editProtein !== '' ? 32 : 12 }) }}
+                  value={editProtein === '' ? '' : effectiveProtein}
                   placeholder="0"
-                  onChange={e => setEditProtein(e.target.value === '' ? '' : Number(e.target.value))}
-                  onFocus={e => { if (editProtein === 0) setEditProtein(''); else e.target.select() }}
+                  onChange={e => setEditProtein(e.target.value === '' ? '' : Math.round(Number(e.target.value) / qty * 10) / 10)}
+                  onFocus={e => { if (numProtein === 0) setEditProtein(''); else e.target.select() }}
                 />
                 {editProtein !== '' && (
                   <button onMouseDown={e => { e.preventDefault(); setEditProtein('') }} tabIndex={-1} style={clearBtnStyle()}>
@@ -937,6 +983,11 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
                   </button>
                 )}
               </div>
+              {qty > 1 && editProtein !== '' && (
+                <span style={{ fontSize: 10, color: 'var(--text-3)', display: 'block', marginTop: 3 }}>
+                  {lang === 'he' ? `${Math.round(numProtein * 10) / 10}g לפריט` : `${Math.round(numProtein * 10) / 10}g per item`}
+                </span>
+              )}
             </div>
 
             {/* Quantity stepper */}

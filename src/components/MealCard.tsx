@@ -58,11 +58,12 @@ export function MealCard({ meal, lang, weightUnit = 'g', showCheckbox, selected,
   if (editing) {
     return (
       <div className="meal-row" style={{ borderColor: 'var(--blue-glow)' }}>
+        {/* Row 1: name + meal type */}
         <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
           <div style={{ flex: 1, position: 'relative' }}>
             <input
               className="inp"
-              style={{ width: '100%', paddingInlineEnd: editName ? 32 : 12 }}
+              style={{ width: '100%', fontSize: 16, paddingInlineEnd: editName ? 32 : 12 }}
               value={editName}
               onChange={e => setEditName(e.target.value)}
               placeholder={t(lang, 'foodName')}
@@ -81,7 +82,7 @@ export function MealCard({ meal, lang, weightUnit = 'g', showCheckbox, selected,
           </div>
           <select
             className="inp"
-            style={{ width: 110, flexShrink: 0 }}
+            style={{ width: 110, flexShrink: 0, fontSize: 16 }}
             value={editMealType}
             onChange={e => setEditMealType(e.target.value as MealType)}
           >
@@ -92,8 +93,9 @@ export function MealCard({ meal, lang, weightUnit = 'g', showCheckbox, selected,
             <option value="beverage">{t(lang, 'beverage')}</option>
           </select>
         </div>
-        <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
-          <div style={{ flex: 1 }}>
+        {/* Row 2: calories + protein + weight — equal grid columns (Issue 6) */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 8 }}>
+          <div>
             <label style={{ fontSize: 11, color: 'var(--blue-hi)', fontWeight: 600, display: 'block', marginBottom: 4 }}>
               {t(lang, 'calories')} ({t(lang, 'caloriesUnit')})
             </label>
@@ -102,7 +104,7 @@ export function MealCard({ meal, lang, weightUnit = 'g', showCheckbox, selected,
                 type="number"
                 inputMode="numeric"
                 className="inp"
-                style={{ paddingInlineEnd: editCalories !== '' ? 32 : 12 }}
+                style={{ fontSize: 16, paddingInlineEnd: editCalories !== '' ? 32 : 12 }}
                 value={editCalories}
                 placeholder="0"
                 onChange={e => setEditCalories(e.target.value === '' ? '' : Number(e.target.value))}
@@ -116,7 +118,7 @@ export function MealCard({ meal, lang, weightUnit = 'g', showCheckbox, selected,
               )}
             </div>
           </div>
-          <div style={{ flex: 1 }}>
+          <div>
             <label style={{ fontSize: 11, color: 'var(--green-hi)', fontWeight: 600, display: 'block', marginBottom: 4 }}>
               {lang === 'he' ? 'חלבון (ג׳)' : 'Protein (g)'}
             </label>
@@ -126,7 +128,7 @@ export function MealCard({ meal, lang, weightUnit = 'g', showCheckbox, selected,
                 inputMode="decimal"
                 step="0.1"
                 className="inp inp-green"
-                style={{ paddingInlineEnd: editProtein !== '' ? 32 : 12 }}
+                style={{ fontSize: 16, paddingInlineEnd: editProtein !== '' ? 32 : 12 }}
                 value={editProtein}
                 placeholder="0"
                 onChange={e => setEditProtein(e.target.value === '' ? '' : Number(e.target.value))}
@@ -140,7 +142,7 @@ export function MealCard({ meal, lang, weightUnit = 'g', showCheckbox, selected,
               )}
             </div>
           </div>
-          <div style={{ flex: 1 }}>
+          <div>
             <label style={{ fontSize: 11, color: 'var(--text-2)', fontWeight: 600, display: 'block', marginBottom: 4 }}>
               {t(lang, 'weight')}
             </label>
@@ -150,7 +152,7 @@ export function MealCard({ meal, lang, weightUnit = 'g', showCheckbox, selected,
                   type="number"
                   inputMode="decimal"
                   className="inp"
-                  style={{ width: '100%', paddingInlineEnd: editWeight !== '' ? 32 : 12 }}
+                  style={{ width: '100%', fontSize: 16, paddingInlineEnd: editWeight !== '' ? 32 : 12 }}
                   value={editWeight}
                   placeholder="0"
                   onChange={e => setEditWeight(e.target.value === '' ? '' : Number(e.target.value))}
@@ -165,7 +167,7 @@ export function MealCard({ meal, lang, weightUnit = 'g', showCheckbox, selected,
               </div>
               <select
                 className="inp"
-                style={{ width: 52, padding: '0 4px', flexShrink: 0, fontSize: 12 }}
+                style={{ width: 52, padding: '0 4px', flexShrink: 0, fontSize: 16 }}
                 value={editWeightUnit}
                 onChange={e => setEditWeightUnit(e.target.value as 'g' | 'pcs' | 'ml')}
               >
@@ -202,47 +204,38 @@ export function MealCard({ meal, lang, weightUnit = 'g', showCheckbox, selected,
         </div>
       )}
 
-      {/* Food name + grams — shrinks to make room for numbers */}
-      <div style={{ minWidth: 0, flexShrink: 1 }}>
-        <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {meal.name}
-          {meal.fluid_ml != null && !meal.fluid_excluded && (
-            <span className="icon" style={{ fontSize: 13, color: 'var(--cyan-hi)', opacity: 0.8, verticalAlign: 'middle', marginInlineStart: 3 }}>water_drop</span>
-          )}
-        </p>
-        <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-2)', margin: '2px 0 0' }}>
-          {meal.fluid_ml != null && !meal.fluid_excluded
-            ? (meal.fluid_ml >= 1000
-                ? `${(meal.fluid_ml / 1000).toFixed(1)}${lang === 'he' ? 'ל׳' : 'L'}`
-                : `${Math.round(meal.fluid_ml)}ml`)
-            : meal.grams < 0
-              ? `${Math.abs(meal.grams)} ${lang === 'he' ? 'יח׳' : 'pcs'}`
-              : formatWeight(meal.grams, weightUnit)}
-        </p>
-      </div>
-
-      {/* Numbers — cal/protein with units */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 4, flexShrink: 0 }}>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 3 }}>
-          <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--blue-hi)', lineHeight: 1 }}>
+      {/* Content: 2-line layout — Line1: name+qty, Line2: cal+protein */}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        {/* Line 1: food name + quantity */}
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 5, overflow: 'hidden' }}>
+          <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>
+            {meal.name}
+            {meal.fluid_ml != null && !meal.fluid_excluded && (
+              <span className="icon" style={{ fontSize: 13, color: 'var(--cyan-hi)', opacity: 0.8, verticalAlign: 'middle', marginInlineStart: 3 }}>water_drop</span>
+            )}
+          </span>
+          <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-3)', whiteSpace: 'nowrap', flexShrink: 0 }}>
+            {meal.fluid_ml != null && !meal.fluid_excluded
+              ? (meal.fluid_ml >= 1000
+                  ? `${(meal.fluid_ml / 1000).toFixed(1)}${lang === 'he' ? 'ל׳' : 'L'}`
+                  : `${Math.round(meal.fluid_ml)}ml`)
+              : meal.grams < 0
+                ? `${Math.abs(meal.grams)} ${lang === 'he' ? 'יח׳' : 'pcs'}`
+                : formatWeight(meal.grams, weightUnit)}
+          </span>
+        </div>
+        {/* Line 2: calories + protein */}
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginTop: 3 }}>
+          <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--blue-hi)', lineHeight: 1 }}>
             {Math.round(meal.calories)}
+            <span style={{ fontSize: 11, fontWeight: 500, opacity: 0.65, marginInlineStart: 2 }}>{t(lang, 'caloriesUnit')}</span>
           </span>
-          <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--green-hi)', lineHeight: 1 }}>
+          <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--green-hi)', lineHeight: 1 }}>
             {Math.round(meal.protein * 10) / 10}
-          </span>
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 3 }}>
-          <span style={{ fontSize: 11, fontWeight: 500, opacity: 0.7, lineHeight: 1.4 }}>
-            {t(lang, 'caloriesUnit')}
-          </span>
-          <span style={{ fontSize: 11, fontWeight: 500, opacity: 0.7, lineHeight: 1.4 }}>
-            {t(lang, 'proteinUnit')}
+            <span style={{ fontSize: 11, fontWeight: 500, opacity: 0.65, marginInlineStart: 2 }}>{t(lang, 'proteinUnit')}</span>
           </span>
         </div>
       </div>
-
-      {/* Spacer */}
-      <span style={{ flex: 1 }} />
 
       {/* Edit button — always visible */}
       <button

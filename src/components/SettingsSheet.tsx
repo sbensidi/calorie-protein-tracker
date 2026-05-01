@@ -1172,7 +1172,8 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
   const [editingMealId, setEditingMealId] = useState<string | null>(null)
   const [mealDraft, setMealDraft]         = useState<{ name: string; grams: string; calories: string; protein: string }>({ name: '', grams: '', calories: '', protein: '' })
   const mealEditRatios = useRef({ calPerGram: 0, protPerGram: 0 })
-  const [expandedGroupId, setExpandedGroupId] = useState<string | null>(null)
+  const [expandedGroupId, setExpandedGroupId]           = useState<string | null>(null)
+  const [expandedHistoryGroup, setExpandedHistoryGroup] = useState<string | null>(null)
 
   const q = search.trim().toLowerCase()
   const beverageHistory = history.filter(h => h.fluid_ml != null && h.fluid_ml > 0)
@@ -1180,6 +1181,18 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
   const filtered = q
     ? baseHistory.filter(h => h.name.toLowerCase().includes(q))
     : [...baseHistory].sort((a, b) => b.use_count - a.use_count)
+
+  // Group by name (case-insensitive) — single-weight names show flat, multi-weight names collapse
+  const historyGroups = useMemo(() => {
+    const map = new Map<string, FoodHistory[]>()
+    for (const item of filtered) {
+      const key = item.name.toLowerCase()
+      const arr = map.get(key) ?? []
+      arr.push(item)
+      map.set(key, arr)
+    }
+    return Array.from(map.values())
+  }, [filtered])
 
   const startEdit = (item: FoodHistory) => {
     const absGrams = Math.abs(item.grams) || 1
@@ -1307,116 +1320,158 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
               {lang === 'he' ? 'שתייה' : 'Drinks'}
             </p>
           )}
-          {filtered.length === 0 ? (
+          {historyGroups.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '32px 0', color: 'var(--text-3)' }}>
               <span className="icon" style={{ fontSize: 28, display: 'block', marginBottom: 8 }}>search_off</span>
               <p style={{ fontSize: 13, margin: 0 }}>{lang === 'he' ? 'לא נמצאו תוצאות' : 'No results'}</p>
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              {filtered.map(item => {
-                const isEditing = editingId === item.id
-                const amtLabel  = item.grams < 0
-                  ? `${Math.abs(item.grams)} ${lang === 'he' ? 'יח׳' : 'pcs'}`
-                  : item.fluid_ml != null && item.fluid_ml > 0
-                    ? (item.fluid_ml >= 1000 ? `${(item.fluid_ml / 1000).toFixed(1)}${lang === 'he' ? 'ל׳' : 'L'}` : `${Math.round(item.fluid_ml)}ml`)
-                    : `${item.grams}g`
-                return (
-                  <div key={item.id} style={{ background: 'var(--bg-card)', border: `1px solid ${isEditing ? 'var(--blue)' : 'var(--border)'}`, borderRadius: 12, overflow: 'hidden', transition: 'border-color .15s' }}>
-                    {!isEditing ? (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px' }}>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</p>
-                          <p style={{ fontSize: 11, color: 'var(--text-3)', margin: '2px 0 0' }}>
-                            {amtLabel} · <span style={{ color: 'var(--blue-hi)', fontWeight: 600 }}>{Math.round(item.calories)}</span> {t(lang, 'caloriesUnit')} · <span style={{ color: 'var(--green-hi)', fontWeight: 600 }}>{Math.round(item.protein * 10) / 10}</span>{t(lang, 'proteinUnit')} · {item.use_count}×
-                          </p>
+              {historyGroups.map(groupItems => {
+                const groupKey  = groupItems[0].name.toLowerCase()
+                const isGroup   = groupItems.length > 1
+                const isGroupExpanded = expandedHistoryGroup === groupKey
+
+                // Render a single history item (used for both flat and within a group)
+                const renderItem = (item: FoodHistory, inGroup = false) => {
+                  const isEditing = editingId === item.id
+                  const amtLabel  = item.grams < 0
+                    ? `${Math.abs(item.grams)} ${lang === 'he' ? 'יח׳' : 'pcs'}`
+                    : item.fluid_ml != null && item.fluid_ml > 0
+                      ? (item.fluid_ml >= 1000 ? `${(item.fluid_ml / 1000).toFixed(1)}${lang === 'he' ? 'ל׳' : 'L'}` : `${Math.round(item.fluid_ml)}ml`)
+                      : `${item.grams}g`
+                  return (
+                    <div
+                      key={item.id}
+                      style={inGroup
+                        ? { borderBottom: '1px solid var(--border)' }
+                        : { background: 'var(--bg-card)', border: `1px solid ${isEditing ? 'var(--blue)' : 'var(--border)'}`, borderRadius: 12, overflow: 'hidden', transition: 'border-color .15s' }
+                      }
+                    >
+                      {!isEditing ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: inGroup ? '8px 12px' : '10px 12px' }}>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            {!inGroup && (
+                              <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</p>
+                            )}
+                            <p style={{ fontSize: 11, color: 'var(--text-3)', margin: inGroup ? 0 : '2px 0 0' }}>
+                              {amtLabel} · <span style={{ color: 'var(--blue-hi)', fontWeight: 600 }}>{Math.round(item.calories)}</span> {t(lang, 'caloriesUnit')} · <span style={{ color: 'var(--green-hi)', fontWeight: 600 }}>{Math.round(item.protein * 10) / 10}</span>{t(lang, 'proteinUnit')} · {item.use_count}×
+                            </p>
+                          </div>
+                          <button onClick={() => startEdit(item)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 6, display: 'flex', borderRadius: 8 }}>
+                            <span className="icon icon-sm">edit</span>
+                          </button>
+                          <button onClick={() => handleDelete(item.id, item.name)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--red)', padding: 6, display: 'flex', borderRadius: 8 }}>
+                            <span className="icon icon-sm">delete</span>
+                          </button>
                         </div>
-                        <button onClick={() => startEdit(item)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 6, display: 'flex', borderRadius: 8 }}>
-                          <span className="icon icon-sm">edit</span>
-                        </button>
-                        <button onClick={() => handleDelete(item.id, item.name)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--red)', padding: 6, display: 'flex', borderRadius: 8 }}>
-                          <span className="icon icon-sm">delete</span>
-                        </button>
-                      </div>
-                    ) : (
-                      <div style={{ padding: 10, display: 'flex', flexDirection: 'column', gap: 6 }}>
-                        <div style={{ position: 'relative' }}>
-                          <input className="inp" value={editDraft.name} onChange={e => setEditDraft(d => ({ ...d, name: e.target.value }))}
-                            placeholder={lang === 'he' ? 'שם' : 'Name'} style={{ ...inputSm, paddingInlineEnd: editDraft.name ? 28 : 8 }} dir={dir(lang)} />
-                          {editDraft.name && (
-                            <button onMouseDown={e => { e.preventDefault(); setEditDraft(d => ({ ...d, name: '' })) }} tabIndex={-1}
-                              style={{ position: 'absolute', insetInlineEnd: 0, top: 0, bottom: 0, width: 28, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                              <span className="icon icon-sm">close</span>
+                      ) : (
+                        <div style={{ padding: 10, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                          <div style={{ position: 'relative' }}>
+                            <input className="inp" value={editDraft.name} onChange={e => setEditDraft(d => ({ ...d, name: e.target.value }))}
+                              placeholder={lang === 'he' ? 'שם' : 'Name'} style={{ ...inputSm, paddingInlineEnd: editDraft.name ? 28 : 8 }} dir={dir(lang)} />
+                            {editDraft.name && (
+                              <button onMouseDown={e => { e.preventDefault(); setEditDraft(d => ({ ...d, name: '' })) }} tabIndex={-1}
+                                style={{ position: 'absolute', insetInlineEnd: 0, top: 0, bottom: 0, width: 28, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <span className="icon icon-sm">close</span>
+                              </button>
+                            )}
+                          </div>
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6 }}>
+                            <div>
+                              <label style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-3)', display: 'block', marginBottom: 3 }}>
+                                {Number(editDraft.grams) < 0
+                                  ? (lang === 'he' ? 'יח׳' : 'pcs')
+                                  : (lang === 'he' ? 'גרם (g)' : 'Weight (g)')}
+                              </label>
+                              <div style={{ position: 'relative' }}>
+                                <input className="inp" type="number" inputMode="decimal" value={editDraft.grams}
+                                  onFocus={e => e.target.select()}
+                                  onChange={e => handleGramsChange(e.target.value)}
+                                  style={{ ...inputSm, borderColor: 'var(--blue-border)', paddingInlineEnd: editDraft.grams ? 28 : 8 }} />
+                                {editDraft.grams && (
+                                  <button onMouseDown={e => { e.preventDefault(); setEditDraft(d => ({ ...d, grams: '' })) }} tabIndex={-1}
+                                    style={{ position: 'absolute', insetInlineEnd: 0, top: 0, bottom: 0, width: 28, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <span className="icon icon-sm">close</span>
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                            <div>
+                              <label style={{ fontSize: 10, fontWeight: 600, color: 'var(--blue-hi)', display: 'flex', alignItems: 'center', gap: 3, marginBottom: 3 }}>
+                                {lang === 'he' ? `קלוריות (${t(lang, 'caloriesUnit')})` : `Calories (${t(lang, 'caloriesUnit')})`}
+                                <span className="icon" style={{ fontSize: 10, opacity: 0.6 }} title={lang === 'he' ? 'מחושב אוטומטית לפי גרם' : 'Auto-scaled from grams'}>calculate</span>
+                              </label>
+                              <div style={{ position: 'relative' }}>
+                                <input className="inp" type="number" inputMode="decimal" value={editDraft.calories}
+                                  onFocus={e => e.target.select()}
+                                  onChange={e => setEditDraft(d => ({ ...d, calories: e.target.value }))}
+                                  style={{ ...inputSm, paddingInlineEnd: editDraft.calories ? 28 : 8 }} />
+                                {editDraft.calories && (
+                                  <button onMouseDown={e => { e.preventDefault(); setEditDraft(d => ({ ...d, calories: '' })) }} tabIndex={-1}
+                                    style={{ position: 'absolute', insetInlineEnd: 0, top: 0, bottom: 0, width: 28, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <span className="icon icon-sm">close</span>
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                            <div>
+                              <label style={{ fontSize: 10, fontWeight: 600, color: 'var(--green-hi)', display: 'flex', alignItems: 'center', gap: 3, marginBottom: 3 }}>
+                                {lang === 'he' ? `חלבון (${t(lang, 'proteinUnit')})` : `Protein (${t(lang, 'proteinUnit')})`}
+                                <span className="icon" style={{ fontSize: 10, opacity: 0.6 }} title={lang === 'he' ? 'מחושב אוטומטית לפי גרם' : 'Auto-scaled from grams'}>calculate</span>
+                              </label>
+                              <div style={{ position: 'relative' }}>
+                                <input className="inp" type="number" inputMode="decimal" value={editDraft.protein}
+                                  onFocus={e => e.target.select()}
+                                  onChange={e => setEditDraft(d => ({ ...d, protein: e.target.value }))}
+                                  style={{ ...inputSm, paddingInlineEnd: editDraft.protein ? 28 : 8 }} />
+                                {editDraft.protein && (
+                                  <button onMouseDown={e => { e.preventDefault(); setEditDraft(d => ({ ...d, protein: '' })) }} tabIndex={-1}
+                                    style={{ position: 'absolute', insetInlineEnd: 0, top: 0, bottom: 0, width: 28, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <span className="icon icon-sm">close</span>
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          <div style={{ display: 'flex', gap: 6 }}>
+                            <button onClick={() => setEditingId(null)} className="btn-ghost" style={{ flex: 1, height: 34, fontSize: 12, borderRadius: 8 }}>
+                              {t(lang, 'cancel')}
                             </button>
-                          )}
-                        </div>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6 }}>
-                          <div>
-                            <label style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-3)', display: 'block', marginBottom: 3 }}>
-                              {Number(editDraft.grams) < 0
-                                ? (lang === 'he' ? 'יח׳' : 'pcs')
-                                : (lang === 'he' ? 'גרם (g)' : 'Weight (g)')}
-                            </label>
-                            <div style={{ position: 'relative' }}>
-                              <input className="inp" type="number" inputMode="decimal" value={editDraft.grams}
-                                onFocus={e => e.target.select()}
-                                onChange={e => handleGramsChange(e.target.value)}
-                                style={{ ...inputSm, borderColor: 'rgba(59,130,246,0.5)', paddingInlineEnd: editDraft.grams ? 28 : 8 }} />
-                              {editDraft.grams && (
-                                <button onMouseDown={e => { e.preventDefault(); setEditDraft(d => ({ ...d, grams: '' })) }} tabIndex={-1}
-                                  style={{ position: 'absolute', insetInlineEnd: 0, top: 0, bottom: 0, width: 28, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                  <span className="icon icon-sm">close</span>
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                          <div>
-                            <label style={{ fontSize: 10, fontWeight: 600, color: 'var(--blue-hi)', display: 'flex', alignItems: 'center', gap: 3, marginBottom: 3 }}>
-                              {lang === 'he' ? `קלוריות (${t(lang, 'caloriesUnit')})` : `Calories (${t(lang, 'caloriesUnit')})`}
-                              <span className="icon" style={{ fontSize: 10, opacity: 0.6 }} title={lang === 'he' ? 'מחושב אוטומטית לפי גרם' : 'Auto-scaled from grams'}>calculate</span>
-                            </label>
-                            <div style={{ position: 'relative' }}>
-                              <input className="inp" type="number" inputMode="decimal" value={editDraft.calories}
-                                onFocus={e => e.target.select()}
-                                onChange={e => setEditDraft(d => ({ ...d, calories: e.target.value }))}
-                                style={{ ...inputSm, paddingInlineEnd: editDraft.calories ? 28 : 8 }} />
-                              {editDraft.calories && (
-                                <button onMouseDown={e => { e.preventDefault(); setEditDraft(d => ({ ...d, calories: '' })) }} tabIndex={-1}
-                                  style={{ position: 'absolute', insetInlineEnd: 0, top: 0, bottom: 0, width: 28, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                  <span className="icon icon-sm">close</span>
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                          <div>
-                            <label style={{ fontSize: 10, fontWeight: 600, color: 'var(--green-hi)', display: 'flex', alignItems: 'center', gap: 3, marginBottom: 3 }}>
-                              {lang === 'he' ? `חלבון (${t(lang, 'proteinUnit')})` : `Protein (${t(lang, 'proteinUnit')})`}
-                              <span className="icon" style={{ fontSize: 10, opacity: 0.6 }} title={lang === 'he' ? 'מחושב אוטומטית לפי גרם' : 'Auto-scaled from grams'}>calculate</span>
-                            </label>
-                            <div style={{ position: 'relative' }}>
-                              <input className="inp" type="number" inputMode="decimal" value={editDraft.protein}
-                                onFocus={e => e.target.select()}
-                                onChange={e => setEditDraft(d => ({ ...d, protein: e.target.value }))}
-                                style={{ ...inputSm, paddingInlineEnd: editDraft.protein ? 28 : 8 }} />
-                              {editDraft.protein && (
-                                <button onMouseDown={e => { e.preventDefault(); setEditDraft(d => ({ ...d, protein: '' })) }} tabIndex={-1}
-                                  style={{ position: 'absolute', insetInlineEnd: 0, top: 0, bottom: 0, width: 28, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                  <span className="icon icon-sm">close</span>
-                                </button>
-                              )}
-                            </div>
+                            <button onClick={saveEdit} className="btn-primary" style={{ flex: 1, height: 34, fontSize: 12, borderRadius: 8 }}>
+                              {lang === 'he' ? 'שמור' : 'Save'}
+                            </button>
                           </div>
                         </div>
-                        <div style={{ display: 'flex', gap: 6 }}>
-                          <button onClick={() => setEditingId(null)} className="btn-ghost" style={{ flex: 1, height: 34, fontSize: 12, borderRadius: 8 }}>
-                            {t(lang, 'cancel')}
-                          </button>
-                          <button onClick={saveEdit} className="btn-primary" style={{ flex: 1, height: 34, fontSize: 12, borderRadius: 8 }}>
-                            {lang === 'he' ? 'שמור' : 'Save'}
-                          </button>
-                        </div>
+                      )}
+                    </div>
+                  )
+                }
+
+                if (!isGroup) {
+                  return renderItem(groupItems[0])
+                }
+
+                // Multi-weight group — collapsible
+                const totalUses = groupItems.reduce((s, x) => s + x.use_count, 0)
+                return (
+                  <div key={groupKey} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
+                    {/* Group header */}
+                    <button
+                      onClick={() => setExpandedHistoryGroup(isGroupExpanded ? null : groupKey)}
+                      style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', width: '100%', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'start', fontFamily: 'inherit', borderBottom: isGroupExpanded ? '1px solid var(--border)' : 'none' }}
+                    >
+                      <span className="icon icon-sm" style={{ color: 'var(--text-3)', flexShrink: 0 }}>layers</span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{groupItems[0].name}</p>
+                        <p style={{ fontSize: 11, color: 'var(--text-3)', margin: '2px 0 0' }}>
+                          {groupItems.length} {lang === 'he' ? 'גרסאות' : 'variants'} · {totalUses}×
+                        </p>
                       </div>
-                    )}
+                      <span className="icon icon-sm" style={{ color: 'var(--text-3)', flexShrink: 0, transition: 'transform .2s', transform: isGroupExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>expand_more</span>
+                    </button>
+                    {/* Expanded items */}
+                    {isGroupExpanded && groupItems.map(item => renderItem(item, true))}
                   </div>
                 )
               })}
