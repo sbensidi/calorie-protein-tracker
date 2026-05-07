@@ -14,6 +14,7 @@ export interface UserProfile {
   fluidGoalMl:        number
   fluidThresholdMl:   number
   fluidZeroCalOnly:   boolean
+  defaultServingGrams: number
 }
 
 const LS_KEY = 'user_profile'
@@ -30,6 +31,7 @@ const DEFAULT: UserProfile = {
   fluidGoalMl:        2500,
   fluidThresholdMl:   100,
   fluidZeroCalOnly:   false,
+  defaultServingGrams: 150,
 }
 
 
@@ -52,9 +54,10 @@ function dbToProfile(row: Record<string, unknown>): UserProfile {
     goalType:         (row.goal_type as 'lose'|'maintain'|'gain') ?? DEFAULT.goalType,
     weightUnit:       (row.weight_unit as WeightUnit) ?? DEFAULT.weightUnit,
     volumeUnit:       (row.volume_unit as VolumeUnit) ?? DEFAULT.volumeUnit,
-    fluidGoalMl:      (row.fluid_goal_ml as number)       ?? DEFAULT.fluidGoalMl,
-    fluidThresholdMl: (row.fluid_threshold_ml as number)  ?? DEFAULT.fluidThresholdMl,
-    fluidZeroCalOnly:  (row.fluid_zero_cal_only as boolean) ?? DEFAULT.fluidZeroCalOnly,
+    fluidGoalMl:         (row.fluid_goal_ml as number)         ?? DEFAULT.fluidGoalMl,
+    fluidThresholdMl:    (row.fluid_threshold_ml as number)    ?? DEFAULT.fluidThresholdMl,
+    fluidZeroCalOnly:    (row.fluid_zero_cal_only as boolean)  ?? DEFAULT.fluidZeroCalOnly,
+    defaultServingGrams: (row.default_serving_grams as number) ?? DEFAULT.defaultServingGrams,
   }
 }
 
@@ -69,10 +72,11 @@ function profileToDb(p: UserProfile, userId: string) {
     goal_type:           p.goalType,
     weight_unit:         p.weightUnit,
     volume_unit:         p.volumeUnit,
-    fluid_goal_ml:       p.fluidGoalMl,
-    fluid_threshold_ml:  p.fluidThresholdMl,
-    fluid_zero_cal_only: p.fluidZeroCalOnly,
-    updated_at:          new Date().toISOString(),
+    fluid_goal_ml:        p.fluidGoalMl,
+    fluid_threshold_ml:   p.fluidThresholdMl,
+    fluid_zero_cal_only:  p.fluidZeroCalOnly,
+    default_serving_grams: p.defaultServingGrams,
+    updated_at:           new Date().toISOString(),
   }
 }
 

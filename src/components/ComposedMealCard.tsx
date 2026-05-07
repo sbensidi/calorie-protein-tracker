@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { Meal, ComposedGroup } from '../types'
 import type { Lang } from '../lib/i18n'
 import { t, dir } from '../lib/i18n'
+import { MealCard } from './MealCard'
 
 interface ComposedMealCardProps {
   group: ComposedGroup
@@ -16,14 +17,6 @@ interface ComposedMealCardProps {
   onAddIngredient: () => void  // signals TodayTab to open the FoodEntryForm modal
 }
 
-interface ChildEditState {
-  name: string
-  calories: number | ''
-  protein: number | ''
-  weight: number | ''
-  weightUnit: 'g' | 'ml' | 'pcs'
-}
-
 export function ComposedMealCard({
   group, meals, lang, selected, onToggleSelect,
   onEditMeal, onDeleteMeal, onRename, onDeleteGroup, onAddIngredient,
@@ -31,8 +24,6 @@ export function ComposedMealCard({
   const [open, setOpen] = useState(true)
   const [editingName, setEditingName] = useState(false)
   const [nameInput, setNameInput] = useState(group.name)
-  const [editingChildId, setEditingChildId] = useState<string | null>(null)
-  const [childEdit, setChildEdit] = useState<ChildEditState>({ name: '', calories: '', protein: '', weight: '', weightUnit: 'g' })
 
   const totalCal  = Math.round(meals.reduce((s, m) => s + m.calories, 0))
   const totalProt = Math.round(meals.reduce((s, m) => s + m.protein, 0) * 10) / 10
@@ -42,31 +33,6 @@ export function ComposedMealCard({
     if (trimmed) onRename(trimmed)
     else setNameInput(group.name)
     setEditingName(false)
-  }
-
-  const startEditChild = (meal: Meal) => {
-    const isFluid = meal.fluid_ml != null && !meal.fluid_excluded
-    const isPcs   = meal.grams < 0
-    setEditingChildId(meal.id)
-    setChildEdit({
-      name:       meal.name,
-      calories:   meal.calories,
-      protein:    meal.protein,
-      weight:     isFluid ? Math.round(meal.fluid_ml!) : Math.abs(meal.grams),
-      weightUnit: isFluid ? 'ml' : isPcs ? 'pcs' : 'g',
-    })
-  }
-
-  const saveChild = (meal: Meal) => {
-    const w = Number(childEdit.weight) || 0
-    onEditMeal(meal.id, {
-      name:     childEdit.name || meal.name,
-      calories: Number(childEdit.calories) || 0,
-      protein:  Number(childEdit.protein)  || 0,
-      grams:    childEdit.weightUnit === 'pcs' ? -w : w,
-      ...(childEdit.weightUnit === 'ml' ? { fluid_ml: w } : {}),
-    })
-    setEditingChildId(null)
   }
 
   return (
@@ -95,7 +61,7 @@ export function ComposedMealCard({
           <div style={{ flex: 1, position: 'relative' }}>
             <input
               className="inp"
-              style={{ width: '100%', height: 32, fontSize: 13, fontWeight: 700, paddingInlineStart: 8, paddingInlineEnd: nameInput ? 32 : 8, borderColor: 'var(--blue-border-hi)' }}
+              style={{ width: '100%', height: 38, fontSize: 16, fontWeight: 700, paddingInlineStart: 8, paddingInlineEnd: nameInput ? 32 : 8, borderColor: 'var(--blue-border-hi)' }}
               value={nameInput}
               autoFocus
               onChange={e => setNameInput(e.target.value)}
@@ -115,25 +81,23 @@ export function ComposedMealCard({
           </div>
         ) : (
           <div style={{ flex: 1, minWidth: 0 }}>
-            <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {group.name}
-            </p>
-            <p style={{ fontSize: 11, color: 'var(--text-3)', margin: '1px 0 0' }}>
-              {meals.length} {t(lang, 'ingredients')}
-            </p>
-          </div>
-        )}
-
-        {/* Totals */}
-        {!editingName && (
-          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 4, flexShrink: 0 }}>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 3 }}>
-              <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--blue-hi)', lineHeight: 1 }}>{totalCal}</span>
-              <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--green-hi)', lineHeight: 1 }}>{totalProt}</span>
+            {/* Line 1: name + ingredient count */}
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 5, overflow: 'hidden' }}>
+              <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>
+                {group.name}
+              </span>
+              <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-3)', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                {meals.length} {t(lang, 'ingredients')}
+              </span>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 3 }}>
-              <span style={{ fontSize: 11, fontWeight: 500, opacity: 0.7, lineHeight: 1.4 }}>{t(lang, 'caloriesUnit')}</span>
-              <span style={{ fontSize: 11, fontWeight: 500, opacity: 0.7, lineHeight: 1.4 }}>{t(lang, 'proteinUnit')}</span>
+            {/* Line 2: calories + protein */}
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginTop: 3 }}>
+              <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--blue-hi)', lineHeight: 1 }}>
+                {totalCal}<span style={{ fontSize: 11, fontWeight: 500, opacity: 0.65, marginInlineStart: 2 }}>{t(lang, 'caloriesUnit')}</span>
+              </span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--green-hi)', lineHeight: 1 }}>
+                {totalProt}<span style={{ fontSize: 11, fontWeight: 500, opacity: 0.65, marginInlineStart: 2 }}>{t(lang, 'proteinUnit')}</span>
+              </span>
             </div>
           </div>
         )}
@@ -165,188 +129,17 @@ export function ComposedMealCard({
       {open && (
         <div className="composed-children">
           {meals.map(meal => (
-            <div key={meal.id}>
-              {editingChildId === meal.id ? (
-                /* ── Inline child edit form ── */
-                <div style={{
-                  background: 'rgba(59,130,246,0.04)', border: '1px solid var(--blue-select)',
-                  borderRadius: 8, padding: '10px 10px', display: 'flex', flexDirection: 'column', gap: 8,
-                }}>
-                  <div style={{ position: 'relative' }}>
-                    <input
-                      className="inp"
-                      style={{ height: 36, fontSize: 13, width: '100%', paddingInlineEnd: childEdit.name ? 32 : 12 }}
-                      value={childEdit.name}
-                      placeholder={t(lang, 'foodName')}
-                      onChange={e => setChildEdit(s => ({ ...s, name: e.target.value }))}
-                      autoFocus
-                      dir={dir(lang)}
-                    />
-                    {childEdit.name && (
-                      <button
-                        onMouseDown={e => { e.preventDefault(); setChildEdit(s => ({ ...s, name: '' })) }}
-                        tabIndex={-1}
-                        style={{ position: 'absolute', insetInlineEnd: 0, top: 0, bottom: 0, width: 32, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                      >
-                        <span className="icon icon-sm">close</span>
-                      </button>
-                    )}
-                  </div>
-                  {/* Calories | Protein | Weight + unit — one row */}
-                  <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
-                    {/* Calories */}
-                    <div style={{ flex: 1 }}>
-                      <label style={{ fontSize: 10, color: 'var(--blue-hi)', fontWeight: 700, display: 'block', marginBottom: 3 }}>
-                        {t(lang, 'calories')} ({t(lang, 'caloriesUnit')})
-                      </label>
-                      <div style={{ position: 'relative' }}>
-                        <input
-                          type="number"
-                          inputMode="numeric"
-                          className="inp"
-                          style={{ height: 36, fontSize: 13, paddingInlineEnd: childEdit.calories !== '' ? 32 : 12 }}
-                          value={childEdit.calories}
-                          placeholder="0"
-                          onChange={e => setChildEdit(s => ({ ...s, calories: e.target.value === '' ? '' : Number(e.target.value) }))}
-                          onFocus={() => { if (childEdit.calories === 0) setChildEdit(s => ({ ...s, calories: '' })) }}
-                        />
-                        {childEdit.calories !== '' && (
-                          <button onMouseDown={e => { e.preventDefault(); setChildEdit(s => ({ ...s, calories: '' })) }} tabIndex={-1}
-                            style={{ position: 'absolute', insetInlineEnd: 0, top: 0, bottom: 0, width: 32, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <span className="icon icon-sm">close</span>
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                    {/* Protein */}
-                    <div style={{ flex: 1 }}>
-                      <label style={{ fontSize: 10, color: 'var(--green-hi)', fontWeight: 700, display: 'block', marginBottom: 3 }}>
-                        {lang === 'he' ? 'חלבון (ג׳)' : 'Protein (g)'}
-                      </label>
-                      <div style={{ position: 'relative' }}>
-                        <input
-                          type="number"
-                          inputMode="decimal"
-                          step="0.1"
-                          className="inp inp-green"
-                          style={{ height: 36, fontSize: 13, paddingInlineEnd: childEdit.protein !== '' ? 32 : 12 }}
-                          value={childEdit.protein}
-                          placeholder="0"
-                          onChange={e => setChildEdit(s => ({ ...s, protein: e.target.value === '' ? '' : Number(e.target.value) }))}
-                          onFocus={() => { if (childEdit.protein === 0) setChildEdit(s => ({ ...s, protein: '' })) }}
-                        />
-                        {childEdit.protein !== '' && (
-                          <button onMouseDown={e => { e.preventDefault(); setChildEdit(s => ({ ...s, protein: '' })) }} tabIndex={-1}
-                            style={{ position: 'absolute', insetInlineEnd: 0, top: 0, bottom: 0, width: 32, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <span className="icon icon-sm">close</span>
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                    {/* Weight + unit */}
-                    <div style={{ flex: 1 }}>
-                      <label style={{ fontSize: 10, color: 'var(--text-2)', fontWeight: 700, display: 'block', marginBottom: 3 }}>
-                        {t(lang, 'weight')}
-                      </label>
-                      <div style={{ display: 'flex', gap: 4 }}>
-                        <div style={{ flex: 1, minWidth: 0, position: 'relative' }}>
-                          <input
-                            type="number"
-                            inputMode="decimal"
-                            className="inp"
-                            style={{ width: '100%', height: 36, fontSize: 13, paddingInlineEnd: childEdit.weight !== '' ? 32 : 12 }}
-                            value={childEdit.weight}
-                            placeholder="0"
-                            onChange={e => setChildEdit(s => ({ ...s, weight: e.target.value === '' ? '' : Number(e.target.value) }))}
-                            onFocus={e => e.target.select()}
-                          />
-                          {childEdit.weight !== '' && (
-                            <button onMouseDown={e => { e.preventDefault(); setChildEdit(s => ({ ...s, weight: '' })) }} tabIndex={-1}
-                              style={{ position: 'absolute', insetInlineEnd: 0, top: 0, bottom: 0, width: 32, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                              <span className="icon icon-sm">close</span>
-                            </button>
-                          )}
-                        </div>
-                        <select
-                          className="inp"
-                          style={{ width: 52, padding: '0 4px', flexShrink: 0, fontSize: 12, height: 36 }}
-                          value={childEdit.weightUnit}
-                          onChange={e => setChildEdit(s => ({ ...s, weightUnit: e.target.value as 'g' | 'ml' | 'pcs' }))}
-                        >
-                          <option value="g">g</option>
-                          <option value="ml">ml</option>
-                          <option value="pcs">{lang === 'he' ? 'יח׳' : 'pcs'}</option>
-                        </select>
-                      </div>
-                    </div>
-                  </div>
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <button
-                      className="btn-confirm"
-                      style={{ flex: 1, height: 36, fontSize: 12 }}
-                      onClick={() => saveChild(meal)}
-                    >
-                      {t(lang, 'save')}
-                    </button>
-                    <button
-                      className="btn-ghost"
-                      style={{ flex: 1, height: 36, fontSize: 12 }}
-                      onClick={() => setEditingChildId(null)}
-                    >
-                      {t(lang, 'cancel')}
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                /* ── Normal child row ── */
-                <div className="child-row">
-                  {/* dot */}
-                  <div style={{ width: 5, height: 5, borderRadius: '50%', background: 'rgba(139,92,246,0.45)', flexShrink: 0 }} />
-
-                  {/* name + grams */}
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-2)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {meal.name}
-                    </p>
-                    <p style={{ fontSize: 10, color: 'var(--text-3)', margin: '1px 0 0' }}>
-                      {meal.fluid_ml != null && !meal.fluid_excluded
-                        ? (meal.fluid_ml >= 1000
-                            ? `${(meal.fluid_ml / 1000).toFixed(1)}${lang === 'he' ? 'ל׳' : 'L'}`
-                            : `${Math.round(meal.fluid_ml)}ml`)
-                        : meal.grams < 0
-                          ? `${Math.abs(meal.grams)} ${lang === 'he' ? 'יח׳' : 'pcs'}`
-                          : `${meal.grams}g`}
-                    </p>
-                  </div>
-
-                  {/* cal / protein */}
-                  <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-                    <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--blue-hi)' }}>{Math.round(meal.calories)}</span>
-                    <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--green-hi)' }}>{Math.round(meal.protein * 10) / 10}</span>
-                  </div>
-
-                  {/* edit */}
-                  <button
-                    className="icon-btn"
-                    style={{ width: 26, height: 26, borderRadius: 6 }}
-                    onClick={() => startEditChild(meal)}
-                    aria-label={t(lang, 'edit')}
-                  >
-                    <span className="icon" style={{ fontSize: 14 }}>edit</span>
-                  </button>
-
-                  {/* delete */}
-                  <button
-                    className="icon-btn danger"
-                    style={{ width: 26, height: 26, borderRadius: 6 }}
-                    onClick={() => onDeleteMeal(meal.id)}
-                    aria-label={t(lang, 'delete')}
-                  >
-                    <span className="icon" style={{ fontSize: 14 }}>delete</span>
-                  </button>
-                </div>
-              )}
-            </div>
+            <MealCard
+              key={meal.id}
+              meal={meal}
+              lang={lang}
+              showCheckbox={false}
+              selected={false}
+              onToggleSelect={() => {}}
+              onEdit={onEditMeal}
+              onDelete={onDeleteMeal}
+              enableWeightScaling
+            />
           ))}
 
           {/* ── Add ingredient button ── */}

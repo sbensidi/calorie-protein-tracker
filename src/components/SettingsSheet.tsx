@@ -12,19 +12,16 @@ import type { UserProfile } from '../hooks/useProfile'
 import { useFoodLibrary } from '../hooks/useFoodLibrary'
 import { UNITS, toBase, mlToGrams } from '../lib/units'
 import type { UnitId } from '../lib/units'
+import { MealCard } from './MealCard'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-type Screen = 'main' | 'profile' | 'goals' | 'foodHistory' | 'library'
+type Screen = 'main' | 'profile' | 'goals' | 'foodHistory' | 'library' | 'preferences'
 
 const ACTIVITY_MULTIPLIERS = [1.2, 1.375, 1.55, 1.725, 1.9]
 
 function calcBMR(p: UserProfile) {
   return Math.round(10 * p.weight + 6.25 * p.height - 5 * p.age + (p.sex === 'm' ? 5 : -161))
-}
-
-function calcTDEE(p: UserProfile) {
-  return Math.round(calcBMR(p) * ACTIVITY_MULTIPLIERS[p.activityLevel])
 }
 
 // ── DayPanel (module-level to avoid React re-mounting on every render) ────────
@@ -99,7 +96,7 @@ function DayPanel({
               type="number"
               inputMode="numeric"
               className="inp"
-              style={{ height: compact ? 38 : undefined, fontSize: compact ? 13 : undefined, paddingInlineEnd: calDiff ? 52 : undefined }}
+              style={{ height: compact ? 38 : undefined, paddingInlineEnd: calDiff ? 52 : undefined }}
               value={calVal === 0 ? '' : calVal}
               placeholder="0"
               onFocus={e => e.target.select()}
@@ -127,7 +124,7 @@ function DayPanel({
               type="number"
               inputMode="decimal"
               className="inp inp-green"
-              style={{ height: compact ? 38 : undefined, fontSize: compact ? 13 : undefined, paddingInlineEnd: protDiff ? 52 : undefined }}
+              style={{ height: compact ? 38 : undefined, paddingInlineEnd: protDiff ? 52 : undefined }}
               value={protVal === 0 ? '' : protVal}
               placeholder="0"
               onFocus={e => e.target.select()}
@@ -155,7 +152,7 @@ function DayPanel({
               type="number"
               inputMode="numeric"
               className="inp"
-              style={{ height: compact ? 38 : undefined, fontSize: compact ? 13 : undefined, paddingInlineEnd: fluidDiff ? 52 : undefined, borderColor: 'var(--blue-border)' }}
+              style={{ height: compact ? 38 : undefined, paddingInlineEnd: fluidDiff ? 52 : undefined, borderColor: 'var(--blue-border)' }}
               value={fluidVal === 0 ? '' : fluidVal}
               placeholder="0"
               onFocus={e => e.target.select()}
@@ -179,7 +176,7 @@ function DayPanel({
 
 // ── Main Screen ───────────────────────────────────────────────────────────────
 
-function MainScreen({ lang, connected, theme, onProfile, onGoals, onFoodHistory, onLibrary, onToggleLang, onToggleTheme, onSignOut }: {
+function MainScreen({ lang, connected, theme, onProfile, onGoals, onFoodHistory, onLibrary, onPreferences, onToggleLang, onToggleTheme, onSignOut }: {
   lang:           Lang
   connected:      boolean
   theme:          'dark' | 'light'
@@ -187,6 +184,7 @@ function MainScreen({ lang, connected, theme, onProfile, onGoals, onFoodHistory,
   onGoals:        () => void
   onFoodHistory:  () => void
   onLibrary:      () => void
+  onPreferences:  () => void
   onToggleLang:   () => void
   onToggleTheme:  () => void
   onSignOut:      () => void
@@ -229,7 +227,7 @@ function MainScreen({ lang, connected, theme, onProfile, onGoals, onFoodHistory,
               {t(lang, 'personalProfile')}
             </p>
             <p style={{ fontSize: 11, color: 'var(--text-3)', margin: '2px 0 0' }}>
-              {lang === 'he' ? 'גיל, גובה, משקל, פעילות, BMR/TDEE, BMI' : 'Age, height, weight, activity, BMR/TDEE, BMI'}
+              {lang === 'he' ? 'גיל, גובה, משקל, פעילות, BMR, BMI' : 'Age, height, weight, activity, BMR, BMI'}
             </p>
           </div>
           <span className="icon icon-sm" style={{ color: 'var(--text-3)', flexShrink: 0 }}>{chevron}</span>
@@ -249,12 +247,12 @@ function MainScreen({ lang, connected, theme, onProfile, onGoals, onFoodHistory,
           <span className="icon icon-sm" style={{ color: 'var(--text-3)', flexShrink: 0 }}>{chevron}</span>
         </button>
 
-        {/* Food History Management */}
+        {/* Food History */}
         <button onClick={onFoodHistory} style={rowBase}>
           <span className="icon" style={{ fontSize: 22, color: 'var(--amber)', flexShrink: 0 }}>manage_search</span>
           <div style={{ flex: 1, textAlign: 'start' }}>
             <p style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', margin: 0 }}>
-              {t(lang, 'foodManagement')}
+              {t(lang, 'foodHistory')}
             </p>
             <p style={{ fontSize: 11, color: 'var(--text-3)', margin: '2px 0 0' }}>
               {lang === 'he' ? 'עריכה ומחיקת מזונות מההיסטוריה' : 'Edit or delete saved food items'}
@@ -272,6 +270,20 @@ function MainScreen({ lang, connected, theme, onProfile, onGoals, onFoodHistory,
             </p>
             <p style={{ fontSize: 11, color: 'var(--text-3)', margin: '2px 0 0' }}>
               {lang === 'he' ? 'עיון ב-150+ מזונות מובנים' : 'Browse 150+ built-in foods'}
+            </p>
+          </div>
+          <span className="icon icon-sm" style={{ color: 'var(--text-3)', flexShrink: 0 }}>{chevron}</span>
+        </button>
+
+        {/* Preferences */}
+        <button onClick={onPreferences} style={rowBase}>
+          <span className="icon" style={{ fontSize: 22, color: 'var(--indigo)', flexShrink: 0 }}>tune</span>
+          <div style={{ flex: 1, textAlign: 'start' }}>
+            <p style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', margin: 0 }}>
+              {t(lang, 'preferences')}
+            </p>
+            <p style={{ fontSize: 11, color: 'var(--text-3)', margin: '2px 0 0' }}>
+              {lang === 'he' ? 'יחידות מידה, זיהוי נוזלים' : 'Units, fluid detection'}
             </p>
           </div>
           <span className="icon icon-sm" style={{ color: 'var(--text-3)', flexShrink: 0 }}>{chevron}</span>
@@ -358,32 +370,24 @@ function MainScreen({ lang, connected, theme, onProfile, onGoals, onFoodHistory,
 
 // ── Profile Screen ────────────────────────────────────────────────────────────
 
-function ProfileScreen({ lang, profile, onSave, onApplyGoals, onNavigateToGoals, showToast }: {
-  lang:               Lang
-  profile:            UserProfile
-  onSave:             (updates: Partial<UserProfile>) => void
-  onApplyGoals:       (calories: number, protein: number) => void
-  onNavigateToGoals:  () => void
-  showToast:          (msg: string, type: 'success' | 'error' | 'info') => void
+function ProfileScreen({ lang, profile, onSave, showToast }: {
+  lang:      Lang
+  profile:   UserProfile
+  onSave:    (updates: Partial<UserProfile>) => void
+  showToast: (msg: string, type: 'success' | 'error' | 'info') => void
 }) {
   const [draft, setDraft] = useState<UserProfile>({ ...profile })
-  const [saved, setSaved]     = useState(false)
-  const [applied, setApplied] = useState(false)
+  const [saved, setSaved] = useState(false)
 
   const set = <K extends keyof UserProfile>(key: K, val: UserProfile[K]) =>
     setDraft(p => ({ ...p, [key]: val }))
 
-  const { bmr, tdee, suggestedCal, suggestedProt, suggestedFluidMl, bmi, bmiCategory } = useMemo(() => {
-    const bmr  = calcBMR(draft)
-    const tdee = calcTDEE(draft)
-    const delta           = draft.goalType === 'lose' ? -500 : draft.goalType === 'gain' ? 300 : 0
-    const suggestedCal    = tdee + delta
-    const protRate        = draft.goalType === 'lose' ? 2.0 : draft.goalType === 'gain' ? 2.2 : 1.6
-    const suggestedProt   = Math.round(draft.weight * protRate)
+  const { bmr, suggestedFluidMl, bmi, bmiCategory } = useMemo(() => {
+    const bmr             = calcBMR(draft)
     const suggestedFluidMl = Math.round(draft.weight * 35 / 100) * 100
     const bmiVal          = Math.round((draft.weight / ((draft.height / 100) ** 2)) * 10) / 10
     const bmiCategory     = bmiVal < 18.5 ? 'underweight' : bmiVal < 25 ? 'normal' : bmiVal < 30 ? 'overweight' : 'obese'
-    return { bmr, tdee, suggestedCal, suggestedProt, suggestedFluidMl, bmi: bmiVal, bmiCategory }
+    return { bmr, suggestedFluidMl, bmi: bmiVal, bmiCategory }
   }, [draft])
 
   const handleSave = () => {
@@ -393,29 +397,12 @@ function ProfileScreen({ lang, profile, onSave, onApplyGoals, onNavigateToGoals,
     showToast(lang === 'he' ? 'הפרופיל נשמר' : 'Profile saved', 'success')
   }
 
-  const handleApply = () => {
-    onSave({ ...draft, fluidGoalMl: suggestedFluidMl })
-    onApplyGoals(suggestedCal, suggestedProt)
-    setApplied(true)
-    setTimeout(() => setApplied(false), 2000)
-    showToast(t(lang, 'goalsApplied'), 'success')
-    setTimeout(() => onNavigateToGoals(), 600)
-  }
-
-  const bmiColor  = bmiCategory === 'normal' ? 'var(--green-hi)' : bmiCategory === 'obese' ? 'var(--red)' : 'var(--amber)'
-  const bmiLabel  = { underweight: lang === 'he' ? 'תת משקל' : 'Underweight', normal: lang === 'he' ? 'משקל תקין' : 'Normal', overweight: lang === 'he' ? 'עודף משקל' : 'Overweight', obese: lang === 'he' ? 'השמנה' : 'Obese' }[bmiCategory]
-
-  const ACTIVITY_LABELS = lang === 'he'
-    ? [t(lang, 'sedentary'), t(lang, 'lightActive'), t(lang, 'moderateActive'), t(lang, 'activeLevel'), t(lang, 'veryActive')]
-    : [t(lang, 'sedentary'), t(lang, 'lightActive'), t(lang, 'moderateActive'), t(lang, 'activeLevel'), t(lang, 'veryActive')]
+  const bmiColor = bmiCategory === 'normal' ? 'var(--green-hi)' : bmiCategory === 'obese' ? 'var(--red)' : 'var(--amber)'
+  const bmiLabel = { underweight: lang === 'he' ? 'תת משקל' : 'Underweight', normal: lang === 'he' ? 'משקל תקין' : 'Normal', overweight: lang === 'he' ? 'עודף משקל' : 'Overweight', obese: lang === 'he' ? 'השמנה' : 'Obese' }[bmiCategory]
 
   const labelStyle: React.CSSProperties = {
     fontSize: 11, fontWeight: 600, color: 'var(--text-2)', display: 'block', marginBottom: 5,
   }
-
-  const protRateLabel = draft.goalType === 'lose' ? '2.0' : draft.goalType === 'gain' ? '2.2' : '1.6'
-  const protReasonHe  = draft.goalType === 'lose' ? 'לשמירה מרבית על מסת שריר בזמן ירידה' : draft.goalType === 'gain' ? 'לתמיכה בבניית שריר' : 'לשמירה על מסת שריר'
-  const protReasonEn  = draft.goalType === 'lose' ? 'to preserve muscle mass while losing fat' : draft.goalType === 'gain' ? 'to support muscle building' : 'to maintain muscle mass'
 
   return (
     <>
@@ -423,7 +410,6 @@ function ProfileScreen({ lang, profile, onSave, onApplyGoals, onNavigateToGoals,
         {t(lang, 'personalProfile')}
       </h2>
 
-      {/* Section: personal inputs */}
       <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.07em', margin: '0 0 12px' }}>
         {t(lang, 'personalDetails')}
       </p>
@@ -452,7 +438,7 @@ function ProfileScreen({ lang, profile, onSave, onApplyGoals, onNavigateToGoals,
       </div>
 
       {/* Age / Height / Weight */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 14 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 20 }}>
         {([
           { key: 'age' as const,    label: t(lang, 'ageLabel'),  min: 10,  max: 100 },
           { key: 'height' as const, label: t(lang, 'heightCm'),  min: 100, max: 250 },
@@ -486,61 +472,13 @@ function ProfileScreen({ lang, profile, onSave, onApplyGoals, onNavigateToGoals,
         ))}
       </div>
 
-      {/* Activity Level */}
-      <div style={{ marginBottom: 14 }}>
-        <label style={labelStyle}>{t(lang, 'activityLevel')}</label>
-        <select
-          className="inp"
-          value={draft.activityLevel}
-          onChange={e => set('activityLevel', Number(e.target.value) as UserProfile['activityLevel'])}
-          style={{ cursor: 'pointer' }}
-        >
-          {ACTIVITY_LABELS.map((label, i) => (
-            <option key={i} value={i}>{label}</option>
-          ))}
-        </select>
-      </div>
-
-      {/* Goal Type */}
-      <div style={{ marginBottom: 20 }}>
-        <label style={labelStyle}>{t(lang, 'goalType')}</label>
-        <div style={{ display: 'flex', gap: 6 }}>
-          {(['lose', 'maintain', 'gain'] as const).map(g => {
-            const active = draft.goalType === g
-            const colors = {
-              lose:     { bg: 'var(--blue-select)',  border: 'var(--blue)',  text: 'var(--blue-hi)'  },
-              maintain: { bg: 'color-mix(in srgb, var(--indigo) 18%, transparent)', border: 'var(--indigo)', text: 'var(--indigo-hi)' },
-              gain:     { bg: 'var(--green-select)', border: 'var(--green)', text: 'var(--green-hi)' },
-            }[g]
-            return (
-              <button
-                key={g}
-                onClick={() => set('goalType', g)}
-                style={{
-                  flex: 1, padding: '9px 0', borderRadius: 10, fontFamily: 'inherit',
-                  fontSize: 12, fontWeight: 700, cursor: 'pointer',
-                  background: active ? colors.bg : 'var(--bg-card)',
-                  border: `1.5px solid ${active ? colors.border : 'var(--border)'}`,
-                  color: active ? colors.text : 'var(--text-2)',
-                  transition: 'all .15s',
-                }}
-              >
-                {t(lang, g)}
-              </button>
-            )
-          })}
-        </div>
-      </div>
-
-      {/* Separator */}
       <div style={{ height: 1, background: 'var(--border)', margin: '4px 0 18px' }} />
 
-      {/* Section: computed metrics */}
+      {/* Metrics */}
       <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.07em', margin: '0 0 10px' }}>
         {t(lang, 'yourMetrics')}
       </p>
-      <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden', marginBottom: 16 }}>
-        {/* BMR row */}
+      <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden', marginBottom: 20 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '11px 14px' }}>
           <div style={{ minWidth: 0 }}>
             <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-2)', margin: '0 0 2px' }}>BMR</p>
@@ -553,20 +491,6 @@ function ProfileScreen({ lang, profile, onSave, onApplyGoals, onNavigateToGoals,
           </span>
         </div>
         <div style={{ height: 1, background: 'var(--border)' }} />
-        {/* TDEE row */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '11px 14px' }}>
-          <div style={{ minWidth: 0 }}>
-            <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--blue-hi)', margin: '0 0 2px' }}>TDEE</p>
-            <p style={{ fontSize: 10, color: 'var(--text-3)', margin: 0, lineHeight: 1.4 }}>
-              {lang === 'he' ? 'הוצאה יומית כוללת כולל פעילות' : 'Total daily expenditure incl. activity'}
-            </p>
-          </div>
-          <span style={{ fontSize: 18, fontWeight: 800, color: 'var(--blue-hi)', flexShrink: 0, marginInlineStart: 10 }}>
-            {tdee.toLocaleString()} <span style={{ fontSize: 10, fontWeight: 400 }}>{t(lang, 'caloriesUnit')}</span>
-          </span>
-        </div>
-        <div style={{ height: 1, background: 'var(--border)' }} />
-        {/* BMI row */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '11px 14px' }}>
           <div style={{ minWidth: 0 }}>
             <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-2)', margin: '0 0 2px' }}>BMI</p>
@@ -579,7 +503,6 @@ function ProfileScreen({ lang, profile, onSave, onApplyGoals, onNavigateToGoals,
           </span>
         </div>
         <div style={{ height: 1, background: 'var(--border)' }} />
-        {/* Fluid row */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '11px 14px' }}>
           <div style={{ minWidth: 0 }}>
             <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-2)', margin: '0 0 2px' }}>
@@ -598,175 +521,6 @@ function ProfileScreen({ lang, profile, onSave, onApplyGoals, onNavigateToGoals,
         </div>
       </div>
 
-      {/* Suggestion card */}
-      <div style={{
-        background: 'var(--blue-fill)', border: '1px solid rgba(59,130,246,0.2)',
-        borderRadius: 12, padding: 14, marginBottom: 16,
-      }}>
-        {/* Suggested Calories */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-          <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-2)' }}>
-            {t(lang, 'suggestedCalGoal')}
-          </span>
-          <span style={{ fontSize: 21, fontWeight: 800, color: 'var(--blue-hi)' }}>
-            {suggestedCal.toLocaleString()} <span style={{ fontSize: 11, fontWeight: 400 }}>{t(lang, 'caloriesUnit')}</span>
-          </span>
-        </div>
-
-        {/* Why 500 explanation */}
-        {draft.goalType === 'lose' && (
-          <div style={{ background: 'var(--depth-2)', borderRadius: 8, padding: '8px 10px', marginBottom: 10 }}>
-            <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--blue-hi)', margin: '0 0 4px' }}>
-              {lang === 'he' ? 'למה דווקא 500 קק״ל פחות?' : 'Why exactly 500 kcal less?'}
-            </p>
-            <p style={{ fontSize: 11, color: 'var(--text-2)', margin: 0, lineHeight: 1.6 }}>
-              {lang === 'he'
-                ? '1 ק״ג שומן ≈ 7,700 קק״ל. גרעון של 500 קק״ל ביום × 7 ימים = 3,500 קק״ל בשבוע ≈ 0.5 ק״ג שומן שרוף. זהו הקצב המומלץ — מהיר מספיק כדי להרגיש התקדמות, איטי מספיק כדי לשמור על מסת שריר.'
-                : '1 kg of fat ≈ 7,700 kcal. A 500 kcal/day deficit × 7 days = 3,500 kcal/week ≈ 0.5 kg fat burned. This is the recommended rate — fast enough to feel progress, slow enough to preserve muscle mass.'}
-            </p>
-          </div>
-        )}
-        {draft.goalType === 'gain' && (
-          <p style={{ fontSize: 11, color: 'var(--text-2)', margin: '0 0 10px', lineHeight: 1.5 }}>
-            {lang === 'he'
-              ? '+300 קק״ל מעל ה-TDEE — עודף מבוקר שתומך בבניית שריר מבלי להצטבר כשומן מיותר.'
-              : '+300 kcal above TDEE — a controlled surplus supporting muscle gain without unnecessary fat accumulation.'}
-          </p>
-        )}
-
-        {/* Suggested Protein */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-          <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-2)' }}>
-            {t(lang, 'suggestedProtGoal')}
-          </span>
-          <span style={{ fontSize: 21, fontWeight: 800, color: 'var(--green-hi)' }}>
-            {suggestedProt} <span style={{ fontSize: 11, fontWeight: 400 }}>{t(lang, 'proteinUnit')}</span>
-          </span>
-        </div>
-        <p style={{ fontSize: 11, color: 'var(--text-3)', margin: '0 0 10px', lineHeight: 1.5 }}>
-          {lang === 'he'
-            ? `${protRateLabel} גרם × ${draft.weight} ק״ג — ${protReasonHe}`
-            : `${protRateLabel}g × ${draft.weight} kg — ${protReasonEn}`}
-        </p>
-
-        {/* Suggested Fluid */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-          <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-2)' }}>
-            {t(lang, 'suggestedFluidGoal')}
-          </span>
-          <span style={{ fontSize: 21, fontWeight: 800, color: 'var(--blue-hi)' }}>
-            {suggestedFluidMl >= 1000 ? (suggestedFluidMl / 1000).toFixed(1) : suggestedFluidMl}{' '}
-            <span style={{ fontSize: 11, fontWeight: 400 }}>
-              {suggestedFluidMl >= 1000 ? (lang === 'he' ? 'ל׳' : 'L') : 'ml'}
-            </span>
-          </span>
-        </div>
-        <p style={{ fontSize: 11, color: 'var(--text-3)', margin: '0 0 14px', lineHeight: 1.5 }}>
-          {lang === 'he'
-            ? `35מ״ל × ${draft.weight}ק״ג = ${Math.round(draft.weight * 35)}מ״ל`
-            : `35ml × ${draft.weight}kg = ${Math.round(draft.weight * 35)}ml`}
-        </p>
-
-        <button
-          onClick={handleApply}
-          className={applied ? 'btn-confirm' : 'btn-primary'}
-          style={{ width: '100%', height: 44 }}
-        >
-          {applied
-            ? <><span className="icon icon-sm" style={{ verticalAlign: 'middle', marginInlineEnd: 4 }}>check</span>{t(lang, 'appliedBang')}</>
-            : t(lang, 'applyGoals')
-          }
-        </button>
-      </div>
-
-      {/* Units preferences */}
-      <div style={{ height: 1, background: 'var(--border)', margin: '4px 0 18px' }} />
-      <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-2)', marginBottom: 12, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
-        {t(lang, 'unitsLabel')}
-      </p>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 20 }}>
-        {/* Weight unit */}
-        <div>
-          <label style={labelStyle}>{t(lang, 'weight')}</label>
-          <div style={{ display: 'flex', gap: 6 }}>
-            {(['g', 'oz'] as const).map(u => (
-              <button
-                key={u}
-                onClick={() => set('weightUnit', u)}
-                style={{
-                  flex: 1, padding: '8px 0', borderRadius: 10, fontFamily: 'inherit',
-                  fontSize: 13, fontWeight: 700, cursor: 'pointer',
-                  background: draft.weightUnit === u ? 'var(--blue-select)' : 'var(--bg-card)',
-                  border: `1.5px solid ${draft.weightUnit === u ? 'var(--blue)' : 'var(--border)'}`,
-                  color: draft.weightUnit === u ? 'var(--blue-hi)' : 'var(--text-2)',
-                  transition: 'all .15s',
-                }}
-              >
-                {u}
-              </button>
-            ))}
-          </div>
-        </div>
-        {/* Volume unit */}
-        <div>
-          <label style={labelStyle}>{t(lang, 'volume')}</label>
-          <select
-            className="inp"
-            value={draft.volumeUnit}
-            onChange={e => set('volumeUnit', e.target.value as any)}
-            style={{ cursor: 'pointer', padding: '0 10px', height: 40 }}
-          >
-            {(['ml', 'cup', 'tbsp', 'tsp', 'fl_oz'] as const).map(u => (
-              <option key={u} value={u}>{u === 'fl_oz' ? 'fl oz' : u}</option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      {/* ── Fluid detection settings ────────────────────────── */}
-      <div style={{ height: 1, background: 'var(--border)', margin: '18px 0 16px' }} />
-      <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-2)', marginBottom: 14, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
-        {lang === 'he' ? 'סף זיהוי נוזלים' : 'Fluid detection threshold'}
-      </p>
-
-      {/* fluid threshold + zero-cal toggle */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-        <input
-          type="number"
-          inputMode="numeric"
-          className="inp"
-          style={{ width: 70, textAlign: 'center', flexShrink: 0 }}
-          value={draft.fluidThresholdMl}
-          onChange={e => set('fluidThresholdMl', Number(e.target.value) || 100)}
-        />
-        <span style={{ fontSize: 12, color: 'var(--text-3)', flexShrink: 0 }}>ml</span>
-        <span style={{ flex: 1 }} />
-        <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-2)', flexShrink: 0 }}>
-          {lang === 'he' ? '0 קל׳ בלבד' : '0-cal only'}
-        </span>
-        <button
-          onClick={() => set('fluidZeroCalOnly', !draft.fluidZeroCalOnly)}
-          aria-label={lang === 'he' ? 'הפעל/בטל' : 'Toggle'}
-          style={{
-            width: 44, height: 26, borderRadius: 99, border: 'none', cursor: 'pointer', flexShrink: 0,
-            background: draft.fluidZeroCalOnly ? 'var(--blue)' : 'rgba(107,127,150,0.25)',
-            position: 'relative', transition: 'background .2s',
-          }}
-        >
-          <span style={{
-            position: 'absolute', width: 18, height: 18, borderRadius: '50%', background: 'var(--toggle-knob)',
-            top: 4, transition: 'right .2s',
-            right: draft.fluidZeroCalOnly ? 4 : 22,
-          }} />
-        </button>
-      </div>
-      <p style={{ fontSize: 10, color: 'var(--text-3)', margin: '0 0 20px', lineHeight: 1.5 }}>
-        {lang === 'he'
-          ? 'כשהמתג דלוק — רק נוזלים עם 0 קלוריות יחושבו ליעד (מים, סודה, קפה שחור...).'
-          : 'When enabled — only zero-calorie fluids count toward your goal (water, soda, black coffee...).'}
-      </p>
-
-      {/* Save Profile */}
       <button
         onClick={handleSave}
         className={saved ? 'btn-confirm' : 'btn-ghost'}
@@ -783,11 +537,12 @@ function ProfileScreen({ lang, profile, onSave, onApplyGoals, onNavigateToGoals,
 
 // ── Goals Screen ──────────────────────────────────────────────────────────────
 
-function GoalsScreen({ lang, profile, goals, onSave, onSaveFluidGoal, fluidGoalMl = 2500, showToast }: {
+function GoalsScreen({ lang, profile, goals, onSave, onSaveProfile, onSaveFluidGoal, fluidGoalMl = 2500, showToast }: {
   lang:              Lang
   profile:           UserProfile
   goals:             Goal | null
   onSave:            (updates: Partial<Goal>) => void
+  onSaveProfile:     (updates: Partial<UserProfile>) => void
   onSaveFluidGoal?:  (ml: number) => void
   fluidGoalMl?:      number
   showToast:         (msg: string, type: 'success' | 'error' | 'info') => void
@@ -797,6 +552,9 @@ function GoalsScreen({ lang, profile, goals, onSave, onSaveFluidGoal, fluidGoalM
   const [defFluidGoal, setDefFluidGoal] = useState(fluidGoalMl)
   const [overrides, setOverrides] = useState<Record<string, { calories: number; protein: number; fluid_ml?: number }>>(goals?.weekly_overrides ?? {})
   const [saved, setSaved] = useState(false)
+  const [draftActivityLevel, setDraftActivityLevel] = useState<number>(profile.activityLevel ?? 1)
+  const [draftGoalType, setDraftGoalType] = useState<'lose' | 'maintain' | 'gain'>(profile.goalType ?? 'maintain')
+  const [weeklyOpen, setWeeklyOpen] = useState(false)
 
   const todayKey    = DAY_KEYS[new Date().getDay()]
   const [selectedDay, setSelectedDay] = useState<DayKey>(todayKey)
@@ -811,9 +569,14 @@ function GoalsScreen({ lang, profile, goals, onSave, onSaveFluidGoal, fluidGoalM
 
   useEffect(() => { setDefFluidGoal(fluidGoalMl) }, [fluidGoalMl])
 
-  const tdee = useMemo(() => calcTDEE(profile), [profile])
-  const suggestedCal     = tdee + (profile.goalType === 'lose' ? -500 : profile.goalType === 'gain' ? 300 : 0)
-  const suggestedProtRate = profile.goalType === 'lose' ? 2.0 : profile.goalType === 'gain' ? 2.2 : 1.6
+  useEffect(() => {
+    setDraftActivityLevel(profile.activityLevel ?? 1)
+    setDraftGoalType(profile.goalType ?? 'maintain')
+  }, [profile.activityLevel, profile.goalType])
+
+  const tdee = useMemo(() => Math.round(calcBMR(profile) * ACTIVITY_MULTIPLIERS[draftActivityLevel]), [profile, draftActivityLevel])
+  const suggestedCal     = tdee + (draftGoalType === 'lose' ? -500 : draftGoalType === 'gain' ? 300 : 0)
+  const suggestedProtRate = draftGoalType === 'lose' ? 2.0 : draftGoalType === 'gain' ? 2.2 : 1.6
   const suggestedProt    = Math.round(profile.weight * suggestedProtRate)
   const suggestedFluidMl = Math.round(profile.weight * 35 / 100) * 100
 
@@ -876,6 +639,7 @@ function GoalsScreen({ lang, profile, goals, onSave, onSaveFluidGoal, fluidGoalM
 
   const handleSave = () => {
     onSave({ default_calories: defCal, default_protein: defProt, weekly_overrides: overrides })
+    onSaveProfile({ activityLevel: draftActivityLevel as 0|1|2|3|4, goalType: draftGoalType })
     onSaveFluidGoal?.(defFluidGoal)
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
@@ -892,20 +656,65 @@ function GoalsScreen({ lang, profile, goals, onSave, onSaveFluidGoal, fluidGoalM
         {t(lang, 'nutritionGoals')}
       </h2>
 
-      {/* Recommendations card */}
+      {/* Activity level */}
+      <div style={{ marginBottom: 14 }}>
+        <label style={labelStyle}>{t(lang, 'activityLevel')}</label>
+        <select
+          className="inp"
+          style={{ fontSize: 16 }}
+          value={draftActivityLevel}
+          onChange={e => setDraftActivityLevel(Number(e.target.value))}
+        >
+          <option value={0}>{t(lang, 'sedentary')}</option>
+          <option value={1}>{t(lang, 'lightActive')}</option>
+          <option value={2}>{t(lang, 'moderateActive')}</option>
+          <option value={3}>{t(lang, 'activeLevel')}</option>
+          <option value={4}>{t(lang, 'veryActive')}</option>
+        </select>
+      </div>
+
+      {/* Goal type */}
+      <div style={{ marginBottom: 14 }}>
+        <label style={labelStyle}>{t(lang, 'goalType')}</label>
+        <div style={{ display: 'flex', gap: 8 }}>
+          {(['lose', 'maintain', 'gain'] as const).map(gt => (
+            <button
+              key={gt}
+              onClick={() => setDraftGoalType(gt)}
+              style={{
+                flex: 1, padding: '10px 4px', borderRadius: 10, fontFamily: 'inherit',
+                fontSize: 12, fontWeight: 700, cursor: 'pointer',
+                background: draftGoalType === gt ? 'var(--blue-select)' : 'var(--bg-card)',
+                border: `1.5px solid ${draftGoalType === gt ? 'var(--blue)' : 'var(--border)'}`,
+                color: draftGoalType === gt ? 'var(--blue-hi)' : 'var(--text-2)',
+                transition: 'all .15s',
+              }}
+            >
+              {t(lang, gt)}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* TDEE banner */}
+      <div style={{ background: 'var(--blue-fill)', border: '1px solid var(--blue-glow)', borderRadius: 10, padding: '10px 14px', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
+        <span className="icon icon-sm" style={{ color: 'var(--blue-hi)' }}>bolt</span>
+        <p style={{ fontSize: 12, margin: 0 }}>
+          <span style={{ fontWeight: 700, color: 'var(--text-2)' }}>TDEE: </span>
+          <span style={{ fontWeight: 800, color: 'var(--blue-hi)' }}>{tdee.toLocaleString()}</span>
+          <span style={{ color: 'var(--text-3)', marginInlineStart: 3 }}>{lang === 'he' ? 'קק״ל/יום' : 'kcal/day'}</span>
+        </p>
+      </div>
+
+      {/* Suggestions card */}
       <div style={{ background: 'rgba(59,130,246,0.06)', border: '1px solid var(--blue-select)', borderRadius: 12, padding: '12px 14px', marginBottom: 16 }}>
-        {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
           <span className="icon icon-sm" style={{ color: 'var(--blue-hi)' }}>auto_fix_high</span>
           <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--blue-hi)', margin: 0 }}>
             {t(lang, 'profileRecs')}
           </p>
-          <span style={{ fontSize: 10, color: 'var(--text-3)', marginInlineStart: 'auto' }}>
-            TDEE {tdee.toLocaleString()} {lang === 'he' ? 'קק״ל' : 'kcal'}
-          </span>
         </div>
 
-        {/* 3 metric rows */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 12 }}>
           {/* Calories */}
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
@@ -917,12 +726,18 @@ function GoalsScreen({ lang, profile, goals, onSave, onSaveFluidGoal, fluidGoalM
                 <span style={{ fontWeight: 800, color: 'var(--blue-hi)' }}>{suggestedCal.toLocaleString()}</span>
                 <span style={{ color: 'var(--text-3)', marginInlineStart: 3 }}>{lang === 'he' ? 'קק״ל' : 'kcal'}</span>
               </p>
-              <p style={{ fontSize: 10, color: 'var(--text-3)', margin: '2px 0 0', lineHeight: 1.5 }}>
-                {profile.goalType === 'lose'
-                  ? (lang === 'he' ? 'גרעון 500 מה-TDEE — ≈0.5 ק״ג/שבוע, קצב בטוח שמשמר שריר' : '500 deficit from TDEE — ≈0.5 kg/week, safe rate preserving muscle')
-                  : profile.goalType === 'gain'
-                    ? (lang === 'he' ? 'עודף 300 מה-TDEE — בנייה מבוקרת ללא הצטברות שומן מיותרת' : '+300 above TDEE — controlled surplus for muscle gain without excess fat')
-                    : (lang === 'he' ? 'שמירה על משקל — שווה לצריכה האנרגטית היומית' : 'Maintenance — matches your daily energy expenditure')}
+              <p dir={lang === 'he' ? 'rtl' : 'ltr'} style={{ fontSize: 10, color: 'var(--text-3)', margin: '2px 0 0', lineHeight: 1.5 }}>
+                {lang === 'he'
+                  ? draftGoalType === 'lose'
+                    ? <>גרעון של 500 קק״ל/יום: <span dir="ltr">{tdee.toLocaleString()} − 500 = {suggestedCal.toLocaleString()}</span> קק״ל × 7 ≈ 0.5 ק״ג שומן/שבוע</>
+                    : draftGoalType === 'gain'
+                      ? <>עודף של 300 קק״ל/יום: <span dir="ltr">{tdee.toLocaleString()} + 300 = {suggestedCal.toLocaleString()}</span> קק״ל × 7 ≈ 0.3 ק״ג/שבוע</>
+                      : 'שמירה על משקל, שווה לצריכה האנרגטית היומית'
+                  : draftGoalType === 'lose'
+                    ? <><span dir="ltr">500 kcal/day deficit: {tdee.toLocaleString()} − 500 = {suggestedCal.toLocaleString()} kcal × 7 ≈ 0.5 kg fat/week</span></>
+                    : draftGoalType === 'gain'
+                      ? <><span dir="ltr">+300 kcal/day surplus: {tdee.toLocaleString()} + 300 = {suggestedCal.toLocaleString()} kcal × 7 ≈ 0.3 kg/week</span></>
+                      : 'Maintenance — matches your daily energy expenditure'}
               </p>
             </div>
           </div>
@@ -937,12 +752,18 @@ function GoalsScreen({ lang, profile, goals, onSave, onSaveFluidGoal, fluidGoalM
                 <span style={{ fontWeight: 800, color: 'var(--green-hi)' }}>{suggestedProt}</span>
                 <span style={{ color: 'var(--text-3)', marginInlineStart: 3 }}>{lang === 'he' ? 'ג׳ חלבון' : 'g protein'}</span>
               </p>
-              <p style={{ fontSize: 10, color: 'var(--text-3)', margin: '2px 0 0', lineHeight: 1.5 }}>
-                {profile.goalType === 'lose'
-                  ? (lang === 'he' ? `${suggestedProtRate}ג׳/ק״ג — שמירה מרבית על מסת שריר בזמן גרעון` : `${suggestedProtRate}g/kg — maximum muscle retention during deficit`)
-                  : profile.goalType === 'gain'
-                    ? (lang === 'he' ? `${suggestedProtRate}ג׳/ק״ג — סינתזת שריר מיטבית בזמן עודף` : `${suggestedProtRate}g/kg — optimal muscle synthesis during surplus`)
-                    : (lang === 'he' ? `${suggestedProtRate}ג׳/ק״ג — כמות מינימלית להחזקת מסת שריר` : `${suggestedProtRate}g/kg — minimum for maintaining muscle mass`)}
+              <p dir={lang === 'he' ? 'rtl' : 'ltr'} style={{ fontSize: 10, color: 'var(--text-3)', margin: '2px 0 0', lineHeight: 1.5 }}>
+                {lang === 'he'
+                  ? draftGoalType === 'lose'
+                    ? <>שמירה מרבית על שריר בגרעון: <span dir="ltr">{suggestedProtRate} × {profile.weight} = {suggestedProt}g</span></>
+                    : draftGoalType === 'gain'
+                      ? <>סינתזת שריר מיטבית בעודף: <span dir="ltr">{suggestedProtRate} × {profile.weight} = {suggestedProt}g</span></>
+                      : <>שמירה על מסת שריר: <span dir="ltr">{suggestedProtRate} × {profile.weight} = {suggestedProt}g</span></>
+                  : draftGoalType === 'lose'
+                    ? `${suggestedProtRate}g/kg × ${profile.weight}kg = ${suggestedProt}g protein`
+                    : draftGoalType === 'gain'
+                      ? `${suggestedProtRate}g/kg × ${profile.weight}kg = ${suggestedProt}g protein`
+                      : `${suggestedProtRate}g/kg × ${profile.weight}kg = ${suggestedProt}g protein`}
               </p>
             </div>
           </div>
@@ -961,8 +782,8 @@ function GoalsScreen({ lang, profile, goals, onSave, onSaveFluidGoal, fluidGoalM
                   {suggestedFluidMl >= 1000 ? (lang === 'he' ? 'ל׳ נוזלים' : 'L fluid') : 'ml'}
                 </span>
               </p>
-              <p style={{ fontSize: 10, color: 'var(--text-3)', margin: '2px 0 0', lineHeight: 1.5 }}>
-                {lang === 'he' ? `35 מ״ל × ${profile.weight} ק״ג — מינימום הידרציה יומי` : `35 ml × ${profile.weight} kg — minimum daily hydration`}
+              <p dir={lang === 'he' ? 'rtl' : 'ltr'} style={{ fontSize: 10, color: 'var(--text-3)', margin: '2px 0 0', lineHeight: 1.5 }}>
+                {lang === 'he' ? `מינימום הידרציה יומי — 35 מ״ל × ${profile.weight} ק״ג` : `35 ml × ${profile.weight} kg — minimum daily hydration`}
               </p>
             </div>
           </div>
@@ -1057,80 +878,96 @@ function GoalsScreen({ lang, profile, goals, onSave, onSaveFluidGoal, fluidGoalM
         </div>
       </div>
 
-      {/* Separator */}
-      <div style={{ height: 1, background: 'var(--border)', margin: '4px 0 16px' }} />
+      {/* Accordion: Goals by Day */}
+      <div style={{ borderTop: '1px solid var(--border)', marginTop: 4 }}>
+        <button
+          onClick={() => setWeeklyOpen(o => !o)}
+          style={{
+            width: '100%', display: 'flex', alignItems: 'center', gap: 8,
+            padding: '14px 0', background: 'none', border: 'none', cursor: 'pointer',
+            fontFamily: 'inherit',
+          }}
+        >
+          <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-2)', textTransform: 'uppercase', letterSpacing: '0.07em', margin: 0, flex: 1, textAlign: 'start' }}>
+            {t(lang, 'weeklyAdjustments')}
+          </p>
+          {Object.keys(overrides).length > 0 && (
+            <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--indigo-hi)', background: 'var(--indigo-chip)', borderRadius: 10, padding: '2px 7px' }}>
+              {Object.keys(overrides).length}
+            </span>
+          )}
+          <span className="icon icon-sm" style={{ color: 'var(--text-3)', transition: 'transform .2s', transform: weeklyOpen ? 'rotate(180deg)' : 'none' }}>
+            expand_more
+          </span>
+        </button>
 
-      {/* Weekly overrides */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-        <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-2)', textTransform: 'uppercase', letterSpacing: '0.07em', margin: 0 }}>
-          {t(lang, 'weeklyAdjustments')}
-        </p>
-        {Object.keys(overrides).length > 0 && (
-          <button
-            onClick={() => setOverrides({})}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 2, display: 'flex', alignItems: 'center', gap: 4, fontFamily: 'inherit' }}
-          >
-            <span className="icon icon-sm">restart_alt</span>
-            <span style={{ fontSize: 11 }}>{t(lang, 'resetAllToDefault')}</span>
-          </button>
+        {weeklyOpen && (
+          <>
+            {Object.keys(overrides).length > 0 && (
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
+                <button
+                  onClick={() => setOverrides({})}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 2, display: 'flex', alignItems: 'center', gap: 4, fontFamily: 'inherit' }}
+                >
+                  <span className="icon icon-sm">restart_alt</span>
+                  <span style={{ fontSize: 11 }}>{t(lang, 'resetAllToDefault')}</span>
+                </button>
+              </div>
+            )}
+
+            {/* Day grid */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 5, marginBottom: 12 }}>
+              {DAY_KEYS.map(dayKey => {
+                const isToday    = dayKey === todayKey
+                const isCustom   = hasOverride(dayKey)
+                const isSelected = dayKey === selectedDay
+                return (
+                  <button
+                    key={dayKey}
+                    onClick={() => setSelectedDay(dayKey)}
+                    style={{
+                      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5,
+                      padding: '8px 2px 6px', borderRadius: 10, cursor: 'pointer',
+                      fontFamily: 'inherit', position: 'relative',
+                      border: `1.5px solid ${isSelected ? 'var(--indigo)' : isCustom ? 'color-mix(in srgb, var(--indigo) 45%, transparent)' : isToday ? 'color-mix(in srgb, var(--blue) 50%, transparent)' : 'var(--border)'}`,
+                      background: isSelected ? 'color-mix(in srgb, var(--indigo) 15%, transparent)' : isCustom ? 'var(--indigo-tint)' : isToday ? 'var(--blue-tint)' : 'transparent',
+                      boxShadow: isSelected ? '0 0 0 3px color-mix(in srgb, var(--indigo) 20%, transparent)' : 'none',
+                      transition: 'all .15s',
+                    }}
+                  >
+                    {isToday && (
+                      <span style={{ position: 'absolute', top: -6, left: '50%', transform: 'translateX(-50%)', background: 'var(--blue)', color: 'var(--on-color)', fontSize: 7, fontWeight: 700, padding: '1px 4px', borderRadius: 4, whiteSpace: 'nowrap' }}>
+                        {t(lang, 'today')}
+                      </span>
+                    )}
+                    <span style={{ fontSize: 10, fontWeight: 700, color: isSelected ? 'var(--text)' : isCustom ? 'var(--indigo-hi)' : isToday ? 'var(--blue-hi)' : 'var(--text-3)' }}>
+                      {dayShort(dayKey)}
+                    </span>
+                    <div style={{ width: 5, height: 5, borderRadius: '50%', background: isCustom ? 'var(--indigo)' : isToday ? 'var(--blue)' : 'var(--border)' }} />
+                  </button>
+                )
+              })}
+            </div>
+
+            <DayPanel
+              dayKey={selectedDay}
+              lang={lang}
+              todayKey={todayKey}
+              isCustom={hasOverride(selectedDay)}
+              calVal={getVal(selectedDay, 'calories')}
+              protVal={getVal(selectedDay, 'protein')}
+              fluidVal={getFluidVal(selectedDay)}
+              calDiff={getDiff(selectedDay, 'calories')}
+              protDiff={getDiff(selectedDay, 'protein')}
+              fluidDiff={getFluidDiff(selectedDay)}
+              onChangeCal={v => setDayOverride(selectedDay, 'calories', v)}
+              onChangeProt={v => setDayOverride(selectedDay, 'protein', v)}
+              onChangeFluid={v => setFluidDayOverride(selectedDay, v)}
+              onReset={() => resetDay(selectedDay)}
+            />
+          </>
         )}
       </div>
-
-      {/* Day grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 5, marginBottom: 12 }}>
-        {DAY_KEYS.map(dayKey => {
-          const isToday    = dayKey === todayKey
-          const isCustom   = hasOverride(dayKey)
-          const isSelected = dayKey === selectedDay
-          return (
-            <button
-              key={dayKey}
-              onClick={() => setSelectedDay(dayKey)}
-              style={{
-                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5,
-                padding: '8px 2px 6px', borderRadius: 10, cursor: 'pointer',
-                fontFamily: 'inherit', position: 'relative',
-                border: `1.5px solid ${isSelected ? 'var(--indigo)' : isCustom ? 'color-mix(in srgb, var(--indigo) 45%, transparent)' : isToday ? 'color-mix(in srgb, var(--blue) 50%, transparent)' : 'var(--border)'}`,
-                background: isSelected ? 'color-mix(in srgb, var(--indigo) 15%, transparent)' : isCustom ? 'var(--indigo-tint)' : isToday ? 'var(--blue-tint)' : 'transparent',
-                boxShadow: isSelected ? '0 0 0 3px color-mix(in srgb, var(--indigo) 20%, transparent)' : 'none',
-                transition: 'all .15s',
-              }}
-            >
-              {isToday && (
-                <span style={{ position: 'absolute', top: -6, left: '50%', transform: 'translateX(-50%)', background: 'var(--blue)', color: 'var(--on-color)', fontSize: 7, fontWeight: 700, padding: '1px 4px', borderRadius: 4, whiteSpace: 'nowrap' }}>
-                  {t(lang, 'today')}
-                </span>
-              )}
-              <span style={{ fontSize: 10, fontWeight: 700, color: isSelected ? 'var(--text)' : isCustom ? 'var(--indigo-hi)' : isToday ? 'var(--blue-hi)' : 'var(--text-3)' }}>
-                {dayShort(dayKey)}
-              </span>
-              <div style={{ width: 5, height: 5, borderRadius: '50%', background: isCustom ? 'var(--indigo)' : isToday ? 'var(--blue)' : 'var(--border)' }} />
-            </button>
-          )
-        })}
-      </div>
-
-      <DayPanel
-        dayKey={selectedDay}
-        lang={lang}
-        todayKey={todayKey}
-        isCustom={hasOverride(selectedDay)}
-        calVal={getVal(selectedDay, 'calories')}
-        protVal={getVal(selectedDay, 'protein')}
-        fluidVal={getFluidVal(selectedDay)}
-        calDiff={getDiff(selectedDay, 'calories')}
-        protDiff={getDiff(selectedDay, 'protein')}
-        fluidDiff={getFluidDiff(selectedDay)}
-        onChangeCal={v => setDayOverride(selectedDay, 'calories', v)}
-        onChangeProt={v => setDayOverride(selectedDay, 'protein', v)}
-        onChangeFluid={v => setFluidDayOverride(selectedDay, v)}
-        onReset={() => resetDay(selectedDay)}
-      />
-
-      {/* PLAN-9.6: "expand all days" feature frozen — the day-picker grid above
-          provides the same editing surface; showing all 7 panels at once felt
-          cluttered and offered no clear UX benefit over the tab-style picker.
-          Keeping the code here for possible future revival. */}
 
       {/* Save */}
       <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
@@ -1158,7 +995,7 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
   meals:          Meal[]
   onDelete:       (id: string) => void
   onUpdate:       (id: string, updates: Partial<Pick<FoodHistory, 'name' | 'grams' | 'calories' | 'protein'>>) => void
-  onUpdateMeal:   (id: string, updates: Partial<Pick<Meal, 'name' | 'grams' | 'calories' | 'protein'>>) => void
+  onUpdateMeal:   (id: string, updates: Partial<Meal>) => void
   onRemoveGroup:  (id: string) => void
   showToast:      (msg: string, type: 'success' | 'error' | 'info') => void
 }) {
@@ -1168,10 +1005,6 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
   const [filter, setFilter]       = useState<'all' | 'foods' | 'beverage' | 'composed'>('all')
   // Per-gram ratios of the item being edited — used for proportional scaling when grams changes
   const editRatios = useRef({ calPerGram: 0, protPerGram: 0 })
-  // Meal editing state for composed tab
-  const [editingMealId, setEditingMealId] = useState<string | null>(null)
-  const [mealDraft, setMealDraft]         = useState<{ name: string; grams: string; calories: string; protein: string }>({ name: '', grams: '', calories: '', protein: '' })
-  const mealEditRatios = useRef({ calPerGram: 0, protPerGram: 0 })
   const [expandedGroupId, setExpandedGroupId]           = useState<string | null>(null)
   const [expandedHistoryGroup, setExpandedHistoryGroup] = useState<string | null>(null)
 
@@ -1227,37 +1060,14 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
     showToast(lang === 'he' ? `"${name}" נמחק` : `"${name}" deleted`, 'info')
   }
 
-  const startMealEdit = (meal: Meal) => {
-    const absGrams = Math.abs(meal.grams) || 1
-    mealEditRatios.current = { calPerGram: meal.calories / absGrams, protPerGram: meal.protein / absGrams }
-    setEditingMealId(meal.id)
-    setMealDraft({ name: meal.name, grams: String(meal.grams), calories: String(Math.round(meal.calories)), protein: String(Math.round(meal.protein * 10) / 10) })
-  }
-  const handleMealGramsChange = (val: string) => {
-    const g = Math.abs(Number(val)) || 0
-    const { calPerGram, protPerGram } = mealEditRatios.current
-    setMealDraft(d => ({
-      ...d,
-      grams:    val,
-      calories: g > 0 ? String(Math.round(calPerGram  * g))           : d.calories,
-      protein:  g > 0 ? String(Math.round(protPerGram * g * 10) / 10) : d.protein,
-    }))
-  }
-  const saveMealEdit = () => {
-    if (!editingMealId) return
-    onUpdateMeal(editingMealId, { name: mealDraft.name, grams: Number(mealDraft.grams), calories: Number(mealDraft.calories), protein: Number(mealDraft.protein) })
-    setEditingMealId(null)
-    showToast(t(lang, 'saved'), 'success')
-  }
-
-  const inputSm: React.CSSProperties = { height: 34, fontSize: 12, padding: '0 8px', borderRadius: 8 }
+  const inputSm: React.CSSProperties = { height: 42, fontSize: 16, padding: '0 8px', borderRadius: 8 }
 
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       {/* Sticky top: title + search + filter chips */}
       <div style={{ flexShrink: 0, padding: '12px 16px 0', background: 'var(--bg)' }}>
         <h2 style={{ fontSize: 16, fontWeight: 800, color: 'var(--text)', margin: '0 0 10px' }}>
-          {t(lang, 'foodManagement')}
+          {t(lang, 'foodHistory')}
         </h2>
 
         <div style={{ position: 'relative', marginBottom: 10 }}>
@@ -1335,11 +1145,16 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
                 // Render a single history item (used for both flat and within a group)
                 const renderItem = (item: FoodHistory, inGroup = false) => {
                   const isEditing = editingId === item.id
-                  const amtLabel  = item.grams < 0
-                    ? `${Math.abs(item.grams)} ${lang === 'he' ? 'יח׳' : 'pcs'}`
+                  const [amtNum, amtUnit] = item.grams < 0
+                    ? [String(Math.abs(item.grams)), lang === 'he' ? 'מנות' : 'serving(s)']
                     : item.fluid_ml != null && item.fluid_ml > 0
-                      ? (item.fluid_ml >= 1000 ? `${(item.fluid_ml / 1000).toFixed(1)}${lang === 'he' ? 'ל׳' : 'L'}` : `${Math.round(item.fluid_ml)}ml`)
-                      : `${item.grams}g`
+                      ? item.fluid_ml >= 1000
+                        ? [(item.fluid_ml / 1000).toFixed(1), lang === 'he' ? 'ל׳' : 'L']
+                        : [String(Math.round(item.fluid_ml)), lang === 'he' ? 'מ"ל' : 'ml']
+                      : [String(item.grams), lang === 'he' ? 'ג׳' : 'g']
+                  const usesLabel = lang === 'he'
+                    ? (item.use_count === 1 ? 'שימוש' : 'שימושים')
+                    : (item.use_count === 1 ? 'use' : 'uses')
                   return (
                     <div
                       key={item.id}
@@ -1354,9 +1169,23 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
                             {!inGroup && (
                               <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</p>
                             )}
-                            <p style={{ fontSize: 11, color: 'var(--text-3)', margin: inGroup ? 0 : '2px 0 0' }}>
-                              {amtLabel} · <span style={{ color: 'var(--blue-hi)', fontWeight: 600 }}>{Math.round(item.calories)}</span> {t(lang, 'caloriesUnit')} · <span style={{ color: 'var(--green-hi)', fontWeight: 600 }}>{Math.round(item.protein * 10) / 10}</span>{t(lang, 'proteinUnit')} · {item.use_count}×
-                            </p>
+                            <div style={{ display: 'flex', flexDirection: 'row', direction: lang === 'he' ? 'rtl' : 'ltr', gap: 5, alignItems: 'baseline', margin: inGroup ? 0 : '2px 0 0', fontSize: 11, color: 'var(--text-3)' }}>
+                              <span style={{ display: 'inline-flex', gap: 4, alignItems: 'baseline', whiteSpace: 'nowrap' }}>
+                                <span>{amtNum}</span><span style={{ fontSize: 10 }}>{amtUnit}</span>
+                              </span>
+                              <span style={{ color: 'var(--border)' }}>·</span>
+                              <span style={{ display: 'inline-flex', gap: 4, alignItems: 'baseline', whiteSpace: 'nowrap' }}>
+                                <span style={{ color: 'var(--blue-hi)', fontWeight: 600 }}>{Math.round(item.calories)}</span><span style={{ fontSize: 10 }}>{t(lang, 'caloriesUnit')}</span>
+                              </span>
+                              <span style={{ color: 'var(--border)' }}>·</span>
+                              <span style={{ display: 'inline-flex', gap: 4, alignItems: 'baseline', whiteSpace: 'nowrap' }}>
+                                <span style={{ color: 'var(--green-hi)', fontWeight: 600 }}>{Math.round(item.protein * 10) / 10}</span><span style={{ fontSize: 10 }}>{t(lang, 'proteinUnit')}</span>
+                              </span>
+                              <span style={{ color: 'var(--border)' }}>·</span>
+                              <span style={{ display: 'inline-flex', gap: 4, alignItems: 'baseline', whiteSpace: 'nowrap' }}>
+                                <span>{item.use_count}</span><span style={{ fontSize: 10 }}>{usesLabel}</span>
+                              </span>
+                            </div>
                           </div>
                           <button onClick={() => startEdit(item)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 6, display: 'flex', borderRadius: 8 }}>
                             <span className="icon icon-sm">edit</span>
@@ -1381,7 +1210,7 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
                             <div>
                               <label style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-3)', display: 'block', marginBottom: 3 }}>
                                 {Number(editDraft.grams) < 0
-                                  ? (lang === 'he' ? 'יח׳' : 'pcs')
+                                  ? (lang === 'he' ? 'מנה' : 'serving')
                                   : (lang === 'he' ? 'גרם (g)' : 'Weight (g)')}
                               </label>
                               <div style={{ position: 'relative' }}>
@@ -1465,7 +1294,7 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{groupItems[0].name}</p>
                         <p style={{ fontSize: 11, color: 'var(--text-3)', margin: '2px 0 0' }}>
-                          {groupItems.length} {lang === 'he' ? 'גרסאות' : 'variants'} · {totalUses}×
+                          {groupItems.length} {lang === 'he' ? 'גרסאות' : 'variants'} · {lang === 'he' ? `${totalUses} שימ׳` : `${totalUses} uses`}
                         </p>
                       </div>
                       <span className="icon icon-sm" style={{ color: 'var(--text-3)', flexShrink: 0, transition: 'transform .2s', transform: isGroupExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>expand_more</span>
@@ -1512,9 +1341,19 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
                         <span className="icon icon-sm" style={{ color: 'var(--purple)', flexShrink: 0 }}>restaurant</span>
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{group.name}</p>
-                          <p style={{ fontSize: 11, color: 'var(--text-3)', margin: '2px 0 0' }}>
-                            {totalCal} {lang === 'he' ? 'קל' : 'kcal'} · {totalProt}g {lang === 'he' ? 'חלבון' : 'protein'} · {groupMeals.length} {lang === 'he' ? 'מרכיבים' : 'items'}
-                          </p>
+                          <div style={{ display: 'flex', flexDirection: 'row', direction: lang === 'he' ? 'rtl' : 'ltr', gap: 5, alignItems: 'baseline', margin: '2px 0 0', fontSize: 11, color: 'var(--text-3)' }}>
+                            <span style={{ display: 'inline-flex', gap: 4, alignItems: 'baseline', whiteSpace: 'nowrap' }}>
+                              <span style={{ color: 'var(--blue-hi)', fontWeight: 600 }}>{totalCal}</span><span style={{ fontSize: 10 }}>{t(lang, 'caloriesUnit')}</span>
+                            </span>
+                            <span style={{ color: 'var(--border)' }}>·</span>
+                            <span style={{ display: 'inline-flex', gap: 4, alignItems: 'baseline', whiteSpace: 'nowrap' }}>
+                              <span style={{ color: 'var(--green-hi)', fontWeight: 600 }}>{totalProt}</span><span style={{ fontSize: 10 }}>{t(lang, 'proteinUnit')}</span>
+                            </span>
+                            <span style={{ color: 'var(--border)' }}>·</span>
+                            <span style={{ display: 'inline-flex', gap: 4, alignItems: 'baseline', whiteSpace: 'nowrap' }}>
+                              <span>{groupMeals.length}</span><span style={{ fontSize: 10 }}>{lang === 'he' ? 'מרכיבים' : 'items'}</span>
+                            </span>
+                          </div>
                         </div>
                         <span className="icon icon-sm" style={{ color: 'var(--text-3)', flexShrink: 0, transition: 'transform .2s', transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>expand_more</span>
                       </button>
@@ -1525,81 +1364,18 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
                     {/* Individual meals — shown only when expanded */}
                     {isExpanded && groupMeals.map(meal => (
                       <div key={meal.id} style={{ borderBottom: '1px solid var(--border-subtle, var(--border))' }}>
-                        {editingMealId === meal.id ? (
-                          <div style={{ padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 6 }}>
-                            <div style={{ position: 'relative' }}>
-                              <input
-                                type="text"
-                                className="inp"
-                                style={{ ...inputSm, paddingInlineEnd: mealDraft.name ? 28 : 8 }}
-                                value={mealDraft.name}
-                                onChange={e => setMealDraft(d => ({ ...d, name: e.target.value }))}
-                                placeholder={lang === 'he' ? 'שם' : 'Name'}
-                              />
-                              {mealDraft.name && (
-                                <button onMouseDown={e => { e.preventDefault(); setMealDraft(d => ({ ...d, name: '' })) }} tabIndex={-1}
-                                  style={{ position: 'absolute', insetInlineEnd: 0, top: 0, bottom: 0, width: 28, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                  <span className="icon icon-sm">close</span>
-                                </button>
-                              )}
-                            </div>
-                            <div style={{ display: 'flex', gap: 6 }}>
-                              <div style={{ flex: 1, position: 'relative' }}>
-                                <input type="number" inputMode="decimal" className="inp" style={{ ...inputSm, width: '100%', paddingInlineEnd: mealDraft.grams ? 28 : 8 }}
-                                  value={mealDraft.grams} onChange={e => handleMealGramsChange(e.target.value)}
-                                  placeholder={lang === 'he' ? 'גרם' : 'g'} />
-                                {mealDraft.grams && (
-                                  <button onMouseDown={e => { e.preventDefault(); setMealDraft(d => ({ ...d, grams: '' })) }} tabIndex={-1}
-                                    style={{ position: 'absolute', insetInlineEnd: 0, top: 0, bottom: 0, width: 28, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                    <span className="icon icon-sm">close</span>
-                                  </button>
-                                )}
-                              </div>
-                              <div style={{ flex: 1, position: 'relative' }}>
-                                <input type="number" inputMode="decimal" className="inp" style={{ ...inputSm, width: '100%', paddingInlineEnd: mealDraft.calories ? 28 : 8 }}
-                                  value={mealDraft.calories} onChange={e => setMealDraft(d => ({ ...d, calories: e.target.value }))}
-                                  placeholder={lang === 'he' ? 'קל׳' : 'kcal'} />
-                                {mealDraft.calories && (
-                                  <button onMouseDown={e => { e.preventDefault(); setMealDraft(d => ({ ...d, calories: '' })) }} tabIndex={-1}
-                                    style={{ position: 'absolute', insetInlineEnd: 0, top: 0, bottom: 0, width: 28, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                    <span className="icon icon-sm">close</span>
-                                  </button>
-                                )}
-                              </div>
-                              <div style={{ flex: 1, position: 'relative' }}>
-                                <input type="number" inputMode="decimal" className="inp" style={{ ...inputSm, width: '100%', paddingInlineEnd: mealDraft.protein ? 28 : 8 }}
-                                  value={mealDraft.protein} onChange={e => setMealDraft(d => ({ ...d, protein: e.target.value }))}
-                                  placeholder={lang === 'he' ? 'חלב׳' : 'prot'} />
-                                {mealDraft.protein && (
-                                  <button onMouseDown={e => { e.preventDefault(); setMealDraft(d => ({ ...d, protein: '' })) }} tabIndex={-1}
-                                    style={{ position: 'absolute', insetInlineEnd: 0, top: 0, bottom: 0, width: 28, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                    <span className="icon icon-sm">close</span>
-                                  </button>
-                                )}
-                              </div>
-                            </div>
-                            <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
-                              <button onClick={() => setEditingMealId(null)} style={{ height: 32, padding: '0 12px', borderRadius: 8, background: 'var(--qty-bg)', border: '1px solid var(--border)', color: 'var(--text-2)', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit' }}>
-                                {lang === 'he' ? 'ביטול' : 'Cancel'}
-                              </button>
-                              <button onClick={saveMealEdit} className="btn-primary" style={{ height: 32, padding: '0 14px', borderRadius: 8, fontSize: 12 }}>
-                                {lang === 'he' ? 'שמור' : 'Save'}
-                              </button>
-                            </div>
-                          </div>
-                        ) : (
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px' }}>
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{meal.name}</p>
-                              <p style={{ fontSize: 11, color: 'var(--text-3)', margin: '1px 0 0' }}>
-                                {meal.grams}g · {Math.round(meal.calories)} {lang === 'he' ? 'קל' : 'kcal'} · {Math.round(meal.protein * 10) / 10}g
-                              </p>
-                            </div>
-                            <button onClick={() => startMealEdit(meal)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 6, display: 'flex', borderRadius: 8, flexShrink: 0 }}>
-                              <span className="icon icon-sm">edit</span>
-                            </button>
-                          </div>
-                        )}
+                        <MealCard
+                          meal={meal}
+                          lang={lang}
+                          showCheckbox={false}
+                          selected={false}
+                          onToggleSelect={() => {}}
+                          onEdit={(id, updates) => {
+                            onUpdateMeal(id, updates)
+                            showToast(t(lang, 'saved'), 'success')
+                          }}
+                          enableWeightScaling
+                        />
                       </div>
                     ))}
                   </div>
@@ -1791,6 +1567,163 @@ function LibraryScreen({ lang }: { lang: Lang }) {
   )
 }
 
+// ── Preferences Screen ────────────────────────────────────────────────────────
+
+function PreferencesScreen({ lang, profile, onSave, showToast }: {
+  lang:      Lang
+  profile:   UserProfile
+  onSave:    (updates: Partial<UserProfile>) => void
+  showToast: (msg: string, type: 'success' | 'error' | 'info') => void
+}) {
+  const [draft, setDraft] = useState({
+    weightUnit:          profile.weightUnit,
+    volumeUnit:          profile.volumeUnit,
+    fluidThresholdMl:    profile.fluidThresholdMl,
+    fluidZeroCalOnly:    profile.fluidZeroCalOnly,
+    defaultServingGrams: profile.defaultServingGrams,
+  })
+  const [saved, setSaved] = useState(false)
+
+  const set = <K extends keyof typeof draft>(key: K, val: typeof draft[K]) =>
+    setDraft(p => ({ ...p, [key]: val }))
+
+  const handleSave = () => {
+    onSave(draft)
+    setSaved(true)
+    setTimeout(() => setSaved(false), 2000)
+    showToast(lang === 'he' ? 'ההעדפות נשמרו' : 'Preferences saved', 'success')
+  }
+
+  const labelStyle: React.CSSProperties = {
+    fontSize: 11, fontWeight: 600, color: 'var(--text-2)', display: 'block', marginBottom: 5,
+  }
+
+  return (
+    <>
+      <h2 style={{ fontSize: 17, fontWeight: 800, color: 'var(--text)', margin: '0 0 18px' }}>
+        {t(lang, 'preferences')}
+      </h2>
+
+      {/* Units */}
+      <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.07em', margin: '0 0 12px' }}>
+        {t(lang, 'unitsLabel')}
+      </p>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 24 }}>
+        <div>
+          <label style={labelStyle}>{t(lang, 'weight')}</label>
+          <div style={{ display: 'flex', gap: 6 }}>
+            {(['g', 'oz'] as const).map(u => (
+              <button
+                key={u}
+                onClick={() => set('weightUnit', u)}
+                style={{
+                  flex: 1, padding: '8px 0', borderRadius: 10, fontFamily: 'inherit',
+                  fontSize: 13, fontWeight: 700, cursor: 'pointer',
+                  background: draft.weightUnit === u ? 'var(--blue-select)' : 'var(--bg-card)',
+                  border: `1.5px solid ${draft.weightUnit === u ? 'var(--blue)' : 'var(--border)'}`,
+                  color: draft.weightUnit === u ? 'var(--blue-hi)' : 'var(--text-2)',
+                  transition: 'all .15s',
+                }}
+              >
+                {u}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div>
+          <label style={labelStyle}>{t(lang, 'volume')}</label>
+          <select
+            className="inp"
+            value={draft.volumeUnit}
+            onChange={e => set('volumeUnit', e.target.value as UserProfile['volumeUnit'])}
+            style={{ cursor: 'pointer', padding: '0 10px', height: 40, fontSize: 16 }}
+          >
+            {(['ml', 'cup', 'tbsp', 'tsp', 'fl_oz'] as const).map(u => (
+              <option key={u} value={u}>{u === 'fl_oz' ? 'fl oz' : u}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {/* Fluid detection */}
+      <div style={{ height: 1, background: 'var(--border)', margin: '4px 0 18px' }} />
+      <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.07em', margin: '0 0 14px' }}>
+        {lang === 'he' ? 'סף זיהוי נוזלים' : 'Fluid detection'}
+      </p>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+        <input
+          type="number"
+          inputMode="numeric"
+          className="inp"
+          style={{ width: 70, textAlign: 'center', flexShrink: 0, fontSize: 16 }}
+          value={draft.fluidThresholdMl}
+          onChange={e => set('fluidThresholdMl', Number(e.target.value) || 100)}
+        />
+        <span style={{ fontSize: 12, color: 'var(--text-3)', flexShrink: 0 }}>ml</span>
+        <span style={{ flex: 1 }} />
+        <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-2)', flexShrink: 0 }}>
+          {lang === 'he' ? '0 קל׳ בלבד' : '0-cal only'}
+        </span>
+        <button
+          onClick={() => set('fluidZeroCalOnly', !draft.fluidZeroCalOnly)}
+          aria-label={lang === 'he' ? 'הפעל/בטל' : 'Toggle'}
+          style={{
+            width: 44, height: 26, borderRadius: 99, border: 'none', cursor: 'pointer', flexShrink: 0,
+            background: draft.fluidZeroCalOnly ? 'var(--blue)' : 'rgba(107,127,150,0.25)',
+            position: 'relative', transition: 'background .2s',
+          }}
+        >
+          <span style={{
+            position: 'absolute', width: 18, height: 18, borderRadius: '50%', background: 'var(--toggle-knob)',
+            top: 4, transition: 'right .2s',
+            right: draft.fluidZeroCalOnly ? 4 : 22,
+          }} />
+        </button>
+      </div>
+      <p style={{ fontSize: 10, color: 'var(--text-3)', margin: '0 0 28px', lineHeight: 1.5 }}>
+        {lang === 'he'
+          ? 'כשהמתג דלוק — רק נוזלים עם 0 קלוריות יחושבו ליעד (מים, סודה, קפה שחור...).'
+          : 'When enabled — only zero-calorie fluids count toward your goal (water, soda, black coffee...).'}
+      </p>
+
+      {/* Default serving size */}
+      <div style={{ height: 1, background: 'var(--border)', margin: '4px 0 18px' }} />
+      <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.07em', margin: '0 0 14px' }}>
+        {t(lang, 'defaultServingGrams')}
+      </p>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+        <input
+          type="number"
+          inputMode="numeric"
+          className="inp"
+          style={{ width: 80, textAlign: 'center', flexShrink: 0, fontSize: 16 }}
+          min={10}
+          max={500}
+          value={draft.defaultServingGrams}
+          onChange={e => set('defaultServingGrams', Math.min(500, Math.max(10, Number(e.target.value) || 150)))}
+        />
+        <span style={{ fontSize: 12, color: 'var(--text-3)' }}>g</span>
+      </div>
+      <p style={{ fontSize: 10, color: 'var(--text-3)', margin: '0 0 28px', lineHeight: 1.5 }}>
+        {lang === 'he'
+          ? 'כמות הגרמים שתחושב כ"מנה אחת" כשאין מידע ספציפי בספריית המזונות.'
+          : 'The gram amount used as "1 serving" when no specific library data is available.'}
+      </p>
+
+      <button
+        onClick={handleSave}
+        className={saved ? 'btn-confirm' : 'btn-ghost'}
+        style={{ width: '100%', height: 48, borderRadius: 12, fontSize: 14 }}
+      >
+        {saved
+          ? <><span className="icon icon-sm" style={{ verticalAlign: 'middle', marginInlineEnd: 4 }}>check</span>{lang === 'he' ? 'נשמר!' : 'Saved!'}</>
+          : lang === 'he' ? 'שמור העדפות' : 'Save Preferences'
+        }
+      </button>
+    </>
+  )
+}
+
 // ── SettingsSheet ─────────────────────────────────────────────────────────────
 
 interface SettingsSheetProps {
@@ -1813,7 +1746,7 @@ interface SettingsSheetProps {
   composedGroups:  ComposedGroup[]
   onRemoveGroup:   (id: string) => void
   meals:           Meal[]
-  onUpdateMeal:    (id: string, updates: Partial<Pick<Meal, 'name' | 'grams' | 'calories' | 'protein'>>) => void
+  onUpdateMeal:    (id: string, updates: Partial<Meal>) => void
 }
 
 export function SettingsSheet({
@@ -1872,6 +1805,7 @@ export function SettingsSheet({
         borderLeft: '1px solid var(--border)',
         borderRight: '1px solid var(--border)',
         borderRadius: '20px 20px 0 0',
+        overflow: 'hidden',
         height: 'min(90vh, 720px)',
         display: 'flex', flexDirection: 'column',
         transform: isOpen ? 'translateY(0)' : 'translateY(105%)',
@@ -1885,8 +1819,8 @@ export function SettingsSheet({
           isRTL={lang === 'he'}
         />
 
-        {/* Scrollable screens (main / profile / goals) */}
-        {(screen === 'main' || screen === 'profile' || screen === 'goals') && (
+        {/* Scrollable screens (main / profile / goals / preferences) */}
+        {(screen === 'main' || screen === 'profile' || screen === 'goals' || screen === 'preferences') && (
           <div
             ref={scrollRef}
             onScroll={onScroll}
@@ -1905,6 +1839,7 @@ export function SettingsSheet({
                 onGoals={() => setScreen('goals')}
                 onFoodHistory={() => setScreen('foodHistory')}
                 onLibrary={() => setScreen('library')}
+                onPreferences={() => setScreen('preferences')}
                 onToggleLang={onToggleLang}
                 onToggleTheme={onToggleTheme}
                 onSignOut={() => { handleClose(); onSignOut() }}
@@ -1915,8 +1850,6 @@ export function SettingsSheet({
                 lang={lang}
                 profile={profile}
                 onSave={onSaveProfile}
-                onApplyGoals={(cal, prot) => onSaveGoals({ default_calories: cal, default_protein: prot })}
-                onNavigateToGoals={() => setScreen('goals')}
                 showToast={showToast}
               />
             )}
@@ -1926,8 +1859,17 @@ export function SettingsSheet({
                 profile={profile}
                 goals={goals}
                 onSave={onSaveGoals}
+                onSaveProfile={onSaveProfile}
                 onSaveFluidGoal={ml => onSaveProfile({ fluidGoalMl: ml })}
                 fluidGoalMl={profile.fluidGoalMl}
+                showToast={showToast}
+              />
+            )}
+            {screen === 'preferences' && (
+              <PreferencesScreen
+                lang={lang}
+                profile={profile}
+                onSave={onSaveProfile}
                 showToast={showToast}
               />
             )}

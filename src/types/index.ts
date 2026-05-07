@@ -61,6 +61,7 @@ export interface FoodLibraryItem {
   serving_size: number | null
   serving_unit: string
   density: number | null
+  countable: boolean
 }
 
 /** Client-side only — persisted in localStorage, not Supabase */

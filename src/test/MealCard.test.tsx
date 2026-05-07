@@ -52,9 +52,9 @@ describe('MealCard (read mode)', () => {
     expect(screen.getByText('350ml')).toBeInTheDocument()
   })
 
-  it('shows pcs for piece entries', () => {
+  it('shows servings for piece entries', () => {
     render(<MealCard meal={fakeMeal({ grams: -3 })} lang="en" showCheckbox selected={false} onToggleSelect={() => {}} onEdit={() => {}} />)
-    expect(screen.getByText(/3 pcs/)).toBeInTheDocument()
+    expect(screen.getByText(/3 serving/)).toBeInTheDocument()
   })
 
   it('calls onToggleSelect when checkbox clicked', () => {

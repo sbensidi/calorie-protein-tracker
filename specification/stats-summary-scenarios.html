@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Stats Summary — 6 תרחישים</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #0f1117;
+      color: #e8eaf0;
+      font-family: -apple-system, 'Helvetica Neue', Arial, sans-serif;
+      padding: 32px 20px 60px;
+      min-height: 100vh;
+    }
+
+    h1 {
+      font-size: 15px;
+      font-weight: 600;
+      color: #6b7280;
+      letter-spacing: 0.04em;
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    /* ── Grid ── */
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      max-width: 820px;
+      margin: 0 auto;
+    }
+
+    .section-label {
+      grid-column: 1 / -1;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: #4b5563;
+      text-transform: uppercase;
+      padding: 8px 0 4px;
+      border-top: 1px solid #1f2937;
+      margin-top: 12px;
+    }
+    .section-label:first-of-type { margin-top: 0; border-top: none; }
+
+    /* ── Card ── */
+    .card {
+      background: #161b25;
+      border: 1px solid #1f2937;
+      border-radius: 16px;
+      overflow: hidden;
+    }
+
+    .scenario-tag {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      color: #4b5563;
+      padding: 10px 14px 0;
+    }
+
+    /* ── Chart placeholder ── */
+    .chart-area {
+      padding: 10px 14px 0;
+      height: 90px;
+      display: flex;
+      align-items: flex-end;
+      gap: 5px;
+    }
+
+    .bar-wrap {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      height: 100%;
+      justify-content: flex-end;
+    }
+
+    .bar {
+      width: 100%;
+      border-radius: 4px 4px 0 0;
+      min-height: 4px;
+    }
+
+    .bar-label {
+      font-size: 9px;
+      color: #374151;
+      font-weight: 500;
+    }
+
+    /* Goal line */
+    .chart-inner {
+      position: relative;
+      flex: 1;
+      display: flex;
+      align-items: flex-end;
+      gap: 5px;
+      height: 74px;
+    }
+    .goal-line {
+      position: absolute;
+      left: 0; right: 0;
+      border-top: 1px dashed #374151;
+    }
+
+    /* ── Summary area ── */
+    .summary {
+      padding: 14px 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .stat-row {
+      display: flex;
+      align-items: baseline;
+      gap: 0;
+      flex-wrap: wrap;
+      line-height: 1.5;
+      font-size: 13px;
+    }
+
+    .days {
+      font-weight: 700;
+      color: #e8eaf0;
+      white-space: nowrap;
+      margin-left: 4px;
+    }
+
+    .sep {
+      color: #374151;
+      margin: 0 5px;
+      font-weight: 400;
+    }
+
+    .avg {
+      color: #9ca3af;
+      font-weight: 500;
+    }
+
+    .avg strong {
+      font-weight: 700;
+    }
+
+    .delta {
+      font-size: 12px;
+      font-weight: 600;
+      border-radius: 5px;
+      padding: 1px 6px;
+      margin-right: 5px;
+      white-space: nowrap;
+    }
+
+    .delta-over {
+      color: #fb923c;
+      background: rgba(251,146,60,0.1);
+    }
+
+    .delta-under {
+      color: #60a5fa;
+      background: rgba(96,165,250,0.1);
+    }
+
+    .delta-exact {
+      color: #34d399;
+      background: rgba(52,211,153,0.1);
+    }
+
+    .dot-cal  { width: 6px; height: 6px; border-radius: 50%; background: #60a5fa; display: inline-block; margin-left: 6px; flex-shrink: 0; }
+    .dot-prot { width: 6px; height: 6px; border-radius: 50%; background: #34d399; display: inline-block; margin-left: 6px; flex-shrink: 0; }
+
+    /* bar colors */
+    .hit  { background: rgba(96,165,250,0.55); }
+    .miss { background: rgba(239,68,68,0.30); }
+    .hit-p  { background: rgba(52,211,153,0.50); }
+    .miss-p { background: rgba(239,68,68,0.25); }
+
+    /* mobile */
+    @media (max-width: 540px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<h1>STATS SUMMARY · 6 תרחישים</h1>
+
+<div class="grid">
+
+  <!-- ═══════════════════════════════════════
+       תרחיש 1 — חריגה קטנה (חיובי, כמעט ביעד)
+  ═══════════════════════════════════════ -->
+  <div class="section-label">תרחיש 1 · חריגה קטנה — שמור על הקצב</div>
+
+  <!-- חודש -->
+  <div class="card">
+    <div class="scenario-tag">MONTHLY · אפריל 2026</div>
+    <div class="chart-area">
+      <div style="position:relative;flex:1;height:74px">
+        <div class="goal-line" style="bottom:50%"></div>
+        <div class="chart-inner">
+          <div class="bar-wrap"><div class="bar hit"  style="height:52%"></div></div>
+          <div class="bar-wrap"><div class="bar hit"  style="height:54%"></div></div>
+          <div class="bar-wrap"><div class="bar miss" style="height:62%"></div></div>
+          <div class="bar-wrap"><div class="bar hit"  style="height:51%"></div></div>
+          <div class="bar-wrap"><div class="bar hit"  style="height:55%"></div></div>
+          <div class="bar-wrap"><div class="bar miss" style="height:58%"></div></div>
+          <div class="bar-wrap"><div class="bar hit"  style="height:52%"></div></div>
+          <div class="bar-wrap"><div class="bar hit"  style="height:50%"></div></div>
+          <div class="bar-wrap"><div class="bar hit"  style="height:53%"></div></div>
+          <div class="bar-wrap"><div class="bar miss" style="height:57%"></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="summary">
+      <!-- קלוריות -->
+      <div class="stat-row">
+        <span class="dot-cal"></span>
+        <span class="days">22 מתוך 30 ימים ביעד</span>
+        <span class="sep">·</span>
+        <span class="avg">ממוצע <strong>1,719 קק״ל</strong></span>
+        <span class="delta delta-over">+19 קק״ל</span>
+      </div>
+      <!-- חלבון -->
+      <div class="stat-row">
+        <span class="dot-prot"></span>
+        <span class="days">18 מתוך 30 ימים ביעד</span>
+        <span class="sep">·</span>
+        <span class="avg">ממוצע <strong>159ג׳</strong> חלבון</span>
+        <span class="delta delta-under">−1ג׳</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- שבוע -->
+  <div class="card">
+    <div class="scenario-tag">WEEKLY · שבוע נוכחי</div>
+    <div class="chart-area">
+      <div style="position:relative;flex:1;height:74px">
+        <div class="goal-line" style="bottom:50%"></div>
+        <div class="chart-inner">
+          <div class="bar-wrap"><div class="bar hit"  style="height:51%"></div><div class="bar-label">א׳</div></div>
+          <div class="bar-wrap"><div class="bar hit"  style="height:53%"></div><div class="bar-label">ב׳</div></div>
+          <div class="bar-wrap"><div class="bar miss" style="height:59%"></div><div class="bar-label">ג׳</div></div>
+          <div class="bar-wrap"><div class="bar hit"  style="height:52%"></div><div class="bar-label">ד׳</div></div>
+          <div class="bar-wrap"><div class="bar hit"  style="height:54%"></div><div class="bar-label">ה׳</div></div>
+          <div class="bar-wrap"><div class="bar hit"  style="height:50%"></div><div class="bar-label">ו׳</div></div>
+          <div class="bar-wrap"><div class="bar miss" style="height:57%"></div><div class="bar-label">ש׳</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="summary">
+      <div class="stat-row">
+        <span class="dot-cal"></span>
+        <span class="days">5 מתוך 7 ימים ביעד</span>
+        <span class="sep">·</span>
+        <span class="avg">ממוצע <strong>1,741 קק״ל</strong></span>
+        <span class="delta delta-over">+41 קק״ל</span>
+      </div>
+      <div class="stat-row">
+        <span class="dot-prot"></span>
+        <span class="days">6 מתוך 7 ימים ביעד</span>
+        <span class="sep">·</span>
+        <span class="avg">ממוצע <strong>161ג׳</strong> חלבון</span>
+        <span class="delta delta-over">+1ג׳</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════
+       תרחיש 2 — חריגה גדולה
+  ═══════════════════════════════════════ -->
+  <div class="section-label">תרחיש 2 · חריגה גדולה — יש לאן לשאוף</div>
+
+  <!-- חודש -->
+  <div class="card">
+    <div class="scenario-tag">MONTHLY · מרץ 2026</div>
+    <div class="chart-area">
+      <div style="position:relative;flex:1;height:74px">
+        <div class="goal-line" style="bottom:50%"></div>
+        <div class="chart-inner">
+          <div class="bar-wrap"><div class="bar miss" style="height:78%"></div></div>
+          <div class="bar-wrap"><div class="bar hit"  style="height:51%"></div></div>
+          <div class="bar-wrap"><div class="bar miss" style="height:82%"></div></div>
+          <div class="bar-wrap"><div class="bar miss" style="height:74%"></div></div>
+          <div class="bar-wrap"><div class="bar hit"  style="height:49%"></div></div>
+          <div class="bar-wrap"><div class="bar miss" style="height:88%"></div></div>
+          <div class="bar-wrap"><div class="bar miss" style="height:71%"></div></div>
+          <div class="bar-wrap"><div class="bar hit"  style="height:52%"></div></div>
+          <div class="bar-wrap"><div class="bar miss" style="height:80%"></div></div>
+          <div class="bar-wrap"><div class="bar miss" style="height:76%"></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="summary">
+      <div class="stat-row">
+        <span class="dot-cal"></span>
+        <span class="days">12 מתוך 31 ימים ביעד</span>
+        <span class="sep">·</span>
+        <span class="avg">ממוצע <strong>1,950 קק״ל</strong></span>
+        <span class="delta delta-over">+250 קק״ל</span>
+      </div>
+      <div class="stat-row">
+        <span class="dot-prot"></span>
+        <span class="days">9 מתוך 31 ימים ביעד</span>
+        <span class="sep">·</span>
+        <span class="avg">ממוצע <strong>120ג׳</strong> חלבון</span>
+        <span class="delta delta-under">−40ג׳</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- שבוע -->
+  <div class="card">
+    <div class="scenario-tag">WEEKLY · שבוע קשה</div>
+    <div class="chart-area">
+      <div style="position:relative;flex:1;height:74px">
+        <div class="goal-line" style="bottom:50%"></div>
+        <div class="chart-inner">
+          <div class="bar-wrap"><div class="bar miss" style="height:80%"></div><div class="bar-label">א׳</div></div>
+          <div class="bar-wrap"><div class="bar miss" style="height:76%"></div><div class="bar-label">ב׳</div></div>
+          <div class="bar-wrap"><div class="bar hit"  style="height:49%"></div><div class="bar-label">ג׳</div></div>
+          <div class="bar-wrap"><div class="bar miss" style="height:85%"></div><div class="bar-label">ד׳</div></div>
+          <div class="bar-wrap"><div class="bar miss" style="height:72%"></div><div class="bar-label">ה׳</div></div>
+          <div class="bar-wrap"><div class="bar hit"  style="height:52%"></div><div class="bar-label">ו׳</div></div>
+          <div class="bar-wrap"><div class="bar miss" style="height:78%"></div><div class="bar-label">ש׳</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="summary">
+      <div class="stat-row">
+        <span class="dot-cal"></span>
+        <span class="days">2 מתוך 7 ימים ביעד</span>
+        <span class="sep">·</span>
+        <span class="avg">ממוצע <strong>2,100 קק״ל</strong></span>
+        <span class="delta delta-over">+400 קק״ל</span>
+      </div>
+      <div class="stat-row">
+        <span class="dot-prot"></span>
+        <span class="days">3 מתוך 7 ימים ביעד</span>
+        <span class="sep">·</span>
+        <span class="avg">ממוצע <strong>110ג׳</strong> חלבון</span>
+        <span class="delta delta-under">−50ג׳</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════
+       תרחיש 3 — מתחת ליעד (אכל פחות)
+  ═══════════════════════════════════════ -->
+  <div class="section-label">תרחיש 3 · מתחת ליעד — פחות מהיעד</div>
+
+  <!-- חודש -->
+  <div class="card">
+    <div class="scenario-tag">MONTHLY · פברואר 2026</div>
+    <div class="chart-area">
+      <div style="position:relative;flex:1;height:74px">
+        <div class="goal-line" style="bottom:50%"></div>
+        <div class="chart-inner">
+          <div class="bar-wrap"><div class="bar hit"  style="height:45%"></div></div>
+          <div class="bar-wrap"><div class="bar hit"  style="height:42%"></div></div>
+          <div class="bar-wrap"><div class="bar miss" style="height:37%"></div></div>
+          <div class="bar-wrap"><div class="bar hit"  style="height:44%"></div></div>
+          <div class="bar-wrap"><div class="bar hit"  style="height:48%"></div></div>
+          <div class="bar-wrap"><div class="bar miss" style="height:33%"></div></div>
+          <div class="bar-wrap"><div class="bar hit"  style="height:43%"></div></div>
+          <div class="bar-wrap"><div class="bar hit"  style="height:46%"></div></div>
+          <div class="bar-wrap"><div class="bar hit"  style="height:40%"></div></div>
+          <div class="bar-wrap"><div class="bar miss" style="height:35%"></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="summary">
+      <div class="stat-row">
+        <span class="dot-cal"></span>
+        <span class="days">20 מתוך 28 ימים ביעד</span>
+        <span class="sep">·</span>
+        <span class="avg">ממוצע <strong>1,580 קק״ל</strong></span>
+        <span class="delta delta-under">−120 קק״ל</span>
+      </div>
+      <div class="stat-row">
+        <span class="dot-prot"></span>
+        <span class="days">24 מתוך 28 ימים ביעד</span>
+        <span class="sep">·</span>
+        <span class="avg">ממוצע <strong>168ג׳</strong> חלבון</span>
+        <span class="delta delta-over">+8ג׳</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- שבוע -->
+  <div class="card">
+    <div class="scenario-tag">WEEKLY · שבוע מתחת</div>
+    <div class="chart-area">
+      <div style="position:relative;flex:1;height:74px">
+        <div class="goal-line" style="bottom:50%"></div>
+        <div class="chart-inner">
+          <div class="bar-wrap"><div class="bar hit"  style="height:44%"></div><div class="bar-label">א׳</div></div>
+          <div class="bar-wrap"><div class="bar hit"  style="height:47%"></div><div class="bar-label">ב׳</div></div>
+          <div class="bar-wrap"><div class="bar hit"  style="height:42%"></div><div class="bar-label">ג׳</div></div>
+          <div class="bar-wrap"><div class="bar miss" style="height:36%"></div><div class="bar-label">ד׳</div></div>
+          <div class="bar-wrap"><div class="bar hit"  style="height:45%"></div><div class="bar-label">ה׳</div></div>
+          <div class="bar-wrap"><div class="bar hit"  style="height:43%"></div><div class="bar-label">ו׳</div></div>
+          <div class="bar-wrap"><div class="bar hit"  style="height:46%"></div><div class="bar-label">ש׳</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="summary">
+      <div class="stat-row">
+        <span class="dot-cal"></span>
+        <span class="days">6 מתוך 7 ימים ביעד</span>
+        <span class="sep">·</span>
+        <span class="avg">ממוצע <strong>1,620 קק״ל</strong></span>
+        <span class="delta delta-under">−80 קק״ל</span>
+      </div>
+      <div class="stat-row">
+        <span class="dot-prot"></span>
+        <span class="days">7 מתוך 7 ימים ביעד</span>
+        <span class="sep">·</span>
+        <span class="avg">ממוצע <strong>175ג׳</strong> חלבון</span>
+        <span class="delta delta-exact">בדיוק ביעד</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

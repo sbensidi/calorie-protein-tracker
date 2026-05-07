@@ -306,3 +306,22 @@ z-index: var(--z-toast);   /* 300 */
 --z-toast:   300;  /* toast notification */
 ```
 בinline styles של React, השתמש במספר הישיר (`zIndex: 100`) — CSS vars לא עובדים ב-JS inline styles. תיעד את הscale בcomment.
+
+---
+
+## 9. Mobile / iOS — כללים קריטיים
+
+### 9.1 כל `<input>` ו-`<select>` חייבים `font-size: 16px` מינימום — מניעת iOS auto-zoom
+iOS Safari מזום אוטומטית כאשר input מקבל focus עם `font-size < 16px`. אין דרך לבטל זאת בCSS — הפתרון היחיד הוא להבטיח ≥16px על כל שדה.
+
+```ts
+// ❌ גורם לזום ב-iOS — כולל בתוך inline style
+<input style={{ fontSize: 14 }} />
+<select style={{ fontSize: 13 }} />
+
+// ✅ תמיד 16px מינימום
+<input style={{ fontSize: 16 }} />
+<select style={{ fontSize: 16 }} />
+```
+
+**כלל פשוט:** מחלקת `.inp` מוגדרת כברירת מחדל עם `font-size: 16px`. אין לדרוס אותה עם ערך קטן יותר ב-inline style. אם צריך תצוגה קטנה — עשה זאת על ה-wrapper/label, לא על ה-input עצמו.

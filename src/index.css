@@ -353,6 +353,10 @@ input[type="number"] { -moz-appearance: textfield; }
   height: 46px;
   width: 100%;
   font-family: inherit;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   transition: opacity .15s, transform .1s;
 }
 .btn-confirm:hover  { opacity: 0.88; }

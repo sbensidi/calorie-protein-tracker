@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Composed Meal Card — Before / After Refactor</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #0f1117;
+    color: #e2e8f0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    padding: 24px 16px;
+    max-width: 480px;
+    margin: 0 auto;
+  }
+
+  h1 { font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 16px; }
+  .section { margin-bottom: 40px; }
+  .section-title { font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 10px; }
+
+  /* ── shared card shell ─────────────────────── */
+  .group-card {
+    background: #1a1f2e;
+    border: 1px solid #2d3548;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  /* group header */
+  .group-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-bottom: 1px solid #2d3548;
+  }
+  .group-header-btn {
+    flex: 1; display: flex; align-items: center; gap: 10px;
+    background: none; border: none; cursor: pointer; padding: 0; min-width: 0; text-align: right;
+    font-family: inherit;
+  }
+  .group-name { font-size: 13px; font-weight: 600; color: #e2e8f0; margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .icon-purple { color: #a78bfa; font-size: 18px; flex-shrink: 0; }
+  .icon-gray   { color: #64748b; font-size: 18px; flex-shrink: 0; }
+  .icon-red    { color: #f87171; font-size: 18px; flex-shrink: 0; }
+
+  /* shared detail row */
+  .detail-row {
+    display: flex; flex-direction: row; direction: rtl;
+    gap: 5px; align-items: baseline; font-size: 11px; color: #64748b; margin-top: 2px;
+  }
+  .pair { display: inline-flex; gap: 4px; align-items: baseline; white-space: nowrap; }
+  .sep  { color: #3a4a60; }
+  .cal  { color: #60a5fa; font-weight: 600; }
+  .prot { color: #34d399; font-weight: 600; }
+  .u    { font-size: 10px; }
+
+  /* ── BEFORE: custom inline edit ────────────── */
+  .before-meal-view {
+    display: flex; align-items: center; gap: 8px; padding: 8px 12px;
+    border-bottom: 1px solid #2d3548;
+  }
+  .before-meal-name { font-size: 12px; font-weight: 600; color: #e2e8f0; margin: 0; }
+  .before-meal-detail { font-size: 11px; color: #64748b; margin: 1px 0 0; }
+
+  .before-edit-form {
+    padding: 10px 12px;
+    display: flex; flex-direction: column; gap: 6px;
+    border-bottom: 1px solid #2d3548;
+    background: rgba(59,130,246,0.03);
+  }
+  .before-fields {
+    display: flex; gap: 6px;
+  }
+  .before-field { flex: 1; }
+  .before-field label { font-size: 10px; font-weight: 600; color: #64748b; display: block; margin-bottom: 3px; }
+  .inp {
+    width: 100%; background: #0f1117; border: 1px solid #2d3548; border-radius: 8px;
+    color: #e2e8f0; font-family: inherit; padding: 0 8px; height: 34px; font-size: 13px;
+    /* 13px → iOS zooms! */
+  }
+  .inp:focus { outline: none; border-color: #3b82f6; }
+  .inp-sm { height: 30px; font-size: 13px; }
+  .zoom-warning {
+    font-size: 10px; color: #f59e0b; font-weight: 600;
+    background: rgba(245,158,11,0.1); border-radius: 4px; padding: 2px 6px; margin-top: 2px;
+  }
+
+  .before-actions { display: flex; gap: 6px; justify-content: flex-end; }
+  .btn-cancel { height: 30px; padding: 0 12px; border-radius: 8px; background: #1e2533; border: 1px solid #2d3548; color: #94a3b8; font-size: 12px; cursor: pointer; font-family: inherit; }
+  .btn-save   { height: 30px; padding: 0 14px; border-radius: 8px; background: #3b82f6; border: none; color: #fff; font-size: 12px; cursor: pointer; font-family: inherit; font-weight: 600; }
+
+  /* ── AFTER: reuse MealCard style ───────────── */
+  .mealcard {
+    display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+    border-bottom: 1px solid #2d3548;
+  }
+  .mealcard-body { flex: 1; min-width: 0; }
+  .mealcard-line1 { display: flex; align-items: baseline; gap: 5px; overflow: hidden; margin-bottom: 3px; }
+  .mealcard-name  { font-size: 14px; font-weight: 600; color: #e2e8f0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+  .mealcard-qty   { font-size: 12px; font-weight: 500; color: #64748b; white-space: nowrap; flex-shrink: 0; }
+  .mealcard-line2 { display: flex; align-items: baseline; gap: 10px; }
+  .mealcard-cal   { font-size: 13px; font-weight: 700; color: #60a5fa; line-height: 1; }
+  .mealcard-cal .u2 { font-size: 11px; font-weight: 500; opacity: 0.65; margin-inline-start: 2px; }
+  .mealcard-prot  { font-size: 13px; font-weight: 700; color: #34d399; line-height: 1; }
+  .mealcard-prot .u2 { font-size: 11px; font-weight: 500; opacity: 0.65; margin-inline-start: 2px; }
+  .icon-btn { background: none; border: none; cursor: pointer; color: #64748b; padding: 6px; display: flex; border-radius: 8px; }
+
+  /* MealCard edit form — 4 equal columns */
+  .mealcard-edit {
+    padding: 10px 12px;
+    display: flex; flex-direction: column; gap: 8px;
+    border-bottom: 1px solid #2d3548;
+    border-top: 2px solid #3b82f6;
+    background: rgba(59,130,246,0.03);
+  }
+  .edit-row1 { display: flex; gap: 8px; }
+  .edit-name-wrap { flex: 1; position: relative; }
+  .edit-name-wrap input { font-size: 16px; /* 16px → no iOS zoom */ }
+  .edit-type { width: 110px; flex-shrink: 0; }
+  .edit-type select { font-size: 16px; }
+
+  .edit-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr; /* 4 equal columns */
+    gap: 8px;
+  }
+  .edit-col label {
+    font-size: 11px; font-weight: 600; display: block; margin-bottom: 4px;
+  }
+  .edit-col label.lbl-cal  { color: #60a5fa; }
+  .edit-col label.lbl-prot { color: #34d399; }
+  .edit-col label.lbl-wt   { color: #94a3b8; }
+  .edit-col label.lbl-unit { color: #94a3b8; }
+  .edit-col input, .edit-col select {
+    width: 100%; background: #0f1117; border: 1px solid #2d3548; border-radius: 8px;
+    color: #e2e8f0; font-family: inherit; padding: 0 8px; height: 38px;
+    font-size: 16px; /* 16px → no iOS zoom */
+  }
+  .edit-col input:focus, .edit-col select:focus { outline: none; border-color: #3b82f6; }
+  .edit-btns { display: flex; gap: 8px; }
+  .edit-btns .btn-save   { flex: 1; height: 36px; padding: 0; font-size: 13px; }
+  .edit-btns .btn-cancel { flex: 1; height: 36px; padding: 0; font-size: 13px; }
+
+  .no-zoom-note {
+    font-size: 10px; color: #34d399; font-weight: 600;
+    background: rgba(52,211,153,0.1); border-radius: 4px; padding: 2px 6px;
+  }
+  .delete-btn { background: none; border: none; cursor: pointer; color: #f87171; padding: 6px; display: flex; border-radius: 8px; }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════
+     BEFORE
+══════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-title">לפני — טופס עריכה מותאם אישית</div>
+  <div class="group-card">
+
+    <!-- group header -->
+    <div class="group-header">
+      <button class="group-header-btn">
+        <span class="icon-purple">🍽</span>
+        <div style="flex:1; min-width:0">
+          <p class="group-name">ארוחת המבורגר</p>
+          <div class="detail-row">
+            <span class="pair"><span class="cal">1375</span><span class="u">קק"ל</span></span>
+            <span class="sep">·</span>
+            <span class="pair"><span class="prot">52.8</span><span class="u">ג׳</span></span>
+            <span class="sep">·</span>
+            <span class="pair"><span>4</span><span class="u">מרכיבים</span></span>
+          </div>
+        </div>
+        <span class="icon-gray">▾</span>
+      </button>
+      <button class="delete-btn">🗑</button>
+    </div>
+
+    <!-- meal view row -->
+    <div class="before-meal-view">
+      <div style="flex:1; min-width:0">
+        <p class="before-meal-name">בשר המבורגר</p>
+        <p class="before-meal-detail">200 ג׳ · <span class="cal">420</span> קק"ל · <span class="prot">38</span> ג׳</p>
+      </div>
+      <button class="icon-btn">✏️</button>
+    </div>
+
+    <!-- meal EDIT row — custom form (BEFORE) -->
+    <div class="before-edit-form">
+      <div style="position:relative">
+        <input class="inp inp-sm" value="לחמניית המבורגר" dir="rtl" />
+      </div>
+      <!-- 3 columns, NOT equal, font-size 13 → iOS zoom -->
+      <div class="before-fields">
+        <div class="before-field">
+          <label>גרם (g)</label>
+          <input class="inp inp-sm" type="number" value="60" />
+        </div>
+        <div class="before-field" style="flex:1.4">
+          <label style="color:#60a5fa">קלוריות (קק"ל) 🧮</label>
+          <input class="inp inp-sm" type="number" value="158" />
+        </div>
+        <div class="before-field" style="flex:1.4">
+          <label style="color:#34d399">חלבון (ג׳) 🧮</label>
+          <input class="inp inp-sm" type="number" value="5.4" />
+        </div>
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:center">
+        <span class="zoom-warning">⚠️ font-size 13px → iOS מזום</span>
+        <div class="before-actions">
+          <button class="btn-cancel">ביטול</button>
+          <button class="btn-save">שמור</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- another meal view -->
+    <div class="before-meal-view">
+      <div style="flex:1; min-width:0">
+        <p class="before-meal-name">גבינה צהובה</p>
+        <p class="before-meal-detail">30 ג׳ · <span class="cal">110</span> קק"ל · <span class="prot">7</span> ג׳</p>
+      </div>
+      <button class="icon-btn">✏️</button>
+    </div>
+
+  </div>
+
+  <p style="font-size:11px; color:#64748b; margin-top:8px; line-height:1.6">
+    בעיות: 3 עמודות לא שוות · font-size 13 → zoom ב-iOS · אין בחירת יחידה (g/ml/יח׳) · לוגיקת עריכה כפולה ב-SettingsSheet
+  </p>
+</div>
+
+
+<!-- ══════════════════════════════════════════
+     AFTER
+══════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-title">אחרי — שימוש חוזר ב-MealCard</div>
+  <div class="group-card">
+
+    <!-- group header — same -->
+    <div class="group-header">
+      <button class="group-header-btn">
+        <span class="icon-purple">🍽</span>
+        <div style="flex:1; min-width:0">
+          <p class="group-name">ארוחת המבורגר</p>
+          <div class="detail-row">
+            <span class="pair"><span class="cal">1375</span><span class="u">קק"ל</span></span>
+            <span class="sep">·</span>
+            <span class="pair"><span class="prot">52.8</span><span class="u">ג׳</span></span>
+            <span class="sep">·</span>
+            <span class="pair"><span>4</span><span class="u">מרכיבים</span></span>
+          </div>
+        </div>
+        <span class="icon-gray">▾</span>
+      </button>
+      <button class="delete-btn">🗑</button>
+    </div>
+
+    <!-- MealCard — view mode -->
+    <div class="mealcard">
+      <div class="mealcard-body">
+        <div class="mealcard-line1">
+          <span class="mealcard-name">בשר המבורגר</span>
+          <span class="mealcard-qty">200 ג׳</span>
+        </div>
+        <div class="mealcard-line2">
+          <span class="mealcard-cal">420<span class="u2">קק"ל</span></span>
+          <span class="mealcard-prot">38<span class="u2">ג׳</span></span>
+        </div>
+      </div>
+      <button class="icon-btn">✏️</button>
+    </div>
+
+    <!-- MealCard — edit mode (same form as TodayTab) -->
+    <div class="mealcard-edit">
+
+      <!-- Row 1: name + meal type -->
+      <div class="edit-row1">
+        <div class="edit-name-wrap">
+          <input class="inp" value="לחמניית המבורגר" dir="rtl" placeholder="שם מזון" />
+        </div>
+        <div class="edit-type">
+          <select class="inp">
+            <option>ארוחת צהריים</option>
+            <option>ארוחת בוקר</option>
+            <option>ארוחת ערב</option>
+            <option>חטיף</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Row 2: 4 equal columns — calories | protein | weight | unit -->
+      <div class="edit-grid">
+        <div class="edit-col">
+          <label class="lbl-cal">קלוריות (קק"ל)</label>
+          <input type="number" value="158" />
+        </div>
+        <div class="edit-col">
+          <label class="lbl-prot">חלבון (ג׳)</label>
+          <input type="number" value="5.4" />
+        </div>
+        <div class="edit-col">
+          <label class="lbl-wt">משקל</label>
+          <input type="number" value="60" />
+        </div>
+        <div class="edit-col">
+          <label class="lbl-unit">יחידה</label>
+          <select>
+            <option>g</option>
+            <option>ml</option>
+            <option>יח׳</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="display:flex; justify-content:space-between; align-items:center">
+        <span class="no-zoom-note">✓ font-size 16px — אין zoom ב-iOS</span>
+        <div class="edit-btns" style="gap:8px">
+          <button class="btn-cancel" style="height:36px; padding:0 14px">ביטול</button>
+          <button class="btn-save" style="height:36px; padding:0 14px">שמור</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MealCard — another meal view -->
+    <div class="mealcard">
+      <div class="mealcard-body">
+        <div class="mealcard-line1">
+          <span class="mealcard-name">גבינה צהובה</span>
+          <span class="mealcard-qty">30 ג׳</span>
+        </div>
+        <div class="mealcard-line2">
+          <span class="mealcard-cal">110<span class="u2">קק"ל</span></span>
+          <span class="mealcard-prot">7<span class="u2">ג׳</span></span>
+        </div>
+      </div>
+      <button class="icon-btn">✏️</button>
+    </div>
+
+  </div>
+
+  <p style="font-size:11px; color:#64748b; margin-top:8px; line-height:1.6">
+    יתרונות: 4 עמודות שוות · font-size 16px · בחירת יחידה · אחידות מלאה עם TodayTab · הסרת ~60 שורות קוד מ-SettingsSheet
+  </p>
+</div>
+
+</body>
+</html>

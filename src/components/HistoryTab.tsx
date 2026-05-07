@@ -126,7 +126,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
   const searchInputRef   = useRef<HTMLInputElement>(null)
   const searchDropdownRef = useRef<HTMLDivElement>(null)
   const isRTL = lang === 'he'
-  const unitLabel = lang === 'he' ? 'יח׳' : 'pcs'
+  const unitLabel = lang === 'he' ? 'מנות' : 'serving(s)'
 
   const switchView = (v: 'cal' | 'list' | 'stats') => {
     setView(v)
@@ -401,7 +401,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                                   ? `${(meal.fluid_ml / 1000).toFixed(1)}${lang === 'he' ? 'ל׳' : 'L'}`
                                   : `${Math.round(meal.fluid_ml)}ml`)
                               : meal.grams < 0
-                                ? `${Math.abs(meal.grams)} ${lang === 'he' ? 'יח׳' : 'pcs'}`
+                                ? `${Math.abs(meal.grams)} ${lang === 'he' ? 'מנות' : 'serving(s)'}`
                                 : `${meal.grams}g`}
                           </p>
                         </div>
@@ -433,7 +433,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                         ? `${(meal.fluid_ml / 1000).toFixed(1)}${lang === 'he' ? 'ל׳' : 'L'}`
                         : `${Math.round(meal.fluid_ml)}ml`)
                     : meal.grams < 0
-                      ? `${Math.abs(meal.grams)} ${lang === 'he' ? 'יח׳' : 'pcs'}`
+                      ? `${Math.abs(meal.grams)} ${lang === 'he' ? 'מנות' : 'serving(s)'}`
                       : `${meal.grams}g`}
                 </p>
               </div>
@@ -783,7 +783,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                   <div style={{ padding: '10px 14px' }}>
                     <div style={{ position: 'relative' }}>
                       <input ref={historySearchRef} className="inp"
-                        style={{ paddingInlineStart: 36, height: 40, fontSize: 13 }}
+                        style={{ paddingInlineStart: 36, height: 40, fontSize: 16 }}
                         placeholder={t(lang, 'search')}
                         value={historySearch} onChange={e => setHistorySearch(e.target.value)}
                         dir={dir(lang)}
@@ -888,22 +888,23 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
         const toKey = (d: Date) =>
           `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 
-        // ── 7-day window ──────────────────────────────────────────
-        // offset7=0 → ends yesterday; offset7=1 → 8–14 days ago, etc.
-        const end7 = new Date(now)
-        end7.setDate(end7.getDate() - 1 - offset7 * 7)
-        const start7 = new Date(end7)
-        start7.setDate(start7.getDate() - 6)
-        const range7Label = `${fmt(start7)} – ${fmt(end7)}`
+        // ── Calendar week (Sun–Sat, week starts Sunday) ───────────
+        const weekStart = new Date(now)
+        weekStart.setDate(now.getDate() - now.getDay() - offset7 * 7)
+        weekStart.setHours(0, 0, 0, 0)
+        const weekEnd = new Date(weekStart)
+        weekEnd.setDate(weekStart.getDate() + 6)
+        weekEnd.setHours(23, 59, 59, 999)
+        const range7Label = `${fmt(weekStart)} – ${fmt(weekEnd)}`
 
         // ── Fluid stats helpers (declared early — used in barDays) ────
         const fluidForDate = (date: string): number =>
           (grouped.get(date)?.meals ?? []).reduce((s, m) => s + (m.fluid_ml ?? 0), 0)
 
         const barDays: Array<{ label: string; dateKey: string; cal: number; prot: number; fluid: number; goalCal: number; goalProt: number; goalFluid: number; hasData: boolean }> = []
-        for (let i = 6; i >= 0; i--) {
-          const d = new Date(end7)
-          d.setDate(d.getDate() - i)
+        for (let i = 0; i < 7; i++) {
+          const d = new Date(weekStart)
+          d.setDate(weekStart.getDate() + i)
           const dKey = toKey(d)
           const data = grouped.get(dKey)
           const g    = getGoalForDate(dKey)
@@ -915,28 +916,21 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
 
         const last7 = barDays.filter(b => b.hasData).map(b => b.dateKey)
 
-        // ── 30-day window ─────────────────────────────────────────
-        const end30 = new Date(now)
-        end30.setDate(end30.getDate() - 1 - offset30 * 30)
-        const start30 = new Date(end30)
-        start30.setDate(start30.getDate() - 29)
-        const range30Label = `${fmt(start30)} – ${fmt(end30)}`
-
-        // Smart 30-day title: show month name(s) + year
+        // ── Calendar month ────────────────────────────────────────
         const HE_MONTHS_SHORT = ['ינו׳','פבר׳','מרץ','אפר׳','מאי','יוני','יולי','אוג׳','ספט׳','אוק׳','נוב׳','דצמ׳']
         const EN_MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
-        const sm30 = start30.getMonth(), em30 = end30.getMonth()
-        const sy30 = start30.getFullYear(), ey30 = end30.getFullYear()
         const monthNames = lang === 'he' ? HE_MONTHS_SHORT : EN_MONTHS_SHORT
-        const month30Title = sm30 === em30 && sy30 === ey30
-          ? `${monthNames[em30]} ${ey30}`
-          : sy30 === ey30
-            ? `${monthNames[sm30]}–${monthNames[em30]} ${ey30}`
-            : `${monthNames[sm30]} ${sy30}–${monthNames[em30]} ${ey30}`
+        const calMonthRef = new Date(now.getFullYear(), now.getMonth() - offset30, 1)
+        const monthStart = new Date(calMonthRef.getFullYear(), calMonthRef.getMonth(), 1)
+        monthStart.setHours(0, 0, 0, 0)
+        const monthEnd = new Date(calMonthRef.getFullYear(), calMonthRef.getMonth() + 1, 0)
+        monthEnd.setHours(23, 59, 59, 999)
+        const month30Title = `${monthNames[calMonthRef.getMonth()]} ${calMonthRef.getFullYear()}`
+        const range30Label = `${fmt(monthStart)} – ${fmt(monthEnd)}`
 
         const last30 = sortedDates.filter(d => {
           const t = new Date(d).getTime()
-          return t >= start30.setHours(0,0,0,0) && t <= end30.setHours(23,59,59,999)
+          return t >= monthStart.getTime() && t <= monthEnd.getTime()
         })
 
         const avg = (arr: string[], key: 'totalCalories' | 'totalProtein') => {
@@ -1016,6 +1010,11 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
         // Today's goal for reference row
         const todayGoal = getGoalForDate(nowKey)
 
+        const delta7Cal   = avg7Cal  - Math.round(todayGoal.calories)
+        const delta7Prot  = Math.round(avg7Prot  - todayGoal.protein)
+        const delta30Cal  = avg30Cal - Math.round(todayGoal.calories)
+        const delta30Prot = Math.round(avg30Prot - todayGoal.protein)
+
         // Chart values derived from chartMetric7 toggle (7-day bar chart)
         const isCal7   = chartMetric7 === 'cal'
         const isProt7  = chartMetric7 === 'prot'
@@ -1034,11 +1033,12 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
         const isProt30  = chartMetric30 === 'prot'
         const isFluid30 = chartMetric30 === 'fluid'
 
-        // Build full 30-day array (all days, hasData=false for missing days)
+        // Build full calendar-month array (all days, hasData=false for missing days)
+        const daysInMonth30 = new Date(calMonthRef.getFullYear(), calMonthRef.getMonth() + 1, 0).getDate()
         const lineDays30: Array<{ dateKey: string; label: string; cal: number; prot: number; fluid: number; hasData: boolean }> = []
-        for (let i = 29; i >= 0; i--) {
-          const d = new Date(end30)
-          d.setDate(d.getDate() - i)
+        for (let i = 0; i < daysInMonth30; i++) {
+          const d = new Date(monthStart)
+          d.setDate(monthStart.getDate() + i)
           const dKey = toKey(d)
           const data30 = grouped.get(dKey)
           lineDays30.push({ dateKey: dKey, label: fmt(d), cal: data30?.totalCalories ?? 0, prot: data30?.totalProtein ?? 0, fluid: fluidForDate(dKey), hasData: !!data30 })
@@ -1265,12 +1265,47 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                   </div>
                   {/* 7-day insight */}
                   {last7.length >= 3 && (
-                    <div style={{ background: 'rgba(59,130,246,0.06)', border: '1px solid rgba(59,130,246,0.15)', borderRadius: 10, padding: '8px 12px' }}>
-                      <p style={{ fontSize: 11, color: 'var(--text-2)', margin: 0, lineHeight: 1.6 }}>
-                        {lang === 'he'
-                          ? `ב-7 הימים האחרונים צרכת בממוצע ${avg7Cal.toLocaleString()} קק״ל ו-${avg7Prot}ג׳ חלבון. עמדת ביעד קלוריות ב-${pct7Cal}% וחלבון ב-${pct7Prot}% מהימים.`
-                          : `Over the last 7 days you averaged ${avg7Cal.toLocaleString()} kcal and ${avg7Prot}g protein. You hit your calorie goal on ${pct7Cal}% and protein goal on ${pct7Prot}% of days.`}
-                      </p>
+                    <div style={{ background: 'rgba(59,130,246,0.06)', border: '1px solid rgba(59,130,246,0.15)', borderRadius: 10, padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      {/* calories row */}
+                      <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '2px 5px', fontSize: 12, lineHeight: 1.5 }}>
+                        <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--blue-hi)', display: 'inline-block', flexShrink: 0 }} />
+                        <span style={{ fontWeight: 700, color: 'var(--text)' }}>
+                          {lang === 'he' ? `${calOkDays7} מתוך ${last7.length} ימים ביעד` : `${calOkDays7} of ${last7.length} days on target`}
+                        </span>
+                        <span style={{ color: 'var(--text-3)' }}>·</span>
+                        <span style={{ color: 'var(--text-2)' }}>
+                          {lang === 'he' ? `ממוצע ${avg7Cal.toLocaleString()} קק״ל` : `avg ${avg7Cal.toLocaleString()} kcal`}
+                        </span>
+                        <span style={{
+                          fontSize: 11, fontWeight: 600, borderRadius: 5, padding: '1px 6px',
+                          color: delta7Cal === 0 ? 'var(--green-hi)' : delta7Cal > 0 ? 'var(--amber)' : 'var(--blue-hi)',
+                          background: delta7Cal === 0 ? 'rgba(52,211,153,0.1)' : delta7Cal > 0 ? 'rgba(251,146,60,0.1)' : 'rgba(96,165,250,0.1)',
+                        }}>
+                          {delta7Cal === 0
+                            ? (lang === 'he' ? 'בדיוק ביעד' : 'on target')
+                            : `${delta7Cal > 0 ? '+' : '−'}${Math.abs(delta7Cal).toLocaleString()} ${lang === 'he' ? 'קק״ל' : 'kcal'}`}
+                        </span>
+                      </div>
+                      {/* protein row */}
+                      <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '2px 5px', fontSize: 12, lineHeight: 1.5 }}>
+                        <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--green-hi)', display: 'inline-block', flexShrink: 0 }} />
+                        <span style={{ fontWeight: 700, color: 'var(--text)' }}>
+                          {lang === 'he' ? `${protOkDays7} מתוך ${last7.length} ימים ביעד` : `${protOkDays7} of ${last7.length} days on target`}
+                        </span>
+                        <span style={{ color: 'var(--text-3)' }}>·</span>
+                        <span style={{ color: 'var(--text-2)' }}>
+                          {lang === 'he' ? `ממוצע ${avg7Prot}ג׳ חלבון` : `avg ${avg7Prot}g protein`}
+                        </span>
+                        <span style={{
+                          fontSize: 11, fontWeight: 600, borderRadius: 5, padding: '1px 6px',
+                          color: delta7Prot === 0 ? 'var(--green-hi)' : delta7Prot > 0 ? 'var(--amber)' : 'var(--blue-hi)',
+                          background: delta7Prot === 0 ? 'rgba(52,211,153,0.1)' : delta7Prot > 0 ? 'rgba(251,146,60,0.1)' : 'rgba(96,165,250,0.1)',
+                        }}>
+                          {delta7Prot === 0
+                            ? (lang === 'he' ? 'בדיוק ביעד' : 'on target')
+                            : `${delta7Prot > 0 ? '+' : '−'}${Math.abs(delta7Prot)}${lang === 'he' ? 'ג׳' : 'g'}`}
+                        </span>
+                      </div>
                     </div>
                   )}
                 </>
@@ -1491,12 +1526,47 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
 
                   {/* 30-day insight */}
                   {last30.length >= 7 && (
-                    <div style={{ background: 'rgba(59,130,246,0.06)', border: '1px solid rgba(59,130,246,0.15)', borderRadius: 10, padding: '8px 12px' }}>
-                      <p style={{ fontSize: 11, color: 'var(--text-2)', margin: 0, lineHeight: 1.6 }}>
-                        {lang === 'he'
-                          ? `ב-30 הימים האחרונים צרכת בממוצע ${avg30Cal.toLocaleString()} קק״ל ו-${avg30Prot}ג׳ חלבון. עמדת ביעד קלוריות ב-${pct30Cal}% וחלבון ב-${pct30Prot}% מהימים.`
-                          : `Over the last 30 days you averaged ${avg30Cal.toLocaleString()} kcal and ${avg30Prot}g protein. You hit your calorie goal on ${pct30Cal}% and protein goal on ${pct30Prot}% of days.`}
-                      </p>
+                    <div style={{ background: 'rgba(59,130,246,0.06)', border: '1px solid rgba(59,130,246,0.15)', borderRadius: 10, padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      {/* calories row */}
+                      <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '2px 5px', fontSize: 12, lineHeight: 1.5 }}>
+                        <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--blue-hi)', display: 'inline-block', flexShrink: 0 }} />
+                        <span style={{ fontWeight: 700, color: 'var(--text)' }}>
+                          {lang === 'he' ? `${calOkDays30} מתוך ${last30.length} ימים ביעד` : `${calOkDays30} of ${last30.length} days on target`}
+                        </span>
+                        <span style={{ color: 'var(--text-3)' }}>·</span>
+                        <span style={{ color: 'var(--text-2)' }}>
+                          {lang === 'he' ? `ממוצע ${avg30Cal.toLocaleString()} קק״ל` : `avg ${avg30Cal.toLocaleString()} kcal`}
+                        </span>
+                        <span style={{
+                          fontSize: 11, fontWeight: 600, borderRadius: 5, padding: '1px 6px',
+                          color: delta30Cal === 0 ? 'var(--green-hi)' : delta30Cal > 0 ? 'var(--amber)' : 'var(--blue-hi)',
+                          background: delta30Cal === 0 ? 'rgba(52,211,153,0.1)' : delta30Cal > 0 ? 'rgba(251,146,60,0.1)' : 'rgba(96,165,250,0.1)',
+                        }}>
+                          {delta30Cal === 0
+                            ? (lang === 'he' ? 'בדיוק ביעד' : 'on target')
+                            : `${delta30Cal > 0 ? '+' : '−'}${Math.abs(delta30Cal).toLocaleString()} ${lang === 'he' ? 'קק״ל' : 'kcal'}`}
+                        </span>
+                      </div>
+                      {/* protein row */}
+                      <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '2px 5px', fontSize: 12, lineHeight: 1.5 }}>
+                        <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--green-hi)', display: 'inline-block', flexShrink: 0 }} />
+                        <span style={{ fontWeight: 700, color: 'var(--text)' }}>
+                          {lang === 'he' ? `${protOkDays30} מתוך ${last30.length} ימים ביעד` : `${protOkDays30} of ${last30.length} days on target`}
+                        </span>
+                        <span style={{ color: 'var(--text-3)' }}>·</span>
+                        <span style={{ color: 'var(--text-2)' }}>
+                          {lang === 'he' ? `ממוצע ${avg30Prot}ג׳ חלבון` : `avg ${avg30Prot}g protein`}
+                        </span>
+                        <span style={{
+                          fontSize: 11, fontWeight: 600, borderRadius: 5, padding: '1px 6px',
+                          color: delta30Prot === 0 ? 'var(--green-hi)' : delta30Prot > 0 ? 'var(--amber)' : 'var(--blue-hi)',
+                          background: delta30Prot === 0 ? 'rgba(52,211,153,0.1)' : delta30Prot > 0 ? 'rgba(251,146,60,0.1)' : 'rgba(96,165,250,0.1)',
+                        }}>
+                          {delta30Prot === 0
+                            ? (lang === 'he' ? 'בדיוק ביעד' : 'on target')
+                            : `${delta30Prot > 0 ? '+' : '−'}${Math.abs(delta30Prot)}${lang === 'he' ? 'ג׳' : 'g'}`}
+                        </span>
+                      </div>
                     </div>
                   )}
                 </>

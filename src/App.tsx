@@ -85,7 +85,7 @@ export default function App() {
   }, [theme, lang]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const { toasts, showToast, dismissToast } = useToast()
-  const { searchLibrary } = useFoodLibrary()
+  const { library, searchLibrary } = useFoodLibrary()
   const { profile, saveProfile, error: profileError } = useProfile(userId)
   const { meals, loading: mealsLoading, error: mealsError, addMeal, addMealWithId, updateMeal, deleteMeal, duplicateMeal } = useMeals(userId)
   const { goals, error: goalsError, saveGoals, getGoalForDate } = useGoals(userId)
@@ -264,6 +264,8 @@ export default function App() {
               goalProtein={todayGoal.protein}
               getSuggestions={getSuggestions}
               searchLibrary={searchLibrary}
+              library={library}
+              defaultServingGrams={profile.defaultServingGrams}
               defaultWeightUnit={profile.weightUnit}
               defaultVolumeUnit={profile.volumeUnit}
               fluidGoalMl={profile.fluidGoalMl}

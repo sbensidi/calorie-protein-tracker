@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>דמו — פרופיל + יעדים תזונתיים</title>
+<style>
+  :root {
+    --bg:          #0d1117;
+    --bg-card:     #161b27;
+    --border:      rgba(255,255,255,0.08);
+    --border-hi:   rgba(255,255,255,0.14);
+    --text:        #f0f4ff;
+    --text-2:      #8b9ab4;
+    --text-3:      #536175;
+    --blue:        #3b82f6;
+    --blue-hi:     #93c5fd;
+    --blue-select: rgba(59,130,246,0.18);
+    --blue-chip:   rgba(59,130,246,0.12);
+    --blue-border: rgba(59,130,246,0.35);
+    --blue-fill:   rgba(59,130,246,0.07);
+    --green:       #22c55e;
+    --green-hi:    #86efac;
+    --green-select:rgba(34,197,94,0.18);
+    --green-chip:  rgba(34,197,94,0.12);
+    --amber:       #f59e0b;
+    --amber-hi:    #fcd34d;
+    --amber-chip:  rgba(245,158,11,0.12);
+    --indigo:      #6366f1;
+    --indigo-hi:   #a5b4fc;
+    --red:         #f43f5e;
+    --on-color:    #fff;
+    --surface-2:   rgba(255,255,255,0.06);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #070a10;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    color: var(--text);
+    min-height: 100vh;
+    padding: 32px 16px 64px;
+  }
+
+  /* Page header */
+  .page-header {
+    text-align: center;
+    margin-bottom: 40px;
+  }
+  .page-header h1 {
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+  .page-header p {
+    font-size: 13px;
+    color: var(--text-3);
+  }
+
+  /* Two-column layout */
+  .demo-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+    max-width: 880px;
+    margin: 0 auto;
+  }
+  @media (max-width: 700px) {
+    .demo-grid { grid-template-columns: 1fr; }
+  }
+
+  /* Phone shell */
+  .phone {
+    background: var(--bg);
+    border-radius: 24px;
+    border: 1px solid var(--border-hi);
+    overflow: hidden;
+    box-shadow: 0 24px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04);
+  }
+
+  .phone-header {
+    background: var(--bg);
+    padding: 16px 16px 0;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  .phone-header-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-bottom: 14px;
+  }
+  .back-btn {
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    background: var(--surface-2);
+    border: none;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-2);
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+  .screen-title {
+    font-size: 17px;
+    font-weight: 800;
+    color: var(--text);
+    flex: 1;
+  }
+
+  .phone-body {
+    padding: 20px 16px;
+    max-height: 680px;
+    overflow-y: auto;
+    scroll-behavior: smooth;
+  }
+  .phone-body::-webkit-scrollbar { width: 3px; }
+  .phone-body::-webkit-scrollbar-track { background: transparent; }
+  .phone-body::-webkit-scrollbar-thumb { background: var(--border-hi); border-radius: 2px; }
+
+  /* Section label */
+  .section-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-3);
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    margin: 0 0 12px;
+  }
+
+  .separator {
+    height: 1px;
+    background: var(--border);
+    margin: 20px 0;
+  }
+
+  /* Field label */
+  .field-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-2);
+    display: block;
+    margin-bottom: 5px;
+  }
+  .field-label.blue  { color: var(--blue-hi); }
+  .field-label.green { color: var(--green-hi); }
+
+  /* Input */
+  .inp {
+    width: 100%;
+    background: var(--bg-card);
+    border: 1.5px solid var(--border-hi);
+    border-radius: 10px;
+    color: var(--text);
+    font-family: inherit;
+    font-size: 16px;
+    padding: 0 12px;
+    height: 44px;
+    outline: none;
+    transition: border-color .15s;
+  }
+  .inp:focus { border-color: var(--blue); }
+  .inp.green:focus { border-color: var(--green); }
+  .inp.blue-border { border-color: var(--blue-border); }
+
+  /* Segment buttons */
+  .seg { display: flex; gap: 6px; }
+  .seg-btn {
+    flex: 1;
+    padding: 9px 0;
+    border-radius: 10px;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    background: var(--bg-card);
+    border: 1.5px solid var(--border-hi);
+    color: var(--text-2);
+    transition: all .15s;
+  }
+  .seg-btn.active-blue {
+    background: var(--blue-select);
+    border-color: var(--blue);
+    color: var(--blue-hi);
+  }
+  .seg-btn.active-green {
+    background: var(--green-select);
+    border-color: var(--green);
+    color: var(--green-hi);
+  }
+  .seg-btn.active-indigo {
+    background: rgba(99,102,241,0.18);
+    border-color: var(--indigo);
+    color: var(--indigo-hi);
+  }
+  .seg-btn.active-amber {
+    background: var(--amber-chip);
+    border-color: var(--amber);
+    color: var(--amber-hi);
+  }
+
+  /* Grid */
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+  /* Metrics card */
+  .metrics-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 0;
+  }
+  .metric-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 11px 14px;
+  }
+  .metric-row + .metric-row { border-top: 1px solid var(--border); }
+  .metric-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-2);
+    margin-bottom: 2px;
+  }
+  .metric-sub {
+    font-size: 10px;
+    color: var(--text-3);
+    line-height: 1.4;
+  }
+  .metric-val {
+    font-size: 18px;
+    font-weight: 800;
+    flex-shrink: 0;
+    margin-right: 10px;
+  }
+  .metric-unit { font-size: 10px; font-weight: 400; opacity: 0.7; margin-right: 2px; }
+
+  /* Activity select */
+  select.inp {
+    appearance: none;
+    cursor: pointer;
+    padding-right: 32px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238b9ab4' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: left 10px center;
+  }
+
+  /* Suggestion box */
+  .suggestion-box {
+    background: var(--blue-fill);
+    border: 1px solid var(--blue-border);
+    border-radius: 12px;
+    padding: 14px;
+  }
+  .suggestion-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  .suggestion-row:last-of-type { margin-bottom: 14px; }
+  .suggestion-icon {
+    width: 34px; height: 34px;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    font-size: 16px;
+  }
+  .suggestion-icon.blue  { background: var(--blue-chip); }
+  .suggestion-icon.green { background: var(--green-chip); }
+  .suggestion-icon.water { background: rgba(6,182,212,0.12); }
+  .suggestion-num {
+    font-size: 15px;
+    font-weight: 800;
+    line-height: 1.1;
+  }
+  .suggestion-note {
+    font-size: 10px;
+    color: var(--text-3);
+    margin-top: 2px;
+    line-height: 1.5;
+  }
+
+  /* Apply button */
+  .btn-apply {
+    width: 100%;
+    padding: 9px;
+    border-radius: 8px;
+    border: 1px solid rgba(59,130,246,0.35);
+    background: rgba(59,130,246,0.15);
+    color: var(--blue-hi);
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background .15s;
+  }
+  .btn-apply:hover { background: rgba(59,130,246,0.22); }
+
+  /* Primary / ghost buttons */
+  .btn-primary {
+    width: 100%;
+    height: 48px;
+    border-radius: 12px;
+    border: none;
+    background: var(--blue);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background .15s;
+  }
+  .btn-primary:hover { background: #2563eb; }
+  .btn-ghost {
+    width: 100%;
+    height: 48px;
+    border-radius: 12px;
+    border: 1.5px solid var(--border-hi);
+    background: transparent;
+    color: var(--text-2);
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    transition: border-color .15s;
+  }
+  .btn-ghost:hover { border-color: var(--blue); color: var(--blue-hi); }
+
+  /* Day grid */
+  .day-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 5px;
+    margin-bottom: 12px;
+  }
+  .day-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 7px 2px 6px;
+    border-radius: 9px;
+    cursor: pointer;
+    border: 1.5px solid var(--border);
+    background: transparent;
+    font-family: inherit;
+    transition: all .15s;
+  }
+  .day-btn.today { border-color: rgba(59,130,246,0.5); background: var(--blue-chip); }
+  .day-btn.selected { border-color: var(--indigo); background: rgba(99,102,241,0.15); box-shadow: 0 0 0 3px rgba(99,102,241,0.2); }
+  .day-label { font-size: 10px; font-weight: 700; color: var(--text-3); }
+  .day-btn.today   .day-label { color: var(--blue-hi); }
+  .day-btn.selected .day-label { color: var(--indigo-hi); }
+  .day-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--border-hi); }
+  .day-btn.today   .day-dot { background: var(--blue); }
+
+  /* Day panel */
+  .day-panel {
+    border: 1.5px solid var(--border-hi);
+    border-radius: 12px;
+    padding: 12px;
+  }
+  .day-panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  .day-panel-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--blue-hi);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .today-badge {
+    font-size: 9px;
+    font-weight: 700;
+    color: var(--blue);
+    background: var(--blue-chip);
+    border-radius: 4px;
+    padding: 2px 5px;
+  }
+  .day-inputs { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+  .day-inputs .inp { height: 40px; font-size: 14px; text-align: center; }
+
+  /* TDEE banner */
+  .tdee-banner {
+    background: rgba(99,102,241,0.08);
+    border: 1px solid rgba(99,102,241,0.25);
+    border-radius: 10px;
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  .tdee-label { font-size: 12px; font-weight: 700; color: var(--indigo-hi); }
+  .tdee-sub   { font-size: 10px; color: var(--text-3); margin-top: 1px; }
+  .tdee-val   { font-size: 22px; font-weight: 800; color: var(--indigo-hi); }
+  .tdee-unit  { font-size: 10px; font-weight: 400; opacity: 0.7; }
+
+  /* Screen label badge */
+  .screen-badge {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 99px;
+    margin-bottom: 20px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .screen-badge.blue   { background: var(--blue-chip); color: var(--blue-hi); border: 1px solid var(--blue-border); }
+  .screen-badge.indigo { background: rgba(99,102,241,0.12); color: var(--indigo-hi); border: 1px solid rgba(99,102,241,0.3); }
+
+  /* Column title */
+  .col-title {
+    text-align: center;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-2);
+    margin-bottom: 12px;
+    letter-spacing: 0.03em;
+  }
+  .col-title span { color: var(--text-3); font-weight: 400; }
+
+  .mb8  { margin-bottom: 8px; }
+  .mb12 { margin-bottom: 12px; }
+  .mb16 { margin-bottom: 16px; }
+  .mb20 { margin-bottom: 20px; }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>דמו — פרופיל אישי + יעדים תזונתיים</h1>
+  <p>הצעה למבנה חדש · ערכים מחושבים בזמן אמת</p>
+</div>
+
+<div class="demo-grid">
+
+  <!-- ═══════════════════════════════════════════════════
+       COLUMN 1 — פרופיל אישי
+  ═══════════════════════════════════════════════════ -->
+  <div>
+    <div class="col-title">עמוד 1 — פרופיל אישי <span>(ביומטרי בלבד)</span></div>
+    <div class="phone">
+      <div class="phone-header">
+        <div class="phone-header-row">
+          <button class="back-btn">←</button>
+          <span class="screen-title">פרופיל אישי</span>
+        </div>
+      </div>
+      <div class="phone-body">
+
+        <div class="screen-badge blue">הנתונים שלי</div>
+
+        <!-- Personal details -->
+        <p class="section-label">פרטים אישיים</p>
+
+        <!-- Sex -->
+        <div class="mb16">
+          <span class="field-label">מין</span>
+          <div class="seg">
+            <button class="seg-btn active-blue" onclick="setSex('m',this)">זכר</button>
+            <button class="seg-btn"             onclick="setSex('f',this)">נקבה</button>
+          </div>
+        </div>
+
+        <!-- Age / Height / Weight -->
+        <div class="grid-3 mb20">
+          <div>
+            <label class="field-label">גיל</label>
+            <input class="inp" type="number" id="age" value="32" min="10" max="100" oninput="recalc()">
+          </div>
+          <div>
+            <label class="field-label">גובה (ס"מ)</label>
+            <input class="inp" type="number" id="height" value="175" min="100" max="250" oninput="recalc()">
+          </div>
+          <div>
+            <label class="field-label">משקל (ק"ג)</label>
+            <input class="inp" type="number" id="weight" value="75" min="30" max="300" oninput="recalc()">
+          </div>
+        </div>
+
+        <div class="separator"></div>
+
+        <!-- Metrics -->
+        <p class="section-label" style="margin-bottom:10px">המדדים שלי</p>
+        <div class="metrics-card mb20">
+          <div class="metric-row">
+            <div>
+              <p class="metric-label">BMR</p>
+              <p class="metric-sub">חילוף חומרים בסיסי · בזמן מנוחה מוחלטת</p>
+            </div>
+            <span class="metric-val" style="color:var(--text)" id="bmr-val">1,789</span>
+          </div>
+          <div class="metric-row">
+            <div>
+              <p class="metric-label" style="color:var(--text-2)">BMI</p>
+              <p class="metric-sub">תת &lt;18.5 · תקין 18.5–24.9 · עודף 25–29.9 · השמנה ≥30</p>
+            </div>
+            <span class="metric-val" id="bmi-val" style="color:var(--green-hi)">24.5 <span style="font-size:11px;font-weight:600;color:var(--green-hi)" id="bmi-label">— תקין</span></span>
+          </div>
+          <div class="metric-row">
+            <div>
+              <p class="metric-label" style="color:var(--text-2)">נוזלים מומלצים</p>
+              <p class="metric-sub" id="fluid-sub">35מ"ל × 75ק"ג</p>
+            </div>
+            <span class="metric-val" style="color:var(--text)" id="fluid-val">2.6<span class="metric-unit">L</span></span>
+          </div>
+        </div>
+
+        <button class="btn-ghost" onclick="showSaved(this)">שמור פרופיל</button>
+
+      </div><!-- /phone-body -->
+    </div><!-- /phone -->
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════
+       COLUMN 2 — יעדים תזונתיים
+  ═══════════════════════════════════════════════════ -->
+  <div>
+    <div class="col-title">עמוד 2 — יעדים תזונתיים <span>(פעילות + יעד + עריכה)</span></div>
+    <div class="phone">
+      <div class="phone-header">
+        <div class="phone-header-row">
+          <button class="back-btn">←</button>
+          <span class="screen-title">יעדים תזונתיים</span>
+        </div>
+      </div>
+      <div class="phone-body">
+
+        <div class="screen-badge indigo">בסיס + יעדים</div>
+
+        <!-- Activity + Goal -->
+        <p class="section-label">בסיס החישוב</p>
+
+        <div class="mb12">
+          <label class="field-label">רמת פעילות</label>
+          <select class="inp" id="activity" onchange="recalc()">
+            <option value="1.2">יושבני — עבודה במשרד, ללא ספורט</option>
+            <option value="1.375">קל — ספורט 1–3 פעמים בשבוע</option>
+            <option value="1.55" selected>בינוני — ספורט 3–5 פעמים בשבוע</option>
+            <option value="1.725">פעיל — ספורט 6–7 פעמים בשבוע</option>
+            <option value="1.9">גבוה מאוד — עבודה פיזית + ספורט יומי</option>
+          </select>
+        </div>
+
+        <div class="mb16">
+          <label class="field-label">מטרה</label>
+          <div class="seg">
+            <button class="seg-btn active-blue" onclick="setGoal('lose',this)">ירידה</button>
+            <button class="seg-btn"             onclick="setGoal('maintain',this)">שמירה</button>
+            <button class="seg-btn"             onclick="setGoal('gain',this)">עלייה</button>
+          </div>
+        </div>
+
+        <!-- TDEE banner -->
+        <div class="tdee-banner">
+          <div>
+            <p class="tdee-label">TDEE — הוצאה יומית כוללת</p>
+            <p class="tdee-sub" id="tdee-sub">BMR × 1.55 · ספורט בינוני</p>
+          </div>
+          <div style="text-align:left">
+            <span class="tdee-val" id="tdee-val">2,772</span>
+            <span class="tdee-unit">קק"ל</span>
+          </div>
+        </div>
+
+        <!-- Suggestion -->
+        <div class="suggestion-box mb12">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px">
+            <span style="font-size:14px">✦</span>
+            <span style="font-size:11px;font-weight:700;color:var(--blue-hi)">המלצה מחושבת</span>
+            <span style="font-size:10px;color:var(--text-3);margin-right:auto" id="goal-reason">גרעון 500 מה-TDEE</span>
+          </div>
+          <div class="suggestion-row">
+            <div class="suggestion-icon blue">🔥</div>
+            <div>
+              <p class="suggestion-num" style="color:var(--blue-hi)"><span id="sug-cal">2,272</span> <span style="font-size:11px;font-weight:400;color:var(--text-3)">קק"ל</span></p>
+              <p class="suggestion-note" id="sug-cal-note">גרעון 500 מה-TDEE · ≈0.5 ק"ג/שבוע</p>
+            </div>
+          </div>
+          <div class="suggestion-row">
+            <div class="suggestion-icon green">💪</div>
+            <div>
+              <p class="suggestion-num" style="color:var(--green-hi)"><span id="sug-prot">150</span> <span style="font-size:11px;font-weight:400;color:var(--text-3)">ג' חלבון</span></p>
+              <p class="suggestion-note" id="sug-prot-note">2.0ג'/ק"ג · שמירה על מסת שריר</p>
+            </div>
+          </div>
+          <div class="suggestion-row">
+            <div class="suggestion-icon water">💧</div>
+            <div>
+              <p class="suggestion-num" style="color:var(--blue-hi)"><span id="sug-fluid">2.6</span> <span style="font-size:11px;font-weight:400;color:var(--text-3)">ל' נוזלים</span></p>
+              <p class="suggestion-note">35מ"ל × משקל</p>
+            </div>
+          </div>
+          <button class="btn-apply" onclick="applyAll()">⬇ החל אוטומטית על היעדים שלי</button>
+        </div>
+
+        <div class="separator"></div>
+
+        <!-- Default goals -->
+        <p class="section-label">יעדי ברירת מחדל</p>
+        <div class="grid-3 mb20">
+          <div>
+            <label class="field-label blue">קלוריות</label>
+            <input class="inp blue-border" type="number" id="def-cal" value="2272" oninput="">
+          </div>
+          <div>
+            <label class="field-label green">חלבון (ג')</label>
+            <input class="inp green" type="number" id="def-prot" value="150" oninput="">
+          </div>
+          <div>
+            <label class="field-label blue">נוזלים (מ"ל)</label>
+            <input class="inp blue-border" type="number" id="def-fluid" value="2600" oninput="">
+          </div>
+        </div>
+
+        <div class="separator"></div>
+
+        <!-- Weekly overrides -->
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <p class="section-label" style="margin:0">התאמות שבועיות</p>
+          <button style="background:none;border:none;cursor:pointer;color:var(--text-3);font-size:11px;font-family:inherit;display:flex;align-items:center;gap:3px">
+            ↺ אפס הכל
+          </button>
+        </div>
+
+        <!-- Day grid -->
+        <div class="day-grid">
+          <button class="day-btn" onclick="selectDay(this,'א')"><span class="day-label">א'</span><span class="day-dot"></span></button>
+          <button class="day-btn" onclick="selectDay(this,'ב')"><span class="day-label">ב'</span><span class="day-dot"></span></button>
+          <button class="day-btn" onclick="selectDay(this,'ג')"><span class="day-label">ג'</span><span class="day-dot"></span></button>
+          <button class="day-btn today selected" onclick="selectDay(this,'ד')"><span class="day-label">ד'</span><span class="day-dot"></span></button>
+          <button class="day-btn" onclick="selectDay(this,'ה')"><span class="day-label">ה'</span><span class="day-dot"></span></button>
+          <button class="day-btn" onclick="selectDay(this,'ו')"><span class="day-label">ו'</span><span class="day-dot"></span></button>
+          <button class="day-btn" onclick="selectDay(this,'ש')"><span class="day-label">ש'</span><span class="day-dot"></span></button>
+        </div>
+
+        <!-- Day panel -->
+        <div class="day-panel mb20" id="day-panel">
+          <div class="day-panel-header">
+            <span class="day-panel-title">
+              יום ד' <span class="today-badge">היום</span>
+            </span>
+          </div>
+          <div class="day-inputs">
+            <input class="inp" type="number" placeholder="קלוריות" value="2272">
+            <input class="inp green" type="number" placeholder="חלבון">
+            <input class="inp blue-border" type="number" placeholder="נוזלים">
+          </div>
+        </div>
+
+        <button class="btn-primary" onclick="showSaved(this)">שמור יעדים</button>
+
+      </div><!-- /phone-body -->
+    </div><!-- /phone -->
+  </div>
+
+</div><!-- /demo-grid -->
+
+<script>
+  let sex = 'm'
+  let goal = 'lose'
+
+  function setSex(s, btn) {
+    sex = s
+    document.querySelectorAll('.seg')[0].querySelectorAll('.seg-btn').forEach(b => b.classList.remove('active-blue'))
+    btn.classList.add('active-blue')
+    recalc()
+  }
+
+  function setGoal(g, btn) {
+    goal = g
+    btn.closest('.seg').querySelectorAll('.seg-btn').forEach(b => {
+      b.classList.remove('active-blue','active-indigo','active-green')
+    })
+    const cls = g === 'lose' ? 'active-blue' : g === 'maintain' ? 'active-indigo' : 'active-green'
+    btn.classList.add(cls)
+    recalc()
+  }
+
+  function selectDay(btn, label) {
+    document.querySelectorAll('.day-btn').forEach(b => b.classList.remove('selected'))
+    btn.classList.add('selected')
+    const isToday = btn.classList.contains('today')
+    const panel = document.getElementById('day-panel')
+    panel.innerHTML = `
+      <div class="day-panel-header">
+        <span class="day-panel-title">
+          יום ${label}'
+          ${isToday ? '<span class="today-badge">היום</span>' : ''}
+        </span>
+      </div>
+      <div class="day-inputs">
+        <input class="inp" type="number" placeholder="קלוריות" value="${document.getElementById('def-cal').value}">
+        <input class="inp green" type="number" placeholder="חלבון">
+        <input class="inp blue-border" type="number" placeholder="נוזלים">
+      </div>
+    `
+    if (isToday) panel.style.borderColor = 'var(--blue-border)'
+    else panel.style.borderColor = 'var(--border-hi)'
+  }
+
+  function recalc() {
+    const age    = Number(document.getElementById('age').value)    || 0
+    const height = Number(document.getElementById('height').value) || 0
+    const weight = Number(document.getElementById('weight').value) || 0
+    const act    = Number(document.getElementById('activity').value) || 1.55
+
+    if (!age || !height || !weight) return
+
+    // BMR
+    const bmr = Math.round(10 * weight + 6.25 * height - 5 * age + (sex === 'm' ? 5 : -161))
+    document.getElementById('bmr-val').textContent = bmr.toLocaleString()
+
+    // BMI
+    const bmi = Math.round((weight / ((height / 100) ** 2)) * 10) / 10
+    const bmiCat = bmi < 18.5 ? 'underweight' : bmi < 25 ? 'normal' : bmi < 30 ? 'overweight' : 'obese'
+    const bmiColor = { underweight:'var(--amber-hi)', normal:'var(--green-hi)', overweight:'var(--amber-hi)', obese:'var(--red)' }[bmiCat]
+    const bmiLabel = { underweight:'— תת משקל', normal:'— תקין', overweight:'— עודף משקל', obese:'— השמנה' }[bmiCat]
+    const bmiEl = document.getElementById('bmi-val')
+    bmiEl.style.color = bmiColor
+    bmiEl.innerHTML = `${bmi} <span style="font-size:11px;font-weight:600;color:${bmiColor}">${bmiLabel}</span>`
+
+    // Fluid
+    const fluidMl = Math.round(weight * 35 / 100) * 100
+    document.getElementById('fluid-val').innerHTML = fluidMl >= 1000
+      ? `${(fluidMl/1000).toFixed(1)}<span class="metric-unit">L</span>`
+      : `${fluidMl}<span class="metric-unit">מ"ל</span>`
+    document.getElementById('fluid-sub').textContent = `35מ"ל × ${weight}ק"ג`
+
+    // TDEE
+    const tdee = Math.round(bmr * act)
+    document.getElementById('tdee-val').textContent = tdee.toLocaleString()
+    const actLabels = {
+      '1.2':   'יושבני · ×1.20',
+      '1.375': 'קל · ×1.375',
+      '1.55':  'בינוני · ×1.55',
+      '1.725': 'פעיל · ×1.725',
+      '1.9':   'גבוה מאוד · ×1.90',
+    }
+    document.getElementById('tdee-sub').textContent = `BMR × ${act} · ${actLabels[String(act)] ?? ''}`
+
+    // Suggestions
+    const delta = goal === 'lose' ? -500 : goal === 'gain' ? 300 : 0
+    const sugCal = tdee + delta
+    const protRate = goal === 'lose' ? 2.0 : goal === 'gain' ? 2.2 : 1.6
+    const sugProt = Math.round(weight * protRate)
+    const fluidL = (fluidMl / 1000).toFixed(1)
+
+    document.getElementById('sug-cal').textContent = sugCal.toLocaleString()
+    document.getElementById('sug-prot').textContent = sugProt
+    document.getElementById('sug-fluid').textContent = fluidL
+
+    const goalReason = { lose: 'גרעון 500 מה-TDEE', maintain: 'שמירה על TDEE', gain: 'עודף 300 על ה-TDEE' }[goal]
+    const calNote    = { lose: `גרעון 500 מה-TDEE · ≈0.5 ק"ג/שבוע`, maintain: `שווה ל-TDEE · שמירה על משקל`, gain: `+300 על ה-TDEE · עלייה מבוקרת` }[goal]
+    const protNote   = { lose: `${protRate}ג'/ק"ג · שמירה על מסת שריר בגרעון`, maintain: `${protRate}ג'/ק"ג · מינימום החזקת שריר`, gain: `${protRate}ג'/ק"ג · סינתזת שריר מיטבית` }[goal]
+
+    document.getElementById('goal-reason').textContent = goalReason
+    document.getElementById('sug-cal-note').textContent = calNote
+    document.getElementById('sug-prot-note').textContent = protNote
+  }
+
+  function applyAll() {
+    const cal   = document.getElementById('sug-cal').textContent.replace(/,/g,'')
+    const prot  = document.getElementById('sug-prot').textContent
+    const fluidL = parseFloat(document.getElementById('sug-fluid').textContent)
+    document.getElementById('def-cal').value   = cal
+    document.getElementById('def-prot').value  = prot
+    document.getElementById('def-fluid').value = Math.round(fluidL * 1000)
+
+    // Visual flash
+    const btn = event.target
+    btn.textContent = '✓ הוחל!'
+    btn.style.background = 'rgba(34,197,94,0.18)'
+    btn.style.borderColor = 'var(--green)'
+    btn.style.color = 'var(--green-hi)'
+    setTimeout(() => {
+      btn.textContent = '⬇ החל אוטומטית על היעדים שלי'
+      btn.style.background = ''
+      btn.style.borderColor = ''
+      btn.style.color = ''
+    }, 1800)
+  }
+
+  function showSaved(btn) {
+    const orig = btn.textContent
+    const origClass = btn.className
+    btn.textContent = '✓ נשמר!'
+    btn.className = 'btn-primary'
+    btn.style.background = 'var(--green)'
+    setTimeout(() => {
+      btn.textContent = orig
+      btn.className = origClass
+      btn.style.background = ''
+    }, 2000)
+  }
+
+  recalc()
+</script>
+</body>
+</html>

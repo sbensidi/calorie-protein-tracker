@@ -28,7 +28,7 @@ export function FoodHistoryModal({
 }: FoodHistoryModalProps) {
   const searchRef = useRef<HTMLInputElement>(null)
   const isRTL = lang === 'he'
-  const unitLabel = lang === 'he' ? 'יח׳' : 'pcs'
+  const unitLabel = lang === 'he' ? 'מנות' : 'serving(s)'
 
   // Auto-focus search on open
   useEffect(() => {

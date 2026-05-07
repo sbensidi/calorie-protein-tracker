@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Food History Item — Before / After</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #0f1117;
+    color: #e2e8f0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    padding: 32px 20px;
+    max-width: 480px;
+    margin: 0 auto;
+  }
+  h2 { font-size: 13px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 12px; }
+  .section { margin-bottom: 36px; }
+  .card { background: #1a1f2e; border: 1px solid #2d3548; border-radius: 12px; overflow: hidden; }
+  .item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-bottom: 1px solid #2d3548; }
+  .item:last-child { border-bottom: none; }
+  .body { flex: 1; min-width: 0; }
+  .name { font-size: 13px; font-weight: 600; color: #e2e8f0; margin-bottom: 3px; }
+  .actions { display: flex; gap: 4px; flex-shrink: 0; }
+  .ic { background: none; border: none; cursor: pointer; width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #64748b; font-size: 14px; }
+  .ic.del { color: #f87171; }
+
+  /* ── BEFORE ── */
+  .broken { font-size: 11px; color: #64748b; }
+
+  /*
+    ── AFTER ──
+    גישה: כל מספר + יחידה = שני flex-items נפרדים בתוך .pair (inline-flex RTL).
+    כיוון ש-RTL flex → מספר (ראשון ב-HTML) = מימין, יחידה (שנייה) = משמאלו.
+    כלומר: קורא עברית (ימין לשמאל) רואה: מספר → יחידה. ✓
+    אין ערבוב טקסט במקטע אחד → אלגוריתם ה-bidi לא מתערב. ✓
+  */
+  .row {
+    display: flex;
+    direction: rtl;       /* פריטים זורמים ימין לשמאל */
+    align-items: baseline;
+    gap: 5px;
+    font-size: 11px;
+    color: #64748b;
+    flex-wrap: nowrap;
+  }
+  /* כל זוג (מספר+יחידה) — inline-flex, יורש direction:rtl מהאב */
+  .pair {
+    display: inline-flex;
+    gap: 4px;
+    align-items: baseline;
+    white-space: nowrap;
+  }
+  .sep  { color: #3a4a60; }
+  .cal  { color: #60a5fa; font-weight: 700; }
+  .prot { color: #34d399; font-weight: 700; }
+  .u    { font-size: 10px; color: #64748b; }
+</style>
+</head>
+<body>
+
+<!-- ─── BEFORE ─────────────────────────────────── -->
+<div class="section">
+  <h2>לפני</h2>
+  <div class="card">
+
+    <div class="item">
+      <div class="body">
+        <p class="broken">185g · <b style="color:#60a5fa">385</b> קק"ל · <b style="color:#34d399">53.7</b>ג׳ · 1 שימ׳</p>
+      </div>
+      <div class="actions"><button class="ic">✏️</button><button class="ic del">🗑</button></div>
+    </div>
+
+    <div class="item">
+      <div class="body">
+        <p class="name">ביצה</p>
+        <p class="broken">1 יח׳ · <b style="color:#60a5fa">75</b> קק"ל · <b style="color:#34d399">7</b>ג׳ · 18 שימ׳</p>
+      </div>
+      <div class="actions"><button class="ic">✏️</button><button class="ic del">🗑</button></div>
+    </div>
+
+    <div class="item">
+      <div class="body">
+        <p class="name">שייק חלבון</p>
+        <p class="broken">350ml · <b style="color:#60a5fa">210</b> קק"ל · <b style="color:#34d399">30</b>ג׳ · 5 שימ׳</p>
+      </div>
+      <div class="actions"><button class="ic">✏️</button><button class="ic del">🗑</button></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ─── AFTER ─────────────────────────────────── -->
+<div class="section">
+  <h2>אחרי</h2>
+  <div class="card">
+
+    <!-- ללא שם (פריט בתוך קבוצה): 185ג׳ · 385קק"ל · 53.7ג׳ · 1 שימוש -->
+    <div class="item">
+      <div class="body">
+        <div class="row">
+          <span class="pair"><span>185</span><span class="u">ג׳</span></span>
+          <span class="sep">·</span>
+          <span class="pair"><span class="cal">385</span><span class="u">קק"ל</span></span>
+          <span class="sep">·</span>
+          <span class="pair"><span class="prot">53.7</span><span class="u">ג׳</span></span>
+          <span class="sep">·</span>
+          <span class="pair"><span>1</span><span class="u">שימוש</span></span>
+        </div>
+      </div>
+      <div class="actions"><button class="ic">✏️</button><button class="ic del">🗑</button></div>
+    </div>
+
+    <!-- ביצה: 1יח׳ · 75קק"ל · 7ג׳ · 18 שימושים -->
+    <div class="item">
+      <div class="body">
+        <p class="name">ביצה</p>
+        <div class="row">
+          <span class="pair"><span>1</span><span class="u">יח׳</span></span>
+          <span class="sep">·</span>
+          <span class="pair"><span class="cal">75</span><span class="u">קק"ל</span></span>
+          <span class="sep">·</span>
+          <span class="pair"><span class="prot">7</span><span class="u">ג׳</span></span>
+          <span class="sep">·</span>
+          <span class="pair"><span>18</span><span class="u">שימושים</span></span>
+        </div>
+      </div>
+      <div class="actions"><button class="ic">✏️</button><button class="ic del">🗑</button></div>
+    </div>
+
+    <!-- שייק חלבון: 350מ"ל · 210קק"ל · 30ג׳ · 5 שימושים -->
+    <div class="item">
+      <div class="body">
+        <p class="name">שייק חלבון</p>
+        <div class="row">
+          <span class="pair"><span>350</span><span class="u">מ"ל</span></span>
+          <span class="sep">·</span>
+          <span class="pair"><span class="cal">210</span><span class="u">קק"ל</span></span>
+          <span class="sep">·</span>
+          <span class="pair"><span class="prot">30</span><span class="u">ג׳</span></span>
+          <span class="sep">·</span>
+          <span class="pair"><span>5</span><span class="u">שימושים</span></span>
+        </div>
+      </div>
+      <div class="actions"><button class="ic">✏️</button><button class="ic del">🗑</button></div>
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>

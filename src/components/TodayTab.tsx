@@ -54,6 +54,8 @@ interface TodayTabProps {
   goalProtein: number
   getSuggestions: (q: string) => FoodHistory[]
   searchLibrary?: (q: string) => FoodLibraryItem[]
+  library?: FoodLibraryItem[]
+  defaultServingGrams?: number
   defaultWeightUnit?: 'g' | 'oz'
   defaultVolumeUnit?: 'ml' | 'cup' | 'tbsp' | 'tsp' | 'fl_oz'
   onAddMeal: (meal: Omit<Meal, 'id' | 'user_id' | 'created_at'>) => void
@@ -75,7 +77,7 @@ interface TodayTabProps {
 
 export function TodayTab({
   lang, meals, loading = false, history, goalCalories, goalProtein,
-  getSuggestions, searchLibrary, defaultWeightUnit = 'g', defaultVolumeUnit = 'ml',
+  getSuggestions, searchLibrary, library = [], defaultServingGrams = 150, defaultWeightUnit = 'g', defaultVolumeUnit = 'ml',
   onAddMeal, onAddMealWithId, onEditMeal, onDeleteMeal, onDuplicateMeal, onUpsertHistory, onTouchHistory,
   composedEntries, composedGroups, onUpsertGroup, onRemoveGroup, showToast,
   fluidGoalMl = 2500, fluidThresholdMl = 100, fluidZeroCalOnly = true,
@@ -304,6 +306,8 @@ export function TodayTab({
 
   // ── Entry sheet ──────────────────────────────────────────────
   const [entryOpen, setEntryOpen] = useState(false)
+  const [entryDefaultType, setEntryDefaultType] = useState<MealType | undefined>(undefined)
+  const openEntry = (type?: MealType) => { setEntryDefaultType(type); setEntryOpen(true) }
   const entrySheetRef   = useRef<HTMLDivElement>(null)
   const composeModalRef = useRef<HTMLDivElement>(null)
   const anyModalOpen = entryOpen || !!composeModal || !!addIngredientModal
@@ -494,8 +498,24 @@ export function TodayTab({
                 selected={selSet.has(meal.id)}
                 onToggleSelect={() => toggleSelect(type, meal.id)}
                 onEdit={onEditMeal}
+                enableWeightScaling
               />
             ))}
+
+            {/* Quick-add to this section */}
+            <button
+              onClick={() => openEntry(type)}
+              style={{
+                marginTop: 4, width: '100%', background: 'transparent',
+                border: '1px dashed var(--border)', borderRadius: 8,
+                padding: '6px 10px', fontFamily: 'inherit',
+                fontSize: 11, fontWeight: 600, color: MEAL_COLORS[type],
+                cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5,
+              }}
+            >
+              <span className="icon" style={{ fontSize: 14 }}>add</span>
+              {lang === 'he' ? `הוסף ל${t(lang, type as any)}` : `Add to ${t(lang, type as any)}`}
+            </button>
 
             {/* ── Action bar (shown when anything selected) ── */}
             {selCount > 0 && (
@@ -636,7 +656,7 @@ export function TodayTab({
           {/* Buttons */}
           <div style={{ display: 'flex', gap: 8 }}>
             <button className="btn-confirm" style={{ flex: 1 }} onClick={handleCompose}>
-              <span className="icon icon-sm" style={{ marginInlineEnd: 6 }}>merge</span>
+              <span className="icon icon-sm">set_meal</span>
               {t(lang, 'mergeMeals')}
             </button>
             <button className="btn-ghost" style={{ flex: 1 }} onClick={() => setComposeModal(null)}>
@@ -666,7 +686,7 @@ export function TodayTab({
           <p style={{ fontSize: 14, margin: 0 }}>{t(lang, 'noMealsToday')}</p>
           <button
             className="btn-primary"
-            onClick={() => setEntryOpen(true)}
+            onClick={() => openEntry()}
             style={{ marginTop: 4, fontSize: 13, height: 40, padding: '0 20px' }}
           >
             {lang === 'he' ? '+ הוסף ארוחה' : '+ Add meal'}
@@ -688,6 +708,8 @@ export function TodayTab({
               history={history}
               getSuggestions={getSuggestions}
               searchLibrary={searchLibrary}
+              library={library}
+              defaultServingGrams={defaultServingGrams}
               defaultWeightUnit={defaultWeightUnit}
               defaultVolumeUnit={defaultVolumeUnit}
               defaultMealType={addIngredientModal.mealType}
@@ -703,7 +725,7 @@ export function TodayTab({
 
       {/* ── FAB ──────────────────────────────────────────────────── */}
       <button
-        onClick={() => setEntryOpen(true)}
+        onClick={() => openEntry()}
         aria-label={lang === 'he' ? 'הוסף ארוחה' : 'Add meal'}
         style={{
           position: 'fixed',
@@ -777,8 +799,11 @@ export function TodayTab({
               history={history}
               getSuggestions={getSuggestions}
               searchLibrary={searchLibrary}
+              library={library}
+              defaultServingGrams={defaultServingGrams}
               defaultWeightUnit={defaultWeightUnit}
               defaultVolumeUnit={defaultVolumeUnit}
+              defaultMealType={entryDefaultType}
               onAdd={meal => { onAddMeal(meal); setEntryOpen(false) }}
               onUpsertHistory={onUpsertHistory}
               onTouchHistory={onTouchHistory}

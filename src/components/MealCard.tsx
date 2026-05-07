@@ -1,9 +1,9 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import type { Meal } from '../types'
 import type { Lang } from '../lib/i18n'
 import { t, dir } from '../lib/i18n'
-import { formatWeight } from '../lib/units'
-import type { WeightUnit } from '../lib/units'
+import { formatWeight, UNITS, toBase } from '../lib/units'
+import type { WeightUnit, UnitId } from '../lib/units'
 
 interface MealCardProps {
   meal: Meal
@@ -13,12 +13,15 @@ interface MealCardProps {
   selected: boolean
   onToggleSelect: () => void
   onEdit: (id: string, updates: Partial<Meal>) => void
+  enableWeightScaling?: boolean
+  onDelete?: (id: string) => void
 }
 
 type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'beverage'
 
-export function MealCard({ meal, lang, weightUnit = 'g', showCheckbox, selected, onToggleSelect, onEdit }: MealCardProps) {
+export function MealCard({ meal, lang, weightUnit = 'g', showCheckbox, selected, onToggleSelect, onEdit, enableWeightScaling = false, onDelete }: MealCardProps) {
   const [editing, setEditing] = useState(false)
+  const scalingRatios = useRef<{ calPerGram: number; protPerGram: number; perServing: boolean } | null>(null)
   const [editName,     setEditName]     = useState(meal.name)
   const [editMealType, setEditMealType] = useState<MealType>(meal.meal_type as MealType)
   const [editCalories, setEditCalories] = useState<number | ''>(meal.calories)
@@ -29,22 +32,33 @@ export function MealCard({ meal, lang, weightUnit = 'g', showCheckbox, selected,
   const [editWeight,  setEditWeight]  = useState<number | ''>(
     isFluidEntry ? Math.round(meal.fluid_ml!) : Math.abs(meal.grams)
   )
-  const [editWeightUnit, setEditWeightUnit] = useState<'g' | 'pcs' | 'ml'>(
+  const [editWeightUnit, setEditWeightUnit] = useState<UnitId | 'pcs'>(
     isFluidEntry ? 'ml' : isPcsEntry ? 'pcs' : 'g'
   )
 
   const saveEdit = () => {
-    const w = Number(editWeight) || 0
+    const w    = Number(editWeight) || 0
+    const isVol = editWeightUnit !== 'pcs' && UNITS[editWeightUnit as UnitId].type === 'volume'
+    const base  = editWeightUnit === 'pcs' ? w : toBase(w, editWeightUnit as UnitId)
     onEdit(meal.id, {
       name:      editName,
       meal_type: editMealType,
       calories:  Number(editCalories) || 0,
       protein:   Number(editProtein)  || 0,
-      grams:     editWeightUnit === 'pcs' ? -w : w,
-      ...(editWeightUnit === 'ml' ? { fluid_ml: w } : {}),
+      grams:     editWeightUnit === 'pcs' ? -w : Math.round(base),
+      ...(isVol ? { fluid_ml: base } : {}),
     })
     setEditing(false)
   }
+  const openEdit = () => {
+    if (enableWeightScaling) {
+      const base = isFluidEntry ? (meal.fluid_ml ?? 0) : Math.abs(meal.grams)
+      const d = base || 1
+      scalingRatios.current = { calPerGram: meal.calories / d, protPerGram: meal.protein / d, perServing: isPcsEntry }
+    }
+    setEditing(true)
+  }
+
   const cancelEdit = () => {
     setEditName(meal.name)
     setEditMealType(meal.meal_type as MealType)
@@ -93,11 +107,11 @@ export function MealCard({ meal, lang, weightUnit = 'g', showCheckbox, selected,
             <option value="beverage">{t(lang, 'beverage')}</option>
           </select>
         </div>
-        {/* Row 2: calories + protein + weight — equal grid columns (Issue 6) */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 8 }}>
+        {/* Row 2: calories | protein | weight | unit — 4 equal columns (Issue 6) */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 8, marginBottom: 8 }}>
           <div>
             <label style={{ fontSize: 11, color: 'var(--blue-hi)', fontWeight: 600, display: 'block', marginBottom: 4 }}>
-              {t(lang, 'calories')} ({t(lang, 'caloriesUnit')})
+              {t(lang, 'calories')}
             </label>
             <div style={{ position: 'relative' }}>
               <input
@@ -143,18 +157,8 @@ export function MealCard({ meal, lang, weightUnit = 'g', showCheckbox, selected,
             </div>
           </div>
           <div>
-            <label style={{ fontSize: 11, color: 'var(--text-2)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4, marginBottom: 4 }}>
-              {t(lang, 'weight')}
-              <select
-                className="inp"
-                style={{ fontSize: 12, height: 20, padding: '0 2px', border: 'none', background: 'var(--surface-2)', borderRadius: 4, marginInlineStart: 2 }}
-                value={editWeightUnit}
-                onChange={e => setEditWeightUnit(e.target.value as 'g' | 'pcs' | 'ml')}
-              >
-                <option value="g">g</option>
-                <option value="ml">ml</option>
-                <option value="pcs">{lang === 'he' ? 'יח׳' : 'pcs'}</option>
-              </select>
+            <label style={{ fontSize: 11, color: 'var(--text-2)', fontWeight: 600, display: 'block', marginBottom: 4 }}>
+              {t(lang, 'amount')}
             </label>
             <div style={{ position: 'relative' }}>
               <input
@@ -164,7 +168,19 @@ export function MealCard({ meal, lang, weightUnit = 'g', showCheckbox, selected,
                 style={{ width: '100%', fontSize: 16, paddingInlineEnd: editWeight !== '' ? 32 : 12 }}
                 value={editWeight}
                 placeholder="0"
-                onChange={e => setEditWeight(e.target.value === '' ? '' : Number(e.target.value))}
+                onChange={e => {
+                  const w = e.target.value === '' ? '' : Number(e.target.value)
+                  setEditWeight(w)
+                  if (enableWeightScaling && scalingRatios.current && typeof w === 'number' && w > 0) {
+                    // Only scale if still in same unit family (pcs vs gram/volume)
+                    const isPcs = editWeightUnit === 'pcs'
+                    if (isPcs === scalingRatios.current.perServing) {
+                      const base = isPcs ? w : toBase(w, editWeightUnit as UnitId)
+                      setEditCalories(Math.round(base * scalingRatios.current.calPerGram))
+                      setEditProtein(Math.round(base * scalingRatios.current.protPerGram * 10) / 10)
+                    }
+                  }
+                }}
                 onFocus={e => e.target.select()}
               />
               {editWeight !== '' && (
@@ -174,6 +190,44 @@ export function MealCard({ meal, lang, weightUnit = 'g', showCheckbox, selected,
                 </button>
               )}
             </div>
+          </div>
+          <div>
+            <label style={{ fontSize: 11, color: 'var(--text-2)', fontWeight: 600, display: 'block', marginBottom: 4 }}>
+              {lang === 'he' ? 'יחידה' : 'Unit'}
+            </label>
+            <select
+              className="inp"
+              style={{ width: '100%', fontSize: 16 }}
+              value={editWeightUnit}
+              onChange={e => {
+                const newUnit = e.target.value as UnitId | 'pcs'
+                setEditWeightUnit(newUnit)
+                if (enableWeightScaling && scalingRatios.current) {
+                  const crossingBoundary = (editWeightUnit === 'pcs') !== (newUnit === 'pcs')
+                  if (crossingBoundary) {
+                    // Can't convert pcs↔gram without servingGrams — disable scaling
+                    scalingRatios.current = null
+                  } else if (editWeightUnit !== 'pcs' && newUnit !== 'pcs') {
+                    // Weight/volume switch: recalculate nutrition for current amount in new unit
+                    const w = typeof editWeight === 'number' ? editWeight : Number(editWeight) || 0
+                    if (w > 0) {
+                      const base = toBase(w, newUnit as UnitId)
+                      setEditCalories(Math.round(base * scalingRatios.current.calPerGram))
+                      setEditProtein(Math.round(base * scalingRatios.current.protPerGram * 10) / 10)
+                    }
+                  }
+                }
+              }}
+            >
+              <option value="g">g</option>
+              <option value="oz">{lang === 'he' ? UNITS.oz.abbr_he : 'oz'}</option>
+              <option value="ml">ml</option>
+              <option value="cup">{lang === 'he' ? UNITS.cup.abbr_he : 'cup'}</option>
+              <option value="tbsp">{lang === 'he' ? UNITS.tbsp.abbr_he : 'tbsp'}</option>
+              <option value="tsp">{lang === 'he' ? UNITS.tsp.abbr_he : 'tsp'}</option>
+              <option value="fl_oz">{lang === 'he' ? UNITS.fl_oz.abbr_he : 'fl oz'}</option>
+              <option value="pcs">{lang === 'he' ? 'מנה' : 'serving'}</option>
+            </select>
           </div>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
@@ -218,7 +272,7 @@ export function MealCard({ meal, lang, weightUnit = 'g', showCheckbox, selected,
                   ? `${(meal.fluid_ml / 1000).toFixed(1)}${lang === 'he' ? 'ל׳' : 'L'}`
                   : `${Math.round(meal.fluid_ml)}ml`)
               : meal.grams < 0
-                ? `${Math.abs(meal.grams)} ${lang === 'he' ? 'יח׳' : 'pcs'}`
+                ? `${Math.abs(meal.grams)} ${lang === 'he' ? 'מנות' : 'serving(s)'}`
                 : formatWeight(meal.grams, weightUnit)}
           </span>
         </div>
@@ -238,11 +292,20 @@ export function MealCard({ meal, lang, weightUnit = 'g', showCheckbox, selected,
       {/* Edit button — always visible */}
       <button
         className="icon-btn"
-        onClick={e => { e.stopPropagation(); setEditing(true) }}
+        onClick={e => { e.stopPropagation(); openEdit() }}
         aria-label={t(lang, 'edit')}
       >
         <span className="icon icon-sm">edit</span>
       </button>
+      {onDelete && (
+        <button
+          className="icon-btn danger"
+          onClick={e => { e.stopPropagation(); onDelete(meal.id) }}
+          aria-label={t(lang, 'delete')}
+        >
+          <span className="icon icon-sm">delete</span>
+        </button>
+      )}
     </div>
   )
 }

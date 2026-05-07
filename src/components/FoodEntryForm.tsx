@@ -11,6 +11,8 @@ import type { BarcodeProduct } from '../lib/barcodeApi'
 import { FoodHistoryModal } from './FoodHistoryModal'
 import { UNITS, toBase, mlToGrams } from '../lib/units'
 import type { UnitId } from '../lib/units'
+import { fuzzyMatchLibrary } from '../lib/fuzzyMatch'
+import type { LibraryMatch } from '../lib/fuzzyMatch'
 
 type EntryUnit = UnitId | 'pcs'
 
@@ -54,9 +56,11 @@ interface FoodEntryFormProps {
   fluidThresholdMl?: number
   fluidZeroCalOnly?: boolean
   isOpen?: boolean
+  defaultServingGrams?: number
+  library?: FoodLibraryItem[]
 }
 
-export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, defaultWeightUnit = 'g', defaultVolumeUnit: _defaultVolumeUnit = 'ml', onAdd, onUpsertHistory, onTouchHistory, defaultMealType, composedEntries, onAddComposed, fluidThresholdMl = 100, fluidZeroCalOnly = true, isOpen }: FoodEntryFormProps) {
+export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, defaultWeightUnit = 'g', defaultVolumeUnit: _defaultVolumeUnit = 'ml', onAdd, onUpsertHistory, onTouchHistory, defaultMealType, composedEntries, onAddComposed, fluidThresholdMl = 100, fluidZeroCalOnly = true, isOpen, defaultServingGrams = 150, library = [] }: FoodEntryFormProps) {
   const [mode, setMode]               = useState<EntryMode>(
     () => (localStorage.getItem('entry-mode') as EntryMode) ?? 'scan'
   )
@@ -83,13 +87,24 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
   const [amountStr, setAmountStr]     = useState('')
   const [entryUnit, setEntryUnit]     = useState<EntryUnit>(defaultWeightUnit)
   const [mealType, setMealType]       = useState<MealType>(() => defaultMealType ?? mealTypeByTime())
+
+  useEffect(() => {
+    if (isOpen) {
+      const t = defaultMealType ?? mealTypeByTime()
+      setMealType(t)
+      setScanMealType(t)
+    }
+  }, [isOpen, defaultMealType])
+
   const [calculating, setCalculating] = useState(false)
   const [nutrition, setNutrition]     = useState<NutritionResult | null>(null)
   const [editCalories, setEditCalories] = useState<number | ''>('')
   const [editProtein,  setEditProtein]  = useState<number | ''>('')
-  const [qty, setQty]                 = useState(1)
   const [aiError, setAiError]         = useState<'network' | 'notFound' | 'rateLimit' | 'parseError' | null>(null)
   const libraryDensityRef             = useRef<number | null>(null) // density from library selection
+  const matchedLibraryItemRef         = useRef<LibraryMatch | null>(null)
+  const [matchedLib, setMatchedLib]   = useState<LibraryMatch | null>(null)
+  const servingGramsRef               = useRef(defaultServingGrams) // kept fresh for use inside useCallback
 
   // Dropdown
   const [dropdownOpen, setDropdownOpen] = useState(false)
@@ -109,6 +124,10 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
   const [fluidExcluded, setFluidExcluded] = useState(false)
   // Track if the current form state came from a history selection (to avoid re-inserting)
   const [selectedHistoryId, setSelectedHistoryId] = useState<string | null>(null)
+  // Per-unit ratios stored on history selection — used to scale nutrition when amount changes in confirmation
+  // perServing=true → ratio is cal/serving (pcs history items)
+  // perServing=false → ratio is cal/gram (library, AI, fluid history items)
+  const historyRatios = useRef<{ calPerUnit: number; protPerUnit: number; perServing: boolean }>({ calPerUnit: 0, protPerUnit: 0, perServing: false })
 
   const isPcs        = entryUnit === 'pcs'
   const amountMode: 'g' | 'unit' = isPcs ? 'unit' : 'g'
@@ -136,11 +155,24 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
     setDropdownOpen(combined.length > 0)
   }
 
+  // Debounced fuzzy match: when user types a food name manually (no library selection),
+  // try to identify a library match so the serving hint can appear without requiring Calculate.
+  useEffect(() => {
+    if (!foodName.trim() || library.length === 0 || matchedLib?.confidence === 'exact') return
+    const timer = setTimeout(() => {
+      const match = fuzzyMatchLibrary(foodName, library, lang)
+      matchedLibraryItemRef.current = match
+      setMatchedLib(match)
+    }, 400)
+    return () => clearTimeout(timer)
+  }, [foodName, library, lang, matchedLib?.confidence])
+
   const handleFoodNameChange = (v: string) => {
     setFoodName(v)
     openDropdown(v)
     setNutrition(null)
     setSelectedHistoryId(null)   // user is typing a new name — no longer a history selection
+    if (!v.trim()) { matchedLibraryItemRef.current = null; setMatchedLib(null) }
   }
 
   const handleFocus = () => { openDropdown(foodName) }
@@ -176,6 +208,13 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
     const name = lang === 'he' ? item.name_he : item.name_en
     const isBeverage = item.category === 'beverage' || item.category === 'alcohol'
     libraryDensityRef.current = item.density ?? null
+    matchedLibraryItemRef.current = { item, confidence: 'exact' }
+    setMatchedLib({ item, confidence: 'exact' })
+    historyRatios.current = {
+      calPerUnit:  gramsForNutrition > 0 ? cal  / gramsForNutrition : 0,
+      protPerUnit: gramsForNutrition > 0 ? prot / gramsForNutrition : 0,
+      perServing:  false,
+    }
     setEntryUnit(preferredUnit)
     setFoodName(name)
     setAmountStr(String(servingBase))
@@ -183,7 +222,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
     setEditCalories(cal)
     setEditProtein(prot)
     setDropdownOpen(false)
-    setQty(1)
+
     setAiError(null)
     inputRef.current?.blur()
     if (isBeverage) setMealType('beverage')
@@ -198,14 +237,22 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
 
   const handleSuggestionSelect = (item: FoodHistory) => {
     const isFluidItem = item.fluid_ml != null && item.fluid_ml > 0
+    const unitAmount = isFluidItem ? Math.round(item.fluid_ml!) : Math.abs(item.grams)
+    historyRatios.current = {
+      calPerUnit:  item.calories / (unitAmount || 1),
+      protPerUnit: item.protein  / (unitAmount || 1),
+      perServing:  item.grams < 0 && !isFluidItem,  // pcs items: ratio is cal/serving
+    }
+    matchedLibraryItemRef.current = null
+    setMatchedLib(null)
     setFoodName(item.name)
-    setAmountStr(isFluidItem ? String(Math.round(item.fluid_ml!)) : String(Math.abs(item.grams)))
+    setAmountStr(String(unitAmount))
     setEntryUnit(item.grams < 0 ? 'pcs' : isFluidItem ? 'ml' : defaultWeightUnit)
     setNutrition({ calories: item.calories, protein: item.protein })
     setEditCalories(item.calories || '')
     setEditProtein(item.protein   || '')
     setDropdownOpen(false)
-    setQty(1)
+
     setAiError(null)
     setSelectedHistoryId(item.id)
     inputRef.current?.blur()
@@ -240,23 +287,48 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
         const cal  = Math.round(exact.calories_per_100g * gramsForNutrition / 100)
         const prot = Math.round(exact.protein_per_100g  * gramsForNutrition / 100 * 10) / 10
         libraryDensityRef.current = exact.density ?? null
+        matchedLibraryItemRef.current = { item: exact, confidence: 'exact' }
+        setMatchedLib({ item: exact, confidence: 'exact' })
+        historyRatios.current = {
+          calPerUnit:  gramsForNutrition > 0 ? cal  / gramsForNutrition : 0,
+          protPerUnit: gramsForNutrition > 0 ? prot / gramsForNutrition : 0,
+          perServing:  false,
+        }
         setNutrition({ calories: cal, protein: prot })
         setEditCalories(cal)
         setEditProtein(prot)
         setCalculating(false)
         return
       }
+      // Fuzzy match — still try to identify the item for serving hint purposes
+      if (library.length > 0) {
+        const fuzzy = fuzzyMatchLibrary(foodName, library, lang)
+        matchedLibraryItemRef.current = fuzzy
+        setMatchedLib(fuzzy)
+      }
     }
 
     // Step 3+: AI (Groq → USDA fallback inside calculateNutrition)
+    // Convert user amount to grams — AI always expects grams (amountMode='g')
+    const amountForAI = (() => {
+      if (isPcs) return numericAmount
+      const uid = entryUnit as UnitId
+      const base = toBase(numericAmount, uid)
+      return UNITS[uid].type === 'volume' ? mlToGrams(base, libraryDensityRef.current ?? 1) : base
+    })()
     try {
-      const result = await calculateNutrition(foodName, numericAmount, history, amountMode)
+      const result = await calculateNutrition(foodName, amountForAI, history, amountMode)
       if (result === null) {
         setAiError('notFound')
         setNutrition({ calories: 0, protein: 0 })
         setEditCalories('')
         setEditProtein('')
       } else {
+        historyRatios.current = {
+          calPerUnit:  amountForAI > 0 ? result.calories / amountForAI : 0,
+          protPerUnit: amountForAI > 0 ? result.protein  / amountForAI : 0,
+          perServing:  isPcs,  // AI calculated in pcs mode → ratio is cal/serving, not cal/gram
+        }
         setNutrition(result)
         setEditCalories(result.calories)
         setEditProtein(result.protein)
@@ -282,13 +354,15 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
     setEditCalories('')
     setEditProtein('')
     setAiError(null)
-    setQty(1)
+
     setDropdownOpen(false)
     setSuggestions([])
     setEntryUnit(defaultWeightUnit)
     setFluidExcluded(false)
     setSelectedHistoryId(null)
     libraryDensityRef.current = null
+    matchedLibraryItemRef.current = null
+    setMatchedLib(null)
   }
 
   // ── Barcode scan handlers ─────────────────────────────────────
@@ -343,8 +417,6 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
 
   const numCalories = Number(editCalories) || 0
   const numProtein  = Number(editProtein)  || 0
-  const effectiveCalories = Math.round(numCalories * qty)
-  const effectiveProtein  = Math.round(numProtein  * qty * 10) / 10
   const amountInGrams: number = (() => {
     if (isPcs) return 0
     const uid = entryUnit as UnitId
@@ -354,19 +426,14 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
     }
     return baseAmount
   })()
-  const storedGrams = isPcs
-    ? -(numericAmount * qty)
-    : Math.round(amountInGrams * qty)
-  const effectiveName = qty !== 1
-    ? `${foodName} ×${qty % 1 === 0 ? qty : qty.toFixed(1)}`
-    : foodName
+  const storedGrams = isPcs ? -numericAmount : Math.round(amountInGrams)
 
   // Fluid detection: volume unit + amount > threshold
   // ml/cup/fl_oz are unambiguous beverage units → always count as fluid above threshold,
   // regardless of calories (coffee, juice, milk all have calories but are still fluids).
   // tbsp/tsp can be condiments/oils → still respect fluidZeroCalOnly for those.
   const isVolumeUnit    = entryUnit !== 'pcs' && entryUnit !== 'g' && entryUnit !== 'oz'
-  const detectedFluidMl = isVolumeUnit ? toBase(numericAmount, entryUnit as UnitId) * qty : null
+  const detectedFluidMl = isVolumeUnit ? toBase(numericAmount, entryUnit as UnitId) : null
   const calZeroOk       = !fluidZeroCalOnly || numCalories === 0
   const isFluid         = detectedFluidMl !== null && detectedFluidMl >= fluidThresholdMl && calZeroOk
 
@@ -375,10 +442,10 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
     onAdd({
       date:           today(),
       meal_type:      mealType,
-      name:           effectiveName,
+      name:           foodName,
       grams:          storedGrams,
-      calories:       effectiveCalories,
-      protein:        effectiveProtein,
+      calories:       numCalories,
+      protein:        numProtein,
       time_logged:    currentTime(),
       fluid_ml:       isFluid && !fluidExcluded ? detectedFluidMl : null,
       fluid_excluded: false,
@@ -397,7 +464,6 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
     setFoodName('')
     setAmountStr('')
     setNutrition(null)
-    setQty(1)
     setDropdownOpen(false)
     setSuggestions([])
     setAiError(null)
@@ -407,6 +473,8 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
     setFluidExcluded(false)
     setSelectedHistoryId(null)
     libraryDensityRef.current = null
+    matchedLibraryItemRef.current = null
+    setMatchedLib(null)
   }
 
   const mealTypeOptions: { value: MealType; label: string }[] = [
@@ -428,6 +496,15 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
     color: 'var(--text-3)', padding: 0,
     display: 'flex', alignItems: 'center', justifyContent: 'center',
   })
+
+  // Serving unit gram value: used when entryUnit === 'pcs' to show gram anchor hint
+  const servingGrams = (() => {
+    if (matchedLib?.item.countable && matchedLib.item.serving_size != null) {
+      return Number(matchedLib.item.serving_size)  // DB may return string — coerce to number
+    }
+    return defaultServingGrams
+  })()
+  servingGramsRef.current = servingGrams  // keep ref fresh for use inside useCallback
 
   // Scan product computed totals
   const scanG    = Number(scanGrams) || 0
@@ -733,7 +810,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
               tbsp:  { he: 'כף',        en: 'tbsp'  },
               tsp:   { he: 'כפית',      en: 'tsp'   },
               fl_oz: { he: "פל.אונ׳",   en: 'fl oz' },
-              pcs:   { he: 'יח׳',       en: 'pcs'   },
+              pcs:   { he: 'מנה',       en: 'serving' },
             }
             return lang === 'he' ? labels[entryUnit].he : labels[entryUnit].en
           })()}
@@ -749,7 +826,6 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
           onChange={e => {
             const next = e.target.value as EntryUnit
             setEntryUnit(next)
-            setAmountStr('')
             setNutrition(null)
             libraryDensityRef.current = null
           }}
@@ -763,7 +839,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
             { v: 'tbsp',  he: 'כף',          en: 'tbsp'  },
             { v: 'tsp',   he: 'כפית',        en: 'tsp'   },
             { v: 'fl_oz', he: 'פל.אונ׳',    en: 'fl oz' },
-            { v: 'pcs',   he: 'יח׳',         en: 'pcs'   },
+            { v: 'pcs',   he: 'מנה',         en: 'serving' },
           ] as const).map(u => (
             <option key={u.v} value={u.v}>{lang === 'he' ? u.he : u.en}</option>
           ))}
@@ -795,12 +871,61 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
 
       </div>
 
+      {/* Serving hint + fuzzy match chip */}
+      {(entryUnit === 'pcs' || matchedLib?.confidence === 'fuzzy') && (
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 6 }}>
+          {entryUnit === 'pcs' && (
+            <span style={{
+              fontSize: 10, fontWeight: 600, color: 'var(--text-3)',
+              background: 'var(--bg-card)', border: '1px solid var(--border)',
+              borderRadius: 8, padding: '3px 8px',
+            }}>
+              {lang === 'he' ? `מנה ≈ ${servingGrams}ג׳` : `serving ≈ ${servingGrams}g`}
+              {matchedLib?.item.countable && matchedLib.item.serving_size != null && (
+                <span style={{ marginInlineStart: 4, color: 'var(--blue-hi)', opacity: 0.8 }}>
+                  <span className="icon" style={{ fontSize: 10, verticalAlign: 'middle' }}>library_books</span>
+                </span>
+              )}
+            </span>
+          )}
+          {matchedLib?.confidence === 'fuzzy' && (
+            <span style={{
+              display: 'inline-flex', alignItems: 'center', gap: 4,
+              fontSize: 10, fontWeight: 600, color: 'var(--indigo-hi)',
+              background: 'var(--indigo-chip)', border: '1px solid color-mix(in srgb, var(--indigo) 25%, transparent)',
+              borderRadius: 8, padding: '3px 6px 3px 8px',
+            }}>
+              {lang === 'he'
+                ? `התאמה: ${matchedLib.item.name_he}`
+                : `Matched: ${matchedLib.item.name_en}`}
+              <button
+                onMouseDown={e => { e.preventDefault(); matchedLibraryItemRef.current = null; setMatchedLib(null) }}
+                tabIndex={-1}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', color: 'var(--indigo-hi)', opacity: 0.7, lineHeight: 1 }}
+              >
+                <span className="icon" style={{ fontSize: 12 }}>close</span>
+              </button>
+            </span>
+          )}
+        </div>
+      )}
+
       {/* History dropdown — full container width */}
       {dropdownOpen && (() => {
         const q = foodName.trim().toLowerCase()
-        const matchedComposed = composedEntries
+        const composedFiltered = composedEntries
           ? composedEntries.filter(e => !q || e.name.toLowerCase().includes(q))
           : []
+        // Deduplicate by name when no query — keep first (most recent)
+        const matchedComposed = q ? composedFiltered : (() => {
+          const seen = new Set<string>()
+          return composedFiltered.filter(e => {
+            const key = e.name.toLowerCase()
+            if (seen.has(key)) return false
+            seen.add(key)
+            return true
+          })
+        })()
         if (suggestions.length === 0 && matchedComposed.length === 0) return null
         return (
           <div
@@ -847,7 +972,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
                 const item = s.item
                 const itemIsUnit  = item.grams < 0
                 const itemIsFluid = item.fluid_ml != null && item.fluid_ml > 0
-                const amtDisplay  = itemIsUnit  ? `${Math.abs(item.grams)} ${lang === 'he' ? 'יח׳' : 'pcs'}`
+                const amtDisplay  = itemIsUnit  ? `${Math.abs(item.grams)} ${lang === 'he' ? 'מנות' : 'serving(s)'}`
                   : itemIsFluid ? (item.fluid_ml! >= 1000 ? `${(item.fluid_ml! / 1000).toFixed(1)}${lang === 'he' ? 'ל׳' : 'L'}` : `${Math.round(item.fluid_ml!)}ml`)
                   : `${item.grams}g`
                 return (
@@ -935,38 +1060,31 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
       {/* Confirmation card */}
       {nutrition !== null && (
         <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--border)' }}>
-          {/* Food name + amount — shown as header so user knows what they're confirming */}
           {foodName && (
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 10 }}>
-              <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>
-                {foodName}
-              </span>
-              {amountStr && (
-                <span style={{ fontSize: 12, color: 'var(--text-3)', whiteSpace: 'nowrap', flexShrink: 0 }}>
-                  {amountStr} {entryUnit}
-                </span>
-              )}
-            </div>
+            <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginBottom: 10 }}>
+              {foodName}
+            </span>
           )}
-          <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-2)', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 12 }}>
+          <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-2)', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 10 }}>
             {t(lang, 'confirmNutrition')}
           </p>
 
-          <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end', marginBottom: 12 }}>
-            {/* Calories — input shows effective total; hint shows per-item base when qty > 1 */}
-            <div style={{ flex: 1 }}>
+          {/* 4-column grid: calories | protein | amount | unit */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 8, marginBottom: 12 }}>
+            {/* Calories */}
+            <div>
               <label style={{ fontSize: 11, color: 'var(--blue-hi)', fontWeight: 600, display: 'block', marginBottom: 4 }}>
-                {t(lang, 'calories')} ({t(lang, 'caloriesUnit')})
+                {t(lang, 'calories')}
               </label>
               <div style={{ position: 'relative' }}>
                 <input
                   type="number"
                   inputMode="numeric"
                   className="inp"
-                  style={{ borderColor: 'var(--blue-glow)', fontSize: 16, ...(isRTL ? { paddingLeft: editCalories !== '' ? 32 : 12 } : { paddingRight: editCalories !== '' ? 32 : 12 }) }}
-                  value={editCalories === '' ? '' : effectiveCalories}
+                  style={{ borderColor: 'var(--blue-glow)', fontSize: 16, paddingInlineEnd: editCalories !== '' ? 32 : 12 }}
+                  value={editCalories}
                   placeholder="0"
-                  onChange={e => setEditCalories(e.target.value === '' ? '' : Math.round(Number(e.target.value) / qty))}
+                  onChange={e => setEditCalories(e.target.value === '' ? '' : Math.round(Number(e.target.value)))}
                   onFocus={e => { if (numCalories === 0) setEditCalories(''); else e.target.select() }}
                 />
                 {editCalories !== '' && (
@@ -975,15 +1093,10 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
                   </button>
                 )}
               </div>
-              {qty > 1 && editCalories !== '' && (
-                <span style={{ fontSize: 10, color: 'var(--text-3)', display: 'block', marginTop: 3 }}>
-                  {lang === 'he' ? `${Math.round(numCalories)} לפריט` : `${Math.round(numCalories)} per item`}
-                </span>
-              )}
             </div>
 
-            {/* Protein — same pattern as calories */}
-            <div style={{ flex: 1 }}>
+            {/* Protein */}
+            <div>
               <label style={{ fontSize: 11, color: 'var(--green-hi)', fontWeight: 600, display: 'block', marginBottom: 4 }}>
                 {lang === 'he' ? 'חלבון (ג׳)' : 'Protein (g)'}
               </label>
@@ -993,10 +1106,10 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
                   inputMode="decimal"
                   step="0.1"
                   className="inp inp-green"
-                  style={{ borderColor: 'var(--green-glow)', fontSize: 16, ...(isRTL ? { paddingLeft: editProtein !== '' ? 32 : 12 } : { paddingRight: editProtein !== '' ? 32 : 12 }) }}
-                  value={editProtein === '' ? '' : effectiveProtein}
+                  style={{ borderColor: 'var(--green-glow)', fontSize: 16, paddingInlineEnd: editProtein !== '' ? 32 : 12 }}
+                  value={editProtein}
                   placeholder="0"
-                  onChange={e => setEditProtein(e.target.value === '' ? '' : Math.round(Number(e.target.value) / qty * 10) / 10)}
+                  onChange={e => setEditProtein(e.target.value === '' ? '' : Math.round(Number(e.target.value) * 10) / 10)}
                   onFocus={e => { if (numProtein === 0) setEditProtein(''); else e.target.select() }}
                 />
                 {editProtein !== '' && (
@@ -1005,34 +1118,103 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
                   </button>
                 )}
               </div>
-              {qty > 1 && editProtein !== '' && (
-                <span style={{ fontSize: 10, color: 'var(--text-3)', display: 'block', marginTop: 3 }}>
-                  {lang === 'he' ? `${Math.round(numProtein * 10) / 10}g לפריט` : `${Math.round(numProtein * 10) / 10}g per item`}
-                </span>
-              )}
             </div>
 
-            {/* Quantity stepper */}
-            <div style={{ flexShrink: 0 }}>
+            {/* Amount — live scaling */}
+            <div>
               <label style={{ fontSize: 11, color: 'var(--text-2)', fontWeight: 600, display: 'block', marginBottom: 4 }}>
-                {t(lang, 'quantity')}
+                {t(lang, 'amount')}
               </label>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 4, height: 46 }}>
-                <button className="qty-btn" onClick={() => setQty(q => Math.max(0.1, Math.round((q - 0.1) * 10) / 10))}>−</button>
-                <input
-                  type="number"
-                  inputMode="decimal"
-                  className="inp"
-                  style={{ width: 52, textAlign: 'center', padding: '0 4px', height: 34, fontSize: 14, fontWeight: 700 }}
-                  value={qty}
-                  onFocus={e => e.target.select()}
-                  onChange={e => {
-                    const v = Number(e.target.value)
-                    if (!isNaN(v) && v > 0) setQty(Math.round(v * 10) / 10)
-                  }}
-                />
-                <button className="qty-btn" onClick={() => setQty(q => Math.round((q + 0.1) * 10) / 10)}>+</button>
-              </div>
+              <input
+                type="number"
+                inputMode="decimal"
+                className="inp"
+                style={{ fontSize: 16, textAlign: 'center' }}
+                value={amountStr}
+                placeholder="0"
+                onFocus={e => e.target.select()}
+                onChange={e => {
+                  const val = e.target.value
+                  setAmountStr(val)
+                  const n = Number(val)
+                  if (n > 0 && historyRatios.current.calPerUnit > 0) {
+                    const base = (() => {
+                      if (historyRatios.current.perServing) return n  // cal/serving: n = serving count
+                      if (entryUnit === 'pcs') return n * servingGrams  // cal/gram: convert servings → grams
+                      const uid = entryUnit as UnitId
+                      const b = toBase(n, uid)
+                      return UNITS[uid].type === 'volume' ? mlToGrams(b, libraryDensityRef.current ?? 1) : b
+                    })()
+                    setEditCalories(Math.round(base * historyRatios.current.calPerUnit))
+                    setEditProtein(Math.round(base * historyRatios.current.protPerUnit * 10) / 10)
+                  }
+                }}
+              />
+            </div>
+
+            {/* Unit */}
+            <div>
+              <label style={{ fontSize: 11, color: 'var(--text-2)', fontWeight: 600, display: 'block', marginBottom: 4 }}>
+                {lang === 'he' ? 'יחידה' : 'Unit'}
+              </label>
+              <select
+                className="inp"
+                style={{ fontSize: 16 }}
+                value={entryUnit}
+                onChange={e => {
+                  const newUnit = e.target.value as EntryUnit
+                  setEntryUnit(newUnit)
+                  if (historyRatios.current.calPerUnit <= 0) return
+                  const oldIsPcs = entryUnit === 'pcs'
+                  const newIsPcs = newUnit === 'pcs'
+                  const sg = servingGrams
+                  const n = numericAmount
+
+                  // When crossing pcs↔weight boundary, convert the stored ratio
+                  // (cal/serving ↔ cal/gram). Amount stays unchanged.
+                  if (oldIsPcs !== newIsPcs) {
+                    if (oldIsPcs) {
+                      historyRatios.current = {
+                        calPerUnit:  historyRatios.current.calPerUnit  / sg,
+                        protPerUnit: historyRatios.current.protPerUnit / sg,
+                        perServing:  false,
+                      }
+                    } else {
+                      historyRatios.current = {
+                        calPerUnit:  historyRatios.current.calPerUnit  * sg,
+                        protPerUnit: historyRatios.current.protPerUnit * sg,
+                        perServing:  true,
+                      }
+                    }
+                  }
+
+                  // Always recalculate nutrition for current amount in new unit
+                  if (n > 0) {
+                    const base = (() => {
+                      if (historyRatios.current.perServing) return n
+                      if (newIsPcs) return n * sg
+                      const uid = newUnit as UnitId
+                      const b = toBase(n, uid)
+                      return UNITS[uid].type === 'volume' ? mlToGrams(b, libraryDensityRef.current ?? 1) : b
+                    })()
+                    setEditCalories(Math.round(base * historyRatios.current.calPerUnit))
+                    setEditProtein(Math.round(base * historyRatios.current.protPerUnit * 10) / 10)
+                  }
+                }}
+              >
+                {([
+                  { v: 'g',     he: 'גרם',      en: 'g'     },
+                  { v: 'oz',    he: 'אונקיה',    en: 'oz'    },
+                  { v: 'ml',    he: 'מ"ל',       en: 'ml'    },
+                  { v: 'cup',   he: 'כוס',       en: 'cup'   },
+                  { v: 'tbsp',  he: 'כף',        en: 'tbsp'  },
+                  { v: 'tsp',   he: 'כפית',      en: 'tsp'   },
+                  { v: 'fl_oz', he: "פל.אונ׳",   en: 'fl oz' },
+                  { v: 'pcs',   he: 'מנה',       en: 'serving' },
+                ] as const).map(u => (
+                  <option key={u.v} value={u.v}>{lang === 'he' ? u.he : u.en}</option>
+                ))}
+              </select>
             </div>
           </div>
 
