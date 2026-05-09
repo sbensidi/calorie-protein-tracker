@@ -2,6 +2,7 @@ import type { Meal } from '../types'
 import type { Lang } from '../lib/i18n'
 import { t, formatDate } from '../lib/i18n'
 import { DonutProgress } from './DonutProgress'
+import { useAppContext } from '../context/AppContext'
 
 interface DailySummaryProps {
   meals:         Meal[]
@@ -14,6 +15,7 @@ interface DailySummaryProps {
 }
 
 export function DailySummary({ meals, date, goalCalories, goalProtein, lang, fluidGoalMl = 0, fluidTodayMl = 0 }: DailySummaryProps) {
+  const { styleMode } = useAppContext()
   const totalCalories = Math.round(meals.reduce((s, m) => s + m.calories, 0))
   const totalProtein  = Math.round(meals.reduce((s, m) => s + m.protein, 0) * 10) / 10
 
@@ -70,6 +72,88 @@ export function DailySummary({ meals, date, goalCalories, goalProtein, lang, flu
     }] : []),
   ]
 
+  // ── Minimal layout: hero percentage + hairline bars ──────────────────
+  if (styleMode === 'minimal') {
+    const calPct  = goalCalories > 0 ? Math.min(999, Math.round(totalCalories / goalCalories * 100)) : 0
+    const protPct = goalProtein  > 0 ? Math.min(100, totalProtein / goalProtein) : 0
+    const fluidPct = fluidGoalMl > 0 ? Math.min(100, fluidTodayMl / fluidGoalMl) : 0
+    const isOver  = totalCalories > goalCalories && goalCalories > 0
+
+    return (
+      <div className="fade-up" style={{ padding: '8px 0 28px' }}>
+        {/* Date */}
+        <p style={{ fontSize: 11, fontWeight: 300, color: 'var(--text-3)', letterSpacing: '0.06em', padding: '0 4px', marginBottom: 0 }}>
+          {formatDate(date, lang)}
+        </p>
+
+        {/* Hero percentage */}
+        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'flex-end', padding: '16px 4px 0', gap: 4 }}>
+          <span style={{
+            fontSize: 'clamp(72px, 26vw, 132px)',
+            fontWeight: 100,
+            lineHeight: 0.88,
+            letterSpacing: '-0.05em',
+            color: isOver ? 'var(--text)' : 'var(--text)',
+            fontVariantNumeric: 'tabular-nums',
+          }}>
+            {calPct}
+          </span>
+          <span style={{
+            fontSize: 'clamp(22px, 8vw, 40px)',
+            fontWeight: 200,
+            letterSpacing: '-0.03em',
+            color: 'var(--text-2)',
+            paddingBottom: '0.12em',
+          }}>%</span>
+        </div>
+
+        {/* Cal meta */}
+        <p style={{ fontSize: 12, fontWeight: 300, color: 'var(--text-2)', padding: '8px 4px 0', textAlign: 'end' }}>
+          {totalCalories.toLocaleString()}
+          {lang === 'he' ? ' מתוך ' : ' / '}
+          {goalCalories.toLocaleString()} {t(lang, 'caloriesUnit')}
+        </p>
+
+        {/* Protein bar */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '20px 4px 0' }}>
+          <span style={{ fontSize: 11, fontWeight: 300, color: 'var(--text-2)', whiteSpace: 'nowrap', flexShrink: 0 }}>
+            {lang === 'he'
+              ? `חלבון ${Math.round(totalProtein)} / ${goalProtein}g`
+              : `protein ${Math.round(totalProtein)} / ${goalProtein}g`}
+          </span>
+          <div style={{ flex: 1, height: 1, background: 'var(--border)', position: 'relative' }}>
+            <div style={{
+              position: 'absolute', top: 0, insetInlineStart: 0, bottom: 0,
+              width: `${protPct * 100}%`,
+              background: 'var(--text-2)',
+              transition: 'width 0.6s ease',
+            }} />
+          </div>
+        </div>
+
+        {/* Fluid bar — only if goal is set */}
+        {fluidGoalMl > 0 && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 4px 0' }}>
+            <span style={{ fontSize: 11, fontWeight: 300, color: 'var(--text-3)', whiteSpace: 'nowrap', flexShrink: 0 }}>
+              {lang === 'he'
+                ? `נוזלים ${fluidTodayMl >= 1000 ? `${(fluidTodayMl / 1000).toFixed(1)}ל׳` : `${Math.round(fluidTodayMl)}ml`}`
+                : `fluid ${fluidTodayMl >= 1000 ? `${(fluidTodayMl / 1000).toFixed(1)}L` : `${Math.round(fluidTodayMl)}ml`}`}
+            </span>
+            <div style={{ flex: 1, height: 1, background: 'var(--border)', position: 'relative' }}>
+              <div style={{
+                position: 'absolute', top: 0, insetInlineStart: 0, bottom: 0,
+                width: `${fluidPct * 100}%`,
+                background: 'var(--blue)',
+                transition: 'width 0.6s ease',
+              }} />
+            </div>
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  // ── Classic / Hybrid layout: donuts ───────────────────────────────────
   return (
     <div
       className="fade-up"

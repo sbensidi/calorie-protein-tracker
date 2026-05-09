@@ -21,7 +21,7 @@ const SettingsSheet = lazy(() => import('./components/SettingsSheet').then(m => 
 type Tab = 'today' | 'history'
 
 export default function App() {
-  const { lang, theme, styleMode, toggleLang, toggleTheme, toggleStyleMode, setTheme, setLang } = useAppContext()
+  const { lang, theme, styleMode, toggleLang, toggleTheme, selectStyleMode, setTheme, setLang } = useAppContext()
   const [session, setSession] = useState<Session | null>(null)
   const [authLoading, setAuthLoading] = useState(true)
   const [isRecovery, setIsRecovery] = useState(false)
@@ -320,7 +320,7 @@ export default function App() {
           theme={theme}
           styleMode={styleMode}
           onToggleTheme={toggleTheme}
-          onToggleStyleMode={toggleStyleMode}
+          onSelectStyleMode={selectStyleMode}
           showToast={showToast}
           history={history}
           onDeleteHistory={deleteHistory}

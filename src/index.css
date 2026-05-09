@@ -893,4 +893,126 @@ details[open] .chevron-badge .icon { transform: rotate(180deg); }
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    END HYBRID THEME
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   MINIMAL THEME — purely additive, full revert = delete this block
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+[data-style="minimal"][data-theme="dark"] {
+  --bg:           #242422;
+  --bg-card:      transparent;
+  --bg-card2:     rgba(255,255,255,0.04);
+  --surface-1:    rgba(255,255,255,0.03);
+  --surface-2:    rgba(255,255,255,0.06);
+  --text:         #f0eeeb;
+  --text-2:       rgba(240,238,235,0.45);
+  --text-3:       rgba(240,238,235,0.22);
+  --border:       rgba(255,255,255,0.07);
+  --border-hi:    rgba(255,255,255,0.12);
+  /* single accent: red replaces blue */
+  --blue:         #e5341e;
+  --blue-hi:      #e5341e;
+  --blue-fill:    rgba(229,52,30,0.07);
+  --blue-tint:    rgba(229,52,30,0.10);
+  --blue-chip:    rgba(229,52,30,0.12);
+  --blue-select:  rgba(229,52,30,0.18);
+  --blue-glow:    rgba(229,52,30,0.25);
+  --blue-border:  rgba(229,52,30,0.35);
+  --blue-border-hi: rgba(229,52,30,0.50);
+  /* green → muted neutral */
+  --green:        rgba(240,238,235,0.50);
+  --green-hi:     rgba(240,238,235,0.50);
+  --green-fill:   rgba(240,238,235,0.04);
+  --green-tint:   rgba(240,238,235,0.06);
+  --green-chip:   rgba(240,238,235,0.08);
+  --green-select: rgba(240,238,235,0.12);
+  --green-glow:   rgba(240,238,235,0.18);
+  --green-border: rgba(240,238,235,0.28);
+  --green-border-hi: rgba(240,238,235,0.40);
+  /* purple → muted neutral */
+  --purple:       rgba(240,238,235,0.35);
+  --purple-hi:    rgba(240,238,235,0.35);
+  --purple-tint:  rgba(240,238,235,0.04);
+  --purple-fill:  rgba(240,238,235,0.03);
+  --purple-glow:  rgba(240,238,235,0.14);
+  --purple-border-hi: rgba(240,238,235,0.30);
+}
+
+[data-style="minimal"][data-theme="light"] {
+  --bg:           #f5f5f2;
+  --bg-card:      transparent;
+  --bg-card2:     rgba(0,0,0,0.03);
+  --surface-1:    rgba(0,0,0,0.02);
+  --surface-2:    rgba(0,0,0,0.05);
+  --text:         #1a1a18;
+  --text-2:       rgba(26,26,24,0.45);
+  --text-3:       rgba(26,26,24,0.22);
+  --border:       rgba(0,0,0,0.08);
+  --border-hi:    rgba(0,0,0,0.14);
+  --blue:         #e5341e;
+  --blue-hi:      #c42c16;
+  --blue-fill:    rgba(229,52,30,0.06);
+  --blue-tint:    rgba(229,52,30,0.08);
+  --blue-chip:    rgba(229,52,30,0.10);
+  --blue-select:  rgba(229,52,30,0.14);
+  --blue-glow:    rgba(229,52,30,0.22);
+  --blue-border:  rgba(229,52,30,0.32);
+  --blue-border-hi: rgba(229,52,30,0.48);
+  --green:        rgba(26,26,24,0.45);
+  --green-hi:     rgba(26,26,24,0.45);
+  --green-fill:   rgba(26,26,24,0.03);
+  --green-tint:   rgba(26,26,24,0.05);
+  --green-chip:   rgba(26,26,24,0.07);
+  --green-select: rgba(26,26,24,0.10);
+  --green-glow:   rgba(26,26,24,0.16);
+  --green-border: rgba(26,26,24,0.26);
+  --green-border-hi: rgba(26,26,24,0.38);
+  --purple:       rgba(26,26,24,0.30);
+  --purple-hi:    rgba(26,26,24,0.30);
+  --purple-tint:  rgba(26,26,24,0.03);
+  --purple-fill:  rgba(26,26,24,0.02);
+  --purple-glow:  rgba(26,26,24,0.12);
+  --purple-border-hi: rgba(26,26,24,0.28);
+}
+
+/* ── Card reset: no bg, no shadow, hairline bottom border only ── */
+[data-style="minimal"] .card {
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  border-bottom: 1px solid var(--border) !important;
+}
+
+/* ── Composed card ── */
+[data-style="minimal"] .composed-card {
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  border-bottom: 1px solid var(--border) !important;
+}
+[data-style="minimal"] .composed-children {
+  background: transparent !important;
+  border-top: 1px solid var(--border) !important;
+}
+
+/* ── Typography: pull back weights ── */
+[data-style="minimal"] * { font-weight: 300; }
+[data-style="minimal"] .icon,
+[data-style="minimal"] .icon-sm { font-weight: 400; }
+
+/* ── Tab indicator + FAB shadow → red ── */
+[data-style="minimal"] .tab-indicator {
+  box-shadow: 0 2px 10px rgba(229,52,30,0.3);
+}
+[data-style="minimal"] .fab-btn       { background: #e5341e !important; box-shadow: 0 4px 20px rgba(229,52,30,0.4); }
+[data-style="minimal"] .fab-btn:hover { box-shadow: 0 6px 28px rgba(229,52,30,0.55); }
+
+/* ── Inputs: lighter borders ── */
+[data-style="minimal"] .inp { border-color: var(--border); }
+[data-style="minimal"] .inp:focus { border-color: var(--border-hi); }
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   END MINIMAL THEME
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */

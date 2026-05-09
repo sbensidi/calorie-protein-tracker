@@ -179,11 +179,11 @@ function DayPanel({
 
 // ── Main Screen ───────────────────────────────────────────────────────────────
 
-function MainScreen({ lang, connected, theme, styleMode, onProfile, onGoals, onFoodHistory, onLibrary, onPreferences, onToggleLang, onToggleTheme, onToggleStyleMode, onSignOut }: {
+function MainScreen({ lang, connected, theme, styleMode, onProfile, onGoals, onFoodHistory, onLibrary, onPreferences, onToggleLang, onToggleTheme, onSelectStyleMode, onSignOut }: {
   lang:                Lang
   connected:           boolean
   theme:               'dark' | 'light'
-  styleMode:           'classic' | 'hybrid'
+  styleMode:           'classic' | 'hybrid' | 'minimal'
   onProfile:           () => void
   onGoals:             () => void
   onFoodHistory:       () => void
@@ -191,7 +191,7 @@ function MainScreen({ lang, connected, theme, styleMode, onProfile, onGoals, onF
   onPreferences:       () => void
   onToggleLang:        () => void
   onToggleTheme:       () => void
-  onToggleStyleMode:   () => void
+  onSelectStyleMode:   (m: 'classic' | 'hybrid' | 'minimal') => void
   onSignOut:           () => void
 }) {
   const chevron = lang === 'he' ? 'chevron_left' : 'chevron_right'
@@ -367,24 +367,24 @@ function MainScreen({ lang, connected, theme, styleMode, onProfile, onGoals, onF
             </p>
           </div>
           <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
-            {(['classic', 'hybrid'] as const).map(mode => (
+            {(['classic', 'hybrid', 'minimal'] as const).map(mode => (
               <button
                 key={mode}
-                onClick={() => { if (styleMode !== mode) onToggleStyleMode() }}
+                onClick={() => onSelectStyleMode(mode)}
                 style={{
-                  padding: '5px 12px',
+                  padding: '5px 10px',
                   borderRadius: 999,
                   border: styleMode === mode ? '1px solid var(--blue-border-hi)' : '1px solid var(--border)',
                   background: styleMode === mode ? 'var(--blue-select)' : 'transparent',
                   color: styleMode === mode ? 'var(--blue)' : 'var(--text-2)',
-                  fontSize: 13,
+                  fontSize: 12,
                   fontWeight: styleMode === mode ? 700 : 400,
                   fontFamily: 'inherit',
                   cursor: 'pointer',
                   transition: 'all 0.2s',
                 }}
               >
-                {t(lang, mode === 'classic' ? 'styleClassic' : 'styleHybrid')}
+                {t(lang, mode === 'classic' ? 'styleClassic' : mode === 'hybrid' ? 'styleHybrid' : 'styleMinimal')}
               </button>
             ))}
           </div>
@@ -1800,9 +1800,9 @@ interface SettingsSheetProps {
   onToggleLang:    () => void
   onSignOut:       () => void
   theme:               'dark' | 'light'
-  styleMode:           'classic' | 'hybrid'
+  styleMode:           'classic' | 'hybrid' | 'minimal'
   onToggleTheme:       () => void
-  onToggleStyleMode:   () => void
+  onSelectStyleMode:   (m: 'classic' | 'hybrid' | 'minimal') => void
   showToast:       (message: string, type: Toast['type']) => void
   history:         FoodHistory[]
   onDeleteHistory: (id: string) => void
@@ -1814,7 +1814,7 @@ interface SettingsSheetProps {
 }
 
 export function SettingsSheet({
-  isOpen, onClose, lang, connected, profile, onSaveProfile, goals, onSaveGoals, onToggleLang, onSignOut, theme, styleMode, onToggleTheme, onToggleStyleMode, showToast,
+  isOpen, onClose, lang, connected, profile, onSaveProfile, goals, onSaveGoals, onToggleLang, onSignOut, theme, styleMode, onToggleTheme, onSelectStyleMode, showToast,
   history, onDeleteHistory, onUpdateHistory, composedGroups, onRemoveGroup, meals, onUpdateMeal,
 }: SettingsSheetProps) {
   const [screen, setScreen] = useState<Screen>('main')
@@ -1907,7 +1907,7 @@ export function SettingsSheet({
                 onPreferences={() => setScreen('preferences')}
                 onToggleLang={onToggleLang}
                 onToggleTheme={onToggleTheme}
-                onToggleStyleMode={onToggleStyleMode}
+                onSelectStyleMode={onSelectStyleMode}
                 onSignOut={() => { handleClose(); onSignOut() }}
               />
             )}

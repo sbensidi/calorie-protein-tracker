@@ -2,17 +2,17 @@ import { createContext, useContext, useState, useEffect, useCallback } from 'rea
 import type { ReactNode } from 'react'
 import type { Lang } from '../lib/i18n'
 
-type StyleMode = 'classic' | 'hybrid'
+export type StyleMode = 'classic' | 'hybrid' | 'minimal'
 
 interface AppContextValue {
-  lang:             Lang
-  theme:            'dark' | 'light'
-  styleMode:        StyleMode
-  toggleLang:       () => void
-  toggleTheme:      () => void
-  toggleStyleMode:  () => void
-  setTheme:         (t: 'dark' | 'light') => void
-  setLang:          (l: Lang) => void
+  lang:              Lang
+  theme:             'dark' | 'light'
+  styleMode:         StyleMode
+  toggleLang:        () => void
+  toggleTheme:       () => void
+  selectStyleMode:   (m: StyleMode) => void
+  setTheme:          (t: 'dark' | 'light') => void
+  setLang:           (l: Lang) => void
 }
 
 const AppContext = createContext<AppContextValue | null>(null)
@@ -50,8 +50,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setTheme(t => t === 'dark' ? 'light' : 'dark')
   }, [])
 
-  const toggleStyleMode = useCallback(() => {
-    setStyleMode(s => s === 'classic' ? 'hybrid' : 'classic')
+  const selectStyleMode = useCallback((m: StyleMode) => {
+    setStyleMode(m)
   }, [])
 
   const applyTheme = useCallback((t: 'dark' | 'light') => {
@@ -64,7 +64,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [])
 
   return (
-    <AppContext.Provider value={{ lang, theme, styleMode, toggleLang, toggleTheme, toggleStyleMode, setTheme: applyTheme, setLang: applyLang }}>
+    <AppContext.Provider value={{ lang, theme, styleMode, toggleLang, toggleTheme, selectStyleMode, setTheme: applyTheme, setLang: applyLang }}>
       {children}
     </AppContext.Provider>
   )

@@ -11,6 +11,7 @@ import type { ComposedEntry } from './FoodEntryForm'
 import { MealCard } from './MealCard'
 import { ComposedMealCard } from './ComposedMealCard'
 import { DailySummary } from './DailySummary'
+import { useAppContext } from '../context/AppContext'
 
 type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'beverage'
 
@@ -85,6 +86,8 @@ export function TodayTab({
   const todayMeals    = useMemo(() => meals.filter(m => m.date === today()), [meals])
   const fluidTodayMl  = useMemo(() => todayMeals.reduce((s, m) => s + (m.fluid_ml ?? 0), 0), [todayMeals])
 
+
+  const { styleMode } = useAppContext()
 
   // ── Pending deletes (undo support) — declared before mealsByType ────────────
   const [pendingDeleteIds, setPendingDeleteIds] = useState<Set<string>>(new Set())
@@ -723,28 +726,46 @@ export function TodayTab({
         </div>
       )}
 
-      {/* ── FAB ──────────────────────────────────────────────────── */}
-      <button
-        onClick={() => openEntry()}
-        aria-label={lang === 'he' ? 'הוסף ארוחה' : 'Add meal'}
-        className="fab-btn"
-        style={{
-          position: 'fixed',
-          bottom: 'calc(28px + env(safe-area-inset-bottom, 0px))',
-          insetInlineEnd: 'max(calc((100vw - 560px) / 2 + 24px), 24px)',
-          zIndex: 40,
-          width: 56, height: 56, borderRadius: '50%',
-          background: 'var(--blue)',
-          color: 'var(--on-color)',
-          border: 'none',
-          cursor: 'pointer',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}
-        onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.08)' }}
-        onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)' }}
-      >
-        <span className="icon" style={{ fontSize: 28 }}>add</span>
-      </button>
+      {/* ── FAB — circular (classic/hybrid) or full-width bar (minimal) ── */}
+      {styleMode === 'minimal' ? (
+        <button
+          onClick={() => openEntry()}
+          aria-label={lang === 'he' ? 'הוסף ארוחה' : 'Add meal'}
+          style={{
+            width: '100%', padding: '14px 0', marginTop: 8, marginBottom: 8,
+            borderRadius: 100, border: 'none', cursor: 'pointer',
+            background: '#e5341e', color: '#ffffff',
+            fontSize: 14, fontWeight: 300, fontFamily: 'inherit',
+            letterSpacing: '-0.01em',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+          }}
+        >
+          <span className="icon" style={{ fontSize: 16 }}>add</span>
+          {lang === 'he' ? 'הוסף ארוחה' : 'Add meal'}
+        </button>
+      ) : (
+        <button
+          onClick={() => openEntry()}
+          aria-label={lang === 'he' ? 'הוסף ארוחה' : 'Add meal'}
+          className="fab-btn"
+          style={{
+            position: 'fixed',
+            bottom: 'calc(28px + env(safe-area-inset-bottom, 0px))',
+            insetInlineEnd: 'max(calc((100vw - 560px) / 2 + 24px), 24px)',
+            zIndex: 40,
+            width: 56, height: 56, borderRadius: '50%',
+            background: 'var(--blue)',
+            color: 'var(--on-color)',
+            border: 'none',
+            cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.08)' }}
+          onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)' }}
+        >
+          <span className="icon" style={{ fontSize: 28 }}>add</span>
+        </button>
+      )}
 
       {/* ── Entry bottom sheet ────────────────────────────────────── */}
       <div
