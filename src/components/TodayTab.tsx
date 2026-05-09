@@ -347,7 +347,7 @@ export function TodayTab({
   // ── Render: meal group ───────────────────────────────────────
   const mealGroup = (type: MealType, i: number) => {
     const typeMeals   = mealsByType[type]
-    const isCollapsed = styleMode === 'minimal' ? false : collapsed.has(type)
+    const isCollapsed = collapsed.has(type)
     const selSet      = selectedIds[type] ?? new Set<string>()
 
     const totalCal  = Math.round(typeMeals.reduce((s, m) => s + m.calories, 0))
@@ -375,10 +375,20 @@ export function TodayTab({
 
         {/* ── Group header ────────────────────────────────── */}
         {styleMode === 'minimal' ? (
-          /* Minimal: text-only label, no icon, no buttons */
-          <div style={{ padding: '14px 4px 4px', display: 'flex', alignItems: 'center' }}>
-            <span style={{ fontSize: 10, fontWeight: 400, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
+          /* Minimal: text label + subtle chevron, fully collapsible */
+          <div
+            role="button"
+            tabIndex={0}
+            aria-expanded={!isCollapsed}
+            onClick={() => toggleCollapse(type)}
+            onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') toggleCollapse(type) }}
+            style={{ padding: '14px 4px 6px', display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', userSelect: 'none' }}
+          >
+            <span style={{ fontSize: 10, fontWeight: 400, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.12em', flex: 1 }}>
               {t(lang, type)}
+            </span>
+            <span className="icon icon-sm" style={{ fontSize: 12, color: 'var(--text-3)', transform: isCollapsed ? 'rotate(0deg)' : 'rotate(180deg)', transition: 'transform 0.2s' }}>
+              expand_more
             </span>
           </div>
         ) : (

@@ -129,6 +129,9 @@ export function DailySummary({ meals, date, goalCalories, goalProtein, lang, flu
               transition: 'width 0.6s ease',
             }} />
           </div>
+          <span style={{ fontSize: 10, fontWeight: 300, color: 'var(--text-3)', whiteSpace: 'nowrap', flexShrink: 0, minWidth: 26, textAlign: 'end' }}>
+            {Math.round(protPct * 100)}%
+          </span>
         </div>
 
         {/* Fluid bar — only if goal is set */}
@@ -147,6 +150,9 @@ export function DailySummary({ meals, date, goalCalories, goalProtein, lang, flu
                 transition: 'width 0.6s ease',
               }} />
             </div>
+            <span style={{ fontSize: 10, fontWeight: 300, color: 'var(--text-3)', whiteSpace: 'nowrap', flexShrink: 0, minWidth: 26, textAlign: 'end' }}>
+              {Math.round(fluidPct * 100)}%
+            </span>
           </div>
         )}
       </div>
