@@ -282,29 +282,29 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
             </div>
           </div>
           {/* Calories row */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-            <span style={{ fontSize: 11, color: 'var(--text-3)', whiteSpace: 'nowrap', flexShrink: 0, minWidth: 60 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+            <span style={{ fontSize: 11, color: 'var(--text-2)', whiteSpace: 'nowrap', flexShrink: 0, minWidth: 64 }}>
               {Math.round(data.totalCalories)} {t(lang, 'caloriesUnit')}
             </span>
-            <div style={{ flex: 1, height: 1, background: 'var(--border)', position: 'relative' }}>
+            <div style={{ flex: 1, height: 2, background: 'var(--border)', position: 'relative', borderRadius: 2 }}>
               <div style={{
                 position: 'absolute', top: 0, insetInlineStart: 0, bottom: 0,
-                width: `${calPct * 100}%`,
-                background: data.calOk ? 'var(--text-2)' : 'var(--blue)',
+                width: `${calPct * 100}%`, borderRadius: 2,
+                background: data.calOk ? 'var(--text)' : 'var(--blue-hi)',
                 transition: 'width 0.5s ease',
               }} />
             </div>
           </div>
           {/* Protein row */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span style={{ fontSize: 11, color: 'var(--text-3)', whiteSpace: 'nowrap', flexShrink: 0, minWidth: 60 }}>
+            <span style={{ fontSize: 11, color: 'var(--text-2)', whiteSpace: 'nowrap', flexShrink: 0, minWidth: 64 }}>
               {Math.round(data.totalProtein * 10) / 10}{protUnit}
             </span>
-            <div style={{ flex: 1, height: 1, background: 'var(--border)', position: 'relative' }}>
+            <div style={{ flex: 1, height: 2, background: 'var(--border)', position: 'relative', borderRadius: 2 }}>
               <div style={{
                 position: 'absolute', top: 0, insetInlineStart: 0, bottom: 0,
-                width: `${protPct * 100}%`,
-                background: 'var(--text-3)',
+                width: `${protPct * 100}%`, borderRadius: 2,
+                background: 'var(--text-2)',
                 transition: 'width 0.5s ease',
               }} />
             </div>

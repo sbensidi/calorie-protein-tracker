@@ -121,11 +121,11 @@ export function DailySummary({ meals, date, goalCalories, goalProtein, lang, flu
               ? `חלבון ${Math.round(totalProtein)} / ${goalProtein}g`
               : `protein ${Math.round(totalProtein)} / ${goalProtein}g`}
           </span>
-          <div style={{ flex: 1, height: 1, background: 'var(--border)', position: 'relative' }}>
+          <div style={{ flex: 1, height: 2, background: 'var(--border)', position: 'relative', borderRadius: 2 }}>
             <div style={{
               position: 'absolute', top: 0, insetInlineStart: 0, bottom: 0,
-              width: `${protPct * 100}%`,
-              background: 'var(--text-2)',
+              width: `${protPct * 100}%`, borderRadius: 2,
+              background: 'var(--text)',
               transition: 'width 0.6s ease',
             }} />
           </div>
@@ -134,16 +134,16 @@ export function DailySummary({ meals, date, goalCalories, goalProtein, lang, flu
         {/* Fluid bar — only if goal is set */}
         {fluidGoalMl > 0 && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 4px 0' }}>
-            <span style={{ fontSize: 11, fontWeight: 300, color: 'var(--text-3)', whiteSpace: 'nowrap', flexShrink: 0 }}>
+            <span style={{ fontSize: 11, fontWeight: 300, color: 'var(--text-2)', whiteSpace: 'nowrap', flexShrink: 0 }}>
               {lang === 'he'
                 ? `נוזלים ${fluidTodayMl >= 1000 ? `${(fluidTodayMl / 1000).toFixed(1)}ל׳` : `${Math.round(fluidTodayMl)}ml`}`
                 : `fluid ${fluidTodayMl >= 1000 ? `${(fluidTodayMl / 1000).toFixed(1)}L` : `${Math.round(fluidTodayMl)}ml`}`}
             </span>
-            <div style={{ flex: 1, height: 1, background: 'var(--border)', position: 'relative' }}>
+            <div style={{ flex: 1, height: 2, background: 'var(--border)', position: 'relative', borderRadius: 2 }}>
               <div style={{
                 position: 'absolute', top: 0, insetInlineStart: 0, bottom: 0,
-                width: `${fluidPct * 100}%`,
-                background: 'var(--blue)',
+                width: `${fluidPct * 100}%`, borderRadius: 2,
+                background: 'var(--blue-hi)',
                 transition: 'width 0.6s ease',
               }} />
             </div>

@@ -910,9 +910,11 @@ details[open] .chevron-badge .icon { transform: rotate(180deg); }
   --text-3:       rgba(240,238,235,0.40);
   --border:       rgba(255,255,255,0.12);
   --border-hi:    rgba(255,255,255,0.20);
-  /* single accent: red replaces blue */
-  --blue:         #e5341e;
-  --blue-hi:      #e5341e;
+  /* single accent — split for WCAG AA:
+     --blue    #c42c16  → white-on-button 5.3:1 ✓  (button bg, borders)
+     --blue-hi #ff5533  → text-on-dark   5.0:1 ✓  (text labels, numbers) */
+  --blue:         #c42c16;
+  --blue-hi:      #ff5533;
   --blue-fill:    rgba(229,52,30,0.07);
   --blue-tint:    rgba(229,52,30,0.10);
   --blue-chip:    rgba(229,52,30,0.12);
@@ -958,7 +960,8 @@ details[open] .chevron-badge .icon { transform: rotate(180deg); }
   --text-3:       rgba(26,26,24,0.60);
   --border:       rgba(0,0,0,0.12);
   --border-hi:    rgba(0,0,0,0.20);
-  --blue:         #e5341e;
+  /* WCAG AA: #c42c16 → text-on-light 4.9:1 ✓, white-on-button 5.3:1 ✓ */
+  --blue:         #c42c16;
   --blue-hi:      #c42c16;
   --blue-fill:    rgba(229,52,30,0.06);
   --blue-tint:    rgba(229,52,30,0.08);
@@ -1018,12 +1021,25 @@ details[open] .chevron-badge .icon { transform: rotate(180deg); }
 [data-style="minimal"] .icon,
 [data-style="minimal"] .icon-sm { font-weight: 400; }
 
+/* ── Modals/overlays: force solid opaque background — no bleed-through ── */
+[data-style="minimal"] .compose-modal {
+  background: var(--bg) !important;
+  border: 1px solid var(--border-hi) !important;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.6), 0 4px 16px rgba(0,0,0,0.4) !important;
+}
+[data-style="minimal"] .compose-modal-summary {
+  background: var(--surface-1) !important;
+}
+[data-style="minimal"] .compose-modal-item {
+  background: var(--surface-1) !important;
+}
+
 /* ── Tab indicator + FAB shadow → red ── */
 [data-style="minimal"] .tab-indicator {
-  box-shadow: 0 2px 10px rgba(229,52,30,0.3);
+  box-shadow: 0 2px 10px rgba(196,44,22,0.3);
 }
-[data-style="minimal"] .fab-btn       { background: #e5341e !important; box-shadow: 0 4px 20px rgba(229,52,30,0.4); }
-[data-style="minimal"] .fab-btn:hover { box-shadow: 0 6px 28px rgba(229,52,30,0.55); }
+[data-style="minimal"] .fab-btn       { background: var(--blue) !important; box-shadow: 0 4px 20px rgba(196,44,22,0.4); }
+[data-style="minimal"] .fab-btn:hover { box-shadow: 0 6px 28px rgba(196,44,22,0.55); }
 
 /* ── Inputs: lighter borders ── */
 [data-style="minimal"] .inp { border-color: var(--border); }

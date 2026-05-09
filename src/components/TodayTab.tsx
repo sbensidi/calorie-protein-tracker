@@ -756,7 +756,7 @@ export function TodayTab({
           style={{
             width: '100%', padding: '14px 0', marginTop: 8, marginBottom: 8,
             borderRadius: 100, border: 'none', cursor: 'pointer',
-            background: '#e5341e', color: '#ffffff',
+            background: 'var(--blue)', color: 'var(--on-color)',
             fontSize: 14, fontWeight: 300, fontFamily: 'inherit',
             letterSpacing: '-0.01em',
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
