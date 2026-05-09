@@ -21,7 +21,7 @@ const SettingsSheet = lazy(() => import('./components/SettingsSheet').then(m => 
 type Tab = 'today' | 'history'
 
 export default function App() {
-  const { lang, theme, toggleLang, toggleTheme, setTheme, setLang } = useAppContext()
+  const { lang, theme, styleMode, toggleLang, toggleTheme, toggleStyleMode, setTheme, setLang } = useAppContext()
   const [session, setSession] = useState<Session | null>(null)
   const [authLoading, setAuthLoading] = useState(true)
   const [isRecovery, setIsRecovery] = useState(false)
@@ -318,7 +318,9 @@ export default function App() {
           onToggleLang={toggleLang}
           onSignOut={() => { userSignedOut.current = true; supabase.auth.signOut() }}
           theme={theme}
+          styleMode={styleMode}
           onToggleTheme={toggleTheme}
+          onToggleStyleMode={toggleStyleMode}
           showToast={showToast}
           history={history}
           onDeleteHistory={deleteHistory}

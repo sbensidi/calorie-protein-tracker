@@ -103,6 +103,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
   const [aiError, setAiError]         = useState<'network' | 'notFound' | 'rateLimit' | 'parseError' | null>(null)
   const libraryDensityRef             = useRef<number | null>(null) // density from library selection
   const matchedLibraryItemRef         = useRef<LibraryMatch | null>(null)
+  const matchDismissedRef             = useRef(false) // user explicitly dismissed the fuzzy chip
   const [matchedLib, setMatchedLib]   = useState<LibraryMatch | null>(null)
   const servingGramsRef               = useRef(defaultServingGrams) // kept fresh for use inside useCallback
 
@@ -158,20 +159,23 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
   // Debounced fuzzy match: when user types a food name manually (no library selection),
   // try to identify a library match so the serving hint can appear without requiring Calculate.
   useEffect(() => {
-    if (!foodName.trim() || library.length === 0 || matchedLib?.confidence === 'exact') return
+    if (!foodName.trim() || library.length === 0) return
+    if (matchedLibraryItemRef.current?.confidence === 'exact') return
+    if (matchDismissedRef.current) return
     const timer = setTimeout(() => {
       const match = fuzzyMatchLibrary(foodName, library, lang)
       matchedLibraryItemRef.current = match
       setMatchedLib(match)
     }, 400)
     return () => clearTimeout(timer)
-  }, [foodName, library, lang, matchedLib?.confidence])
+  }, [foodName, library, lang])
 
   const handleFoodNameChange = (v: string) => {
     setFoodName(v)
     openDropdown(v)
     setNutrition(null)
     setSelectedHistoryId(null)   // user is typing a new name — no longer a history selection
+    matchDismissedRef.current = false  // new query → allow fuzzy match again
     if (!v.trim()) { matchedLibraryItemRef.current = null; setMatchedLib(null) }
   }
 
@@ -279,21 +283,41 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
         item.name_en.toLowerCase() === nameLower
       ) ?? (matches.length === 1 ? matches[0] : null)
       if (exact) {
-        const uid = (entryUnit !== 'pcs' && entryUnit in UNITS) ? entryUnit as UnitId : null
-        const baseAmount = uid ? toBase(numericAmount, uid) : numericAmount
-        const gramsForNutrition = uid && UNITS[uid].type === 'volume'
-          ? mlToGrams(baseAmount, exact.density ?? 1)
-          : baseAmount
-        const cal  = Math.round(exact.calories_per_100g * gramsForNutrition / 100)
-        const prot = Math.round(exact.protein_per_100g  * gramsForNutrition / 100 * 10) / 10
+        let cal: number
+        let prot: number
+
+        if (isPcs) {
+          // "N מנות" → convert to grams using the item's serving_size
+          const servUnit = (exact.serving_unit as UnitId) in UNITS ? (exact.serving_unit as UnitId) : 'g'
+          const gramsPerServing = exact.density
+            ? mlToGrams(toBase(Number(exact.serving_size ?? servingGramsRef.current), servUnit), exact.density)
+            : toBase(Number(exact.serving_size ?? servingGramsRef.current), servUnit)
+          const totalGrams = numericAmount * gramsPerServing
+          cal  = Math.round(exact.calories_per_100g * totalGrams / 100)
+          prot = Math.round(exact.protein_per_100g  * totalGrams / 100 * 10) / 10
+          historyRatios.current = {
+            calPerUnit:  numericAmount > 0 ? cal  / numericAmount : 0,
+            protPerUnit: numericAmount > 0 ? prot / numericAmount : 0,
+            perServing:  true,
+          }
+        } else {
+          const uid = entryUnit in UNITS ? entryUnit as UnitId : null
+          const baseAmount = uid ? toBase(numericAmount, uid) : numericAmount
+          const gramsForNutrition = uid && UNITS[uid].type === 'volume'
+            ? mlToGrams(baseAmount, exact.density ?? 1)
+            : baseAmount
+          cal  = Math.round(exact.calories_per_100g * gramsForNutrition / 100)
+          prot = Math.round(exact.protein_per_100g  * gramsForNutrition / 100 * 10) / 10
+          historyRatios.current = {
+            calPerUnit:  gramsForNutrition > 0 ? cal  / gramsForNutrition : 0,
+            protPerUnit: gramsForNutrition > 0 ? prot / gramsForNutrition : 0,
+            perServing:  false,
+          }
+        }
+
         libraryDensityRef.current = exact.density ?? null
         matchedLibraryItemRef.current = { item: exact, confidence: 'exact' }
         setMatchedLib({ item: exact, confidence: 'exact' })
-        historyRatios.current = {
-          calPerUnit:  gramsForNutrition > 0 ? cal  / gramsForNutrition : 0,
-          protPerUnit: gramsForNutrition > 0 ? prot / gramsForNutrition : 0,
-          perServing:  false,
-        }
         setNutrition({ calories: cal, protein: prot })
         setEditCalories(cal)
         setEditProtein(prot)
@@ -617,7 +641,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
           {/* Product found badge */}
           <div style={{
             display: 'flex', alignItems: 'center', gap: 7,
-            background: 'rgba(16,185,129,0.08)',
+            background: 'var(--green-fill)',
             border: '1px solid var(--green-select)',
             borderRadius: 10, padding: '8px 11px',
           }}>
@@ -899,7 +923,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
                 ? `התאמה: ${matchedLib.item.name_he}`
                 : `Matched: ${matchedLib.item.name_en}`}
               <button
-                onMouseDown={e => { e.preventDefault(); matchedLibraryItemRef.current = null; setMatchedLib(null) }}
+                onMouseDown={e => { e.preventDefault(); matchedLibraryItemRef.current = null; setMatchedLib(null); matchDismissedRef.current = true }}
                 tabIndex={-1}
                 style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', color: 'var(--indigo-hi)', opacity: 0.7, lineHeight: 1 }}
               >
@@ -1021,13 +1045,13 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
                     onMouseDown={() => handleLibrarySelect(item)}
                     style={{
                       display: 'flex', alignItems: 'center', width: '100%',
-                      padding: '9px 12px', background: 'rgba(245,158,11,0.04)', border: 'none',
+                      padding: '9px 12px', background: 'var(--amber-fill)', border: 'none',
                       borderBottom: isLast ? 'none' : '1px solid var(--border)',
                       cursor: 'pointer', gap: 10, textAlign: 'start', fontFamily: 'inherit',
                       transition: 'background .12s',
                     }}
-                    onMouseEnter={e => (e.currentTarget.style.background = 'rgba(245,158,11,0.10)')}
-                    onMouseLeave={e => (e.currentTarget.style.background = 'rgba(245,158,11,0.04)')}
+                    onMouseEnter={e => (e.currentTarget.style.background = 'var(--amber-tint)')}
+                    onMouseLeave={e => (e.currentTarget.style.background = 'var(--amber-fill)')}
                   >
                     <span className="icon icon-sm" style={{ color: 'var(--amber)', flexShrink: 0 }}>menu_book</span>
                     <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -1168,27 +1192,33 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
                   const oldIsPcs = entryUnit === 'pcs'
                   const newIsPcs = newUnit === 'pcs'
                   const sg = servingGrams
-                  const n = numericAmount
+                  let n = numericAmount
 
-                  // When crossing pcs↔weight boundary, convert the stored ratio
-                  // (cal/serving ↔ cal/gram). Amount stays unchanged.
+                  // When crossing pcs↔weight boundary: convert both the stored ratio
+                  // AND the displayed amount so the nutrition stays consistent.
                   if (oldIsPcs !== newIsPcs) {
                     if (oldIsPcs) {
+                      // pcs → weight: ratio cal/serving → cal/gram; amount: servings → grams
                       historyRatios.current = {
                         calPerUnit:  historyRatios.current.calPerUnit  / sg,
                         protPerUnit: historyRatios.current.protPerUnit / sg,
                         perServing:  false,
                       }
+                      n = Math.round(n * sg)
+                      setAmountStr(String(n))
                     } else {
+                      // weight → pcs: ratio cal/gram → cal/serving; amount: grams → servings
                       historyRatios.current = {
                         calPerUnit:  historyRatios.current.calPerUnit  * sg,
                         protPerUnit: historyRatios.current.protPerUnit * sg,
                         perServing:  true,
                       }
+                      n = Math.round(n / sg * 10) / 10
+                      setAmountStr(String(n))
                     }
                   }
 
-                  // Always recalculate nutrition for current amount in new unit
+                  // Recalculate nutrition for the (possibly converted) amount in new unit
                   if (n > 0) {
                     const base = (() => {
                       if (historyRatios.current.perServing) return n

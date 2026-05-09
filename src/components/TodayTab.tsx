@@ -541,7 +541,7 @@ export function TodayTab({
                 <div className="group-action-bar-btns">
                   {/* Duplicate */}
                   <button className="group-action-btn" aria-label={t(lang, 'duplicate')} onClick={() => handleDuplicateSelected(type)}>
-                    <div className="group-action-btn-ico" style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)' }}>
+                    <div className="group-action-btn-ico" style={{ background: 'var(--green-fill)', border: '1px solid var(--green-select)' }}>
                       <span className="icon icon-sm" style={{ color: 'var(--green-hi)' }}>content_copy</span>
                     </div>
                     <span style={{ color: 'var(--green-hi)' }}>{t(lang, 'duplicate')}</span>
@@ -549,7 +549,7 @@ export function TodayTab({
 
                   {/* Create dish */}
                   <button className="group-action-btn" aria-label={t(lang, 'createDish')} onClick={() => openComposeModal(type)}>
-                    <div className="group-action-btn-ico" style={{ background: 'var(--purple-tint)', border: '1px solid rgba(139,92,246,0.25)' }}>
+                    <div className="group-action-btn-ico" style={{ background: 'var(--purple-tint)', border: '1px solid var(--purple-glow)' }}>
                       <span className="icon icon-sm" style={{ color: 'var(--purple)' }}>restaurant</span>
                     </div>
                     <span style={{ color: 'var(--purple)' }}>{t(lang, 'createDish')}</span>
@@ -621,7 +621,7 @@ export function TodayTab({
           <div className="compose-modal-items">
             {items.map((item, idx) => (
               <div key={idx} className="compose-modal-item">
-                <div style={{ width: 5, height: 5, borderRadius: '50%', background: 'rgba(139,92,246,0.45)', flexShrink: 0 }} />
+                <div style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--purple-border-hi)', flexShrink: 0 }} />
                 <span style={{ flex: 1, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</span>
                 <span style={{ color: 'var(--text-3)', flexShrink: 0 }}>
                   {item.cal} {t(lang, 'caloriesUnit')} · {item.prot} {t(lang, 'proteinUnit')}
@@ -634,7 +634,7 @@ export function TodayTab({
           <div style={{ position: 'relative' }}>
             <input
               className="inp"
-              style={{ borderColor: 'rgba(139,92,246,0.4)', paddingInlineEnd: composeName ? 32 : 12 }}
+              style={{ borderColor: 'var(--purple-border-hi)', paddingInlineEnd: composeName ? 32 : 12 }}
               placeholder={t(lang, 'dishName') + '...'}
               value={composeName}
               onChange={e => setComposeName(e.target.value)}
@@ -727,6 +727,7 @@ export function TodayTab({
       <button
         onClick={() => openEntry()}
         aria-label={lang === 'he' ? 'הוסף ארוחה' : 'Add meal'}
+        className="fab-btn"
         style={{
           position: 'fixed',
           bottom: 'calc(28px + env(safe-area-inset-bottom, 0px))',
@@ -738,11 +739,9 @@ export function TodayTab({
           border: 'none',
           cursor: 'pointer',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          boxShadow: '0 4px 20px rgba(59,130,246,0.5)',
-          transition: 'transform 0.15s, box-shadow 0.15s',
         }}
-        onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.08)'; e.currentTarget.style.boxShadow = '0 6px 28px rgba(59,130,246,0.65)' }}
-        onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)';    e.currentTarget.style.boxShadow = '0 4px 20px rgba(59,130,246,0.5)'  }}
+        onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.08)' }}
+        onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)' }}
       >
         <span className="icon" style={{ fontSize: 28 }}>add</span>
       </button>

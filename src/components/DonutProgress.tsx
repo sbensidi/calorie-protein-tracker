@@ -36,11 +36,11 @@ export const DonutProgress = memo(function DonutProgress({ value, goal, type, si
     } else if (realPct >= 50) {
       // Mid range — medium green
       fillColor = 'var(--green)'
-      glowColor = 'rgba(52,211,153,0.30)'
+      glowColor = 'var(--green-glow)'
     } else {
       // Low — soft green
       fillColor = 'var(--green-soft)'
-      glowColor = 'rgba(110,231,183,0.25)'
+      glowColor = 'var(--green-glow)'
     }
   } else if (type === 'protein') {
     if (realPct >= 100) {
@@ -48,7 +48,7 @@ export const DonutProgress = memo(function DonutProgress({ value, goal, type, si
       glowColor = 'var(--green-border)'
     } else if (realPct >= 50) {
       fillColor = 'var(--amber)'
-      glowColor = 'rgba(245,158,11,0.30)'
+      glowColor = 'var(--amber-glow)'
     } else {
       fillColor = 'var(--red)'
       glowColor = 'var(--red-border)'
@@ -60,7 +60,7 @@ export const DonutProgress = memo(function DonutProgress({ value, goal, type, si
       glowColor = 'var(--green-border)'
     } else {
       fillColor = 'var(--blue)'
-      glowColor = 'rgba(59,130,246,0.30)'
+      glowColor = 'var(--blue-glow)'
     }
   }
 

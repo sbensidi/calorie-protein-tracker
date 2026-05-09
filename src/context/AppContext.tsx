@@ -2,13 +2,17 @@ import { createContext, useContext, useState, useEffect, useCallback } from 'rea
 import type { ReactNode } from 'react'
 import type { Lang } from '../lib/i18n'
 
+type StyleMode = 'classic' | 'hybrid'
+
 interface AppContextValue {
-  lang:          Lang
-  theme:         'dark' | 'light'
-  toggleLang:    () => void
-  toggleTheme:   () => void
-  setTheme:      (t: 'dark' | 'light') => void
-  setLang:       (l: Lang) => void
+  lang:             Lang
+  theme:            'dark' | 'light'
+  styleMode:        StyleMode
+  toggleLang:       () => void
+  toggleTheme:      () => void
+  toggleStyleMode:  () => void
+  setTheme:         (t: 'dark' | 'light') => void
+  setLang:          (l: Lang) => void
 }
 
 const AppContext = createContext<AppContextValue | null>(null)
@@ -22,11 +26,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (saved === 'dark' || saved === 'light') return saved
     return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'
   })
+  const [styleMode, setStyleMode] = useState<StyleMode>(
+    () => (localStorage.getItem('styleMode') as StyleMode) ?? 'classic'
+  )
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme
     localStorage.setItem('theme', theme)
   }, [theme])
+
+  useEffect(() => {
+    document.documentElement.dataset.style = styleMode
+    localStorage.setItem('styleMode', styleMode)
+  }, [styleMode])
 
   const toggleLang = useCallback(() => {
     const next: Lang = lang === 'he' ? 'en' : 'he'
@@ -36,6 +48,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const toggleTheme = useCallback(() => {
     setTheme(t => t === 'dark' ? 'light' : 'dark')
+  }, [])
+
+  const toggleStyleMode = useCallback(() => {
+    setStyleMode(s => s === 'classic' ? 'hybrid' : 'classic')
   }, [])
 
   const applyTheme = useCallback((t: 'dark' | 'light') => {
@@ -48,7 +64,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [])
 
   return (
-    <AppContext.Provider value={{ lang, theme, toggleLang, toggleTheme, setTheme: applyTheme, setLang: applyLang }}>
+    <AppContext.Provider value={{ lang, theme, styleMode, toggleLang, toggleTheme, toggleStyleMode, setTheme: applyTheme, setLang: applyLang }}>
       {children}
     </AppContext.Provider>
   )

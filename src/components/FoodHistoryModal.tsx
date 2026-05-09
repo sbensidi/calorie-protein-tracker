@@ -4,6 +4,9 @@ import type { Lang } from '../lib/i18n'
 import { t } from '../lib/i18n'
 import { ClearableInput } from './ClearableInput'
 import type { ComposedEntry } from './FoodEntryForm'
+import { fuzzyScore } from '../lib/fuzzyMatch'
+
+const SEARCH_THRESHOLD = 0.45
 
 interface FoodHistoryModalProps {
   lang: Lang
@@ -45,7 +48,11 @@ export function FoodHistoryModal({
 
   const q = search.trim().toLowerCase()
   const filteredRaw = q
-    ? history.filter(h => h.name.toLowerCase().includes(q))
+    ? [...history]
+        .map(h => ({ h, score: fuzzyScore(q, h.name) }))
+        .filter(({ score }) => score >= SEARCH_THRESHOLD)
+        .sort((a, b) => b.score - a.score || b.h.use_count - a.h.use_count)
+        .map(({ h }) => h)
     : [...history].sort((a, b) => b.use_count - a.use_count)
   // Deduplicate by name when no search query — show most-used variant per food name
   const filtered = q ? filteredRaw : (() => {
@@ -59,7 +66,7 @@ export function FoodHistoryModal({
   })()
 
   const matchedComposed = composedEntries
-    ? composedEntries.filter(e => !q || e.name.toLowerCase().includes(q))
+    ? composedEntries.filter(e => !q || fuzzyScore(q, e.name) >= SEARCH_THRESHOLD)
     : []
 
   return (

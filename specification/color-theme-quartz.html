@@ -1,0 +1,1645 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Theme: Quartz — Calorie & Protein Tracker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20,400,1,0&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --ff: 'DM Sans', -apple-system, sans-serif;
+    }
+
+    body {
+      font-family: var(--ff);
+      background: #f5f5f7;
+      color: #1d1d1f;
+      min-height: 100vh;
+      padding: 80px 40px 120px;
+    }
+
+    /* ─── Page header — Apple product-page feel ─── */
+    .page-header {
+      max-width: 640px;
+      margin: 0 auto 72px;
+      text-align: center;
+    }
+    .eyebrow {
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #ff9500;
+      margin-bottom: 12px;
+    }
+    .page-header h1 {
+      font-size: 52px;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      line-height: 1.08;
+      color: #1d1d1f;
+      margin-bottom: 16px;
+    }
+    .page-header p {
+      font-size: 17px;
+      color: #6e6e73;
+      line-height: 1.6;
+      font-weight: 400;
+    }
+
+    /* ─── Two-up grid ─── */
+    .mockup-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 32px;
+      max-width: 840px;
+      margin: 0 auto 64px;
+    }
+
+    /* ─── Phone frame ─── */
+    .phone {
+      border-radius: 44px;
+      overflow: hidden;
+      box-shadow:
+        0 0 0 1px rgba(0,0,0,0.06),
+        0 24px 80px rgba(0,0,0,0.16),
+        0 4px 16px rgba(0,0,0,0.08);
+      position: relative;
+    }
+    .phone-notch {
+      position: absolute;
+      top: 0; left: 50%;
+      transform: translateX(-50%);
+      width: 126px; height: 34px;
+      border-radius: 0 0 20px 20px;
+      z-index: 10;
+    }
+    .phone-label {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 10px 20px 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      opacity: 0.45;
+    }
+    .phone-label .dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    /* ─── Status bar ─── */
+    .status-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 24px 0;
+      font-size: 13px;
+      font-weight: 600;
+      height: 44px;
+    }
+    .status-icons { display: flex; align-items: center; gap: 4px; }
+    .status-icons .mi { font-family: 'Material Symbols Rounded'; font-size: 14px; }
+
+    /* ─── Navigation title ─── */
+    .nav-title {
+      padding: 4px 24px 16px;
+    }
+    .nav-title-date {
+      font-size: 12px;
+      font-weight: 500;
+    }
+    .nav-title-heading {
+      font-size: 30px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+    }
+
+    /* ─── Ring summary ─── */
+    .rings-section {
+      padding: 0 24px 20px;
+      display: flex;
+      gap: 20px;
+      align-items: center;
+    }
+    .ring-group {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex: 1;
+    }
+    .ring {
+      width: 58px; height: 58px;
+      border-radius: 50%;
+      position: relative;
+      flex-shrink: 0;
+    }
+    .ring::after {
+      content: '';
+      position: absolute;
+      inset: 7px;
+      border-radius: 50%;
+    }
+    .ring-label {}
+    .ring-value {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      line-height: 1;
+    }
+    .ring-sub {
+      font-size: 11px;
+      font-weight: 500;
+      margin-top: 2px;
+    }
+    .ring-of {
+      font-size: 10px;
+      font-weight: 400;
+      margin-top: 1px;
+    }
+    .ring-divider {
+      width: 1px; height: 40px;
+      opacity: 0.12;
+      flex-shrink: 0;
+    }
+
+    /* ─── Section header ─── */
+    .section-header {
+      padding: 16px 24px 6px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    /* ─── Inset list (iOS Settings style) ─── */
+    .inset-list {
+      margin: 0 16px;
+      border-radius: 14px;
+      overflow: hidden;
+    }
+    .list-row {
+      display: flex;
+      align-items: center;
+      padding: 11px 16px;
+      gap: 12px;
+      position: relative;
+    }
+    .list-row + .list-row::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 56px; right: 0;
+      height: 1px;
+    }
+    .row-icon {
+      width: 32px; height: 32px;
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .row-icon .mi { font-family: 'Material Symbols Rounded'; font-size: 16px; color: #fff; }
+    .row-body { flex: 1; min-width: 0; }
+    .row-name {
+      font-size: 14px;
+      font-weight: 500;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .row-sub {
+      font-size: 12px;
+      font-weight: 400;
+      margin-top: 1px;
+    }
+    .row-numbers {
+      text-align: end;
+      flex-shrink: 0;
+    }
+    .row-cal {
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+    }
+    .row-prot {
+      font-size: 12px;
+      font-weight: 500;
+      margin-top: 1px;
+    }
+
+    /* ─── FAB ─── */
+    .fab-area {
+      padding: 20px 24px 16px;
+      display: flex;
+      justify-content: center;
+    }
+    .fab {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 15px 32px;
+      border-radius: 100px;
+      font-size: 15px;
+      font-weight: 600;
+      font-family: var(--ff);
+      border: none;
+      cursor: default;
+      letter-spacing: -0.01em;
+    }
+    .fab .mi { font-family: 'Material Symbols Rounded'; font-size: 19px; }
+
+    /* ─── Tab bar ─── */
+    .tab-bar {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      padding: 8px 8px 20px;
+      border-top-width: 1px;
+      border-top-style: solid;
+    }
+    .tab-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      padding: 6px 0;
+    }
+    .tab-item .mi { font-family: 'Material Symbols Rounded'; font-size: 23px; }
+    .tab-item span.lbl { font-size: 9px; font-weight: 600; letter-spacing: 0.01em; }
+
+    /* ══════════════════════════════
+       DARK THEME — Quartz Dark
+    ══════════════════════════════ */
+    .qd {
+      --bg:       #000000;
+      --card:     #1c1c1e;
+      --card2:    #2c2c2e;
+      --sep:      rgba(84,84,88,0.65);
+      --text:     #ffffff;
+      --text-2:   rgba(235,235,245,0.60);
+      --text-3:   rgba(235,235,245,0.30);
+      --cal:      #ff9f0a;
+      --cal-dim:  rgba(255,159,10,0.18);
+      --cal-track:rgba(255,159,10,0.14);
+      --pro:      #30d158;
+      --pro-dim:  rgba(48,209,88,0.18);
+      --pro-track:rgba(48,209,88,0.14);
+      --icon-1:   #ff9f0a;
+      --icon-2:   #30d158;
+      --icon-3:   #636366;
+      background: var(--bg);
+    }
+    .qd .phone-notch { background: #000; }
+    .qd .phone-label { color: rgba(255,255,255,0.4); }
+    .qd .status-bar { color: var(--text); }
+    .qd .nav-title-date { color: var(--text-2); }
+    .qd .nav-title-heading { color: var(--text); }
+    .qd .ring-value { color: var(--text); }
+    .qd .ring-sub { color: var(--text-2); }
+    .qd .ring-of { color: var(--text-3); }
+    .qd .ring-divider { background: var(--text); }
+    .qd .ring.cal { background: conic-gradient(var(--cal) 0% 84%, var(--cal-track) 84% 100%); }
+    .qd .ring.cal::after { background: var(--bg); }
+    .qd .ring.pro { background: conic-gradient(var(--pro) 0% 75%, var(--pro-track) 75% 100%); }
+    .qd .ring.pro::after { background: var(--bg); }
+    .qd .section-header { color: var(--text-3); }
+    .qd .inset-list { background: var(--card); }
+    .qd .list-row { background: var(--card); }
+    .qd .list-row + .list-row::before { background: var(--sep); }
+    .qd .row-name { color: var(--text); }
+    .qd .row-sub { color: var(--text-2); }
+    .qd .row-cal { color: var(--cal); }
+    .qd .row-prot { color: var(--pro); }
+    .qd .fab { background: var(--card2); color: var(--text); box-shadow: 0 2px 12px rgba(0,0,0,0.5); }
+    .qd .tab-bar { background: rgba(28,28,30,0.92); border-top-color: var(--sep); }
+    .qd .tab-active { color: var(--cal); }
+    .qd .tab-inactive { color: var(--text-3); }
+
+    /* ══════════════════════════════
+       LIGHT THEME — Quartz Light
+    ══════════════════════════════ */
+    .ql {
+      --bg:       #f2f2f7;
+      --card:     #ffffff;
+      --card2:    #e5e5ea;
+      --sep:      rgba(60,60,67,0.12);
+      --text:     #000000;
+      --text-2:   rgba(60,60,67,0.60);
+      --text-3:   rgba(60,60,67,0.30);
+      --cal:      #ff9500;
+      --cal-dim:  rgba(255,149,0,0.12);
+      --cal-track:rgba(255,149,0,0.12);
+      --pro:      #248a3d;
+      --pro-dim:  rgba(36,138,61,0.10);
+      --pro-track:rgba(36,138,61,0.10);
+      background: var(--bg);
+    }
+    .ql .phone-notch { background: #f2f2f7; }
+    .ql .phone-label { color: rgba(0,0,0,0.35); }
+    .ql .status-bar { color: var(--text); }
+    .ql .nav-title-date { color: var(--text-2); }
+    .ql .nav-title-heading { color: var(--text); }
+    .ql .ring-value { color: var(--text); }
+    .ql .ring-sub { color: var(--text-2); }
+    .ql .ring-of { color: var(--text-3); }
+    .ql .ring-divider { background: var(--text); }
+    .ql .ring.cal { background: conic-gradient(var(--cal) 0% 84%, var(--cal-track) 84% 100%); }
+    .ql .ring.cal::after { background: var(--bg); }
+    .ql .ring.pro { background: conic-gradient(var(--pro) 0% 75%, var(--pro-track) 75% 100%); }
+    .ql .ring.pro::after { background: var(--bg); }
+    .ql .section-header { color: var(--text-3); }
+    .ql .inset-list { background: var(--card); }
+    .ql .list-row { background: var(--card); }
+    .ql .list-row + .list-row::before { background: var(--sep); }
+    .ql .row-name { color: var(--text); }
+    .ql .row-sub { color: var(--text-2); }
+    .ql .row-cal { color: var(--cal); }
+    .ql .row-prot { color: var(--pro); }
+    .ql .fab { background: var(--cal); color: #fff; box-shadow: 0 4px 20px rgba(255,149,0,0.35); }
+    .ql .tab-bar { background: rgba(242,242,247,0.92); border-top-color: var(--sep); }
+    .ql .tab-active { color: var(--cal); }
+    .ql .tab-inactive { color: var(--text-3); }
+
+    /* ─── Palette strip ─── */
+    .palette {
+      max-width: 840px;
+      margin: 0 auto 64px;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+    }
+    .palette-card {
+      background: #fff;
+      border-radius: 20px;
+      padding: 24px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }
+    .palette-card h3 {
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #6e6e73;
+      margin-bottom: 16px;
+    }
+    .swatch-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .swatch-row:last-child { margin-bottom: 0; }
+    .sw {
+      width: 36px; height: 36px;
+      border-radius: 10px;
+      flex-shrink: 0;
+      box-shadow: inset 0 0 0 1px rgba(0,0,0,0.06);
+    }
+    .sw-info { }
+    .sw-name { font-size: 13px; font-weight: 600; color: #1d1d1f; }
+    .sw-hex { font-size: 11px; color: #6e6e73; font-family: 'SF Mono', 'Fira Code', monospace; }
+
+    /* ─── Principles ─── */
+    .principles {
+      max-width: 840px;
+      margin: 0 auto 0;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+    .principle {
+      background: #fff;
+      border-radius: 20px;
+      padding: 24px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }
+    .principle-num {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      color: #ff9500;
+      margin-bottom: 8px;
+    }
+    .principle h3 {
+      font-size: 16px;
+      font-weight: 700;
+      color: #1d1d1f;
+      margin-bottom: 6px;
+      letter-spacing: -0.01em;
+    }
+    .principle p {
+      font-size: 13px;
+      color: #6e6e73;
+      line-height: 1.55;
+    }
+
+    .mi { font-family: 'Material Symbols Rounded'; font-style: normal; }
+    .divider {
+      height: 1px;
+      background: rgba(0,0,0,0.08);
+      max-width: 840px;
+      margin: 56px auto;
+    }
+
+    /* ─── Theme separator ─── */
+    .theme-sep {
+      max-width: 840px;
+      margin: 96px auto 80px;
+      display: flex;
+      align-items: center;
+      gap: 24px;
+    }
+    .theme-sep-line {
+      flex: 1;
+      height: 1px;
+      background: rgba(0,0,0,0.08);
+    }
+    .theme-sep-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #aeaeb2;
+    }
+
+    /* ─── Per-theme section header ─── */
+    .theme-intro {
+      max-width: 640px;
+      margin: 0 auto 56px;
+      text-align: center;
+    }
+    .theme-intro .eyebrow { margin-bottom: 10px; }
+    .theme-intro h2 {
+      font-size: 48px;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      line-height: 1.08;
+      color: #1d1d1f;
+      margin-bottom: 14px;
+    }
+    .theme-intro p {
+      font-size: 17px;
+      color: #6e6e73;
+      line-height: 1.6;
+    }
+
+    /* ══════════════════════════════
+       THEME 3: SHORE — Deep Ocean × Honey
+    ══════════════════════════════ */
+    .sd {
+      --bg:        #081018;
+      --card:      #0e1c2a;
+      --card2:     #14263a;
+      --sep:       rgba(255,255,255,0.07);
+      --text:      #f0ede0;
+      --text-2:    rgba(240,237,224,0.52);
+      --text-3:    rgba(240,237,224,0.28);
+      --cal:       #5b9ec9;
+      --cal-hi:    #7ab8da;
+      --cal-track: rgba(91,158,201,0.18);
+      --pro:       #e8a84a;
+      --pro-hi:    #f0bc68;
+      --pro-track: rgba(232,168,74,0.18);
+      background: var(--bg);
+    }
+    .sd .phone-notch  { background: #081018; }
+    .sd .phone-label  { color: rgba(240,237,224,0.35); }
+    .sd .status-bar   { color: var(--text); }
+    .sd .nav-title-date    { color: var(--text-2); }
+    .sd .nav-title-heading { color: var(--text); }
+    .sd .ring-value   { color: var(--text); }
+    .sd .ring-of      { color: var(--text-3); }
+    .sd .ring-divider { background: var(--text); }
+    .sd .ring.cal { background: conic-gradient(var(--cal-hi) 0% 84%, var(--cal-track) 84% 100%); }
+    .sd .ring.cal::after { background: var(--bg); }
+    .sd .ring.pro { background: conic-gradient(var(--pro-hi) 0% 75%, var(--pro-track) 75% 100%); }
+    .sd .ring.pro::after { background: var(--bg); }
+    .sd .section-header   { color: var(--text-3); }
+    .sd .inset-list  { background: var(--card); }
+    .sd .list-row    { background: var(--card); }
+    .sd .list-row + .list-row::before { background: var(--sep); }
+    .sd .row-name    { color: var(--text); }
+    .sd .row-sub     { color: var(--text-2); }
+    .sd .row-cal     { color: var(--cal-hi); }
+    .sd .row-prot    { color: var(--pro-hi); }
+    .sd .fab { background: #2a6492; color: #f0ede0; box-shadow: 0 4px 20px rgba(42,100,146,0.50); }
+    .sd .tab-bar { background: rgba(14,28,42,0.95); border-top-color: var(--sep); }
+    .sd .tab-active   { color: var(--cal-hi); }
+    .sd .tab-inactive { color: var(--text-3); }
+
+    .sl {
+      --bg:        #fffeec;
+      --card:      #ffffff;
+      --card2:     #f0eed8;
+      --sep:       rgba(42,100,146,0.12);
+      --text:      #1a2a38;
+      --text-2:    rgba(26,42,56,0.52);
+      --text-3:    rgba(26,42,56,0.32);
+      --cal:       #2a6492;
+      --cal-hi:    #2a6492;
+      --cal-track: rgba(42,100,146,0.13);
+      --pro:       #b06018;
+      --pro-hi:    #b06018;
+      --pro-track: rgba(176,96,24,0.13);
+      background: var(--bg);
+    }
+    .sl .phone-notch  { background: #fffeec; }
+    .sl .phone-label  { color: rgba(26,42,56,0.35); }
+    .sl .status-bar   { color: var(--text); }
+    .sl .nav-title-date    { color: var(--text-2); }
+    .sl .nav-title-heading { color: var(--text); }
+    .sl .ring-value   { color: var(--text); }
+    .sl .ring-of      { color: var(--text-3); }
+    .sl .ring-divider { background: var(--text); }
+    .sl .ring.cal { background: conic-gradient(var(--cal) 0% 84%, var(--cal-track) 84% 100%); }
+    .sl .ring.cal::after { background: var(--bg); }
+    .sl .ring.pro { background: conic-gradient(var(--pro) 0% 75%, var(--pro-track) 75% 100%); }
+    .sl .ring.pro::after { background: var(--bg); }
+    .sl .section-header   { color: var(--text-3); }
+    .sl .inset-list  { background: var(--card); box-shadow: 0 1px 0 var(--sep), 0 -1px 0 var(--sep); }
+    .sl .list-row    { background: var(--card); }
+    .sl .list-row + .list-row::before { background: var(--sep); }
+    .sl .row-name    { color: var(--text); }
+    .sl .row-sub     { color: var(--text-2); }
+    .sl .row-cal     { color: var(--cal); }
+    .sl .row-prot    { color: var(--pro); }
+    .sl .fab { background: #2a6492; color: #ffffff; box-shadow: 0 4px 20px rgba(42,100,146,0.32); }
+    .sl .tab-bar { background: rgba(255,254,236,0.95); border-top-color: var(--sep); }
+    .sl .tab-active   { color: var(--cal); }
+    .sl .tab-inactive { color: var(--text-3); }
+
+    /* ══════════════════════════════
+       THEME 2: INK — Indigo × Teal
+    ══════════════════════════════ */
+    .id {
+      --bg:        #000000;
+      --card:      #1c1c1e;
+      --card2:     #2c2c2e;
+      --sep:       rgba(84,84,88,0.65);
+      --text:      #ffffff;
+      --text-2:    rgba(235,235,245,0.60);
+      --text-3:    rgba(235,235,245,0.30);
+      --cal:       #5e5ce6;
+      --cal-hi:    #7d7aff;
+      --cal-track: rgba(94,92,230,0.18);
+      --pro:       #32ade6;
+      --pro-hi:    #5ac8fa;
+      --pro-track: rgba(50,173,230,0.18);
+      background: var(--bg);
+    }
+    .id .phone-notch  { background: #000; }
+    .id .phone-label  { color: rgba(255,255,255,0.4); }
+    .id .status-bar   { color: var(--text); }
+    .id .nav-title-date   { color: var(--text-2); }
+    .id .nav-title-heading{ color: var(--text); }
+    .id .ring-value   { color: var(--text); }
+    .id .ring-sub     { }
+    .id .ring-of      { color: var(--text-3); }
+    .id .ring-divider { background: var(--text); }
+    .id .ring.cal { background: conic-gradient(var(--cal-hi) 0% 84%, var(--cal-track) 84% 100%); }
+    .id .ring.cal::after { background: var(--bg); }
+    .id .ring.pro { background: conic-gradient(var(--pro-hi) 0% 75%, var(--pro-track) 75% 100%); }
+    .id .ring.pro::after { background: var(--bg); }
+    .id .section-header   { color: var(--text-3); }
+    .id .inset-list  { background: var(--card); }
+    .id .list-row    { background: var(--card); }
+    .id .list-row + .list-row::before { background: var(--sep); }
+    .id .row-name    { color: var(--text); }
+    .id .row-sub     { color: var(--text-2); }
+    .id .row-cal     { color: var(--cal-hi); }
+    .id .row-prot    { color: var(--pro-hi); }
+    .id .fab { background: var(--card2); color: var(--text); box-shadow: 0 2px 12px rgba(0,0,0,0.5); }
+    .id .tab-bar { background: rgba(28,28,30,0.92); border-top-color: var(--sep); }
+    .id .tab-active   { color: var(--cal-hi); }
+    .id .tab-inactive { color: var(--text-3); }
+
+    .il {
+      --bg:        #f2f2f7;
+      --card:      #ffffff;
+      --card2:     #e5e5ea;
+      --sep:       rgba(60,60,67,0.12);
+      --text:      #000000;
+      --text-2:    rgba(60,60,67,0.60);
+      --text-3:    rgba(60,60,67,0.30);
+      --cal:       #3634a3;
+      --cal-hi:    #3634a3;
+      --cal-track: rgba(54,52,163,0.12);
+      --pro:       #0071a4;
+      --pro-hi:    #0071a4;
+      --pro-track: rgba(0,113,164,0.12);
+      background: var(--bg);
+    }
+    .il .phone-notch  { background: #f2f2f7; }
+    .il .phone-label  { color: rgba(0,0,0,0.35); }
+    .il .status-bar   { color: var(--text); }
+    .il .nav-title-date    { color: var(--text-2); }
+    .il .nav-title-heading { color: var(--text); }
+    .il .ring-value   { color: var(--text); }
+    .il .ring-of      { color: var(--text-3); }
+    .il .ring-divider { background: var(--text); }
+    .il .ring.cal { background: conic-gradient(var(--cal) 0% 84%, var(--cal-track) 84% 100%); }
+    .il .ring.cal::after { background: var(--bg); }
+    .il .ring.pro { background: conic-gradient(var(--pro) 0% 75%, var(--pro-track) 75% 100%); }
+    .il .ring.pro::after { background: var(--bg); }
+    .il .section-header   { color: var(--text-3); }
+    .il .inset-list  { background: var(--card); }
+    .il .list-row    { background: var(--card); }
+    .il .list-row + .list-row::before { background: var(--sep); }
+    .il .row-name    { color: var(--text); }
+    .il .row-sub     { color: var(--text-2); }
+    .il .row-cal     { color: var(--cal); }
+    .il .row-prot    { color: var(--pro); }
+    .il .fab { background: var(--cal); color: #fff; box-shadow: 0 4px 20px rgba(54,52,163,0.30); }
+    .il .tab-bar { background: rgba(242,242,247,0.92); border-top-color: var(--sep); }
+    .il .tab-active   { color: var(--cal); }
+    .il .tab-inactive { color: var(--text-3); }
+  </style>
+</head>
+<body>
+
+  <div class="page-header">
+    <div class="eyebrow">Theme Proposal</div>
+    <h1>Quartz</h1>
+    <p>מינימל אמיתי. הצבע מגיע מהנתונים, לא מהממשק. כל אלמנט עובד רק אם הוא חייב להיות שם.</p>
+  </div>
+
+  <!-- Two-up mockups -->
+  <div class="mockup-grid">
+
+    <!-- DARK -->
+    <div class="phone qd">
+      <div class="phone-notch"></div>
+      <div class="phone-label">
+        <span class="dot" style="background:#ff9f0a;"></span>
+        Dark
+      </div>
+      <div class="status-bar">
+        <span>9:41</span>
+        <div class="status-icons">
+          <span class="mi">signal_cellular_4_bar</span>
+          <span class="mi">wifi</span>
+          <span class="mi">battery_full</span>
+        </div>
+      </div>
+      <div class="nav-title">
+        <div class="nav-title-date">רביעי, 7 במאי</div>
+        <div class="nav-title-heading">היום</div>
+      </div>
+
+      <!-- Rings -->
+      <div class="rings-section">
+        <div class="ring-group">
+          <div class="ring cal"></div>
+          <div class="ring-label">
+            <div class="ring-value">1,842</div>
+            <div class="ring-sub" style="color: var(--cal);">קלוריות</div>
+            <div class="ring-of">מתוך 2,200</div>
+          </div>
+        </div>
+        <div class="ring-divider"></div>
+        <div class="ring-group">
+          <div class="ring pro"></div>
+          <div class="ring-label">
+            <div class="ring-value">112</div>
+            <div class="ring-sub" style="color: var(--pro);">חלבון</div>
+            <div class="ring-of">מתוך 150 גרם</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-header">ארוחות</div>
+      <div class="inset-list">
+        <div class="list-row">
+          <div class="row-icon" style="background: #ff9f0a;">
+            <span class="mi">breakfast_dining</span>
+          </div>
+          <div class="row-body">
+            <div class="row-name">שיבולת שועל + פירות</div>
+            <div class="row-sub">בוקר · 250g</div>
+          </div>
+          <div class="row-numbers">
+            <div class="row-cal">320</div>
+            <div class="row-prot">12g</div>
+          </div>
+        </div>
+        <div class="list-row">
+          <div class="row-icon" style="background: #30d158;">
+            <span class="mi">lunch_dining</span>
+          </div>
+          <div class="row-body">
+            <div class="row-name">חזה עוף + אורז</div>
+            <div class="row-sub">צהריים · 380g</div>
+          </div>
+          <div class="row-numbers">
+            <div class="row-cal">610</div>
+            <div class="row-prot">52g</div>
+          </div>
+        </div>
+        <div class="list-row">
+          <div class="row-icon" style="background: #636366;">
+            <span class="mi">local_cafe</span>
+          </div>
+          <div class="row-body">
+            <div class="row-name">לאטה שקדים</div>
+            <div class="row-sub">שתיה · 350ml</div>
+          </div>
+          <div class="row-numbers">
+            <div class="row-cal">95</div>
+            <div class="row-prot">3g</div>
+          </div>
+        </div>
+        <div class="list-row">
+          <div class="row-icon" style="background: #ff9f0a;">
+            <span class="mi">dinner_dining</span>
+          </div>
+          <div class="row-body">
+            <div class="row-name">סלמון + ירקות</div>
+            <div class="row-sub">ערב · 300g</div>
+          </div>
+          <div class="row-numbers">
+            <div class="row-cal">480</div>
+            <div class="row-prot">41g</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="fab-area">
+        <button class="fab">
+          <span class="mi">add</span>
+          הוסף ארוחה
+        </button>
+      </div>
+
+      <div class="tab-bar">
+        <div class="tab-item tab-active">
+          <span class="mi">today</span>
+          <span class="lbl">היום</span>
+        </div>
+        <div class="tab-item tab-inactive">
+          <span class="mi">calendar_month</span>
+          <span class="lbl">היסטוריה</span>
+        </div>
+        <div class="tab-item tab-inactive">
+          <span class="mi">monitoring</span>
+          <span class="lbl">גרפים</span>
+        </div>
+        <div class="tab-item tab-inactive">
+          <span class="mi">person</span>
+          <span class="lbl">פרופיל</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- LIGHT -->
+    <div class="phone ql">
+      <div class="phone-notch"></div>
+      <div class="phone-label">
+        <span class="dot" style="background:#ff9500;"></span>
+        Light
+      </div>
+      <div class="status-bar">
+        <span>9:41</span>
+        <div class="status-icons">
+          <span class="mi">signal_cellular_4_bar</span>
+          <span class="mi">wifi</span>
+          <span class="mi">battery_full</span>
+        </div>
+      </div>
+      <div class="nav-title">
+        <div class="nav-title-date">רביעי, 7 במאי</div>
+        <div class="nav-title-heading">היום</div>
+      </div>
+
+      <div class="rings-section">
+        <div class="ring-group">
+          <div class="ring cal"></div>
+          <div class="ring-label">
+            <div class="ring-value">1,842</div>
+            <div class="ring-sub" style="color: var(--cal);">קלוריות</div>
+            <div class="ring-of">מתוך 2,200</div>
+          </div>
+        </div>
+        <div class="ring-divider"></div>
+        <div class="ring-group">
+          <div class="ring pro"></div>
+          <div class="ring-label">
+            <div class="ring-value">112</div>
+            <div class="ring-sub" style="color: var(--pro);">חלבון</div>
+            <div class="ring-of">מתוך 150 גרם</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-header">ארוחות</div>
+      <div class="inset-list">
+        <div class="list-row">
+          <div class="row-icon" style="background: #ff9500;">
+            <span class="mi">breakfast_dining</span>
+          </div>
+          <div class="row-body">
+            <div class="row-name">שיבולת שועל + פירות</div>
+            <div class="row-sub">בוקר · 250g</div>
+          </div>
+          <div class="row-numbers">
+            <div class="row-cal">320</div>
+            <div class="row-prot">12g</div>
+          </div>
+        </div>
+        <div class="list-row">
+          <div class="row-icon" style="background: #248a3d;">
+            <span class="mi">lunch_dining</span>
+          </div>
+          <div class="row-body">
+            <div class="row-name">חזה עוף + אורז</div>
+            <div class="row-sub">צהריים · 380g</div>
+          </div>
+          <div class="row-numbers">
+            <div class="row-cal">610</div>
+            <div class="row-prot">52g</div>
+          </div>
+        </div>
+        <div class="list-row">
+          <div class="row-icon" style="background: #aeaeb2;">
+            <span class="mi">local_cafe</span>
+          </div>
+          <div class="row-body">
+            <div class="row-name">לאטה שקדים</div>
+            <div class="row-sub">שתיה · 350ml</div>
+          </div>
+          <div class="row-numbers">
+            <div class="row-cal">95</div>
+            <div class="row-prot">3g</div>
+          </div>
+        </div>
+        <div class="list-row">
+          <div class="row-icon" style="background: #ff9500;">
+            <span class="mi">dinner_dining</span>
+          </div>
+          <div class="row-body">
+            <div class="row-name">סלמון + ירקות</div>
+            <div class="row-sub">ערב · 300g</div>
+          </div>
+          <div class="row-numbers">
+            <div class="row-cal">480</div>
+            <div class="row-prot">41g</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="fab-area">
+        <button class="fab">
+          <span class="mi" style="color:#fff;">add</span>
+          הוסף ארוחה
+        </button>
+      </div>
+
+      <div class="tab-bar">
+        <div class="tab-item tab-active">
+          <span class="mi">today</span>
+          <span class="lbl">היום</span>
+        </div>
+        <div class="tab-item tab-inactive">
+          <span class="mi">calendar_month</span>
+          <span class="lbl">היסטוריה</span>
+        </div>
+        <div class="tab-item tab-inactive">
+          <span class="mi">monitoring</span>
+          <span class="lbl">גרפים</span>
+        </div>
+        <div class="tab-item tab-inactive">
+          <span class="mi">person</span>
+          <span class="lbl">פרופיל</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Palette -->
+  <div class="palette">
+    <div class="palette-card">
+      <h3>Dark palette</h3>
+      <div class="swatch-row">
+        <div class="sw" style="background:#000000;"></div>
+        <div class="sw-info"><div class="sw-name">Background</div><div class="sw-hex">#000000 — OLED black</div></div>
+      </div>
+      <div class="swatch-row">
+        <div class="sw" style="background:#1c1c1e; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);"></div>
+        <div class="sw-info"><div class="sw-name">Card</div><div class="sw-hex">#1c1c1e — Apple system gray 6</div></div>
+      </div>
+      <div class="swatch-row">
+        <div class="sw" style="background:#ff9f0a;"></div>
+        <div class="sw-info"><div class="sw-name">Calories</div><div class="sw-hex">#ff9f0a — Apple Orange (dark)</div></div>
+      </div>
+      <div class="swatch-row">
+        <div class="sw" style="background:#30d158;"></div>
+        <div class="sw-info"><div class="sw-name">Protein</div><div class="sw-hex">#30d158 — Apple Green (dark)</div></div>
+      </div>
+      <div class="swatch-row">
+        <div class="sw" style="background:#636366;"></div>
+        <div class="sw-info"><div class="sw-name">Neutral icon</div><div class="sw-hex">#636366 — System Gray</div></div>
+      </div>
+    </div>
+    <div class="palette-card">
+      <h3>Light palette</h3>
+      <div class="swatch-row">
+        <div class="sw" style="background:#f2f2f7;"></div>
+        <div class="sw-info"><div class="sw-name">Background</div><div class="sw-hex">#f2f2f7 — Apple system background</div></div>
+      </div>
+      <div class="swatch-row">
+        <div class="sw" style="background:#ffffff; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.08);"></div>
+        <div class="sw-info"><div class="sw-name">Card</div><div class="sw-hex">#ffffff — Pure white</div></div>
+      </div>
+      <div class="swatch-row">
+        <div class="sw" style="background:#ff9500;"></div>
+        <div class="sw-info"><div class="sw-name">Calories</div><div class="sw-hex">#ff9500 — Apple Orange (light)</div></div>
+      </div>
+      <div class="swatch-row">
+        <div class="sw" style="background:#248a3d;"></div>
+        <div class="sw-info"><div class="sw-name">Protein</div><div class="sw-hex">#248a3d — Apple Green (light, WCAG AA)</div></div>
+      </div>
+      <div class="swatch-row">
+        <div class="sw" style="background:#aeaeb2;"></div>
+        <div class="sw-info"><div class="sw-name">Neutral icon</div><div class="sw-hex">#aeaeb2 — System Gray 4</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Principles -->
+  <div class="principles">
+    <div class="principle">
+      <div class="principle-num">01</div>
+      <h3>הממשק שקוף</h3>
+      <p>הצבע נמצא רק בנתונים עצמם — בכספרות הקלוריות, בעיגול ה-progress. הרקע, הכרטיסיות והניווט — נייטרלים לחלוטין.</p>
+    </div>
+    <div class="principle">
+      <div class="principle-num">02</div>
+      <h3>רשימה, לא גריד</h3>
+      <p>iOS inset grouped list — ה-pattern הכי מוכר לאייפון. פרידה מ"כרטיסיות" — הרשימה פשוטה, מהירה, מוכרת.</p>
+    </div>
+    <div class="principle">
+      <div class="principle-num">03</div>
+      <h3>שני צבעים בלבד</h3>
+      <p>כתום לקלוריות, ירוק לחלבון. כל שאר הגוונים — גרייסקייל. המוח מפרש אנרגיה (כתום) ובריאות (ירוק) אינסטינקטיבית.</p>
+    </div>
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════ -->
+  <div class="theme-sep">
+    <div class="theme-sep-line"></div>
+    <div class="theme-sep-label">חלופה</div>
+    <div class="theme-sep-line"></div>
+  </div>
+
+  <!-- THEME 3: SHORE -->
+  <div class="theme-intro">
+    <div class="eyebrow" style="color:#2a6492;">Theme Proposal 03</div>
+    <h2>Shore</h2>
+    <p>Deep Ocean × Honey. רקע קרם חמים (#FFFEEC) — לא לבן, לא אפור — עם כחול פלדה עמוק ודבש ענבר. ספורטיבי ואלגנטי, בלי לנסות.</p>
+  </div>
+
+  <div class="mockup-grid">
+    <!-- DARK -->
+    <div class="phone sd">
+      <div class="phone-notch"></div>
+      <div class="phone-label">
+        <span class="dot" style="background:#5b9ec9;"></span>
+        Dark — Midnight Ocean
+      </div>
+      <div class="status-bar">
+        <span>9:41</span>
+        <div class="status-icons">
+          <span class="mi">signal_cellular_4_bar</span>
+          <span class="mi">wifi</span>
+          <span class="mi">battery_full</span>
+        </div>
+      </div>
+      <div class="nav-title">
+        <div class="nav-title-date">רביעי, 7 במאי</div>
+        <div class="nav-title-heading">היום</div>
+      </div>
+      <div class="rings-section">
+        <div class="ring-group">
+          <div class="ring cal"></div>
+          <div class="ring-label">
+            <div class="ring-value">1,842</div>
+            <div class="ring-sub" style="color:#7ab8da;">קלוריות</div>
+            <div class="ring-of">מתוך 2,200</div>
+          </div>
+        </div>
+        <div class="ring-divider"></div>
+        <div class="ring-group">
+          <div class="ring pro"></div>
+          <div class="ring-label">
+            <div class="ring-value">112</div>
+            <div class="ring-sub" style="color:#f0bc68;">חלבון</div>
+            <div class="ring-of">מתוך 150 גרם</div>
+          </div>
+        </div>
+      </div>
+      <div class="section-header">ארוחות</div>
+      <div class="inset-list">
+        <div class="list-row">
+          <div class="row-icon" style="background:#2a6492;">
+            <span class="mi">breakfast_dining</span>
+          </div>
+          <div class="row-body">
+            <div class="row-name">שיבולת שועל + פירות</div>
+            <div class="row-sub">בוקר · 250g</div>
+          </div>
+          <div class="row-numbers">
+            <div class="row-cal">320</div>
+            <div class="row-prot">12g</div>
+          </div>
+        </div>
+        <div class="list-row">
+          <div class="row-icon" style="background:#c07028;">
+            <span class="mi">lunch_dining</span>
+          </div>
+          <div class="row-body">
+            <div class="row-name">חזה עוף + אורז</div>
+            <div class="row-sub">צהריים · 380g</div>
+          </div>
+          <div class="row-numbers">
+            <div class="row-cal">610</div>
+            <div class="row-prot">52g</div>
+          </div>
+        </div>
+        <div class="list-row">
+          <div class="row-icon" style="background:#1e3a52;">
+            <span class="mi">local_cafe</span>
+          </div>
+          <div class="row-body">
+            <div class="row-name">לאטה שקדים</div>
+            <div class="row-sub">שתיה · 350ml</div>
+          </div>
+          <div class="row-numbers">
+            <div class="row-cal">95</div>
+            <div class="row-prot">3g</div>
+          </div>
+        </div>
+        <div class="list-row">
+          <div class="row-icon" style="background:#2a6492;">
+            <span class="mi">dinner_dining</span>
+          </div>
+          <div class="row-body">
+            <div class="row-name">סלמון + ירקות</div>
+            <div class="row-sub">ערב · 300g</div>
+          </div>
+          <div class="row-numbers">
+            <div class="row-cal">480</div>
+            <div class="row-prot">41g</div>
+          </div>
+        </div>
+      </div>
+      <div class="fab-area">
+        <button class="fab">
+          <span class="mi">add</span>
+          הוסף ארוחה
+        </button>
+      </div>
+      <div class="tab-bar">
+        <div class="tab-item tab-active">
+          <span class="mi">today</span>
+          <span class="lbl">היום</span>
+        </div>
+        <div class="tab-item tab-inactive">
+          <span class="mi">calendar_month</span>
+          <span class="lbl">היסטוריה</span>
+        </div>
+        <div class="tab-item tab-inactive">
+          <span class="mi">monitoring</span>
+          <span class="lbl">גרפים</span>
+        </div>
+        <div class="tab-item tab-inactive">
+          <span class="mi">person</span>
+          <span class="lbl">פרופיל</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- LIGHT -->
+    <div class="phone sl">
+      <div class="phone-notch"></div>
+      <div class="phone-label">
+        <span class="dot" style="background:#2a6492;"></span>
+        Light — Banana Milk
+      </div>
+      <div class="status-bar">
+        <span>9:41</span>
+        <div class="status-icons">
+          <span class="mi">signal_cellular_4_bar</span>
+          <span class="mi">wifi</span>
+          <span class="mi">battery_full</span>
+        </div>
+      </div>
+      <div class="nav-title">
+        <div class="nav-title-date">רביעי, 7 במאי</div>
+        <div class="nav-title-heading">היום</div>
+      </div>
+      <div class="rings-section">
+        <div class="ring-group">
+          <div class="ring cal"></div>
+          <div class="ring-label">
+            <div class="ring-value">1,842</div>
+            <div class="ring-sub" style="color:#2a6492;">קלוריות</div>
+            <div class="ring-of">מתוך 2,200</div>
+          </div>
+        </div>
+        <div class="ring-divider"></div>
+        <div class="ring-group">
+          <div class="ring pro"></div>
+          <div class="ring-label">
+            <div class="ring-value">112</div>
+            <div class="ring-sub" style="color:#b06018;">חלבון</div>
+            <div class="ring-of">מתוך 150 גרם</div>
+          </div>
+        </div>
+      </div>
+      <div class="section-header">ארוחות</div>
+      <div class="inset-list">
+        <div class="list-row">
+          <div class="row-icon" style="background:#2a6492;">
+            <span class="mi">breakfast_dining</span>
+          </div>
+          <div class="row-body">
+            <div class="row-name">שיבולת שועל + פירות</div>
+            <div class="row-sub">בוקר · 250g</div>
+          </div>
+          <div class="row-numbers">
+            <div class="row-cal">320</div>
+            <div class="row-prot">12g</div>
+          </div>
+        </div>
+        <div class="list-row">
+          <div class="row-icon" style="background:#b06018;">
+            <span class="mi">lunch_dining</span>
+          </div>
+          <div class="row-body">
+            <div class="row-name">חזה עוף + אורז</div>
+            <div class="row-sub">צהריים · 380g</div>
+          </div>
+          <div class="row-numbers">
+            <div class="row-cal">610</div>
+            <div class="row-prot">52g</div>
+          </div>
+        </div>
+        <div class="list-row">
+          <div class="row-icon" style="background:#4a7a96;">
+            <span class="mi">local_cafe</span>
+          </div>
+          <div class="row-body">
+            <div class="row-name">לאטה שקדים</div>
+            <div class="row-sub">שתיה · 350ml</div>
+          </div>
+          <div class="row-numbers">
+            <div class="row-cal">95</div>
+            <div class="row-prot">3g</div>
+          </div>
+        </div>
+        <div class="list-row">
+          <div class="row-icon" style="background:#2a6492;">
+            <span class="mi">dinner_dining</span>
+          </div>
+          <div class="row-body">
+            <div class="row-name">סלמון + ירקות</div>
+            <div class="row-sub">ערב · 300g</div>
+          </div>
+          <div class="row-numbers">
+            <div class="row-cal">480</div>
+            <div class="row-prot">41g</div>
+          </div>
+        </div>
+      </div>
+      <div class="fab-area">
+        <button class="fab">
+          <span class="mi" style="color:#fff;">add</span>
+          הוסף ארוחה
+        </button>
+      </div>
+      <div class="tab-bar">
+        <div class="tab-item tab-active">
+          <span class="mi">today</span>
+          <span class="lbl">היום</span>
+        </div>
+        <div class="tab-item tab-inactive">
+          <span class="mi">calendar_month</span>
+          <span class="lbl">היסטוריה</span>
+        </div>
+        <div class="tab-item tab-inactive">
+          <span class="mi">monitoring</span>
+          <span class="lbl">גרפים</span>
+        </div>
+        <div class="tab-item tab-inactive">
+          <span class="mi">person</span>
+          <span class="lbl">פרופיל</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Shore palette -->
+  <div class="palette">
+    <div class="palette-card">
+      <h3>Dark palette — Midnight Ocean</h3>
+      <div class="swatch-row">
+        <div class="sw" style="background:#081018;"></div>
+        <div class="sw-info"><div class="sw-name">Background</div><div class="sw-hex">#081018 — ים חצות, לא שחור טהור</div></div>
+      </div>
+      <div class="swatch-row">
+        <div class="sw" style="background:#0e1c2a; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.07);"></div>
+        <div class="sw-info"><div class="sw-name">Card</div><div class="sw-hex">#0e1c2a — Navy card</div></div>
+      </div>
+      <div class="swatch-row">
+        <div class="sw" style="background:#7ab8da;"></div>
+        <div class="sw-info"><div class="sw-name">Calories</div><div class="sw-hex">#7ab8da — Deep Ocean brightened</div></div>
+      </div>
+      <div class="swatch-row">
+        <div class="sw" style="background:#f0bc68;"></div>
+        <div class="sw-info"><div class="sw-name">Protein</div><div class="sw-hex">#f0bc68 — Honey (warm contrast to blue)</div></div>
+      </div>
+      <div class="swatch-row">
+        <div class="sw" style="background:#f0ede0;"></div>
+        <div class="sw-info"><div class="sw-name">Text</div><div class="sw-hex">#f0ede0 — Cream white, לא קר</div></div>
+      </div>
+    </div>
+    <div class="palette-card">
+      <h3>Light palette — Banana Milk</h3>
+      <div class="swatch-row">
+        <div class="sw" style="background:#fffeec; box-shadow: inset 0 0 0 1px rgba(42,100,146,0.12);"></div>
+        <div class="sw-info"><div class="sw-name">Background</div><div class="sw-hex">#FFFEEC — Banana Milk, לא לבן</div></div>
+      </div>
+      <div class="swatch-row">
+        <div class="sw" style="background:#ffffff; box-shadow: inset 0 0 0 1px rgba(42,100,146,0.10);"></div>
+        <div class="sw-info"><div class="sw-name">Card</div><div class="sw-hex">#ffffff — כרטיס לבן על רקע קרם</div></div>
+      </div>
+      <div class="swatch-row">
+        <div class="sw" style="background:#2a6492;"></div>
+        <div class="sw-info"><div class="sw-name">Calories</div><div class="sw-hex">#2A6492 — Deep Ocean exact</div></div>
+      </div>
+      <div class="swatch-row">
+        <div class="sw" style="background:#b06018;"></div>
+        <div class="sw-info"><div class="sw-name">Protein</div><div class="sw-hex">#b06018 — Honey darkened (WCAG AA on cream)</div></div>
+      </div>
+      <div class="swatch-row">
+        <div class="sw" style="background:#1a2a38;"></div>
+        <div class="sw-info"><div class="sw-name">Text</div><div class="sw-hex">#1a2a38 — Deep navy text, לא שחור</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="principles">
+    <div class="principle">
+      <div class="principle-num" style="color:#2a6492;">01</div>
+      <h3>הרקע עושה הכל</h3>
+      <p>ה-#FFFEEC הוא הרגע שבו הכל משתנה. לא לבן, לא אפור — קרם חמים שמרגיש כמו נייר איכות. שום אפ בריאות אחר לא עושה את זה.</p>
+    </div>
+    <div class="principle">
+      <div class="principle-num" style="color:#2a6492;">02</div>
+      <h3>כחול × דבש</h3>
+      <p>Deep Ocean לקלוריות, ענבר לחלבון — חם וקר, ים ושמש. הקומבינציה מדויקת, לא מנוסה, מרגישה כמו branding אמיתי.</p>
+    </div>
+    <div class="principle">
+      <div class="principle-num" style="color:#2a6492;">03</div>
+      <h3>ים חצות בדארק</h3>
+      <p>הרקע הכהה הוא #081018 — navy-black ולא שחור טהור. גם הטקסט הוא קרם (#f0ede0) ולא לבן. שניהם מחוממים ב-tone.</p>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <div class="theme-sep">
+    <div class="theme-sep-line"></div>
+    <div class="theme-sep-label">חלופה</div>
+    <div class="theme-sep-line"></div>
+  </div>
+
+  <!-- THEME 2: INK -->
+  <div class="theme-intro">
+    <div class="eyebrow" style="color: #5e5ce6;">Theme Proposal 02</div>
+    <h2>Ink</h2>
+    <p>קריר, מדויק, אנליטי. Indigo לקלוריות, Teal לחלבון — שני הגוונים שApple משתמשת בהם כשהיא רוצה לומר "מידע" ולא "פעולה".</p>
+  </div>
+
+  <div class="mockup-grid">
+
+    <!-- DARK -->
+    <div class="phone id">
+      <div class="phone-notch"></div>
+      <div class="phone-label">
+        <span class="dot" style="background:#7d7aff;"></span>
+        Dark
+      </div>
+      <div class="status-bar">
+        <span>9:41</span>
+        <div class="status-icons">
+          <span class="mi">signal_cellular_4_bar</span>
+          <span class="mi">wifi</span>
+          <span class="mi">battery_full</span>
+        </div>
+      </div>
+      <div class="nav-title">
+        <div class="nav-title-date">רביעי, 7 במאי</div>
+        <div class="nav-title-heading">היום</div>
+      </div>
+      <div class="rings-section">
+        <div class="ring-group">
+          <div class="ring cal"></div>
+          <div class="ring-label">
+            <div class="ring-value">1,842</div>
+            <div class="ring-sub" style="color:#7d7aff;">קלוריות</div>
+            <div class="ring-of">מתוך 2,200</div>
+          </div>
+        </div>
+        <div class="ring-divider"></div>
+        <div class="ring-group">
+          <div class="ring pro"></div>
+          <div class="ring-label">
+            <div class="ring-value">112</div>
+            <div class="ring-sub" style="color:#5ac8fa;">חלבון</div>
+            <div class="ring-of">מתוך 150 גרם</div>
+          </div>
+        </div>
+      </div>
+      <div class="section-header">ארוחות</div>
+      <div class="inset-list">
+        <div class="list-row">
+          <div class="row-icon" style="background:#5e5ce6;">
+            <span class="mi">breakfast_dining</span>
+          </div>
+          <div class="row-body">
+            <div class="row-name">שיבולת שועל + פירות</div>
+            <div class="row-sub">בוקר · 250g</div>
+          </div>
+          <div class="row-numbers">
+            <div class="row-cal">320</div>
+            <div class="row-prot">12g</div>
+          </div>
+        </div>
+        <div class="list-row">
+          <div class="row-icon" style="background:#32ade6;">
+            <span class="mi">lunch_dining</span>
+          </div>
+          <div class="row-body">
+            <div class="row-name">חזה עוף + אורז</div>
+            <div class="row-sub">צהריים · 380g</div>
+          </div>
+          <div class="row-numbers">
+            <div class="row-cal">610</div>
+            <div class="row-prot">52g</div>
+          </div>
+        </div>
+        <div class="list-row">
+          <div class="row-icon" style="background:#636366;">
+            <span class="mi">local_cafe</span>
+          </div>
+          <div class="row-body">
+            <div class="row-name">לאטה שקדים</div>
+            <div class="row-sub">שתיה · 350ml</div>
+          </div>
+          <div class="row-numbers">
+            <div class="row-cal">95</div>
+            <div class="row-prot">3g</div>
+          </div>
+        </div>
+        <div class="list-row">
+          <div class="row-icon" style="background:#5e5ce6;">
+            <span class="mi">dinner_dining</span>
+          </div>
+          <div class="row-body">
+            <div class="row-name">סלמון + ירקות</div>
+            <div class="row-sub">ערב · 300g</div>
+          </div>
+          <div class="row-numbers">
+            <div class="row-cal">480</div>
+            <div class="row-prot">41g</div>
+          </div>
+        </div>
+      </div>
+      <div class="fab-area">
+        <button class="fab">
+          <span class="mi">add</span>
+          הוסף ארוחה
+        </button>
+      </div>
+      <div class="tab-bar">
+        <div class="tab-item tab-active">
+          <span class="mi">today</span>
+          <span class="lbl">היום</span>
+        </div>
+        <div class="tab-item tab-inactive">
+          <span class="mi">calendar_month</span>
+          <span class="lbl">היסטוריה</span>
+        </div>
+        <div class="tab-item tab-inactive">
+          <span class="mi">monitoring</span>
+          <span class="lbl">גרפים</span>
+        </div>
+        <div class="tab-item tab-inactive">
+          <span class="mi">person</span>
+          <span class="lbl">פרופיל</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- LIGHT -->
+    <div class="phone il">
+      <div class="phone-notch"></div>
+      <div class="phone-label">
+        <span class="dot" style="background:#3634a3;"></span>
+        Light
+      </div>
+      <div class="status-bar">
+        <span>9:41</span>
+        <div class="status-icons">
+          <span class="mi">signal_cellular_4_bar</span>
+          <span class="mi">wifi</span>
+          <span class="mi">battery_full</span>
+        </div>
+      </div>
+      <div class="nav-title">
+        <div class="nav-title-date">רביעי, 7 במאי</div>
+        <div class="nav-title-heading">היום</div>
+      </div>
+      <div class="rings-section">
+        <div class="ring-group">
+          <div class="ring cal"></div>
+          <div class="ring-label">
+            <div class="ring-value">1,842</div>
+            <div class="ring-sub" style="color:#3634a3;">קלוריות</div>
+            <div class="ring-of">מתוך 2,200</div>
+          </div>
+        </div>
+        <div class="ring-divider"></div>
+        <div class="ring-group">
+          <div class="ring pro"></div>
+          <div class="ring-label">
+            <div class="ring-value">112</div>
+            <div class="ring-sub" style="color:#0071a4;">חלבון</div>
+            <div class="ring-of">מתוך 150 גרם</div>
+          </div>
+        </div>
+      </div>
+      <div class="section-header">ארוחות</div>
+      <div class="inset-list">
+        <div class="list-row">
+          <div class="row-icon" style="background:#3634a3;">
+            <span class="mi">breakfast_dining</span>
+          </div>
+          <div class="row-body">
+            <div class="row-name">שיבולת שועל + פירות</div>
+            <div class="row-sub">בוקר · 250g</div>
+          </div>
+          <div class="row-numbers">
+            <div class="row-cal">320</div>
+            <div class="row-prot">12g</div>
+          </div>
+        </div>
+        <div class="list-row">
+          <div class="row-icon" style="background:#0071a4;">
+            <span class="mi">lunch_dining</span>
+          </div>
+          <div class="row-body">
+            <div class="row-name">חזה עוף + אורז</div>
+            <div class="row-sub">צהריים · 380g</div>
+          </div>
+          <div class="row-numbers">
+            <div class="row-cal">610</div>
+            <div class="row-prot">52g</div>
+          </div>
+        </div>
+        <div class="list-row">
+          <div class="row-icon" style="background:#aeaeb2;">
+            <span class="mi">local_cafe</span>
+          </div>
+          <div class="row-body">
+            <div class="row-name">לאטה שקדים</div>
+            <div class="row-sub">שתיה · 350ml</div>
+          </div>
+          <div class="row-numbers">
+            <div class="row-cal">95</div>
+            <div class="row-prot">3g</div>
+          </div>
+        </div>
+        <div class="list-row">
+          <div class="row-icon" style="background:#3634a3;">
+            <span class="mi">dinner_dining</span>
+          </div>
+          <div class="row-body">
+            <div class="row-name">סלמון + ירקות</div>
+            <div class="row-sub">ערב · 300g</div>
+          </div>
+          <div class="row-numbers">
+            <div class="row-cal">480</div>
+            <div class="row-prot">41g</div>
+          </div>
+        </div>
+      </div>
+      <div class="fab-area">
+        <button class="fab">
+          <span class="mi" style="color:#fff;">add</span>
+          הוסף ארוחה
+        </button>
+      </div>
+      <div class="tab-bar">
+        <div class="tab-item tab-active">
+          <span class="mi">today</span>
+          <span class="lbl">היום</span>
+        </div>
+        <div class="tab-item tab-inactive">
+          <span class="mi">calendar_month</span>
+          <span class="lbl">היסטוריה</span>
+        </div>
+        <div class="tab-item tab-inactive">
+          <span class="mi">monitoring</span>
+          <span class="lbl">גרפים</span>
+        </div>
+        <div class="tab-item tab-inactive">
+          <span class="mi">person</span>
+          <span class="lbl">פרופיל</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Ink palette -->
+  <div class="palette">
+    <div class="palette-card">
+      <h3>Dark palette</h3>
+      <div class="swatch-row">
+        <div class="sw" style="background:#000000;"></div>
+        <div class="sw-info"><div class="sw-name">Background</div><div class="sw-hex">#000000 — OLED black</div></div>
+      </div>
+      <div class="swatch-row">
+        <div class="sw" style="background:#1c1c1e; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);"></div>
+        <div class="sw-info"><div class="sw-name">Card</div><div class="sw-hex">#1c1c1e — Apple system gray 6</div></div>
+      </div>
+      <div class="swatch-row">
+        <div class="sw" style="background:#7d7aff;"></div>
+        <div class="sw-info"><div class="sw-name">Calories</div><div class="sw-hex">#7d7aff — Apple Indigo (dark)</div></div>
+      </div>
+      <div class="swatch-row">
+        <div class="sw" style="background:#5ac8fa;"></div>
+        <div class="sw-info"><div class="sw-name">Protein</div><div class="sw-hex">#5ac8fa — Apple Teal (dark)</div></div>
+      </div>
+      <div class="swatch-row">
+        <div class="sw" style="background:#636366;"></div>
+        <div class="sw-info"><div class="sw-name">Neutral icon</div><div class="sw-hex">#636366 — System Gray</div></div>
+      </div>
+    </div>
+    <div class="palette-card">
+      <h3>Light palette</h3>
+      <div class="swatch-row">
+        <div class="sw" style="background:#f2f2f7;"></div>
+        <div class="sw-info"><div class="sw-name">Background</div><div class="sw-hex">#f2f2f7 — Apple system background</div></div>
+      </div>
+      <div class="swatch-row">
+        <div class="sw" style="background:#ffffff; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.08);"></div>
+        <div class="sw-info"><div class="sw-name">Card</div><div class="sw-hex">#ffffff — Pure white</div></div>
+      </div>
+      <div class="swatch-row">
+        <div class="sw" style="background:#3634a3;"></div>
+        <div class="sw-info"><div class="sw-name">Calories</div><div class="sw-hex">#3634a3 — Indigo darkened (WCAG AA)</div></div>
+      </div>
+      <div class="swatch-row">
+        <div class="sw" style="background:#0071a4;"></div>
+        <div class="sw-info"><div class="sw-name">Protein</div><div class="sw-hex">#0071a4 — Teal darkened (WCAG AA)</div></div>
+      </div>
+      <div class="swatch-row">
+        <div class="sw" style="background:#aeaeb2;"></div>
+        <div class="sw-info"><div class="sw-name">Neutral icon</div><div class="sw-hex">#aeaeb2 — System Gray 4</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="principles">
+    <div class="principle">
+      <div class="principle-num" style="color:#5e5ce6;">01</div>
+      <h3>טמפרטורה קרירה</h3>
+      <p>Indigo ו-Teal שניהם גוונים כחלחלים — אין מתח טמפרטורה חם/קר כמו ב-Quartz. הכל ב"tone" אחד, שקט, עקבי.</p>
+    </div>
+    <div class="principle">
+      <div class="principle-num" style="color:#5e5ce6;">02</div>
+      <h3>FAB שקוע בדארק</h3>
+      <p>בדרק מוד — הכפתור הוא dark card, לא צבעוני. הצבע עובד בשקט ברקע. בלייט — indigo מלא, CTA ברור.</p>
+    </div>
+    <div class="principle">
+      <div class="principle-num" style="color:#5e5ce6;">03</div>
+      <h3>אנליטי, לא אנרגטי</h3>
+      <p>Quartz אומר "בריאות ואנרגיה". Ink אומר "מדידה ומעקב". אותו מינימליזם, אופי שונה — בחירה של קהל יעד.</p>
+    </div>
+  </div>
+
+</body>
+</html>

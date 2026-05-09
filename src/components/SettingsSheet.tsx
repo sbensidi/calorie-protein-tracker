@@ -13,6 +13,9 @@ import { useFoodLibrary } from '../hooks/useFoodLibrary'
 import { UNITS, toBase, mlToGrams } from '../lib/units'
 import type { UnitId } from '../lib/units'
 import { MealCard } from './MealCard'
+import { fuzzyScore } from '../lib/fuzzyMatch'
+
+const SEARCH_THRESHOLD = 0.45
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -54,7 +57,7 @@ function DayPanel({
   return (
     <div style={{
       border: `1.5px solid ${isToday ? 'var(--blue-border-hi)' : isCustom ? 'var(--indigo-border)' : 'var(--border)'}`,
-      background: isToday ? 'rgba(59,130,246,0.05)' : isCustom ? 'rgba(99,102,241,0.05)' : 'transparent',
+      background: isToday ? 'var(--blue-fill)' : isCustom ? 'var(--indigo-fill)' : 'transparent',
       borderRadius: 12,
       padding: compact ? '10px 12px' : 12,
     }}>
@@ -176,18 +179,20 @@ function DayPanel({
 
 // ── Main Screen ───────────────────────────────────────────────────────────────
 
-function MainScreen({ lang, connected, theme, onProfile, onGoals, onFoodHistory, onLibrary, onPreferences, onToggleLang, onToggleTheme, onSignOut }: {
-  lang:           Lang
-  connected:      boolean
-  theme:          'dark' | 'light'
-  onProfile:      () => void
-  onGoals:        () => void
-  onFoodHistory:  () => void
-  onLibrary:      () => void
-  onPreferences:  () => void
-  onToggleLang:   () => void
-  onToggleTheme:  () => void
-  onSignOut:      () => void
+function MainScreen({ lang, connected, theme, styleMode, onProfile, onGoals, onFoodHistory, onLibrary, onPreferences, onToggleLang, onToggleTheme, onToggleStyleMode, onSignOut }: {
+  lang:                Lang
+  connected:           boolean
+  theme:               'dark' | 'light'
+  styleMode:           'classic' | 'hybrid'
+  onProfile:           () => void
+  onGoals:             () => void
+  onFoodHistory:       () => void
+  onLibrary:           () => void
+  onPreferences:       () => void
+  onToggleLang:        () => void
+  onToggleTheme:       () => void
+  onToggleStyleMode:   () => void
+  onSignOut:           () => void
 }) {
   const chevron = lang === 'he' ? 'chevron_left' : 'chevron_right'
 
@@ -351,6 +356,38 @@ function MainScreen({ lang, connected, theme, onProfile, onGoals, onFoodHistory,
               </span>
             </span>
           </button>
+        </div>
+
+        {/* Theme style picker */}
+        <div style={{ ...rowBase, cursor: 'default' }}>
+          <span className="icon" style={{ fontSize: 22, color: 'var(--blue)', flexShrink: 0 }}>palette</span>
+          <div style={{ flex: 1, textAlign: 'start' }}>
+            <p style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', margin: 0 }}>
+              {t(lang, 'themeStyle')}
+            </p>
+          </div>
+          <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+            {(['classic', 'hybrid'] as const).map(mode => (
+              <button
+                key={mode}
+                onClick={() => { if (styleMode !== mode) onToggleStyleMode() }}
+                style={{
+                  padding: '5px 12px',
+                  borderRadius: 999,
+                  border: styleMode === mode ? '1px solid var(--blue-border-hi)' : '1px solid var(--border)',
+                  background: styleMode === mode ? 'var(--blue-select)' : 'transparent',
+                  color: styleMode === mode ? 'var(--blue)' : 'var(--text-2)',
+                  fontSize: 13,
+                  fontWeight: styleMode === mode ? 700 : 400,
+                  fontFamily: 'inherit',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                }}
+              >
+                {t(lang, mode === 'classic' ? 'styleClassic' : 'styleHybrid')}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Sign Out */}
@@ -794,7 +831,7 @@ function GoalsScreen({ lang, profile, goals, onSave, onSaveProfile, onSaveFluidG
           style={{
             width: '100%', padding: '8px 14px', borderRadius: 8, fontSize: 12, fontWeight: 700,
             cursor: 'pointer', fontFamily: 'inherit',
-            background: 'rgba(59,130,246,0.15)', border: '1px solid rgba(59,130,246,0.3)',
+            background: 'var(--blue-chip)', border: '1px solid var(--blue-glow)',
             color: 'var(--blue-hi)',
           }}
         >
@@ -1012,7 +1049,11 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
   const beverageHistory = history.filter(h => h.fluid_ml != null && h.fluid_ml > 0)
   const baseHistory = filter === 'beverage' ? beverageHistory : history
   const filtered = q
-    ? baseHistory.filter(h => h.name.toLowerCase().includes(q))
+    ? [...baseHistory]
+        .map(h => ({ h, score: fuzzyScore(q, h.name) }))
+        .filter(({ score }) => score >= SEARCH_THRESHOLD)
+        .sort((a, b) => b.score - a.score || b.h.use_count - a.h.use_count)
+        .map(({ h }) => h)
     : [...baseHistory].sort((a, b) => b.use_count - a.use_count)
 
   // Group by name (case-insensitive) — single-weight names show flat, multi-weight names collapse
@@ -1026,6 +1067,15 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
     }
     return Array.from(map.values())
   }, [filtered])
+
+  // Computed at scope level so both sections can use it for conditional rendering
+  const filteredGroups = q
+    ? composedGroups
+        .map(g => ({ g, score: fuzzyScore(q, g.name) }))
+        .filter(({ score }) => score >= SEARCH_THRESHOLD)
+        .sort((a, b) => b.score - a.score)
+        .map(({ g }) => g)
+    : composedGroups
 
   const startEdit = (item: FoodHistory) => {
     const absGrams = Math.abs(item.grams) || 1
@@ -1118,7 +1168,8 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
         <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 56, background: 'linear-gradient(to top, var(--bg), transparent)', zIndex: 2, pointerEvents: 'none' }} />
       <div style={{ flex: 1, overflowY: 'auto', minHeight: 0, padding: '4px 16px', paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 48px)' }}>
 
-      {(filter === 'all' || filter === 'foods' || filter === 'beverage') && (
+      {(filter === 'all' || filter === 'foods' || filter === 'beverage') &&
+       !(filter === 'all' && q && historyGroups.length === 0) && (
         <>
           {filter === 'all' && history.length > 0 && beverageHistory.length < history.length && (
             <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '4px 0 8px' }}>
@@ -1309,23 +1360,22 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
         </>
       )}
 
-      {(filter === 'all' || filter === 'composed') && (
+      {(filter === 'all' || filter === 'composed') &&
+       !(filter === 'all' && q && filteredGroups.length === 0) && (
         <>
           {filter === 'all' && (
             <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '12px 0 8px' }}>
               {lang === 'he' ? 'מנות' : 'Dishes'}
             </p>
           )}
-          {(() => {
-            const filteredGroups = q ? composedGroups.filter(g => g.name.toLowerCase().includes(q)) : composedGroups
-            return filteredGroups.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '32px 0', color: 'var(--text-3)' }}>
-                <span className="icon" style={{ fontSize: 28, display: 'block', marginBottom: 8 }}>{composedGroups.length === 0 ? 'restaurant' : 'search_off'}</span>
-                <p style={{ fontSize: 13, margin: 0 }}>{composedGroups.length === 0 ? (lang === 'he' ? 'אין מנות מורכבות' : 'No composed dishes') : (lang === 'he' ? 'לא נמצאו תוצאות' : 'No results')}</p>
-              </div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {filteredGroups.map(group => {
+          {filteredGroups.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '32px 0', color: 'var(--text-3)' }}>
+              <span className="icon" style={{ fontSize: 28, display: 'block', marginBottom: 8 }}>{composedGroups.length === 0 ? 'restaurant' : 'search_off'}</span>
+              <p style={{ fontSize: 13, margin: 0 }}>{composedGroups.length === 0 ? (lang === 'he' ? 'אין מנות מורכבות' : 'No composed dishes') : (lang === 'he' ? 'לא נמצאו תוצאות' : 'No results')}</p>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {filteredGroups.map(group => {
                 const groupMeals = meals.filter(m => group.mealIds.includes(m.id))
                 const totalCal   = Math.round(groupMeals.reduce((s, m) => s + m.calories, 0))
                 const totalProt  = Math.round(groupMeals.reduce((s, m) => s + m.protein, 0) * 10) / 10
@@ -1382,9 +1432,16 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
                 )
               })}
             </div>
-            )
-          })()}
+          )
+          }
         </>
+      )}
+
+      {filter === 'all' && q && historyGroups.length === 0 && filteredGroups.length === 0 && (
+        <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-3)' }}>
+          <span className="icon" style={{ fontSize: 28, display: 'block', marginBottom: 8 }}>search_off</span>
+          <p style={{ fontSize: 13, margin: 0 }}>{lang === 'he' ? 'לא נמצאו תוצאות' : 'No results'}</p>
+        </div>
       )}
 
       </div>{/* /scroll inner */}
@@ -1428,11 +1485,16 @@ function LibraryScreen({ lang }: { lang: Lang }) {
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
-    return library.filter(item => {
-      const matchCat  = !activeCategory || item.category === activeCategory
-      const matchText = !q || item.name_he.toLowerCase().includes(q) || item.name_en.toLowerCase().includes(q)
-      return matchCat && matchText
-    })
+    const catFilter = (item: typeof library[0]) => !activeCategory || item.category === activeCategory
+    if (!q) return library.filter(catFilter)
+    return library
+      .map(item => ({
+        item,
+        score: Math.max(fuzzyScore(q, item.name_he), fuzzyScore(q, item.name_en)),
+      }))
+      .filter(({ item, score }) => catFilter(item) && score >= SEARCH_THRESHOLD)
+      .sort((a, b) => b.score - a.score)
+      .map(({ item }) => item)
   }, [library, search, activeCategory])
 
   return (
@@ -1737,8 +1799,10 @@ interface SettingsSheetProps {
   onSaveGoals:     (updates: Partial<Goal>) => void
   onToggleLang:    () => void
   onSignOut:       () => void
-  theme:           'dark' | 'light'
-  onToggleTheme:   () => void
+  theme:               'dark' | 'light'
+  styleMode:           'classic' | 'hybrid'
+  onToggleTheme:       () => void
+  onToggleStyleMode:   () => void
   showToast:       (message: string, type: Toast['type']) => void
   history:         FoodHistory[]
   onDeleteHistory: (id: string) => void
@@ -1750,7 +1814,7 @@ interface SettingsSheetProps {
 }
 
 export function SettingsSheet({
-  isOpen, onClose, lang, connected, profile, onSaveProfile, goals, onSaveGoals, onToggleLang, onSignOut, theme, onToggleTheme, showToast,
+  isOpen, onClose, lang, connected, profile, onSaveProfile, goals, onSaveGoals, onToggleLang, onSignOut, theme, styleMode, onToggleTheme, onToggleStyleMode, showToast,
   history, onDeleteHistory, onUpdateHistory, composedGroups, onRemoveGroup, meals, onUpdateMeal,
 }: SettingsSheetProps) {
   const [screen, setScreen] = useState<Screen>('main')
@@ -1835,6 +1899,7 @@ export function SettingsSheet({
                 lang={lang}
                 connected={connected}
                 theme={theme}
+                styleMode={styleMode}
                 onProfile={() => setScreen('profile')}
                 onGoals={() => setScreen('goals')}
                 onFoodHistory={() => setScreen('foodHistory')}
@@ -1842,6 +1907,7 @@ export function SettingsSheet({
                 onPreferences={() => setScreen('preferences')}
                 onToggleLang={onToggleLang}
                 onToggleTheme={onToggleTheme}
+                onToggleStyleMode={onToggleStyleMode}
                 onSignOut={() => { handleClose(); onSignOut() }}
               />
             )}

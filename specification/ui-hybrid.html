@@ -1,0 +1,1161 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UI Hybrid — Charcoal + Existing System</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500&family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20,300,0,0&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #cccac5;
+      min-height: 100vh;
+      padding: 80px 32px 100px;
+    }
+
+    /* ─── Page header ─── */
+    .page-intro {
+      text-align: center;
+      margin-bottom: 64px;
+    }
+    .page-intro .eyebrow {
+      font-size: 11px;
+      font-weight: 300;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: rgba(0,0,0,0.35);
+      margin-bottom: 10px;
+    }
+    .page-intro h1 {
+      font-size: 32px;
+      font-weight: 200;
+      color: #1a1a18;
+      letter-spacing: -0.03em;
+      margin-bottom: 8px;
+    }
+    .page-intro p {
+      font-size: 13px;
+      font-weight: 300;
+      color: rgba(0,0,0,0.40);
+      line-height: 1.65;
+      max-width: 480px;
+      margin: 0 auto;
+    }
+
+    /* ─── Layout ─── */
+    .phone-row {
+      display: flex;
+      gap: 18px;
+      justify-content: center;
+      align-items: flex-start;
+    }
+    .phone-wrap { display: flex; flex-direction: column; align-items: center; }
+    .phone-caption {
+      margin-top: 14px;
+      font-size: 10px;
+      font-weight: 400;
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+      color: rgba(0,0,0,0.32);
+    }
+
+    /* ─── Phone shell ─── */
+    .phone {
+      width: 272px;
+      border-radius: 44px;
+      overflow: hidden;
+      position: relative;
+      box-shadow:
+        0 0 0 1px rgba(0,0,0,0.18),
+        0 40px 100px rgba(0,0,0,0.28),
+        0 8px 24px rgba(0,0,0,0.12);
+    }
+
+    /* ══════════════════════════════════════
+       DARK — warm charcoal
+    ══════════════════════════════════════ */
+    .dk {
+      background: #222220;
+    }
+    .dk, .dk * { --text:   #f0eeea; --text-2: rgba(240,238,234,0.42); --text-3: rgba(240,238,234,0.22); }
+    .dk .c-text   { color: var(--text); }
+    .dk .c-text-2 { color: var(--text-2); }
+    .dk .c-text-3 { color: var(--text-3); }
+    .dk .sep      { background: rgba(255,255,255,0.07); }
+    .dk .card-bg  { background: rgba(255,255,255,0.045); }
+    .dk .row-sep  { background: rgba(255,255,255,0.06); }
+    .dk .tab-bg   { background: rgba(255,255,255,0.04); }
+    .dk .inp-line { background: rgba(255,255,255,0.12); }
+
+    /* ══════════════════════════════════════
+       LIGHT — warm off-white (echoes charcoal warmth)
+    ══════════════════════════════════════ */
+    .lt {
+      background: #f0efe9;
+    }
+    .lt, .lt * { --text: #1a1a18; --text-2: rgba(26,26,24,0.42); --text-3: rgba(26,26,24,0.28); }
+    .lt .c-text   { color: var(--text); }
+    .lt .c-text-2 { color: var(--text-2); }
+    .lt .c-text-3 { color: var(--text-3); }
+    .lt .sep      { background: rgba(0,0,0,0.08); }
+    .lt .card-bg  { background: #ffffff; }
+    .lt .row-sep  { background: rgba(0,0,0,0.07); }
+    .lt .tab-bg   { background: rgba(0,0,0,0.04); }
+    .lt .inp-line { background: rgba(0,0,0,0.14); }
+
+    /* ─── Status bar ─── */
+    .status-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 22px 0;
+      height: 50px;
+    }
+    .status-bar .time { font-size: 13px; font-weight: 400; }
+    .status-icons { display: flex; gap: 3px; align-items: center; }
+    .status-icons .mi { font-family: 'Material Symbols Rounded'; font-size: 13px; opacity: 0.55; }
+
+    /* ─── Tab bar ─── */
+    .tab-bar {
+      display: flex;
+      padding: 6px 16px;
+      gap: 2px;
+    }
+    .tab {
+      flex: 1;
+      text-align: center;
+      font-size: 12px;
+      font-weight: 300;
+      padding: 7px 0;
+      border-radius: 8px;
+      letter-spacing: 0.01em;
+    }
+    .tab.active { font-weight: 500; }
+    .tab.active.dk-tab { color: #f0eeea; background: rgba(255,255,255,0.08); }
+    .tab.active.lt-tab { color: #1a1a18; background: rgba(0,0,0,0.07); }
+    .tab.inactive.dk-tab { color: rgba(240,238,234,0.30); }
+    .tab.inactive.lt-tab { color: rgba(26,26,24,0.30); }
+
+    /* ══════════════════════════════════════
+       SCREEN 1 — Today / היום
+    ══════════════════════════════════════ */
+
+    /* Hero section */
+    .hero-section {
+      padding: 20px 22px 0;
+    }
+    .hero-date {
+      font-size: 11px;
+      font-weight: 300;
+      letter-spacing: 0.04em;
+      margin-bottom: 18px;
+    }
+    .hero-number {
+      font-size: 76px;
+      font-weight: 200;
+      line-height: 0.9;
+      letter-spacing: -0.05em;
+      font-variant-numeric: tabular-nums;
+    }
+    .hero-label {
+      font-size: 11px;
+      font-weight: 300;
+      letter-spacing: 0.04em;
+      margin-top: 8px;
+      margin-bottom: 14px;
+    }
+    /* hairline progress */
+    .progress-line {
+      height: 1px;
+      width: 100%;
+      position: relative;
+      margin-bottom: 8px;
+    }
+    .progress-line .track { position: absolute; inset: 0; }
+    .progress-line .fill  { position: absolute; top: 0; inset-inline-start: 0; height: 1px; }
+    .progress-meta {
+      display: flex;
+      justify-content: space-between;
+      font-size: 10px;
+      font-weight: 300;
+      letter-spacing: 0.01em;
+      margin-bottom: 20px;
+    }
+
+    /* Protein row */
+    .protein-row {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      padding: 0 22px 16px;
+    }
+    .protein-label {
+      font-size: 10px;
+      font-weight: 300;
+      letter-spacing: 0.04em;
+      flex-shrink: 0;
+    }
+    .protein-number {
+      font-size: 22px;
+      font-weight: 200;
+      letter-spacing: -0.03em;
+      line-height: 1;
+      flex-shrink: 0;
+    }
+    .protein-bar {
+      flex: 1;
+      height: 1px;
+      position: relative;
+    }
+    .protein-bar .track { position: absolute; inset: 0; }
+    .protein-bar .fill  { position: absolute; top: 0; inset-inline-start: 0; height: 1px; }
+    .protein-of {
+      font-size: 10px;
+      font-weight: 300;
+      flex-shrink: 0;
+    }
+
+    /* Section header */
+    .section-head {
+      padding: 4px 22px 8px;
+      font-size: 10px;
+      font-weight: 400;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+    }
+
+    /* Meal list card */
+    .meal-card {
+      margin: 0 14px;
+      border-radius: 14px;
+      overflow: hidden;
+    }
+    .meal-row {
+      display: flex;
+      align-items: center;
+      padding: 11px 14px;
+      gap: 10px;
+      position: relative;
+    }
+    .meal-row + .meal-row::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      inset-inline-start: 14px;
+      inset-inline-end: 14px;
+      height: 1px;
+    }
+    .meal-body { flex: 1; min-width: 0; }
+    .meal-name {
+      font-size: 13px;
+      font-weight: 400;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      line-height: 1.3;
+    }
+    .meal-sub {
+      font-size: 11px;
+      font-weight: 300;
+      margin-top: 2px;
+    }
+    .meal-nums { text-align: end; flex-shrink: 0; }
+    .meal-cal {
+      font-size: 15px;
+      font-weight: 300;
+      letter-spacing: -0.02em;
+      line-height: 1.2;
+    }
+    .meal-pro {
+      font-size: 11px;
+      font-weight: 300;
+      margin-top: 1px;
+    }
+
+    /* FAB */
+    .fab-wrap {
+      padding: 16px 14px 22px;
+    }
+    .fab {
+      width: 100%;
+      padding: 13px 0;
+      border-radius: 100px;
+      font-size: 14px;
+      font-weight: 400;
+      font-family: 'Inter', sans-serif;
+      letter-spacing: -0.01em;
+      border: none;
+      cursor: default;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+    }
+    .fab .mi { font-family: 'Material Symbols Rounded'; font-size: 17px; }
+    .fab.dk-fab { background: #f0eeea; color: #222220; }
+    .fab.lt-fab { background: #1a1a18; color: #f0efe9; }
+
+    /* ══════════════════════════════════════
+       SCREEN 2 — Add food / הוסף מזון
+    ══════════════════════════════════════ */
+    .s2-back {
+      padding: 4px 22px 0;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .s2-back .mi { font-family: 'Material Symbols Rounded'; font-size: 18px; opacity: 0.45; }
+    .s2-back span { font-size: 12px; font-weight: 300; opacity: 0.45; }
+
+    .s2-food-name {
+      padding: 20px 22px 0;
+      font-size: 26px;
+      font-weight: 200;
+      letter-spacing: -0.03em;
+      line-height: 1.15;
+    }
+    .s2-name-line {
+      margin: 10px 22px 0;
+      height: 1px;
+    }
+
+    .s2-stats {
+      padding: 28px 22px 0;
+      display: flex;
+      gap: 0;
+    }
+    .s2-stat {
+      flex: 1;
+    }
+    .s2-stat + .s2-stat {
+      padding-inline-start: 20px;
+      border-inline-start-width: 1px;
+      border-inline-start-style: solid;
+    }
+    .dk .s2-stat + .s2-stat { border-color: rgba(255,255,255,0.07); }
+    .lt .s2-stat + .s2-stat { border-color: rgba(0,0,0,0.08); }
+    .s2-stat-num {
+      font-size: 52px;
+      font-weight: 200;
+      letter-spacing: -0.05em;
+      line-height: 0.9;
+      font-variant-numeric: tabular-nums;
+    }
+    .s2-stat-unit {
+      font-size: 11px;
+      font-weight: 300;
+      letter-spacing: 0.02em;
+      margin-top: 8px;
+    }
+    .s2-stat-progress {
+      height: 1px;
+      margin-top: 10px;
+      position: relative;
+    }
+    .s2-stat-progress .track { position: absolute; inset: 0; }
+    .s2-stat-progress .fill  { position: absolute; top: 0; inset-inline-start: 0; height: 1px; }
+
+    .s2-amount-row {
+      padding: 24px 22px 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .s2-amount-num {
+      font-size: 28px;
+      font-weight: 200;
+      letter-spacing: -0.03em;
+    }
+    .s2-amount-unit {
+      font-size: 13px;
+      font-weight: 300;
+    }
+    .s2-amount-stepper {
+      margin-inline-start: auto;
+      display: flex;
+      gap: 6px;
+    }
+    .stepper-btn {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+      font-weight: 300;
+      cursor: default;
+    }
+    .dk .stepper-btn { background: rgba(255,255,255,0.07); color: #f0eeea; }
+    .lt .stepper-btn { background: rgba(0,0,0,0.06); color: #1a1a18; }
+
+    .s2-meal-type {
+      padding: 16px 22px 0;
+      display: flex;
+      gap: 6px;
+    }
+    .meal-type-pill {
+      padding: 5px 12px;
+      border-radius: 100px;
+      font-size: 11px;
+      font-weight: 300;
+      cursor: default;
+    }
+    .dk .meal-type-pill { background: rgba(255,255,255,0.06); color: var(--text-2); }
+    .dk .meal-type-pill.active { background: rgba(255,255,255,0.12); color: var(--text); }
+    .lt .meal-type-pill { background: rgba(0,0,0,0.05); color: var(--text-2); }
+    .lt .meal-type-pill.active { background: rgba(0,0,0,0.10); color: var(--text); }
+
+    /* ─── Data colors (always) ─── */
+    .cal-color { color: #60a5fa; }
+    .cal-color-lt { color: #2563eb; }
+    .pro-color { color: #34d399; }
+    .pro-color-lt { color: #059669; }
+    .cal-fill { background: #3b82f6; }
+    .pro-fill { background: #10b981; }
+
+    .mi { font-family: 'Material Symbols Rounded'; font-style: normal; }
+
+    /* ─── Bottom notes ─── */
+    .notes {
+      max-width: 856px;
+      margin: 60px auto 0;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      border-radius: 16px;
+      overflow: hidden;
+      background: rgba(0,0,0,0.10);
+    }
+    .note {
+      background: #c8c6c1;
+      padding: 22px 20px;
+    }
+    .note-label {
+      font-size: 10px;
+      font-weight: 400;
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+      color: rgba(0,0,0,0.35);
+      margin-bottom: 6px;
+    }
+    .note-body {
+      font-size: 12px;
+      font-weight: 300;
+      color: rgba(0,0,0,0.62);
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="page-intro">
+    <div class="eyebrow">Hybrid Concept</div>
+    <h1>charcoal + system</h1>
+    <p>ארכיטקטורת המידע הקיימת נשמרת. מה שמשתנה: פחם חם במקום שחור-כחול, צבע על נתונים בלבד, ומספר hero אחד שמוביל כל מסך.</p>
+  </div>
+
+  <div class="phone-row">
+
+    <!-- ══════════════════════════════════
+         PHONE 1 — Screen 1 · Dark
+    ══════════════════════════════════ -->
+    <div class="phone-wrap">
+      <div class="phone dk">
+
+        <!-- Status bar -->
+        <div class="status-bar">
+          <span class="time c-text">9:41</span>
+          <div class="status-icons c-text">
+            <span class="mi">signal_cellular_4_bar</span>
+            <span class="mi">wifi</span>
+            <span class="mi">battery_full</span>
+          </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tab-bar tab-bg">
+          <div class="tab active dk-tab">היום</div>
+          <div class="tab inactive dk-tab">היסטוריה</div>
+          <div class="tab inactive dk-tab">סטטיסטיקה</div>
+        </div>
+
+        <!-- Hero -->
+        <div class="hero-section">
+          <div class="hero-date c-text-3">רביעי, 7 במאי</div>
+          <div class="hero-number cal-color">1,842</div>
+          <div class="hero-label c-text-3">קלוריות · מתוך 2,200</div>
+          <div class="progress-line">
+            <div class="track sep"></div>
+            <div class="fill cal-fill" style="width: 84%;"></div>
+          </div>
+          <div class="progress-meta">
+            <span class="c-text-3">358 נותרו</span>
+            <span class="c-text-3">84%</span>
+          </div>
+        </div>
+
+        <!-- Protein -->
+        <div class="protein-row">
+          <span class="protein-label c-text-3">חלבון</span>
+          <span class="protein-number pro-color">112<span style="font-size:13px; font-weight:300;">g</span></span>
+          <div class="protein-bar">
+            <div class="track sep"></div>
+            <div class="fill pro-fill" style="width: 75%;"></div>
+          </div>
+          <span class="protein-of c-text-3">75%</span>
+        </div>
+
+        <!-- Section -->
+        <div class="section-head c-text-3">ארוחות היום</div>
+        <div class="meal-card card-bg">
+          <div class="meal-row">
+            <div class="meal-body">
+              <div class="meal-name c-text">שיבולת שועל + פירות</div>
+              <div class="meal-sub c-text-2">בוקר · 250g</div>
+            </div>
+            <div class="meal-nums">
+              <div class="meal-cal cal-color">320</div>
+              <div class="meal-pro pro-color">12g</div>
+            </div>
+          </div>
+          <div class="meal-row">
+            <div class="meal-body">
+              <div class="meal-name c-text">חזה עוף + אורז</div>
+              <div class="meal-sub c-text-2">צהריים · 380g</div>
+            </div>
+            <div class="meal-nums">
+              <div class="meal-cal cal-color">610</div>
+              <div class="meal-pro pro-color">52g</div>
+            </div>
+          </div>
+          <div class="meal-row">
+            <div class="meal-body">
+              <div class="meal-name c-text">סלמון + ירקות</div>
+              <div class="meal-sub c-text-2">ערב · 300g</div>
+            </div>
+            <div class="meal-nums">
+              <div class="meal-cal cal-color">480</div>
+              <div class="meal-pro pro-color">41g</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="fab-wrap">
+          <button class="fab dk-fab">
+            <span class="mi">add</span>
+            הוסף ארוחה
+          </button>
+        </div>
+
+      </div>
+      <div class="phone-caption">Today · Dark</div>
+    </div>
+
+    <!-- ══════════════════════════════════
+         PHONE 2 — Screen 2 · Dark
+    ══════════════════════════════════ -->
+    <div class="phone-wrap">
+      <div class="phone dk">
+
+        <div class="status-bar">
+          <span class="time c-text">9:41</span>
+          <div class="status-icons c-text">
+            <span class="mi">signal_cellular_4_bar</span>
+            <span class="mi">wifi</span>
+            <span class="mi">battery_full</span>
+          </div>
+        </div>
+
+        <div class="s2-back" style="padding-top: 10px;">
+          <span class="mi c-text">arrow_back_ios</span>
+          <span class="c-text">הוסף ארוחה</span>
+        </div>
+
+        <!-- Food name as hero text -->
+        <div class="s2-food-name c-text">שיבולת שועל<br>עם פירות יער</div>
+        <div class="s2-name-line inp-line"></div>
+
+        <!-- Big cal + protein numbers -->
+        <div class="s2-stats">
+          <div class="s2-stat">
+            <div class="s2-stat-num cal-color">320</div>
+            <div class="s2-stat-unit c-text-3">קלוריות</div>
+            <div class="s2-stat-progress">
+              <div class="track sep"></div>
+              <div class="fill cal-fill" style="width: 62%;"></div>
+            </div>
+          </div>
+          <div class="s2-stat">
+            <div class="s2-stat-num pro-color">12</div>
+            <div class="s2-stat-unit c-text-3">גרם חלבון</div>
+            <div class="s2-stat-progress">
+              <div class="track sep"></div>
+              <div class="fill pro-fill" style="width: 38%;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Amount -->
+        <div class="s2-amount-row">
+          <span class="s2-amount-num c-text">250</span>
+          <span class="s2-amount-unit c-text-2">גרם</span>
+          <div class="s2-amount-stepper">
+            <button class="stepper-btn">−</button>
+            <button class="stepper-btn">+</button>
+          </div>
+        </div>
+
+        <!-- Meal type pills -->
+        <div class="s2-meal-type">
+          <span class="meal-type-pill">ערב</span>
+          <span class="meal-type-pill active">בוקר</span>
+          <span class="meal-type-pill">צהריים</span>
+          <span class="meal-type-pill">חטיף</span>
+        </div>
+
+        <div class="fab-wrap" style="margin-top: auto; padding-top: 28px;">
+          <button class="fab dk-fab">
+            הוסף לרשימה
+          </button>
+        </div>
+
+      </div>
+      <div class="phone-caption">Add Food · Dark</div>
+    </div>
+
+    <!-- ══════════════════════════════════
+         PHONE 3 — Screen 1 · Light
+    ══════════════════════════════════ -->
+    <div class="phone-wrap">
+      <div class="phone lt">
+
+        <div class="status-bar">
+          <span class="time c-text">9:41</span>
+          <div class="status-icons c-text">
+            <span class="mi">signal_cellular_4_bar</span>
+            <span class="mi">wifi</span>
+            <span class="mi">battery_full</span>
+          </div>
+        </div>
+
+        <div class="tab-bar tab-bg">
+          <div class="tab active lt-tab">היום</div>
+          <div class="tab inactive lt-tab">היסטוריה</div>
+          <div class="tab inactive lt-tab">סטטיסטיקה</div>
+        </div>
+
+        <div class="hero-section">
+          <div class="hero-date c-text-3">רביעי, 7 במאי</div>
+          <div class="hero-number cal-color-lt">1,842</div>
+          <div class="hero-label c-text-3">קלוריות · מתוך 2,200</div>
+          <div class="progress-line">
+            <div class="track sep"></div>
+            <div class="fill cal-fill" style="width: 84%;"></div>
+          </div>
+          <div class="progress-meta">
+            <span class="c-text-3">358 נותרו</span>
+            <span class="c-text-3">84%</span>
+          </div>
+        </div>
+
+        <div class="protein-row">
+          <span class="protein-label c-text-3">חלבון</span>
+          <span class="protein-number pro-color-lt">112<span style="font-size:13px; font-weight:300;">g</span></span>
+          <div class="protein-bar">
+            <div class="track sep"></div>
+            <div class="fill pro-fill" style="width: 75%;"></div>
+          </div>
+          <span class="protein-of c-text-3">75%</span>
+        </div>
+
+        <div class="section-head c-text-3">ארוחות היום</div>
+        <div class="meal-card card-bg" style="box-shadow: 0 1px 4px rgba(0,0,0,0.06);">
+          <div class="meal-row">
+            <div class="meal-body">
+              <div class="meal-name c-text">שיבולת שועל + פירות</div>
+              <div class="meal-sub c-text-2">בוקר · 250g</div>
+            </div>
+            <div class="meal-nums">
+              <div class="meal-cal cal-color-lt">320</div>
+              <div class="meal-pro pro-color-lt">12g</div>
+            </div>
+          </div>
+          <div class="meal-row">
+            <div class="meal-body">
+              <div class="meal-name c-text">חזה עוף + אורז</div>
+              <div class="meal-sub c-text-2">צהריים · 380g</div>
+            </div>
+            <div class="meal-nums">
+              <div class="meal-cal cal-color-lt">610</div>
+              <div class="meal-pro pro-color-lt">52g</div>
+            </div>
+          </div>
+          <div class="meal-row">
+            <div class="meal-body">
+              <div class="meal-name c-text">סלמון + ירקות</div>
+              <div class="meal-sub c-text-2">ערב · 300g</div>
+            </div>
+            <div class="meal-nums">
+              <div class="meal-cal cal-color-lt">480</div>
+              <div class="meal-pro pro-color-lt">41g</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="fab-wrap">
+          <button class="fab lt-fab">
+            <span class="mi">add</span>
+            הוסף ארוחה
+          </button>
+        </div>
+
+      </div>
+      <div class="phone-caption">Today · Light</div>
+    </div>
+
+  </div>
+
+  <!-- ══════════════════════════════════════════════════
+       ACCENT COLOR ALTERNATIVES — red-derived
+  ══════════════════════════════════════════════════ -->
+  <div style="max-width: 920px; margin: 80px auto 0; text-align: center;">
+    <div style="font-size:10px; font-weight:400; letter-spacing:0.12em; text-transform:uppercase; color:rgba(0,0,0,0.32); margin-bottom:10px;">accent colors</div>
+    <div style="font-size:28px; font-weight:200; color:#1a1a18; letter-spacing:-0.03em; margin-bottom:8px;">חלופות לצבעי האקסנט</div>
+    <div style="font-size:13px; font-weight:300; color:rgba(0,0,0,0.40); line-height:1.65; max-width:420px; margin:0 auto 48px;">נגזרות מהאדום של הרפרנס. כל אפשרות מוצגת כפי שהיא נראית על הפחם ועל הרקע הבהיר.</div>
+  </div>
+
+  <style>
+    .accent-row {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      max-width: 960px;
+      margin: 0 auto;
+      flex-wrap: wrap;
+    }
+    .accent-card {
+      width: 172px;
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.10);
+      flex-shrink: 0;
+    }
+    /* Dark half */
+    .ac-dark {
+      background: #222220;
+      padding: 18px 18px 16px;
+    }
+    .ac-option-num {
+      font-size: 11px;
+      font-weight: 400;
+      letter-spacing: 0.06em;
+      color: rgba(240,238,234,0.28);
+      margin-bottom: 14px;
+    }
+    .ac-hero-num {
+      font-size: 52px;
+      font-weight: 200;
+      letter-spacing: -0.05em;
+      line-height: 0.88;
+      font-variant-numeric: tabular-nums;
+    }
+    .ac-cal-label {
+      font-size: 10px;
+      font-weight: 300;
+      color: rgba(240,238,234,0.28);
+      margin-top: 7px;
+      margin-bottom: 10px;
+    }
+    .ac-hairline {
+      height: 1px;
+      width: 100%;
+      position: relative;
+      margin-bottom: 6px;
+    }
+    .ac-hairline .track { position: absolute; inset: 0; background: rgba(255,255,255,0.07); }
+    .ac-hairline .fill  { position: absolute; top:0; left:0; height:1px; }
+    .ac-meta {
+      display: flex;
+      justify-content: space-between;
+      font-size: 10px;
+      font-weight: 300;
+      color: rgba(240,238,234,0.25);
+      margin-bottom: 14px;
+    }
+    .ac-pro-row {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+      margin-bottom: 14px;
+    }
+    .ac-pro-label {
+      font-size: 10px;
+      font-weight: 300;
+      color: rgba(240,238,234,0.28);
+    }
+    .ac-pro-num {
+      font-size: 22px;
+      font-weight: 200;
+      letter-spacing: -0.03em;
+      line-height: 1;
+    }
+    .ac-pro-bar {
+      flex: 1;
+      height: 1px;
+      position: relative;
+    }
+    .ac-pro-bar .track { position: absolute; inset: 0; background: rgba(255,255,255,0.07); }
+    .ac-pro-bar .fill  { position: absolute; top:0; left:0; height:1px; }
+
+    /* Meal rows */
+    .ac-rows { border-radius: 10px; overflow: hidden; background: rgba(255,255,255,0.045); }
+    .ac-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 9px 12px;
+      position: relative;
+    }
+    .ac-row + .ac-row::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 12px; right: 12px;
+      height: 1px;
+      background: rgba(255,255,255,0.06);
+    }
+    .ac-row-name {
+      font-size: 11px;
+      font-weight: 300;
+      color: rgba(240,238,234,0.70);
+    }
+    .ac-row-num {
+      font-size: 13px;
+      font-weight: 200;
+      letter-spacing: -0.02em;
+    }
+
+    /* Light half */
+    .ac-light {
+      background: #f0efe9;
+      padding: 14px 18px;
+    }
+    .ac-light-inner {
+      border-radius: 10px;
+      background: #fff;
+      padding: 12px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+    }
+    .ac-l-hero {
+      font-size: 36px;
+      font-weight: 200;
+      letter-spacing: -0.05em;
+      line-height: 0.9;
+      font-variant-numeric: tabular-nums;
+      margin-bottom: 6px;
+    }
+    .ac-l-hairline {
+      height: 1px;
+      background: rgba(0,0,0,0.07);
+      margin-bottom: 5px;
+      position: relative;
+    }
+    .ac-l-hairline .fill { position: absolute; top:0; left:0; height:1px; }
+    .ac-l-meta {
+      font-size: 10px;
+      font-weight: 300;
+      color: rgba(26,26,24,0.28);
+      margin-bottom: 10px;
+    }
+    .ac-l-rows { }
+    .ac-l-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      padding: 6px 0;
+      position: relative;
+      border-top: 1px solid rgba(0,0,0,0.06);
+    }
+    .ac-l-row:first-child { border-top: none; }
+    .ac-l-row-name {
+      font-size: 11px;
+      font-weight: 300;
+      color: rgba(26,26,24,0.55);
+    }
+    .ac-l-row-num {
+      font-size: 12px;
+      font-weight: 300;
+      letter-spacing: -0.01em;
+    }
+
+    /* Chips */
+    .ac-chips {
+      background: rgba(0,0,0,0.06);
+      padding: 12px 18px;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .ac-chip {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 10px;
+      font-weight: 300;
+      color: rgba(0,0,0,0.50);
+    }
+    .ac-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .ac-name {
+      background: rgba(0,0,0,0.055);
+      padding: 10px 18px;
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.02em;
+      color: rgba(0,0,0,0.55);
+      text-align: center;
+    }
+  </style>
+
+  <div class="accent-row">
+
+    <!-- ── 01. EMBER — single red accent ── -->
+    <div class="accent-card">
+      <div class="ac-dark">
+        <div class="ac-option-num">01</div>
+        <div class="ac-hero-num" style="color:#ff4d36;">1,842</div>
+        <div class="ac-cal-label">קלוריות · מתוך 2,200</div>
+        <div class="ac-hairline"><div class="track"></div><div class="fill" style="width:84%; background:#ff4d36;"></div></div>
+        <div class="ac-meta"><span>358 נותרו</span><span>84%</span></div>
+        <div class="ac-pro-row">
+          <span class="ac-pro-label">חלבון</span>
+          <span class="ac-pro-num" style="color:rgba(255,77,54,0.55);">112g</span>
+          <div class="ac-pro-bar"><div class="track"></div><div class="fill" style="width:75%; background:rgba(255,77,54,0.45);"></div></div>
+        </div>
+        <div class="ac-rows">
+          <div class="ac-row">
+            <span class="ac-row-name">שיבולת שועל</span>
+            <span class="ac-row-num" style="color:#ff4d36;">320</span>
+          </div>
+          <div class="ac-row">
+            <span class="ac-row-name">חזה עוף</span>
+            <span class="ac-row-num" style="color:#ff4d36;">610</span>
+          </div>
+        </div>
+      </div>
+      <div class="ac-light">
+        <div class="ac-light-inner">
+          <div class="ac-l-hero" style="color:#c42d18;">1,842</div>
+          <div class="ac-l-hairline"><div class="fill" style="width:84%; background:#c42d18;"></div></div>
+          <div class="ac-l-meta">84% · 358 נותרו</div>
+          <div class="ac-l-rows">
+            <div class="ac-l-row"><span class="ac-l-row-name">שיבולת שועל</span><span class="ac-l-row-num" style="color:#c42d18;">320</span></div>
+            <div class="ac-l-row"><span class="ac-l-row-name">חזה עוף</span><span class="ac-l-row-num" style="color:#c42d18;">610</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="ac-chips">
+        <div class="ac-chip"><div class="ac-dot" style="background:#ff4d36;"></div><span>קלוריות</span></div>
+        <div class="ac-chip"><div class="ac-dot" style="background:rgba(255,77,54,0.45);"></div><span>חלבון</span></div>
+      </div>
+      <div class="ac-name">Ember — צבע יחיד</div>
+    </div>
+
+    <!-- ── 02. FLAME + AMBER ── -->
+    <div class="accent-card">
+      <div class="ac-dark">
+        <div class="ac-option-num">02</div>
+        <div class="ac-hero-num" style="color:#ff4d36;">1,842</div>
+        <div class="ac-cal-label">קלוריות · מתוך 2,200</div>
+        <div class="ac-hairline"><div class="track"></div><div class="fill" style="width:84%; background:#ff4d36;"></div></div>
+        <div class="ac-meta"><span>358 נותרו</span><span>84%</span></div>
+        <div class="ac-pro-row">
+          <span class="ac-pro-label">חלבון</span>
+          <span class="ac-pro-num" style="color:#f0a030;">112g</span>
+          <div class="ac-pro-bar"><div class="track"></div><div class="fill" style="width:75%; background:#f0a030;"></div></div>
+        </div>
+        <div class="ac-rows">
+          <div class="ac-row">
+            <span class="ac-row-name">שיבולת שועל</span>
+            <span class="ac-row-num" style="color:#ff4d36;">320</span>
+          </div>
+          <div class="ac-row">
+            <span class="ac-row-name">חזה עוף</span>
+            <span class="ac-row-num" style="color:#ff4d36;">610</span>
+          </div>
+        </div>
+      </div>
+      <div class="ac-light">
+        <div class="ac-light-inner">
+          <div class="ac-l-hero" style="color:#c42d18;">1,842</div>
+          <div class="ac-l-hairline"><div class="fill" style="width:84%; background:#c42d18;"></div></div>
+          <div class="ac-l-meta" style="color:#9a6500;">חלבון 112g · 75%</div>
+          <div class="ac-l-rows">
+            <div class="ac-l-row"><span class="ac-l-row-name">שיבולת שועל</span><span class="ac-l-row-num" style="color:#c42d18;">320</span></div>
+            <div class="ac-l-row"><span class="ac-l-row-name">חזה עוף</span><span class="ac-l-row-num" style="color:#c42d18;">610</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="ac-chips">
+        <div class="ac-chip"><div class="ac-dot" style="background:#ff4d36;"></div><span>קלוריות</span></div>
+        <div class="ac-chip"><div class="ac-dot" style="background:#f0a030;"></div><span>חלבון</span></div>
+      </div>
+      <div class="ac-name">Flame + Amber</div>
+    </div>
+
+    <!-- ── 03. TOMATO + GOLD ── -->
+    <div class="accent-card">
+      <div class="ac-dark">
+        <div class="ac-option-num">03</div>
+        <div class="ac-hero-num" style="color:#e5341e;">1,842</div>
+        <div class="ac-cal-label">קלוריות · מתוך 2,200</div>
+        <div class="ac-hairline"><div class="track"></div><div class="fill" style="width:84%; background:#e5341e;"></div></div>
+        <div class="ac-meta"><span>358 נותרו</span><span>84%</span></div>
+        <div class="ac-pro-row">
+          <span class="ac-pro-label">חלבון</span>
+          <span class="ac-pro-num" style="color:#d4a030;">112g</span>
+          <div class="ac-pro-bar"><div class="track"></div><div class="fill" style="width:75%; background:#d4a030;"></div></div>
+        </div>
+        <div class="ac-rows">
+          <div class="ac-row">
+            <span class="ac-row-name">שיבולת שועל</span>
+            <span class="ac-row-num" style="color:#e5341e;">320</span>
+          </div>
+          <div class="ac-row">
+            <span class="ac-row-name">חזה עוף</span>
+            <span class="ac-row-num" style="color:#e5341e;">610</span>
+          </div>
+        </div>
+      </div>
+      <div class="ac-light">
+        <div class="ac-light-inner">
+          <div class="ac-l-hero" style="color:#c22d18;">1,842</div>
+          <div class="ac-l-hairline"><div class="fill" style="width:84%; background:#c22d18;"></div></div>
+          <div class="ac-l-meta" style="color:#7a5f00;">חלבון 112g · 75%</div>
+          <div class="ac-l-rows">
+            <div class="ac-l-row"><span class="ac-l-row-name">שיבולת שועל</span><span class="ac-l-row-num" style="color:#c22d18;">320</span></div>
+            <div class="ac-l-row"><span class="ac-l-row-name">חזה עוף</span><span class="ac-l-row-num" style="color:#c22d18;">610</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="ac-chips">
+        <div class="ac-chip"><div class="ac-dot" style="background:#e5341e;"></div><span>קלוריות</span></div>
+        <div class="ac-chip"><div class="ac-dot" style="background:#d4a030;"></div><span>חלבון</span></div>
+      </div>
+      <div class="ac-name">Tomato + Gold</div>
+    </div>
+
+    <!-- ── 04. CORAL + SAND ── -->
+    <div class="accent-card">
+      <div class="ac-dark">
+        <div class="ac-option-num">04</div>
+        <div class="ac-hero-num" style="color:#ff6b4a;">1,842</div>
+        <div class="ac-cal-label">קלוריות · מתוך 2,200</div>
+        <div class="ac-hairline"><div class="track"></div><div class="fill" style="width:84%; background:#ff6b4a;"></div></div>
+        <div class="ac-meta"><span>358 נותרו</span><span>84%</span></div>
+        <div class="ac-pro-row">
+          <span class="ac-pro-label">חלבון</span>
+          <span class="ac-pro-num" style="color:#c4965a;">112g</span>
+          <div class="ac-pro-bar"><div class="track"></div><div class="fill" style="width:75%; background:#c4965a;"></div></div>
+        </div>
+        <div class="ac-rows">
+          <div class="ac-row">
+            <span class="ac-row-name">שיבולת שועל</span>
+            <span class="ac-row-num" style="color:#ff6b4a;">320</span>
+          </div>
+          <div class="ac-row">
+            <span class="ac-row-name">חזה עוף</span>
+            <span class="ac-row-num" style="color:#ff6b4a;">610</span>
+          </div>
+        </div>
+      </div>
+      <div class="ac-light">
+        <div class="ac-light-inner">
+          <div class="ac-l-hero" style="color:#c43a20;">1,842</div>
+          <div class="ac-l-hairline"><div class="fill" style="width:84%; background:#c43a20;"></div></div>
+          <div class="ac-l-meta" style="color:#7a5030;">חלבון 112g · 75%</div>
+          <div class="ac-l-rows">
+            <div class="ac-l-row"><span class="ac-l-row-name">שיבולת שועל</span><span class="ac-l-row-num" style="color:#c43a20;">320</span></div>
+            <div class="ac-l-row"><span class="ac-l-row-name">חזה עוף</span><span class="ac-l-row-num" style="color:#c43a20;">610</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="ac-chips">
+        <div class="ac-chip"><div class="ac-dot" style="background:#ff6b4a;"></div><span>קלוריות</span></div>
+        <div class="ac-chip"><div class="ac-dot" style="background:#c4965a;"></div><span>חלבון</span></div>
+      </div>
+      <div class="ac-name">Coral + Sand</div>
+    </div>
+
+    <!-- ── 05. CRIMSON + CLAY ── -->
+    <div class="accent-card">
+      <div class="ac-dark">
+        <div class="ac-option-num">05</div>
+        <div class="ac-hero-num" style="color:#e8453a;">1,842</div>
+        <div class="ac-cal-label">קלוריות · מתוך 2,200</div>
+        <div class="ac-hairline"><div class="track"></div><div class="fill" style="width:84%; background:#e8453a;"></div></div>
+        <div class="ac-meta"><span>358 נותרו</span><span>84%</span></div>
+        <div class="ac-pro-row">
+          <span class="ac-pro-label">חלבון</span>
+          <span class="ac-pro-num" style="color:#b87050;">112g</span>
+          <div class="ac-pro-bar"><div class="track"></div><div class="fill" style="width:75%; background:#b87050;"></div></div>
+        </div>
+        <div class="ac-rows">
+          <div class="ac-row">
+            <span class="ac-row-name">שיבולת שועל</span>
+            <span class="ac-row-num" style="color:#e8453a;">320</span>
+          </div>
+          <div class="ac-row">
+            <span class="ac-row-name">חזה עוף</span>
+            <span class="ac-row-num" style="color:#e8453a;">610</span>
+          </div>
+        </div>
+      </div>
+      <div class="ac-light">
+        <div class="ac-light-inner">
+          <div class="ac-l-hero" style="color:#b83028;">1,842</div>
+          <div class="ac-l-hairline"><div class="fill" style="width:84%; background:#b83028;"></div></div>
+          <div class="ac-l-meta" style="color:#7a4830;">חלבון 112g · 75%</div>
+          <div class="ac-l-rows">
+            <div class="ac-l-row"><span class="ac-l-row-name">שיבולת שועל</span><span class="ac-l-row-num" style="color:#b83028;">320</span></div>
+            <div class="ac-l-row"><span class="ac-l-row-name">חזה עוף</span><span class="ac-l-row-num" style="color:#b83028;">610</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="ac-chips">
+        <div class="ac-chip"><div class="ac-dot" style="background:#e8453a;"></div><span>קלוריות</span></div>
+        <div class="ac-chip"><div class="ac-dot" style="background:#b87050;"></div><span>חלבון</span></div>
+      </div>
+      <div class="ac-name">Crimson + Clay</div>
+    </div>
+
+  </div>
+
+  <!-- Notes -->
+  <div class="notes">
+    <div class="note">
+      <div class="note-label">הרקע</div>
+      <div class="note-body">
+        פחם חמים #222220 במקום שחור-כחול. בלייט: #f0efe9 — אותה טמפרטורה חמה. שניהם מרגישים authored, לא generated.
+      </div>
+    </div>
+    <div class="note">
+      <div class="note-label">היררכיה</div>
+      <div class="note-body">
+        1,842 ב-76px, weight 200 — הנתון הוא הדיזיין. ה-progress hairline מחליף את progress bar בתוך card. פחות chrome, יותר מידע.
+      </div>
+    </div>
+    <div class="note">
+      <div class="note-label">צבע</div>
+      <div class="note-body">
+        כחול ו-ירוק רק על הספרות עצמן. אין tinted backgrounds, אין colored borders, אין icon בצבע. הצבע עובד כי הוא נדיר.
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

@@ -78,6 +78,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
   const [sortAsc, setSortAsc] = useState(false)
   const [chartMetric7,  setChartMetric7]  = useState<'cal' | 'prot' | 'fluid'>('cal')
   const [chartMetric30, setChartMetric30] = useState<'cal' | 'prot' | 'fluid'>('cal')
+  const [selectedBarDate, setSelectedBarDate] = useState<string | null>(null)
   const [statsPeriod, setStatsPeriod] = useState<'week' | 'month'>(
     () => (localStorage.getItem('stats-period') as 'week' | 'month') ?? 'week'
   )
@@ -113,7 +114,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
     return () => window.removeEventListener('scroll', onScroll)
   }, [view])
   const [historyModalOpen, setHistoryModalOpen] = useState(false)
-  useLockBodyScroll(historyModalOpen)
+  useLockBodyScroll(historyModalOpen || selectedBarDate !== null)
 
   useEffect(() => {
     if (!historyModalOpen) return
@@ -121,6 +122,13 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
   }, [historyModalOpen])
+
+  useEffect(() => {
+    if (!selectedBarDate) return
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setSelectedBarDate(null) }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [selectedBarDate])
   const [historySearch,    setHistorySearch]    = useState('')
   const historySearchRef = useRef<HTMLInputElement>(null)
   const searchInputRef   = useRef<HTMLInputElement>(null)
@@ -390,7 +398,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                           borderTop: '1px solid var(--border)',
                         }}
                       >
-                        <div style={{ width: 5, height: 5, borderRadius: '50%', background: 'rgba(139,92,246,0.45)', flexShrink: 0 }} />
+                        <div style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--purple-border-hi)', flexShrink: 0 }} />
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <p style={{ fontSize: 12, color: 'var(--text-2)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                             {meal.name}
@@ -815,7 +823,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                           <button key={entry.id}
                             onClick={() => { setSearch(entry.name); setHistoryModalOpen(false); setHistorySearch('') }}
                             style={{ display: 'flex', alignItems: 'center', width: '100%', padding: '10px 14px', background: 'transparent', border: 'none', borderBottom: '1px solid var(--border)', cursor: 'pointer', gap: 10, textAlign: 'start', fontFamily: 'inherit', transition: 'background .12s' }}
-                            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(139,92,246,0.05)')}
+                            onMouseEnter={e => (e.currentTarget.style.background = 'var(--purple-fill)')}
                             onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                           >
                             <span className="icon icon-sm" style={{ color: 'var(--purple)', flexShrink: 0 }}>restaurant</span>
@@ -1026,7 +1034,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
         }), 1)
         const barColor7        = isCal7 ? 'var(--blue)'            : isProt7 ? 'var(--green)'            : 'var(--blue)'
         const goalDashColor7   = isCal7 ? 'var(--blue-border)' : isProt7 ? 'var(--green-border)' : 'var(--blue-glow)'
-        const goalLegendColor7 = isCal7 ? 'rgba(59,130,246,0.5)'  : isProt7 ? 'rgba(16,185,129,0.5)'  : 'rgba(59,130,246,0.4)'
+        const goalLegendColor7 = isCal7 ? 'var(--blue-border)'  : isProt7 ? 'var(--green-border)'  : 'var(--blue-glow)'
 
         // Chart values derived from chartMetric30 toggle (30-day line chart)
         const isCal30   = chartMetric30 === 'cal'
@@ -1197,6 +1205,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                         const goalVal  = isCal7 ? b.goalCal : isProt7 ? b.goalProt : b.goalFluid
                         const hasBar   = b.hasData || (isFluid7 && b.fluid > 0)
                         const barHeight  = hasBar ? Math.max(4, Math.round((val / maxVal7) * barH)) : 0
+                        const isSelected = selectedBarDate === b.dateKey
                         const goalHeight = goalVal > 0 ? Math.max(2, Math.round((goalVal / maxVal7) * barH)) : 0
                         const overGoal = hasBar && val > goalVal && goalVal > 0
                         const barBg    = isFluid7
@@ -1206,15 +1215,25 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                           ? (val >= 1000 ? `${(val / 1000).toFixed(1)}` : `${Math.round(val)}`)
                           : isCal7 ? `${Math.round(val)}` : `${Math.round(val * 10) / 10}`
                         return (
-                          <div key={b.dateKey} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                          <div
+                            key={b.dateKey}
+                            onClick={b.hasData ? () => setSelectedBarDate(b.dateKey) : undefined}
+                            style={{
+                              flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
+                              cursor: b.hasData ? 'pointer' : 'default',
+                              borderRadius: 6,
+                              background: isSelected ? 'var(--blue-fill)' : 'transparent',
+                              transition: 'background .15s',
+                            }}
+                          >
                             <div style={{ position: 'relative', width: '100%', height: barH, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
                               {goalHeight > 0 && <div style={{ position: 'absolute', bottom: goalHeight, left: 0, right: 0, borderTop: `1.5px dashed ${goalDashColor7}` }} />}
                               {hasBar && (
                                 <div style={{
                                   width: '70%', height: barHeight,
                                   borderRadius: '4px 4px 0 0',
-                                  background: barBg, opacity: 0.85,
-                                  transition: 'height .3s ease',
+                                  background: barBg, opacity: isSelected ? 1 : 0.85,
+                                  transition: 'height .3s ease, opacity .15s',
                                   display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
                                   paddingBottom: 3, overflow: 'hidden',
                                 }}>
@@ -1226,7 +1245,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                                 </div>
                               )}
                             </div>
-                            <span style={{ fontSize: 9, fontWeight: 600, color: 'var(--text-3)' }}>{b.label}</span>
+                            <span style={{ fontSize: 9, fontWeight: 600, color: isSelected ? 'var(--blue-hi)' : 'var(--text-3)' }}>{b.label}</span>
                           </div>
                         )
                       })}
@@ -1265,7 +1284,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                   </div>
                   {/* 7-day insight */}
                   {last7.length >= 3 && (
-                    <div style={{ background: 'rgba(59,130,246,0.06)', border: '1px solid rgba(59,130,246,0.15)', borderRadius: 10, padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    <div style={{ background: 'var(--blue-fill)', border: '1px solid var(--blue-chip)', borderRadius: 10, padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
                       {/* calories row */}
                       <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '2px 5px', fontSize: 12, lineHeight: 1.5 }}>
                         <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--blue-hi)', display: 'inline-block', flexShrink: 0 }} />
@@ -1279,7 +1298,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                         <span style={{
                           fontSize: 11, fontWeight: 600, borderRadius: 5, padding: '1px 6px',
                           color: delta7Cal === 0 ? 'var(--green-hi)' : delta7Cal > 0 ? 'var(--amber)' : 'var(--blue-hi)',
-                          background: delta7Cal === 0 ? 'rgba(52,211,153,0.1)' : delta7Cal > 0 ? 'rgba(251,146,60,0.1)' : 'rgba(96,165,250,0.1)',
+                          background: delta7Cal === 0 ? 'var(--green-fill)' : delta7Cal > 0 ? 'rgba(251,146,60,0.1)' : 'var(--blue-fill)',
                         }}>
                           {delta7Cal === 0
                             ? (lang === 'he' ? 'בדיוק ביעד' : 'on target')
@@ -1299,7 +1318,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                         <span style={{
                           fontSize: 11, fontWeight: 600, borderRadius: 5, padding: '1px 6px',
                           color: delta7Prot === 0 ? 'var(--green-hi)' : delta7Prot > 0 ? 'var(--amber)' : 'var(--blue-hi)',
-                          background: delta7Prot === 0 ? 'rgba(52,211,153,0.1)' : delta7Prot > 0 ? 'rgba(251,146,60,0.1)' : 'rgba(96,165,250,0.1)',
+                          background: delta7Prot === 0 ? 'var(--green-fill)' : delta7Prot > 0 ? 'rgba(251,146,60,0.1)' : 'var(--blue-fill)',
                         }}>
                           {delta7Prot === 0
                             ? (lang === 'he' ? 'בדיוק ביעד' : 'on target')
@@ -1526,7 +1545,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
 
                   {/* 30-day insight */}
                   {last30.length >= 7 && (
-                    <div style={{ background: 'rgba(59,130,246,0.06)', border: '1px solid rgba(59,130,246,0.15)', borderRadius: 10, padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    <div style={{ background: 'var(--blue-fill)', border: '1px solid var(--blue-chip)', borderRadius: 10, padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
                       {/* calories row */}
                       <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '2px 5px', fontSize: 12, lineHeight: 1.5 }}>
                         <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--blue-hi)', display: 'inline-block', flexShrink: 0 }} />
@@ -1540,7 +1559,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                         <span style={{
                           fontSize: 11, fontWeight: 600, borderRadius: 5, padding: '1px 6px',
                           color: delta30Cal === 0 ? 'var(--green-hi)' : delta30Cal > 0 ? 'var(--amber)' : 'var(--blue-hi)',
-                          background: delta30Cal === 0 ? 'rgba(52,211,153,0.1)' : delta30Cal > 0 ? 'rgba(251,146,60,0.1)' : 'rgba(96,165,250,0.1)',
+                          background: delta30Cal === 0 ? 'var(--green-fill)' : delta30Cal > 0 ? 'rgba(251,146,60,0.1)' : 'var(--blue-fill)',
                         }}>
                           {delta30Cal === 0
                             ? (lang === 'he' ? 'בדיוק ביעד' : 'on target')
@@ -1560,7 +1579,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                         <span style={{
                           fontSize: 11, fontWeight: 600, borderRadius: 5, padding: '1px 6px',
                           color: delta30Prot === 0 ? 'var(--green-hi)' : delta30Prot > 0 ? 'var(--amber)' : 'var(--blue-hi)',
-                          background: delta30Prot === 0 ? 'rgba(52,211,153,0.1)' : delta30Prot > 0 ? 'rgba(251,146,60,0.1)' : 'rgba(96,165,250,0.1)',
+                          background: delta30Prot === 0 ? 'var(--green-fill)' : delta30Prot > 0 ? 'rgba(251,146,60,0.1)' : 'var(--blue-fill)',
                         }}>
                           {delta30Prot === 0
                             ? (lang === 'he' ? 'בדיוק ביעד' : 'on target')
@@ -1572,6 +1591,39 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                 </>
               )}
             </div>}
+          </div>
+        )
+      })()}
+
+      {/* ── Bar day detail modal ─────────────────────────────────────────── */}
+      {selectedBarDate && (() => {
+        const data = grouped.get(selectedBarDate)
+        if (!data) return null
+        return (
+          <div className="compose-modal-backdrop" onClick={() => setSelectedBarDate(null)}>
+            <div
+              className="compose-modal"
+              style={{ maxWidth: 440, padding: 0, overflow: 'hidden', maxHeight: '85vh', display: 'flex', flexDirection: 'column' }}
+              onClick={e => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', padding: '10px 10px 0' }}>
+                <button
+                  onClick={() => setSelectedBarDate(null)}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 4, display: 'flex' }}
+                >
+                  <span className="icon icon-sm">close</span>
+                </button>
+              </div>
+              {/* Day summary */}
+              <div style={{ padding: '0 14px 12px' }}>
+                <DayCardContent date={selectedBarDate} data={data} />
+              </div>
+              {/* Scrollable meals */}
+              <div style={{ overflowY: 'auto', flex: 1 }}>
+                <MealsList data={data} />
+              </div>
+            </div>
           </div>
         )
       })()}
@@ -1603,7 +1655,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
           borderRadius: 999,
           background: 'var(--blue-select)',
           border: '1px solid var(--blue-border-hi)',
-          boxShadow: '0 0 14px rgba(59,130,246,0.3)',
+          boxShadow: '0 0 14px var(--blue-glow)',
           transition: 'left 0.28s cubic-bezier(.34,1.56,.64,1)',
           pointerEvents: 'none',
         }} />

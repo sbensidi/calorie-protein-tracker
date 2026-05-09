@@ -89,6 +89,12 @@
   --amber-glow:     rgba(245,158,11,0.25);
   --amber-border:   rgba(245,158,11,0.35);
   --indigo-border:  rgba(99,102,241,0.35);
+  --purple-fill:      rgba(139,92,246,0.07);
+  --purple-chip:      rgba(139,92,246,0.12);
+  --purple-select:    rgba(139,92,246,0.18);
+  --purple-glow:      rgba(139,92,246,0.25);
+  --purple-border:    rgba(139,92,246,0.35);
+  --purple-border-hi: rgba(139,92,246,0.50);
 }
 
 [data-theme="light"] {
@@ -167,6 +173,12 @@
   --amber-glow:     rgba(180,83,9,0.25);
   --amber-border:   rgba(180,83,9,0.35);
   --indigo-border:  rgba(67,56,202,0.35);
+  --purple-fill:      rgba(109,40,217,0.07);
+  --purple-chip:      rgba(109,40,217,0.12);
+  --purple-select:    rgba(109,40,217,0.18);
+  --purple-glow:      rgba(109,40,217,0.25);
+  --purple-border:    rgba(109,40,217,0.35);
+  --purple-border-hi: rgba(109,40,217,0.50);
 }
 
 /* Accessibility: focus ring */
@@ -321,8 +333,8 @@ input[type="number"] { -moz-appearance: textfield; }
   outline: none;
 }
 .inp::placeholder { color: var(--text-3); }
-.inp:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(59,130,246,0.12); }
-.inp-green:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(16,185,129,0.12); }
+.inp:focus { border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-chip); }
+.inp-green:focus { border-color: var(--green); box-shadow: 0 0 0 3px var(--green-chip); }
 
 /* Buttons */
 .btn-primary {
@@ -434,6 +446,13 @@ input[type="number"] { -moz-appearance: textfield; }
   transition: left 0.28s cubic-bezier(.34,1.56,.64,1), width 0.28s cubic-bezier(.34,1.56,.64,1);
 }
 
+/* FAB circular add button */
+.fab-btn {
+  box-shadow: 0 4px 20px rgba(59,130,246,0.5);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.fab-btn:hover { box-shadow: 0 6px 28px rgba(59,130,246,0.65); }
+
 /* FAB icon button press */
 .fab-pill-btn {
   transition: color 0.2s, transform 0.12s ease !important;
@@ -481,8 +500,8 @@ input[type="number"] { -moz-appearance: textfield; }
   display: inline-flex; align-items: center; gap: 4px;
   padding: 3px 10px;
   border-radius: 999px;
-  background: rgba(59,130,246,0.10);
-  border: 1px solid rgba(59,130,246,0.2);
+  background: var(--blue-tint);
+  border: 1px solid var(--blue-glow);
   color: var(--blue-hi);
   font-size: 12px;
   font-weight: 600;
@@ -490,7 +509,7 @@ input[type="number"] { -moz-appearance: textfield; }
   transition: background .15s, transform .1s;
   font-family: inherit;
 }
-.chip:hover  { background: rgba(59,130,246,0.18); }
+.chip:hover  { background: var(--blue-select); }
 .chip:active { transform: scale(0.95); }
 
 /* Select */
@@ -532,10 +551,10 @@ details[open] .chevron-badge .icon { transform: rotate(180deg); }
   transition: background .12s, border-color .12s;
   user-select: none;
 }
-.cb:hover { border-color: rgba(139,92,246,0.45); }
+.cb:hover { border-color: var(--purple-border-hi); }
 .cb.cb-on {
   background: var(--purple-tint);
-  border-color: rgba(139,92,246,0.55);
+  border-color: var(--purple-border-hi);
 }
 
 /* ── Group type-picker (inline panel under group header) ────────── */
@@ -565,13 +584,13 @@ details[open] .chevron-badge .icon { transform: rotate(180deg); }
   flex-shrink: 0;
 }
 .type-picker-radio.on {
-  background: rgba(245,158,11,0.15);
-  border-color: rgba(245,158,11,0.55);
+  background: var(--amber-tint);
+  border-color: var(--amber-border);
 }
 
 /* ── Group action bar (below meal list, on selection) ───────────── */
 .group-action-bar {
-  border: 1px solid rgba(139,92,246,0.2);
+  border: 1px solid var(--purple-glow);
   border-radius: 11px;
   overflow: hidden;
   margin-top: 6px;
@@ -579,8 +598,8 @@ details[open] .chevron-badge .icon { transform: rotate(180deg); }
 .group-action-bar-header {
   display: flex; align-items: center; gap: 8px;
   padding: 8px 12px;
-  background: rgba(139,92,246,0.07);
-  border-bottom: 1px solid rgba(139,92,246,0.12);
+  background: var(--purple-fill);
+  border-bottom: 1px solid var(--purple-chip);
 }
 .group-action-bar-btns {
   display: flex;
@@ -603,13 +622,13 @@ details[open] .chevron-badge .icon { transform: rotate(180deg); }
 /* ── Composed meal card ─────────────────────────────────────────── */
 .composed-card {
   background: var(--depth-2);
-  border: 1px solid rgba(139,92,246,0.15);
+  border: 1px solid var(--purple-tint);
   border-radius: 11px;
   overflow: hidden;
   margin-bottom: 4px;
 }
 .composed-children {
-  border-top: 1px solid rgba(139,92,246,0.1);
+  border-top: 1px solid var(--purple-tint);
   background: var(--depth-1);
   padding: 6px 8px 8px;
   display: flex; flex-direction: column; gap: 3px;
@@ -676,14 +695,14 @@ details[open] .chevron-badge .icon { transform: rotate(180deg); }
   transition: background .15s, color .15s, border-color .15s;
 }
 .seg-btn--manual {
-  background: rgba(59,130,246,0.14);
+  background: var(--blue-chip);
   color: var(--blue-hi);
-  border: 1px solid rgba(59,130,246,0.28);
+  border: 1px solid var(--blue-glow);
 }
 .seg-btn--scan {
-  background: rgba(16,185,129,0.14);
+  background: var(--green-chip);
   color: var(--green-hi);
-  border: 1px solid rgba(16,185,129,0.28);
+  border: 1px solid var(--green-glow);
 }
 
 /* ── Barcode scanner viewfinder ─────────────────────────────────── */
@@ -763,3 +782,115 @@ details[open] .chevron-badge .icon { transform: rotate(180deg); }
   align-items: center; justify-content: center;
   padding: 32px 16px; gap: 8px;
 }
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   HYBRID THEME — Coral + Sand
+   To remove: delete this entire block (search "HYBRID THEME")
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+[data-style="hybrid"][data-theme="dark"] {
+  /* Backgrounds — warm charcoal instead of navy-black */
+  --bg:        #222220;
+  --bg-card:   #2a2a28;
+  --bg-card2:  #313130;
+
+  /* Text — warm cream instead of cool-white */
+  --text:   #f0eeea;
+  --text-2: #8a7e72;
+  --text-3: #635850;
+
+  /* Calories → Coral */
+  --blue:    #ff6b4a;
+  --blue-hi: #ff8568;
+
+  /* Protein → Sand */
+  --green:     #c4965a;
+  --green-hi:  #d4aa72;
+  --green-soft:#d4aa72;
+
+  /* Coral tint scale */
+  --blue-fill:      rgba(255,107,74,0.07);
+  --blue-tint:      rgba(255,107,74,0.10);
+  --blue-chip:      rgba(255,107,74,0.12);
+  --blue-select:    rgba(255,107,74,0.18);
+  --blue-glow:      rgba(255,107,74,0.25);
+  --blue-border:    rgba(255,107,74,0.35);
+  --blue-border-hi: rgba(255,107,74,0.40);
+
+  /* Sand tint scale */
+  --green-fill:   rgba(196,150,90,0.07);
+  --green-tint:   rgba(196,150,90,0.10);
+  --green-chip:   rgba(196,150,90,0.12);
+  --green-select: rgba(196,150,90,0.18);
+  --green-glow:   rgba(196,150,90,0.25);
+  --green-border: rgba(196,150,90,0.35);
+
+  /* Dinner — muted rose (replaces purple) */
+  --purple:       #c06878;
+  --purple-tint:      rgba(192,104,120,0.10);
+  --purple-fill:      rgba(192,104,120,0.07);
+  --purple-chip:      rgba(192,104,120,0.12);
+  --purple-select:    rgba(192,104,120,0.18);
+  --purple-glow:      rgba(192,104,120,0.25);
+  --purple-border:    rgba(192,104,120,0.35);
+  --purple-border-hi: rgba(192,104,120,0.50);
+}
+
+[data-style="hybrid"][data-theme="light"] {
+  /* Backgrounds — warm off-white instead of cool gray */
+  --bg:        #f0efe9;
+  --bg-card:   #ffffff;
+  --bg-card2:  #e8e7e1;
+
+  /* Text — warm near-black instead of cool-blue-black */
+  --text:   #1a1a18;
+  --text-2: #6a5e52;
+  --text-3: #9a8e84;
+
+  /* Calories → Coral (darkened for WCAG AA on light) */
+  --blue:    #c43a20;
+  --blue-hi: #a83018;
+
+  /* Protein → Sand (darkened for WCAG AA on light) */
+  --green:     #7a5030;
+  --green-hi:  #5a3a20;
+  --green-soft:#5a3a20;
+
+  /* Coral tint scale */
+  --blue-fill:      rgba(196,58,32,0.06);
+  --blue-tint:      rgba(196,58,32,0.10);
+  --blue-chip:      rgba(196,58,32,0.12);
+  --blue-select:    rgba(196,58,32,0.18);
+  --blue-glow:      rgba(196,58,32,0.25);
+  --blue-border:    rgba(196,58,32,0.35);
+  --blue-border-hi: rgba(196,58,32,0.40);
+
+  /* Sand tint scale */
+  --green-fill:   rgba(122,80,48,0.06);
+  --green-tint:   rgba(122,80,48,0.10);
+  --green-chip:   rgba(122,80,48,0.12);
+  --green-select: rgba(122,80,48,0.18);
+  --green-glow:   rgba(122,80,48,0.25);
+  --green-border: rgba(122,80,48,0.35);
+
+  /* Dinner — muted rose (replaces purple) */
+  --purple:       #8b3545;
+  --purple-tint:      rgba(139,53,69,0.10);
+  --purple-fill:      rgba(139,53,69,0.07);
+  --purple-chip:      rgba(139,53,69,0.12);
+  --purple-select:    rgba(139,53,69,0.18);
+  --purple-glow:      rgba(139,53,69,0.25);
+  --purple-border:    rgba(139,53,69,0.35);
+  --purple-border-hi: rgba(139,53,69,0.50);
+}
+
+/* Component shadow overrides — tab pill + FAB */
+[data-style="hybrid"] .tab-indicator {
+  box-shadow: 0 2px 10px rgba(255,107,74,0.35);
+}
+[data-style="hybrid"] .fab-btn       { box-shadow: 0 4px 20px rgba(255,107,74,0.5); }
+[data-style="hybrid"] .fab-btn:hover { box-shadow: 0 6px 28px rgba(255,107,74,0.65); }
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   END HYBRID THEME
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */

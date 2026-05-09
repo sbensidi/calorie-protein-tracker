@@ -30,7 +30,7 @@ function levenshtein(a: string, b: string): number {
   return dp[m][n]
 }
 
-function scoreAgainst(query: string, candidate: string): number {
+export function fuzzyScore(query: string, candidate: string): number {
   const q = normalize(query)
   const c = normalize(candidate)
 
@@ -76,7 +76,7 @@ export function fuzzyMatchLibrary(
   for (const item of library) {
     const name = lang === 'he' ? item.name_he : item.name_en
     const altName = lang === 'he' ? item.name_en : item.name_he
-    const score = Math.max(scoreAgainst(query, name), scoreAgainst(query, altName) * 0.9)
+    const score = Math.max(fuzzyScore(query, name), fuzzyScore(query, altName) * 0.9)
 
     if (score >= THRESHOLD && (!best || score > best.score)) {
       best = { item, score }

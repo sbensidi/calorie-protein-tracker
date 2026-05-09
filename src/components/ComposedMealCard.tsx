@@ -147,7 +147,7 @@ export function ComposedMealCard({
             onClick={onAddIngredient}
             style={{
               marginTop: 4, width: '100%', background: 'transparent',
-              border: '1px dashed rgba(139,92,246,0.3)', borderRadius: 8,
+              border: '1px dashed var(--purple-glow)', borderRadius: 8,
               padding: '6px 10px', fontFamily: 'inherit',
               fontSize: 11, fontWeight: 600, color: 'var(--purple)',
               cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5,
