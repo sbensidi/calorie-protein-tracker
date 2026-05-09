@@ -347,7 +347,7 @@ export function TodayTab({
   // ── Render: meal group ───────────────────────────────────────
   const mealGroup = (type: MealType, i: number) => {
     const typeMeals   = mealsByType[type]
-    const isCollapsed = collapsed.has(type)
+    const isCollapsed = styleMode === 'minimal' ? false : collapsed.has(type)
     const selSet      = selectedIds[type] ?? new Set<string>()
 
     const totalCal  = Math.round(typeMeals.reduce((s, m) => s + m.calories, 0))
@@ -373,72 +373,79 @@ export function TodayTab({
     return (
       <div key={type} className="card fade-up" style={{ animationDelay: `${i * 0.05}s`, marginBottom: 12, overflow: 'hidden' }}>
 
-        {/* ── Group header (full row clickable) ──────────── */}
-        <div
-          role="button"
-          tabIndex={0}
-          aria-expanded={!isCollapsed}
-          aria-label={`${t(lang, type)} — ${isCollapsed ? (lang === 'he' ? 'פתח' : 'expand') : (lang === 'he' ? 'כווץ' : 'collapse')}`}
-          onClick={() => toggleCollapse(type)}
-          onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') toggleCollapse(type) }}
-          style={{
-            display: 'flex', alignItems: 'center', gap: 7,
-            padding: '12px 14px', cursor: 'pointer',
-            userSelect: 'none',
-          }}
-        >
-          <span className="icon icon-sm" style={{ color: MEAL_COLORS[type] }}>
-            {MEAL_ICONS[type]}
-          </span>
-          <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-2)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-            {t(lang, type)}
-          </span>
-
-          {/* Totals when collapsed */}
-          {isCollapsed && (
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginInlineStart: 8 }}>
-              <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 2, fontSize: 12, fontWeight: 700, color: 'var(--blue-hi)' }}>
-                <span>{totalCal}</span>
-                <span style={{ fontSize: 10, fontWeight: 600, opacity: 0.8 }}>{t(lang, 'caloriesUnit')}</span>
-              </span>
-              <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 2, fontSize: 12, fontWeight: 700, color: 'var(--green-hi)' }}>
-                <span>{totalProt}</span>
-                <span style={{ fontSize: 10, fontWeight: 600, opacity: 0.8 }}>{t(lang, 'proteinUnit')}</span>
-              </span>
+        {/* ── Group header ────────────────────────────────── */}
+        {styleMode === 'minimal' ? (
+          /* Minimal: text-only label, no icon, no buttons */
+          <div style={{ padding: '14px 4px 4px', display: 'flex', alignItems: 'center' }}>
+            <span style={{ fontSize: 10, fontWeight: 400, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
+              {t(lang, type)}
             </span>
-          )}
-
-          <span style={{ flex: 1 }} />
-
-          {/* Pencil — change group type */}
-          <button
-            onClick={e => {
-              e.stopPropagation()
-              setEditingGroupType(editingGroupType === type ? null : type)
-            }}
+          </div>
+        ) : (
+          /* Classic/hybrid: full collapsible header with icon + buttons */
+          <div
+            role="button"
+            tabIndex={0}
+            aria-expanded={!isCollapsed}
+            aria-label={`${t(lang, type)} — ${isCollapsed ? (lang === 'he' ? 'פתח' : 'expand') : (lang === 'he' ? 'כווץ' : 'collapse')}`}
+            onClick={() => toggleCollapse(type)}
+            onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') toggleCollapse(type) }}
             style={{
-              width: 26, height: 26, borderRadius: 8, flexShrink: 0,
-              background: editingGroupType === type ? 'rgba(245,158,11,0.12)' : 'var(--inp-bg)',
-              border: `1px solid ${editingGroupType === type ? 'rgba(245,158,11,0.3)' : 'var(--border)'}`,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer',
+              display: 'flex', alignItems: 'center', gap: 7,
+              padding: '12px 14px', cursor: 'pointer',
+              userSelect: 'none',
             }}
-            aria-label={t(lang, 'changeGroup')}
           >
-            <span className="icon icon-sm" style={{ color: editingGroupType === type ? 'var(--amber)' : 'var(--text-3)' }}>
-              edit
+            <span className="icon icon-sm" style={{ color: MEAL_COLORS[type] }}>
+              {MEAL_ICONS[type]}
             </span>
-          </button>
-
-          <span style={{ width: 6 }} />
-
-          {/* Chevron */}
-          <span className="chevron-badge">
-            <span className="icon icon-sm" style={{ color: 'var(--text-3)', transform: isCollapsed ? 'rotate(0deg)' : 'rotate(180deg)' }}>
-              expand_more
+            <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-2)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+              {t(lang, type)}
             </span>
-          </span>
-        </div>
+
+            {isCollapsed && (
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginInlineStart: 8 }}>
+                <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 2, fontSize: 12, fontWeight: 700, color: 'var(--blue-hi)' }}>
+                  <span>{totalCal}</span>
+                  <span style={{ fontSize: 10, fontWeight: 600, opacity: 0.8 }}>{t(lang, 'caloriesUnit')}</span>
+                </span>
+                <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 2, fontSize: 12, fontWeight: 700, color: 'var(--green-hi)' }}>
+                  <span>{totalProt}</span>
+                  <span style={{ fontSize: 10, fontWeight: 600, opacity: 0.8 }}>{t(lang, 'proteinUnit')}</span>
+                </span>
+              </span>
+            )}
+
+            <span style={{ flex: 1 }} />
+
+            <button
+              onClick={e => {
+                e.stopPropagation()
+                setEditingGroupType(editingGroupType === type ? null : type)
+              }}
+              style={{
+                width: 26, height: 26, borderRadius: 8, flexShrink: 0,
+                background: editingGroupType === type ? 'rgba(245,158,11,0.12)' : 'var(--inp-bg)',
+                border: `1px solid ${editingGroupType === type ? 'rgba(245,158,11,0.3)' : 'var(--border)'}`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: 'pointer',
+              }}
+              aria-label={t(lang, 'changeGroup')}
+            >
+              <span className="icon icon-sm" style={{ color: editingGroupType === type ? 'var(--amber)' : 'var(--text-3)' }}>
+                edit
+              </span>
+            </button>
+
+            <span style={{ width: 6 }} />
+
+            <span className="chevron-badge">
+              <span className="icon icon-sm" style={{ color: 'var(--text-3)', transform: isCollapsed ? 'rotate(0deg)' : 'rotate(180deg)' }}>
+                expand_more
+              </span>
+            </span>
+          </div>
+        )}
 
         {/* ── Type picker (inline, under header) ─────────── */}
         {editingGroupType === type && (
@@ -506,19 +513,34 @@ export function TodayTab({
             ))}
 
             {/* Quick-add to this section */}
-            <button
-              onClick={() => openEntry(type)}
-              style={{
-                marginTop: 4, width: '100%', background: 'transparent',
-                border: '1px dashed var(--border)', borderRadius: 8,
-                padding: '6px 10px', fontFamily: 'inherit',
-                fontSize: 11, fontWeight: 600, color: MEAL_COLORS[type],
-                cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5,
-              }}
-            >
-              <span className="icon" style={{ fontSize: 14 }}>add</span>
-              {lang === 'he' ? `הוסף ל${t(lang, type as any)}` : `Add to ${t(lang, type as any)}`}
-            </button>
+            {styleMode === 'minimal' ? (
+              <button
+                onClick={() => openEntry(type)}
+                style={{
+                  marginTop: 6, background: 'transparent', border: 'none',
+                  padding: '4px 0', fontFamily: 'inherit',
+                  fontSize: 11, fontWeight: 300, color: 'var(--text-3)',
+                  cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4,
+                }}
+              >
+                <span className="icon" style={{ fontSize: 13 }}>add</span>
+                {lang === 'he' ? `הוסף ל${t(lang, type as any)}` : `Add to ${t(lang, type as any)}`}
+              </button>
+            ) : (
+              <button
+                onClick={() => openEntry(type)}
+                style={{
+                  marginTop: 4, width: '100%', background: 'transparent',
+                  border: '1px dashed var(--border)', borderRadius: 8,
+                  padding: '6px 10px', fontFamily: 'inherit',
+                  fontSize: 11, fontWeight: 600, color: MEAL_COLORS[type],
+                  cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5,
+                }}
+              >
+                <span className="icon" style={{ fontSize: 14 }}>add</span>
+                {lang === 'he' ? `הוסף ל${t(lang, type as any)}` : `Add to ${t(lang, type as any)}`}
+              </button>
+            )}
 
             {/* ── Action bar (shown when anything selected) ── */}
             {selCount > 0 && (

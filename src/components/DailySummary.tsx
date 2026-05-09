@@ -86,8 +86,8 @@ export function DailySummary({ meals, date, goalCalories, goalProtein, lang, flu
           {formatDate(date, lang)}
         </p>
 
-        {/* Hero percentage */}
-        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'flex-end', padding: '16px 4px 0', gap: 4 }}>
+        {/* Hero percentage — always right-aligned regardless of text direction */}
+        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: lang === 'he' ? 'flex-start' : 'flex-end', padding: '16px 4px 0', gap: 4 }}>
           <span style={{
             fontSize: 'clamp(72px, 26vw, 132px)',
             fontWeight: 100,
@@ -108,7 +108,7 @@ export function DailySummary({ meals, date, goalCalories, goalProtein, lang, flu
         </div>
 
         {/* Cal meta */}
-        <p style={{ fontSize: 12, fontWeight: 300, color: 'var(--text-2)', padding: '8px 4px 0', textAlign: 'end' }}>
+        <p style={{ fontSize: 12, fontWeight: 300, color: 'var(--text-2)', padding: '8px 4px 0', textAlign: 'right' }}>
           {totalCalories.toLocaleString()}
           {lang === 'he' ? ' מתוך ' : ' / '}
           {goalCalories.toLocaleString()} {t(lang, 'caloriesUnit')}

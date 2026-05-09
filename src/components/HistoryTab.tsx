@@ -1,6 +1,7 @@
 import { useState, useMemo, useRef, useEffect } from 'react'
 import { useDebounce } from '../hooks/useDebounce'
 import { useLockBodyScroll } from '../hooks/useLockBodyScroll'
+import { useAppContext } from '../context/AppContext'
 import type { Meal, FoodHistory, ComposedGroup } from '../types'
 import type { Lang } from '../lib/i18n'
 import { t, dir, formatDate, today, HE_MONTHS, EN_MONTHS } from '../lib/i18n'
@@ -64,6 +65,7 @@ const STATUS_COLOR: Record<DayData['status'], { border: string; badge: string; t
 // ── Component ────────────────────────────────────────────────────────
 
 export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntries = [], composedGroups = [], fluidGoalMl = 2500 }: HistoryTabProps) {
+  const { styleMode } = useAppContext()
   const todayKey = today()
 
   const [view, setView] = useState<'cal' | 'list' | 'stats'>(
@@ -258,6 +260,58 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
 
     const calHint  = data.calOk  ? `${t(lang, 'goal')}: ${data.goal.calories}` : `+${calDiff} ${t(lang, 'overGoalShort')}`
     const protHint = data.protOk ? `${t(lang, 'goal')}: ${data.goal.protein}`  : `${protDiff}${protUnit} ${t(lang, 'underGoalShort')}`
+
+    if (styleMode === 'minimal') {
+      const calPct  = data.goal.calories > 0 ? Math.min(100, data.totalCalories / data.goal.calories) : 0
+      const protPct = data.goal.protein  > 0 ? Math.min(100, data.totalProtein  / data.goal.protein)  : 0
+      return (
+        <>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 10 }}>
+            <p style={{ fontSize: 13, fontWeight: 400, color: 'var(--text)', margin: 0 }}>
+              {formatDate(date, lang)}
+            </p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 11, color: 'var(--text-3)' }}>
+                {data.meals.length} {t(lang, 'items')}
+              </span>
+              {chevron && (
+                <span className="chevron-badge">
+                  <span className="icon icon-sm" style={{ color: 'var(--text-3)' }}>expand_more</span>
+                </span>
+              )}
+            </div>
+          </div>
+          {/* Calories row */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+            <span style={{ fontSize: 11, color: 'var(--text-3)', whiteSpace: 'nowrap', flexShrink: 0, minWidth: 60 }}>
+              {Math.round(data.totalCalories)} {t(lang, 'caloriesUnit')}
+            </span>
+            <div style={{ flex: 1, height: 1, background: 'var(--border)', position: 'relative' }}>
+              <div style={{
+                position: 'absolute', top: 0, insetInlineStart: 0, bottom: 0,
+                width: `${calPct * 100}%`,
+                background: data.calOk ? 'var(--text-2)' : 'var(--blue)',
+                transition: 'width 0.5s ease',
+              }} />
+            </div>
+          </div>
+          {/* Protein row */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ fontSize: 11, color: 'var(--text-3)', whiteSpace: 'nowrap', flexShrink: 0, minWidth: 60 }}>
+              {Math.round(data.totalProtein * 10) / 10}{protUnit}
+            </span>
+            <div style={{ flex: 1, height: 1, background: 'var(--border)', position: 'relative' }}>
+              <div style={{
+                position: 'absolute', top: 0, insetInlineStart: 0, bottom: 0,
+                width: `${protPct * 100}%`,
+                background: 'var(--text-3)',
+                transition: 'width 0.5s ease',
+              }} />
+            </div>
+          </div>
+        </>
+      )
+    }
 
     return (
       <>
@@ -1628,80 +1682,112 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
         )
       })()}
 
-      {/* ── Pill FAB — always last child → stable in React tree → transitions work ── */}
-      <div
-        style={{
+      {/* ── View switcher — pill FAB (classic/hybrid) or text row (minimal) ── */}
+      {styleMode === 'minimal' ? (
+        <div style={{
           position: 'fixed',
-          bottom: 28,
-          insetInlineEnd: 'max(calc((100vw - 560px) / 2 + 24px), 24px)',
+          bottom: 'calc(20px + env(safe-area-inset-bottom, 0px))',
+          left: '50%',
+          transform: 'translateX(-50%)',
           zIndex: 40,
           display: 'flex',
           alignItems: 'center',
-          background: 'var(--bg-card2)',
-          border: '1px solid var(--border-hi)',
-          borderRadius: 999,
-          padding: fabPad,
-          gap: fabGap,
-          boxShadow: '0 8px 32px rgba(0,0,0,0.5), 0 2px 8px rgba(0,0,0,0.3), inset 0 1px 0 var(--surface-2)',
-        }}
-      >
-        {/* Sliding active indicator */}
-        <div style={{
-          position: 'absolute',
-          top: fabPad,
-          left: fabIndicatorLeft,
-          width: fabBtnSize,
-          height: fabBtnSize,
-          borderRadius: 999,
-          background: 'var(--blue-select)',
-          border: '1px solid var(--blue-border-hi)',
-          boxShadow: '0 0 14px var(--blue-glow)',
-          transition: 'left 0.28s cubic-bezier(.34,1.56,.64,1)',
-          pointerEvents: 'none',
-        }} />
-        {/* Calendar button */}
-        <button
-          className="fab-pill-btn"
-          onClick={() => { switchView('cal'); setSelectedDate(null) }}
+          gap: 24,
+        }}>
+          {([
+            { v: 'cal'   as const, label: lang === 'he' ? 'לוח' : 'Calendar' },
+            { v: 'list'  as const, label: lang === 'he' ? 'רשימה' : 'List'   },
+            { v: 'stats' as const, label: lang === 'he' ? 'גרף' : 'Chart'    },
+          ]).map(({ v, label }) => (
+            <button
+              key={v}
+              onClick={() => { switchView(v); setSelectedDate(null) }}
+              style={{
+                background: 'none', border: 'none', fontFamily: 'inherit',
+                fontSize: 12, fontWeight: view === v ? 600 : 300,
+                color: view === v ? 'var(--blue)' : 'var(--text-3)',
+                cursor: 'pointer', padding: '4px 0',
+                borderBottom: view === v ? '1.5px solid var(--blue)' : '1.5px solid transparent',
+                letterSpacing: '-0.01em',
+                transition: 'color 0.2s, border-color 0.2s',
+              }}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      ) : (
+        <div
           style={{
-            width: fabBtnSize, height: fabBtnSize, borderRadius: 999,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            border: 'none', background: 'transparent', cursor: 'pointer',
-            position: 'relative', zIndex: 1,
-            color: view === 'cal' ? 'var(--blue-hi)' : 'var(--text-3)',
+            position: 'fixed',
+            bottom: 28,
+            insetInlineEnd: 'max(calc((100vw - 560px) / 2 + 24px), 24px)',
+            zIndex: 40,
+            display: 'flex',
+            alignItems: 'center',
+            background: 'var(--bg-card2)',
+            border: '1px solid var(--border-hi)',
+            borderRadius: 999,
+            padding: fabPad,
+            gap: fabGap,
+            boxShadow: '0 8px 32px rgba(0,0,0,0.5), 0 2px 8px rgba(0,0,0,0.3), inset 0 1px 0 var(--surface-2)',
           }}
         >
-          <span className="icon" style={{ fontSize: 20 }}>calendar_month</span>
-        </button>
-        {/* List button */}
-        <button
-          className="fab-pill-btn"
-          onClick={() => { switchView('list'); setSelectedDate(null) }}
-          style={{
-            width: fabBtnSize, height: fabBtnSize, borderRadius: 999,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            border: 'none', background: 'transparent', cursor: 'pointer',
-            position: 'relative', zIndex: 1,
-            color: view === 'list' ? 'var(--blue-hi)' : 'var(--text-3)',
-          }}
-        >
-          <span className="icon" style={{ fontSize: 20 }}>format_list_bulleted</span>
-        </button>
-        {/* Stats button */}
-        <button
-          className="fab-pill-btn"
-          onClick={() => { switchView('stats'); setSelectedDate(null) }}
-          style={{
-            width: fabBtnSize, height: fabBtnSize, borderRadius: 999,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            border: 'none', background: 'transparent', cursor: 'pointer',
-            position: 'relative', zIndex: 1,
-            color: view === 'stats' ? 'var(--blue-hi)' : 'var(--text-3)',
-          }}
-        >
-          <span className="icon" style={{ fontSize: 20 }}>bar_chart</span>
-        </button>
-      </div>
+          {/* Sliding active indicator */}
+          <div style={{
+            position: 'absolute',
+            top: fabPad,
+            left: fabIndicatorLeft,
+            width: fabBtnSize,
+            height: fabBtnSize,
+            borderRadius: 999,
+            background: 'var(--blue-select)',
+            border: '1px solid var(--blue-border-hi)',
+            boxShadow: '0 0 14px var(--blue-glow)',
+            transition: 'left 0.28s cubic-bezier(.34,1.56,.64,1)',
+            pointerEvents: 'none',
+          }} />
+          <button
+            className="fab-pill-btn"
+            onClick={() => { switchView('cal'); setSelectedDate(null) }}
+            style={{
+              width: fabBtnSize, height: fabBtnSize, borderRadius: 999,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              border: 'none', background: 'transparent', cursor: 'pointer',
+              position: 'relative', zIndex: 1,
+              color: view === 'cal' ? 'var(--blue-hi)' : 'var(--text-3)',
+            }}
+          >
+            <span className="icon" style={{ fontSize: 20 }}>calendar_month</span>
+          </button>
+          <button
+            className="fab-pill-btn"
+            onClick={() => { switchView('list'); setSelectedDate(null) }}
+            style={{
+              width: fabBtnSize, height: fabBtnSize, borderRadius: 999,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              border: 'none', background: 'transparent', cursor: 'pointer',
+              position: 'relative', zIndex: 1,
+              color: view === 'list' ? 'var(--blue-hi)' : 'var(--text-3)',
+            }}
+          >
+            <span className="icon" style={{ fontSize: 20 }}>format_list_bulleted</span>
+          </button>
+          <button
+            className="fab-pill-btn"
+            onClick={() => { switchView('stats'); setSelectedDate(null) }}
+            style={{
+              width: fabBtnSize, height: fabBtnSize, borderRadius: 999,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              border: 'none', background: 'transparent', cursor: 'pointer',
+              position: 'relative', zIndex: 1,
+              color: view === 'stats' ? 'var(--blue-hi)' : 'var(--text-3)',
+            }}
+          >
+            <span className="icon" style={{ fontSize: 20 }}>bar_chart</span>
+          </button>
+        </div>
+      )}
     </>
   )
 }

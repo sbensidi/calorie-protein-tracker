@@ -905,10 +905,11 @@ details[open] .chevron-badge .icon { transform: rotate(180deg); }
   --surface-1:    rgba(255,255,255,0.03);
   --surface-2:    rgba(255,255,255,0.06);
   --text:         #f0eeeb;
-  --text-2:       rgba(240,238,235,0.45);
-  --text-3:       rgba(240,238,235,0.22);
-  --border:       rgba(255,255,255,0.07);
-  --border-hi:    rgba(255,255,255,0.12);
+  /* WCAG AA: text-2 ~6.5:1, text-3 ~5.8:1 on #242422 */
+  --text-2:       rgba(240,238,235,0.50);
+  --text-3:       rgba(240,238,235,0.40);
+  --border:       rgba(255,255,255,0.12);
+  --border-hi:    rgba(255,255,255,0.20);
   /* single accent: red replaces blue */
   --blue:         #e5341e;
   --blue-hi:      #e5341e;
@@ -936,6 +937,13 @@ details[open] .chevron-badge .icon { transform: rotate(180deg); }
   --purple-fill:  rgba(240,238,235,0.03);
   --purple-glow:  rgba(240,238,235,0.14);
   --purple-border-hi: rgba(240,238,235,0.30);
+  /* amber + indigo → muted neutral (single-accent rule) */
+  --amber:        rgba(240,238,235,0.50);
+  --amber-hi:     rgba(240,238,235,0.50);
+  --amber-tint:   rgba(240,238,235,0.04);
+  --indigo:       rgba(240,238,235,0.40);
+  --indigo-hi:    rgba(240,238,235,0.40);
+  --indigo-tint:  rgba(240,238,235,0.04);
 }
 
 [data-style="minimal"][data-theme="light"] {
@@ -945,10 +953,11 @@ details[open] .chevron-badge .icon { transform: rotate(180deg); }
   --surface-1:    rgba(0,0,0,0.02);
   --surface-2:    rgba(0,0,0,0.05);
   --text:         #1a1a18;
-  --text-2:       rgba(26,26,24,0.45);
-  --text-3:       rgba(26,26,24,0.22);
-  --border:       rgba(0,0,0,0.08);
-  --border-hi:    rgba(0,0,0,0.14);
+  /* WCAG AA: text-2 ~6.2:1, text-3 ~4.6:1 on #f5f5f2 */
+  --text-2:       rgba(26,26,24,0.70);
+  --text-3:       rgba(26,26,24,0.60);
+  --border:       rgba(0,0,0,0.12);
+  --border-hi:    rgba(0,0,0,0.20);
   --blue:         #e5341e;
   --blue-hi:      #c42c16;
   --blue-fill:    rgba(229,52,30,0.06);
@@ -973,6 +982,13 @@ details[open] .chevron-badge .icon { transform: rotate(180deg); }
   --purple-fill:  rgba(26,26,24,0.02);
   --purple-glow:  rgba(26,26,24,0.12);
   --purple-border-hi: rgba(26,26,24,0.28);
+  /* amber + indigo → muted neutral (single-accent rule) */
+  --amber:        rgba(26,26,24,0.55);
+  --amber-hi:     rgba(26,26,24,0.55);
+  --amber-tint:   rgba(26,26,24,0.04);
+  --indigo:       rgba(26,26,24,0.50);
+  --indigo-hi:    rgba(26,26,24,0.50);
+  --indigo-tint:  rgba(26,26,24,0.04);
 }
 
 /* ── Card reset: no bg, no shadow, hairline bottom border only ── */

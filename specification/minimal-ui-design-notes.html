@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>הערות עיצוב — ממשק מינימליסטי</title>
+<style>
+  :root {
+    --bg: #f7f6f3;
+    --card: #ffffff;
+    --text: #1a1a1a;
+    --text-2: #555;
+    --text-3: #999;
+    --red: #e5341e;
+    --border: #e0ddd8;
+    --tag-ok: #d4edda;
+    --tag-ok-text: #1a6630;
+    --tag-fix: #fde8e4;
+    --tag-fix-text: #b92a14;
+    --tag-note: #fff3cd;
+    --tag-note-text: #856404;
+    font-family: -apple-system, 'Helvetica Neue', Arial, sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 32px 20px 80px;
+    line-height: 1.65;
+    font-size: 15px;
+  }
+
+  header {
+    padding-bottom: 28px;
+    border-bottom: 2px solid var(--text);
+    margin-bottom: 32px;
+  }
+
+  header h1 {
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-bottom: 6px;
+  }
+
+  header p {
+    color: var(--text-3);
+    font-size: 13px;
+  }
+
+  .section-title {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-3);
+    margin: 40px 0 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px 20px;
+    margin-bottom: 12px;
+  }
+
+  .card-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 10px;
+  }
+
+  .card-title {
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    flex: 1;
+  }
+
+  .tag {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 9px;
+    border-radius: 100px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .tag-fix    { background: var(--tag-fix);  color: var(--tag-fix-text); }
+  .tag-ok     { background: var(--tag-ok);   color: var(--tag-ok-text); }
+  .tag-note   { background: var(--tag-note); color: var(--tag-note-text); }
+
+  .card p {
+    color: var(--text-2);
+    font-size: 14px;
+    margin-bottom: 8px;
+  }
+
+  .card p:last-child { margin-bottom: 0; }
+
+  .card ul {
+    color: var(--text-2);
+    font-size: 14px;
+    padding-right: 20px;
+  }
+
+  .card ul li { margin-bottom: 5px; }
+
+  .suggestion {
+    margin-top: 12px;
+    padding: 10px 14px;
+    background: var(--bg);
+    border-radius: 7px;
+    border-right: 3px solid var(--red);
+    font-size: 13px;
+    color: var(--text-2);
+  }
+
+  .suggestion strong {
+    color: var(--text);
+    font-weight: 600;
+  }
+
+  .screen-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-3);
+    letter-spacing: 0.06em;
+    margin-bottom: 4px;
+  }
+
+  .priority-high   { border-right: 3px solid var(--red); }
+  .priority-medium { border-right: 3px solid #f59e0b; }
+  .priority-low    { border-right: 3px solid #94a3b8; }
+
+  .summary-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 16px;
+  }
+
+  .summary-box {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    text-align: center;
+  }
+
+  .summary-box .num {
+    font-size: 32px;
+    font-weight: 800;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+
+  .summary-box .label { font-size: 12px; color: var(--text-3); }
+
+  .fix-count  .num { color: var(--red); }
+  .ok-count   .num { color: #16a34a; }
+  .note-count .num { color: #d97706; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>הערות עיצוב — ממשק מינימליסטי</h1>
+  <p>עקב קלוריות · סקירת צילומי מסך · 9 במאי 2026</p>
+</header>
+
+<!-- SUMMARY -->
+<div class="section-title">סיכום מהיר</div>
+<div class="summary-grid">
+  <div class="summary-box fix-count">
+    <div class="num">7</div>
+    <div class="label">בעיות קריטיות לתיקון</div>
+  </div>
+  <div class="summary-box note-count">
+    <div class="num">4</div>
+    <div class="label">שיפורים מומלצים</div>
+  </div>
+  <div class="summary-box ok-count" style="grid-column: 1 / -1;">
+    <div class="num">3</div>
+    <div class="label">אלמנטים שעובדים טוב — לשמור</div>
+  </div>
+</div>
+
+<!-- WHAT WORKS -->
+<div class="section-title">מה עובד טוב</div>
+
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">הגיבור — אחוז קלוריות</span>
+    <span class="tag tag-ok">עובד</span>
+  </div>
+  <p>המספר הגדול (89%) עם משקל פונט 100 הוא האלמנט החזק ביותר בממשק. מיידי, ברור, ויזואלית מרשים. המיישור הימני בעברית תוקן ועובד נכון.</p>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">כפתור "הוסף ארוחה" — CTA מלא-רוחב</span>
+    <span class="tag tag-ok">עובד</span>
+  </div>
+  <p>הכפתור האדום בתחתית הסקרול בולט, חד, ומרגיש כמו חלק טבעי מהממשק המינימליסטי. הצבע האדום כ-single accent עובד מצוין.</p>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">שורות חלבון ונוזלים</span>
+    <span class="tag tag-ok">עובד</span>
+  </div>
+  <p>קו-שיער אחד לחלבון + קו-שיער אדום לנוזלים מתחת לגיבור. עדין, מדויק, ומינימליסטי. הרעיון נכון — רק צריך טיוב קל.</p>
+</div>
+
+<!-- CRITICAL FIXES -->
+<div class="section-title">בעיות קריטיות לתיקון</div>
+
+<div class="card priority-high">
+  <div class="screen-label">היסטוריה → כרטיסי יום</div>
+  <div class="card-header">
+    <span class="card-title">1. דונאטים בהיסטוריה — לא מינימליסטי</span>
+    <span class="tag tag-fix">קריטי</span>
+  </div>
+  <p>כרטיסי היום בטאב ההיסטוריה מציגים דונאטים עם צבעי סגול/ורוד ומד-אחוז — זה ממשק הקלאסי המלא. האלמנטים האלה לא קיבלו טיפול מינימליסטי בכלל.</p>
+  <div class="suggestion">
+    <strong>הצעה:</strong> ב-mode מינימלי, כרטיס יום = שורה אחת: תאריך + קלוריות + חלבון כמספרים בלבד. ללא דונאטים, ללא אחוזים, ללא עיגולי progress. אפשר להשתמש בשורת progress-bar דקה (כמו בגיבור של היום) במקום הדונאט.
+  </div>
+</div>
+
+<div class="card priority-high">
+  <div class="screen-label">היסטוריה → תגיות סטטוס</div>
+  <div class="card-header">
+    <span class="card-title">2. תגיות "חסר" / "חרג" — סגנון לא תואם</span>
+    <span class="tag tag-fix">קריטי</span>
+  </div>
+  <p>התגיות הכחולות/"חסר" בכרטיסי ההיסטוריה הן pills צבעוניים בסגנון הממשק הקלאסי. הן שוברות לחלוטין את השפה הגראפית האחידה של האדום-בלבד.</p>
+  <div class="suggestion">
+    <strong>הצעה:</strong> במצב מינימלי — הסר תגיות לחלוטין. הצג רק את המספרים. אם חייבים סטטוס: נקודה קטנה (4px) באדום לחריגה, ללא טקסט.
+  </div>
+</div>
+
+<div class="card priority-high">
+  <div class="screen-label">היום → כרטיסי ארוחה</div>
+  <div class="card-header">
+    <span class="card-title">3. כרטיסי ארוחה עם כרומה קלאסי</span>
+    <span class="tag tag-fix">קריטי</span>
+  </div>
+  <p>כרטיסי הארוחות בטאב היום עדיין מציגים פינות מעוגלות, גבולות/borders, ורקע עדין — זה מראה כרטיס קלאסי. בממשק מינימליסטי זה שובר את האסתטיקה.</p>
+  <div class="suggestion">
+    <strong>הצעה:</strong> במצב מינימלי, כל ארוחה = שורה עם separator-line בתחתית בלבד (1px border-bottom). ללא border מסביב, ללא רקע, ללא רדיוס. כמו רשימה עיתונאית נקייה.
+  </div>
+</div>
+
+<div class="card priority-high">
+  <div class="screen-label">היום / היסטוריה → טאב-בר</div>
+  <div class="card-header">
+    <span class="card-title">4. טאב-בר pill — לא מינימליסטי</span>
+    <span class="tag tag-fix">קריטי</span>
+  </div>
+  <p>הטאבים "היום / היסטוריה" מוצגים כ-pill אדום גדול — זה סגנון bold שמתאים לקלאסי/היברידי אבל מנוגד לפילוסופיית המינימל. הרכיב הכי בולט בדף הוא הטאב, לא התוכן.</p>
+  <div class="suggestion">
+    <strong>הצעה:</strong> במצב מינימלי — טאבים כטקסט פשוט עם קו-תחתון (2px) באדום לטאב הפעיל. רקע: שקוף לגמרי. גודל פונט: 14px, משקל: 300 (inactive) / 600 (active).
+  </div>
+</div>
+
+<div class="card priority-high">
+  <div class="screen-label">היום → headers של קבוצות</div>
+  <div class="card-header">
+    <span class="card-title">5. headers של סוג ארוחה — כבדים מדי</span>
+    <span class="tag tag-fix">קריטי</span>
+  </div>
+  <p>כל קבוצת ארוחה (בוקר, צהריים, ערב, שתייה) מציגה אייקון, שם, ו-2 כפתורי חץ (collapse/expand). הכפתורים הקטנים, הצלמיות, והלוגיקת ה-collapse מוסיפים מורכבות ויזואלית רבה שלא מתאימה למינימל.</p>
+  <div class="suggestion">
+    <strong>הצעה:</strong> במצב מינימלי — הסתר את כפתורי ה-collapse (השאר הכל פרוס). ה-header של קבוצה = רק שם הארוחה ב-11px, weight 300, color text-3. ללא אייקון, ללא כפתורים.
+  </div>
+</div>
+
+<div class="card priority-medium">
+  <div class="screen-label">היסטוריה → FAB תחתון</div>
+  <div class="card-header">
+    <span class="card-title">6. כפתורי FAB (גרף / רשימה / לוח) — כבדים</span>
+    <span class="tag tag-fix">שפר</span>
+  </div>
+  <p>שלושת הכפתורים עגולים בתחתית ההיסטוריה עדיין מציגים את האסתטיקה הקלאסית עם shadow ורקע.</p>
+  <div class="suggestion">
+    <strong>הצעה:</strong> במצב מינימלי — 3 כפתורי טקסט קטנים (11px) בשורה אחת: "גרף | רשימה | לוח". הפעיל מסומן בקו-תחתון אדום. ללא רקע, ללא shadow, ללא עיגולים.
+  </div>
+</div>
+
+<div class="card priority-medium">
+  <div class="screen-label">טופס הזנה</div>
+  <div class="card-header">
+    <span class="card-title">7. הטופס נפתח ריק — אין תוכן גלוי</span>
+    <span class="tag tag-fix">לבדוק</span>
+  </div>
+  <p>בצילום המסך, הטופס נפתח עם הטוגל "סריקה / הזנה ידנית" ואז ריק לגמרי. ייתכן שהטופס עצמו לא נטען (תוצאת ה-screenshot timing) — אבל יש לוודא שגם שדות הטופס מקבלים טיפול מינימליסטי: inputs ללא עיגולים גדולים, labels קטנים.</p>
+  <div class="suggestion">
+    <strong>הצעה:</strong> לצלם מסך נוסף עם המתנה ארוכה יותר לאחר פתיחת הטופס, ולבדוק שאין אלמנטים בסגנון קלאסי שדלפו פנימה.
+  </div>
+</div>
+
+<!-- RECOMMENDATIONS -->
+<div class="section-title">שיפורים מומלצים</div>
+
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">א. פונט — כותרת האפליקציה</span>
+    <span class="tag tag-note">שיפור</span>
+  </div>
+  <p>כותרת "עקב קלוריות" בheader מוצגת במשקל רגיל שנראה כמו כל mode אחר. במינימל אפשר להפוך אותה לדקה יותר (font-weight: 200) כדי לחזק את השפה העיצובית.</p>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">ב. סמל האחוז — מיקום</span>
+    <span class="tag tag-note">שיפור</span>
+  </div>
+  <p>כרגע סמל "%" מופיע שמאל למספר (כלומר: "% 89" קריאה LTR). בעברית RTL זה נקרא נכון (89%) אבל ויזואלית מרגיש קצת לא סדיר. אפשרות: העברת ה-% ל-superscript מעל המספר.</p>
+  <div class="suggestion">
+    <strong>הצעה לחקור:</strong> <code>font-size: 40%</code> + <code>vertical-align: top</code> + <code>margin-top: 0.1em</code> על ה-% — מייצר מראה של footnote/superscript שמרגיש יותר מגזינאי.
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">ג. מצב כהה vs. בהיר — עקביות אדום</span>
+    <span class="tag tag-note">שיפור</span>
+  </div>
+  <p>במצב כהה: כפתור "הוסף ארוחה" + צבע הפונט של קלוריות בכרטיסי ארוחה הם אדום (#e5341e) — זה עובד. במצב בהיר: הכרטיסים מציגים אדום על רקע לבן עם border בהיר — יפה ועדין. עקביות טובה.</p>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">ד. הגדרות — בחירת סגנון</span>
+    <span class="tag tag-note">שיפור</span>
+  </div>
+  <p>הpicker של "קלאסי | היברידי | מינימליסטי" עובד ומסומן נכון. אבל שאר שורות ההגדרות (פרופיל אישי, יעדים יומיים וכו') עדיין בסגנון הקלאסי עם כרטיסים וחיצים. <br>שיפור: במצב מינימלי, שורות ההגדרות = רק טקסט עם קו-הפרדה — ללא רקע, ללא גבולות, ללא radius.</p>
+</div>
+
+<!-- IMPLEMENTATION ORDER -->
+<div class="section-title">סדר יישום מומלץ</div>
+<div class="card">
+  <ol style="padding-right: 20px; color: var(--text-2); font-size: 14px; line-height: 2.2;">
+    <li><strong style="color: var(--text);">טאב-בר</strong> — השפעה הכי גדולה ויזואלית, שינוי קטן בקוד</li>
+    <li><strong style="color: var(--text);">כרטיסי ארוחה</strong> — הסרת border+radius בתנאי styleMode === 'minimal'</li>
+    <li><strong style="color: var(--text);">headers קבוצות</strong> — הסתרת כפתורי collapse + הפשטת אייקונים</li>
+    <li><strong style="color: var(--text);">כרטיסי יום בהיסטוריה</strong> — החלפת דונאטים בשורות מינימליות</li>
+    <li><strong style="color: var(--text);">תגיות "חסר/חרג"</strong> — הסרה/החלפה בנקודה קטנה</li>
+    <li><strong style="color: var(--text);">FAB היסטוריה</strong> — שינוי לכפתורי טקסט</li>
+    <li><strong style="color: var(--text);">הגדרות</strong> — הפשטת שורות</li>
+  </ol>
+</div>
+
+<footer style="margin-top: 48px; padding-top: 20px; border-top: 1px solid var(--border); font-size: 12px; color: var(--text-3); text-align: center;">
+  מבוסס על 9 צילומי מסך (dark + light) שנלקחו ב-Playwright · 9 במאי 2026
+</footer>
+
+</body>
+</html>

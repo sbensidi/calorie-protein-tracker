@@ -227,31 +227,54 @@ export default function App() {
       {/* ── Scrollable content ────────────────────────────────────── */}
       <div style={{ maxWidth: 560, margin: '0 auto', padding: '16px 16px calc(80px + env(safe-area-inset-bottom, 0px))' }}>
 
-        {/* Tab bar */}
-        <div className="tab-bar" style={{ marginBottom: 20, gridTemplateColumns: 'repeat(2, 1fr)' }}>
-          {/* Sliding active indicator — left computed based on active tab + direction */}
-          <div className="tab-indicator" style={{
-            left: (() => {
-              const isRTL = lang === 'he'
-              const todayActive = tab === 'today'
-              // In DOM: [today, history]. RTL grid: today=right col, history=left col.
-              // indicator starts at left:3px (LTR today / RTL history)
-              // or at calc(50% + 1.5px) (LTR history / RTL today)
-              if (isRTL) return todayActive ? 'calc(50% + 1.5px)' : '3px'
-              else       return todayActive ? '3px' : 'calc(50% + 1.5px)'
-            })(),
-            width: 'calc(50% - 4.5px)',
-          }} />
-          {(['today', 'history'] as Tab[]).map(tabKey => (
-            <button
-              key={tabKey}
-              onClick={() => setTab(tabKey)}
-              className={`tab-btn ${tab === tabKey ? 'active' : ''}`}
-            >
-              {t(lang, tabKey as any)}
-            </button>
-          ))}
-        </div>
+        {/* Tab bar — minimal: plain underline / classic: pill */}
+        {styleMode === 'minimal' ? (
+          <div style={{
+            display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)',
+            marginBottom: 20, borderBottom: '1px solid var(--border)',
+          }}>
+            {(['today', 'history'] as Tab[]).map(tabKey => (
+              <button
+                key={tabKey}
+                onClick={() => setTab(tabKey)}
+                style={{
+                  background: 'none', border: 'none', fontFamily: 'inherit',
+                  fontSize: 13, fontWeight: tab === tabKey ? 600 : 300,
+                  color: tab === tabKey ? 'var(--text)' : 'var(--text-2)',
+                  padding: '8px 0 10px', cursor: 'pointer',
+                  borderBottom: tab === tabKey ? '2px solid var(--blue)' : '2px solid transparent',
+                  marginBottom: -1,
+                  letterSpacing: '-0.01em',
+                  transition: 'color 0.2s, border-color 0.2s',
+                }}
+              >
+                {t(lang, tabKey as any)}
+              </button>
+            ))}
+          </div>
+        ) : (
+          <div className="tab-bar" style={{ marginBottom: 20, gridTemplateColumns: 'repeat(2, 1fr)' }}>
+            {/* Sliding active indicator — left computed based on active tab + direction */}
+            <div className="tab-indicator" style={{
+              left: (() => {
+                const isRTL = lang === 'he'
+                const todayActive = tab === 'today'
+                if (isRTL) return todayActive ? 'calc(50% + 1.5px)' : '3px'
+                else       return todayActive ? '3px' : 'calc(50% + 1.5px)'
+              })(),
+              width: 'calc(50% - 4.5px)',
+            }} />
+            {(['today', 'history'] as Tab[]).map(tabKey => (
+              <button
+                key={tabKey}
+                onClick={() => setTab(tabKey)}
+                className={`tab-btn ${tab === tabKey ? 'active' : ''}`}
+              >
+                {t(lang, tabKey as any)}
+              </button>
+            ))}
+          </div>
+        )}
 
         {tab === 'today' && (
           <ErrorBoundary label={lang === 'he' ? 'היום' : 'Today'} lang={lang}>
