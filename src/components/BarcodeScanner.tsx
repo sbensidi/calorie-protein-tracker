@@ -31,8 +31,19 @@ function BarcodeScanner({ lang, onResult, onNotFound }, ref) {
       controlsRef.current?.stop()
       controlsRef.current = null
       detectedRef.current = false
-      if (streamRef.current) setState('scanning')
-      else setState('idle')
+      const tracks = streamRef.current?.getVideoTracks() ?? []
+      const isLive = tracks.some(t => t.readyState === 'live')
+      if (isLive) {
+        setState('scanning')
+      } else {
+        // Tracks ended (iOS kills them when element is hidden). Re-acquire.
+        streamRef.current?.getTracks().forEach(t => t.stop())
+        streamRef.current = null
+        navigator.mediaDevices
+          .getUserMedia({ video: { facingMode: 'environment' } })
+          .then(stream => { streamRef.current = stream; setState('scanning') })
+          .catch(() => setState('idle'))
+      }
     },
     stop: () => {
       controlsRef.current?.stop()
@@ -162,16 +173,16 @@ function BarcodeScanner({ lang, onResult, onNotFound }, ref) {
       <div className="scanner-error" style={{ gap: 14 }}>
         <div style={{
           width: 64, height: 64, borderRadius: 18,
-          background: 'var(--blue-chip)', border: '1.5px solid rgba(59,130,246,0.3)',
+          background: 'var(--accent-chip)', border: '1.5px solid var(--accent-glow)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
-          <span className="icon" style={{ fontSize: 32, color: 'var(--blue)' }}>barcode_scanner</span>
+          <span className="icon" style={{ fontSize: 32, color: 'var(--accent)' }}>barcode_scanner</span>
         </div>
         <button
           onClick={startCamera}
           style={{
             padding: '12px 28px', borderRadius: 12, fontSize: 14, fontWeight: 700,
-            background: 'var(--blue)', color: 'var(--on-color)', border: 'none',
+            background: 'var(--accent)', color: 'var(--on-color)', border: 'none',
             cursor: 'pointer', fontFamily: 'inherit',
             display: 'flex', alignItems: 'center', gap: 8,
           }}

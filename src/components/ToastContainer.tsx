@@ -13,9 +13,9 @@ const ICONS: Record<Toast['type'], string> = {
 }
 
 const COLORS: Record<Toast['type'], { bg: string; border: string; icon: string }> = {
-  success: { bg: 'var(--green-chip)', border: 'var(--green-glow)',    icon: 'var(--green)' },
-  error:   { bg: 'var(--red-chip)',   border: 'var(--red-border-lo)', icon: 'var(--red)'   },
-  info:    { bg: 'var(--surface-3)',  border: 'var(--border-hi)',     icon: 'var(--blue)'  },
+  success: { bg: 'var(--positive-chip)', border: 'var(--positive-glow)',    icon: 'var(--positive)' },
+  error:   { bg: 'var(--danger-chip)',   border: 'var(--danger-border-lo)', icon: 'var(--danger)'   },
+  info:    { bg: 'var(--surface-3)',  border: 'var(--border-hi)',     icon: 'var(--accent)'  },
 }
 
 export function ToastContainer({ toasts, onDismiss, lang }: ToastContainerProps) {

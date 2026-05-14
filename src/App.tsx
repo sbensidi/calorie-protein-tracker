@@ -65,6 +65,37 @@ export default function App() {
   }, [])
 
   const userId = session?.user?.id || null
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
+  const [hasGoogleLinked, setHasGoogleLinked] = useState(false)
+
+  const refreshUserMeta = () => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      const meta = user?.user_metadata ?? {}
+      const googleIdentity = user?.identities?.find(i => i.provider === 'google')
+      const identityData = googleIdentity?.identity_data as Record<string, unknown> | undefined
+      const url: string | null =
+        (meta.avatar_url as string | undefined) ||
+        (meta.picture   as string | undefined) ||
+        (identityData?.avatar_url as string | undefined) ||
+        (identityData?.picture    as string | undefined) ||
+        null
+      setAvatarUrl(url)
+      setHasGoogleLinked(!!googleIdentity)
+    })
+  }
+
+  useEffect(() => {
+    if (!userId) { setAvatarUrl(null); setHasGoogleLinked(false); return }
+    refreshUserMeta()
+  }, [userId]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleLinkGoogle = async () => {
+    const { error } = await supabase.auth.linkIdentity({
+      provider: 'google',
+      options: { redirectTo: window.location.origin },
+    })
+    if (error) console.error('[linkGoogle]', error.message, error)
+  }
 
   // Sync theme/lang from Supabase on login; save back on change
   const prefsSynced = useRef(false)
@@ -153,7 +184,7 @@ export default function App() {
   if (authLoading) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)' }}>
-        <div style={{ width: 32, height: 32, border: '2px solid var(--blue)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+        <div style={{ width: 32, height: 32, border: '2px solid var(--accent)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
       </div>
     )
   }
@@ -192,19 +223,33 @@ export default function App() {
               {t(lang, 'appTitle')}
             </h1>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <button
-                onClick={() => setSettingsOpen(true)}
-                aria-label={lang === 'he' ? 'הגדרות' : 'Settings'}
-                style={{
-                  width: 34, height: 34, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  background: 'var(--qty-bg)', border: '1px solid var(--border)',
-                  color: 'var(--text-2)', cursor: 'pointer', transition: 'background .15s, color .15s',
-                }}
-                onMouseEnter={e => { e.currentTarget.style.background = 'var(--qty-hover)'; e.currentTarget.style.color = 'var(--text)' }}
-                onMouseLeave={e => { e.currentTarget.style.background = 'var(--qty-bg)'; e.currentTarget.style.color = 'var(--text-2)' }}
-              >
-                <span className="icon" style={{ fontSize: 20 }}>settings</span>
-              </button>
+              {(() => {
+                const emailInitial = session?.user?.email?.[0]?.toUpperCase() ?? null
+                return (
+                  <button
+                    onClick={() => setSettingsOpen(true)}
+                    aria-label={lang === 'he' ? 'הגדרות' : 'Settings'}
+                    style={{
+                      width: 34, height: 34, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      background: avatarUrl ? 'transparent' : emailInitial ? 'var(--accent-select)' : 'var(--qty-bg)',
+                      border: avatarUrl ? '2px solid var(--border)' : '1px solid var(--border)',
+                      color: avatarUrl ? 'transparent' : emailInitial ? 'var(--accent)' : 'var(--text-2)',
+                      cursor: 'pointer', padding: 0, overflow: 'hidden',
+                      transition: 'border-color .15s, opacity .15s',
+                      fontSize: 14, fontWeight: 700, fontFamily: 'inherit',
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.opacity = '0.85' }}
+                    onMouseLeave={e => { e.currentTarget.style.opacity = '1' }}
+                  >
+                    {avatarUrl
+                      ? <img src={avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} referrerPolicy="no-referrer" />
+                      : emailInitial
+                        ? emailInitial
+                        : <span className="icon" style={{ fontSize: 20 }}>person</span>
+                    }
+                  </button>
+                )
+              })()}
             </div>
           </header>
         </div>
@@ -217,7 +262,7 @@ export default function App() {
           borderBottom: '1px solid rgba(244,63,94,0.2)',
           padding: '6px 16px',
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-          fontSize: 12, fontWeight: 600, color: 'var(--red)',
+          fontSize: 12, fontWeight: 600, color: 'var(--danger)',
         }}>
           <span className="icon icon-sm">wifi_off</span>
           {lang === 'he' ? 'אין חיבור לרשת — הנתונים יסונכרנו כשהחיבור יחזור' : 'Offline — changes will sync when connection is restored'}
@@ -229,10 +274,7 @@ export default function App() {
 
         {/* Tab bar — minimal: plain underline / classic: pill */}
         {styleMode === 'minimal' ? (
-          <div style={{
-            display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)',
-            marginBottom: 20, borderBottom: '1px solid var(--border)',
-          }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', marginBottom: 20, borderBottom: '1px solid var(--border)' }}>
             {(['today', 'history'] as Tab[]).map(tabKey => (
               <button
                 key={tabKey}
@@ -242,9 +284,8 @@ export default function App() {
                   fontSize: 13, fontWeight: tab === tabKey ? 600 : 300,
                   color: tab === tabKey ? 'var(--text)' : 'var(--text-2)',
                   padding: '8px 0 10px', cursor: 'pointer',
-                  borderBottom: tab === tabKey ? '2px solid var(--blue)' : '2px solid transparent',
-                  marginBottom: -1,
-                  letterSpacing: '-0.01em',
+                  borderBottom: tab === tabKey ? '2px solid var(--accent)' : '2px solid transparent',
+                  marginBottom: -1, letterSpacing: '-0.01em',
                   transition: 'color 0.2s, border-color 0.2s',
                 }}
               >
@@ -340,6 +381,8 @@ export default function App() {
           connected={connected}
           onToggleLang={toggleLang}
           onSignOut={() => { userSignedOut.current = true; supabase.auth.signOut() }}
+          onLinkGoogle={handleLinkGoogle}
+          hasGoogleLinked={hasGoogleLinked}
           theme={theme}
           styleMode={styleMode}
           onToggleTheme={toggleTheme}
@@ -393,14 +436,14 @@ function UpdatePasswordPage({ lang, onDone, onToggleLang }: { lang: Lang; onDone
     >
       <div style={{ width: '100%', maxWidth: 380 }} className="fade-up">
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
-          <span className="icon" style={{ fontSize: 36, color: 'var(--blue)', display: 'block', marginBottom: 10 }}>lock_reset</span>
+          <span className="icon" style={{ fontSize: 36, color: 'var(--accent)', display: 'block', marginBottom: 10 }}>lock_reset</span>
           <h1 style={{ fontSize: 22, fontWeight: 800, margin: 0, color: 'var(--text)' }}>
             {t(lang, 'updatePassword')}
           </h1>
         </div>
         <div className="card" style={{ padding: 20 }}>
           {done ? (
-            <p style={{ textAlign: 'center', color: 'var(--green)', fontWeight: 600, padding: '8px 0' }}>
+            <p style={{ textAlign: 'center', color: 'var(--positive)', fontWeight: 600, padding: '8px 0' }}>
               <span className="icon" style={{ display: 'block', fontSize: 28, marginBottom: 8 }}>check_circle</span>
               {t(lang, 'passwordUpdated')}
             </p>
@@ -416,7 +459,7 @@ function UpdatePasswordPage({ lang, onDone, onToggleLang }: { lang: Lang; onDone
                 dir="ltr"
                 autoFocus
               />
-              {error && <p style={{ fontSize: 12, color: 'var(--red)', marginBottom: 8 }}>{error}</p>}
+              {error && <p style={{ fontSize: 12, color: 'var(--danger)', marginBottom: 8 }}>{error}</p>}
               <button
                 className="btn-primary"
                 onClick={handleUpdate}
@@ -502,7 +545,7 @@ function AuthPage({ lang, onToggleLang }: { lang: Lang; onToggleLang: () => void
 
         {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
-          <span className="icon" style={{ fontSize: 36, color: 'var(--blue)', display: 'block', marginBottom: 10 }}>monitor_weight</span>
+          <span className="icon" style={{ fontSize: 36, color: 'var(--accent)', display: 'block', marginBottom: 10 }}>monitor_weight</span>
           <h1 style={{ fontSize: 24, fontWeight: 800, margin: 0, color: 'var(--text)' }}>
             {t(lang, 'appTitle')}
           </h1>
@@ -612,8 +655,8 @@ function AuthPage({ lang, onToggleLang }: { lang: Lang; onToggleLang: () => void
             </div>
           )}
 
-          {error   && <p style={{ fontSize: 12, color: 'var(--red)',   marginBottom: 8 }}>{error}</p>}
-          {message && <p style={{ fontSize: 12, color: 'var(--green)', marginBottom: 8 }}>{message}</p>}
+          {error   && <p style={{ fontSize: 12, color: 'var(--danger)',   marginBottom: 8 }}>{error}</p>}
+          {message && <p style={{ fontSize: 12, color: 'var(--positive)', marginBottom: 8 }}>{message}</p>}
 
           <button
             className="btn-primary"

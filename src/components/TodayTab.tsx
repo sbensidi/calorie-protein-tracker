@@ -18,11 +18,11 @@ type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'beverage'
 const MEAL_TYPES: MealType[] = ['breakfast', 'lunch', 'dinner', 'snack', 'beverage']
 
 const MEAL_COLORS: Record<MealType, string> = {
-  breakfast: 'var(--amber)',
-  lunch:     'var(--green)',
-  dinner:    'var(--purple)',
-  snack:     'var(--red)',
-  beverage:  'var(--blue)',
+  breakfast: 'var(--warning)',
+  lunch:     'var(--positive)',
+  dinner:    'var(--composed)',
+  snack:     'var(--danger)',
+  beverage:  'var(--accent)',
 }
 
 const MEAL_ICONS: Record<MealType, string> = {
@@ -196,7 +196,7 @@ export function TodayTab({
   }
 
   // ── Clone composed group into today ─────────────────────────
-  const handleAddComposed = useCallback(async (composedId: string) => {
+  const handleAddComposed = useCallback(async (composedId: string, mealType: MealType) => {
     const group = composedGroups.find(g => g.id === composedId)
     if (!group) return
     const newMealIds: string[] = []
@@ -205,7 +205,7 @@ export function TodayTab({
       if (!src) continue
       const newId = await onAddMealWithId({
         date:           today(),
-        meal_type:      src.meal_type,
+        meal_type:      mealType,
         name:           src.name,
         grams:          src.grams,
         calories:       src.calories,
@@ -371,22 +371,32 @@ export function TodayTab({
     const selCount = selSet.size
 
     return (
-      <div key={type} className="card fade-up" style={{ animationDelay: `${i * 0.05}s`, marginBottom: 12, overflow: 'hidden' }}>
+      <div key={type} className={styleMode === 'minimal' ? 'fade-up' : 'card fade-up'} style={{ animationDelay: `${i * 0.05}s`, marginBottom: styleMode === 'minimal' ? 0 : 12, overflow: 'hidden', ...(styleMode === 'minimal' && i > 0 ? { borderTop: '1px solid var(--border)', paddingTop: 4, marginTop: 4 } : {}) }}>
 
         {/* ── Group header ────────────────────────────────── */}
         {styleMode === 'minimal' ? (
-          /* Minimal: text label + subtle chevron, fully collapsible */
+          /* Minimal: label + totals summary + chevron, fully collapsible */
           <div
             role="button"
             tabIndex={0}
             aria-expanded={!isCollapsed}
             onClick={() => toggleCollapse(type)}
             onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') toggleCollapse(type) }}
-            style={{ padding: '14px 4px 6px', display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', userSelect: 'none' }}
+            style={{ padding: '10px 4px', minHeight: 44, display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', userSelect: 'none', borderBottom: `1px solid ${isCollapsed ? 'transparent' : 'var(--border)'}`, boxSizing: 'border-box' }}
           >
-            <span style={{ fontSize: 10, fontWeight: 400, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.12em', flex: 1 }}>
+            <span style={{ fontSize: 10, fontWeight: 600, color: 'var(--text)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
               {t(lang, type)}
             </span>
+            {typeMeals.length > 0 && (
+              <span style={{ display: 'flex', alignItems: 'baseline', gap: 4, flexShrink: 0, fontSize: 11, opacity: isCollapsed ? 1 : 0 }}>
+                <span style={{ fontWeight: 500, color: 'var(--accent-hi)' }}>{totalCal}</span>
+                <span style={{ fontWeight: 400, color: 'var(--text-3)' }}>{t(lang, 'caloriesUnit')}</span>
+                <span style={{ color: 'var(--border)', fontWeight: 300, padding: '0 2px' }}>|</span>
+                <span style={{ fontWeight: 500, color: 'var(--positive-hi)' }}>{totalProt}</span>
+                <span style={{ fontWeight: 400, color: 'var(--text-3)' }}>{lang === 'he' ? "גר׳ חלבון" : 'g protein'}</span>
+              </span>
+            )}
+            <span style={{ flex: 1 }} />
             <span className="icon icon-sm" style={{ fontSize: 12, color: 'var(--text-3)', transform: isCollapsed ? 'rotate(0deg)' : 'rotate(180deg)', transition: 'transform 0.2s' }}>
               expand_more
             </span>
@@ -415,11 +425,11 @@ export function TodayTab({
 
             {isCollapsed && (
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginInlineStart: 8 }}>
-                <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 2, fontSize: 12, fontWeight: 700, color: 'var(--blue-hi)' }}>
+                <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 2, fontSize: 12, fontWeight: 700, color: 'var(--accent-hi)' }}>
                   <span>{totalCal}</span>
                   <span style={{ fontSize: 10, fontWeight: 600, opacity: 0.8 }}>{t(lang, 'caloriesUnit')}</span>
                 </span>
-                <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 2, fontSize: 12, fontWeight: 700, color: 'var(--green-hi)' }}>
+                <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 2, fontSize: 12, fontWeight: 700, color: 'var(--positive-hi)' }}>
                   <span>{totalProt}</span>
                   <span style={{ fontSize: 10, fontWeight: 600, opacity: 0.8 }}>{t(lang, 'proteinUnit')}</span>
                 </span>
@@ -442,7 +452,7 @@ export function TodayTab({
               }}
               aria-label={t(lang, 'changeGroup')}
             >
-              <span className="icon icon-sm" style={{ color: editingGroupType === type ? 'var(--amber)' : 'var(--text-3)' }}>
+              <span className="icon icon-sm" style={{ color: editingGroupType === type ? 'var(--warning)' : 'var(--text-3)' }}>
                 edit
               </span>
             </button>
@@ -476,7 +486,7 @@ export function TodayTab({
                   {t(lang, mt)}
                 </span>
                 <div className={`type-picker-radio${mt === type ? ' on' : ''}`}>
-                  {mt === type && <span className="icon" style={{ fontSize: 11, color: 'var(--amber)' }}>check</span>}
+                  {mt === type && <span className="icon" style={{ fontSize: 11, color: 'var(--warning)' }}>check</span>}
                 </div>
               </div>
             ))}
@@ -485,7 +495,13 @@ export function TodayTab({
 
         {/* ── Meal cards ──────────────────────────────────── */}
         {!isCollapsed && (
-          <div style={{ borderTop: '1px solid var(--border)', padding: '8px 10px 10px' }}>
+          <div
+            className={styleMode === 'minimal' ? 'expand-down' : undefined}
+            style={styleMode === 'minimal'
+              ? { padding: '0 0 6px' }
+              : { borderTop: '1px solid var(--border)', padding: '14px 10px 10px' }
+            }
+          >
 
             {/* Composed groups */}
             {groupsHere.map(group => {
@@ -503,23 +519,26 @@ export function TodayTab({
                   onRename={name => renameGroup(group.id, name)}
                   onDeleteGroup={() => dissolveGroup(group.id)}
                   onAddIngredient={() => setAddIngredientModal({ groupId: group.id, mealType: type })}
+                  onChangeMealType={newType => groupMeals.forEach(m => onEditMeal(m.id, { meal_type: newType }))}
                 />
               )
             })}
 
             {/* Standalone meals */}
-            {standalones.map(meal => (
-              <MealCard
-                key={meal.id}
-                meal={meal}
-                lang={lang}
-                weightUnit={defaultWeightUnit}
-                showCheckbox={true}
-                selected={selSet.has(meal.id)}
-                onToggleSelect={() => toggleSelect(type, meal.id)}
-                onEdit={onEditMeal}
-                enableWeightScaling
-              />
+            {standalones.map((meal) => (
+              <div key={meal.id} style={styleMode === 'minimal' ? { borderBottom: '1px dashed var(--border)' } : {}}>
+                <MealCard
+                  meal={meal}
+                  lang={lang}
+                  weightUnit={defaultWeightUnit}
+                  showCheckbox={styleMode !== 'minimal'}
+                  selected={selSet.has(meal.id)}
+                  onToggleSelect={() => toggleSelect(type, meal.id)}
+                  onEdit={onEditMeal}
+                  enableWeightScaling
+                  listStyle={styleMode === 'minimal'}
+                />
+              </div>
             ))}
 
             {/* Quick-add to this section */}
@@ -527,10 +546,10 @@ export function TodayTab({
               <button
                 onClick={() => openEntry(type)}
                 style={{
-                  marginTop: 6, background: 'transparent', border: 'none',
-                  padding: '4px 0', fontFamily: 'inherit',
-                  fontSize: 11, fontWeight: 300, color: 'var(--text-3)',
-                  cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4,
+                  marginTop: 10, background: 'var(--inp-bg)', border: '1px solid var(--border)',
+                  borderRadius: 20, padding: '6px 14px', fontFamily: 'inherit',
+                  fontSize: 11, fontWeight: 500, color: 'var(--text-2)',
+                  cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 5,
                 }}
               >
                 <span className="icon" style={{ fontSize: 13 }}>add</span>
@@ -557,8 +576,8 @@ export function TodayTab({
               <div className="group-action-bar">
                 {/* Header row */}
                 <div className="group-action-bar-header">
-                  <span className="icon icon-sm" style={{ color: 'var(--purple)', fontSize: 16 }}>check_circle</span>
-                  <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--purple)', flex: 1 }}>
+                  <span className="icon icon-sm" style={{ color: 'var(--composed)', fontSize: 16 }}>check_circle</span>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--composed)', flex: 1 }}>
                     {selCount} {t(lang, 'nSelected')}
                   </span>
                   <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-3)' }}>
@@ -576,26 +595,26 @@ export function TodayTab({
                 <div className="group-action-bar-btns">
                   {/* Duplicate */}
                   <button className="group-action-btn" aria-label={t(lang, 'duplicate')} onClick={() => handleDuplicateSelected(type)}>
-                    <div className="group-action-btn-ico" style={{ background: 'var(--green-fill)', border: '1px solid var(--green-select)' }}>
-                      <span className="icon icon-sm" style={{ color: 'var(--green-hi)' }}>content_copy</span>
+                    <div className="group-action-btn-ico" style={{ background: 'var(--positive-fill)', border: '1px solid var(--positive-select)' }}>
+                      <span className="icon icon-sm" style={{ color: 'var(--positive-hi)' }}>content_copy</span>
                     </div>
-                    <span style={{ color: 'var(--green-hi)' }}>{t(lang, 'duplicate')}</span>
+                    <span style={{ color: 'var(--positive-hi)' }}>{t(lang, 'duplicate')}</span>
                   </button>
 
                   {/* Create dish */}
                   <button className="group-action-btn" aria-label={t(lang, 'createDish')} onClick={() => openComposeModal(type)}>
-                    <div className="group-action-btn-ico" style={{ background: 'var(--purple-tint)', border: '1px solid var(--purple-glow)' }}>
-                      <span className="icon icon-sm" style={{ color: 'var(--purple)' }}>restaurant</span>
+                    <div className="group-action-btn-ico" style={{ background: 'var(--composed-tint)', border: '1px solid var(--composed-glow)' }}>
+                      <span className="icon icon-sm" style={{ color: 'var(--composed)' }}>restaurant</span>
                     </div>
-                    <span style={{ color: 'var(--purple)' }}>{t(lang, 'createDish')}</span>
+                    <span style={{ color: 'var(--composed)' }}>{t(lang, 'createDish')}</span>
                   </button>
 
                   {/* Delete */}
                   <button className="group-action-btn" aria-label={t(lang, 'delete')} onClick={() => handleDeleteSelected(type)}>
-                    <div className="group-action-btn-ico" style={{ background: 'var(--red-tint)', border: '1px solid rgba(244,63,94,0.2)' }}>
-                      <span className="icon icon-sm" style={{ color: 'var(--red-hi)' }}>delete</span>
+                    <div className="group-action-btn-ico" style={{ background: 'var(--danger-tint)', border: '1px solid rgba(244,63,94,0.2)' }}>
+                      <span className="icon icon-sm" style={{ color: 'var(--danger-hi)' }}>delete</span>
                     </div>
-                    <span style={{ color: 'var(--red-hi)' }}>{t(lang, 'delete')}</span>
+                    <span style={{ color: 'var(--danger-hi)' }}>{t(lang, 'delete')}</span>
                   </button>
                 </div>
               </div>
@@ -644,10 +663,10 @@ export function TodayTab({
             <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)', flex: 1 }}>
               {lang === 'he' ? 'סה״כ' : 'Total'}
             </span>
-            <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--blue-hi)', display: 'flex', alignItems: 'baseline', gap: 2 }}>
+            <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--accent-hi)', display: 'flex', alignItems: 'baseline', gap: 2 }}>
               {totalCal} <span style={{ fontSize: 10, opacity: 0.7 }}>{t(lang, 'caloriesUnit')}</span>
             </span>
-            <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--green-hi)', display: 'flex', alignItems: 'baseline', gap: 2, marginInlineStart: 12 }}>
+            <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--positive-hi)', display: 'flex', alignItems: 'baseline', gap: 2, marginInlineStart: 12 }}>
               {totalProt} <span style={{ fontSize: 10, opacity: 0.7 }}>{t(lang, 'proteinUnit')}</span>
             </span>
           </div>
@@ -656,7 +675,7 @@ export function TodayTab({
           <div className="compose-modal-items">
             {items.map((item, idx) => (
               <div key={idx} className="compose-modal-item">
-                <div style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--purple-border-hi)', flexShrink: 0 }} />
+                <div style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--composed-border-hi)', flexShrink: 0 }} />
                 <span style={{ flex: 1, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</span>
                 <span style={{ color: 'var(--text-3)', flexShrink: 0 }}>
                   {item.cal} {t(lang, 'caloriesUnit')} · {item.prot} {t(lang, 'proteinUnit')}
@@ -669,7 +688,7 @@ export function TodayTab({
           <div style={{ position: 'relative' }}>
             <input
               className="inp"
-              style={{ borderColor: 'var(--purple-border-hi)', paddingInlineEnd: composeName ? 32 : 12 }}
+              style={{ borderColor: 'var(--composed-border-hi)', paddingInlineEnd: composeName ? 32 : 12 }}
               placeholder={t(lang, 'dishName') + '...'}
               value={composeName}
               onChange={e => setComposeName(e.target.value)}
@@ -758,46 +777,28 @@ export function TodayTab({
         </div>
       )}
 
-      {/* ── FAB — circular (classic/hybrid) or full-width bar (minimal) ── */}
-      {styleMode === 'minimal' ? (
-        <button
-          onClick={() => openEntry()}
-          aria-label={lang === 'he' ? 'הוסף ארוחה' : 'Add meal'}
-          style={{
-            width: '100%', padding: '14px 0', marginTop: 8, marginBottom: 8,
-            borderRadius: 100, border: 'none', cursor: 'pointer',
-            background: 'var(--blue)', color: 'var(--on-color)',
-            fontSize: 14, fontWeight: 300, fontFamily: 'inherit',
-            letterSpacing: '-0.01em',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-          }}
-        >
-          <span className="icon" style={{ fontSize: 16 }}>add</span>
-          {lang === 'he' ? 'הוסף ארוחה' : 'Add meal'}
-        </button>
-      ) : (
-        <button
-          onClick={() => openEntry()}
-          aria-label={lang === 'he' ? 'הוסף ארוחה' : 'Add meal'}
-          className="fab-btn"
-          style={{
-            position: 'fixed',
-            bottom: 'calc(28px + env(safe-area-inset-bottom, 0px))',
-            insetInlineEnd: 'max(calc((100vw - 560px) / 2 + 24px), 24px)',
-            zIndex: 40,
-            width: 56, height: 56, borderRadius: '50%',
-            background: 'var(--blue)',
-            color: 'var(--on-color)',
-            border: 'none',
-            cursor: 'pointer',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}
-          onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.08)' }}
-          onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)' }}
-        >
-          <span className="icon" style={{ fontSize: 28 }}>add</span>
-        </button>
-      )}
+      {/* ── FAB — circular, same in all modes. CSS [data-style="minimal"] .fab-btn overrides color. ── */}
+      <button
+        onClick={() => openEntry()}
+        aria-label={lang === 'he' ? 'הוסף ארוחה' : 'Add meal'}
+        className="fab-btn"
+        style={{
+          position: 'fixed',
+          bottom: 'calc(32px + env(safe-area-inset-bottom, 0px))',
+          insetInlineEnd: 'max(calc((100vw - 560px) / 2 + 24px), 24px)',
+          zIndex: 40,
+          width: 56, height: 56, borderRadius: '50%',
+          background: 'var(--accent)',
+          color: 'var(--on-color)',
+          border: 'none',
+          cursor: 'pointer',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}
+        onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.08)' }}
+        onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)' }}
+      >
+        <span className="icon" style={{ fontSize: 28 }}>add</span>
+      </button>
 
       {/* ── Entry bottom sheet ────────────────────────────────────── */}
       <div
@@ -824,10 +825,8 @@ export function TodayTab({
           borderLeft: '1px solid var(--border)',
           borderRight: '1px solid var(--border)',
           borderRadius: '20px 20px 0 0',
-          // Tall by default so dropdowns have room; overflow visible so
-          // absolutely-positioned dropdowns are never clipped by the sheet.
           height: 'min(90vh, 720px)',
-          overflow: 'visible',
+          overflow: 'hidden',
           transform: entryOpen ? 'translateY(0)' : 'translateY(105%)',
           transition: 'transform 0.35s cubic-bezier(.22,.9,.36,1)',
           display: 'flex',
@@ -860,7 +859,7 @@ export function TodayTab({
               onUpsertHistory={onUpsertHistory}
               onTouchHistory={onTouchHistory}
               composedEntries={composedEntries}
-              onAddComposed={id => { handleAddComposed(id); setEntryOpen(false) }}
+              onAddComposed={(id, mealType) => { handleAddComposed(id, mealType); setEntryOpen(false) }}
               fluidThresholdMl={fluidThresholdMl}
               fluidZeroCalOnly={fluidZeroCalOnly}
               isOpen={entryOpen}

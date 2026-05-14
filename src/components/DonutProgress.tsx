@@ -27,40 +27,40 @@ export const DonutProgress = memo(function DonutProgress({ value, goal, type, si
 
   if (type === 'calories') {
     if (realPct > 100) {
-      fillColor = 'var(--red)'
-      glowColor = 'var(--red-border)'
+      fillColor = 'var(--danger)'
+      glowColor = 'var(--danger-border)'
     } else if (realPct >= 80) {
       // Close to goal — deeper green
-      fillColor = 'var(--green-hi)'
-      glowColor = 'var(--green-border)'
+      fillColor = 'var(--positive-hi)'
+      glowColor = 'var(--positive-border)'
     } else if (realPct >= 50) {
       // Mid range — medium green
-      fillColor = 'var(--green)'
-      glowColor = 'var(--green-glow)'
+      fillColor = 'var(--positive)'
+      glowColor = 'var(--positive-glow)'
     } else {
       // Low — soft green
-      fillColor = 'var(--green-soft)'
-      glowColor = 'var(--green-glow)'
+      fillColor = 'var(--positive-soft)'
+      glowColor = 'var(--positive-glow)'
     }
   } else if (type === 'protein') {
     if (realPct >= 100) {
-      fillColor = 'var(--green-hi)'
-      glowColor = 'var(--green-border)'
+      fillColor = 'var(--positive-hi)'
+      glowColor = 'var(--positive-border)'
     } else if (realPct >= 50) {
-      fillColor = 'var(--amber)'
-      glowColor = 'var(--amber-glow)'
+      fillColor = 'var(--positive)'
+      glowColor = 'var(--positive-glow)'
     } else {
-      fillColor = 'var(--red)'
-      glowColor = 'var(--red-border)'
+      fillColor = 'var(--positive-soft)'
+      glowColor = 'var(--positive-glow)'
     }
   } else {
     // fluid
     if (realPct >= 100) {
-      fillColor = 'var(--green-hi)'
-      glowColor = 'var(--green-border)'
+      fillColor = 'var(--positive-hi)'
+      glowColor = 'var(--positive-border)'
     } else {
-      fillColor = 'var(--blue)'
-      glowColor = 'var(--blue-glow)'
+      fillColor = 'var(--accent)'
+      glowColor = 'var(--accent-glow)'
     }
   }
 
@@ -93,11 +93,11 @@ export const DonutProgress = memo(function DonutProgress({ value, goal, type, si
             cy={size / 2}
             r={r}
             fill="none"
-            stroke={glowColor}
             strokeWidth={strokeWidth + 3}
             strokeDasharray={`${dash} ${circ}`}
             strokeLinecap="round"
             style={{
+              stroke: glowColor,
               filter: 'blur(3px)',
               transition: 'stroke-dasharray 0.7s cubic-bezier(.22,.9,.36,1), stroke 0.3s',
             }}
@@ -109,11 +109,11 @@ export const DonutProgress = memo(function DonutProgress({ value, goal, type, si
           cy={size / 2}
           r={r}
           fill="none"
-          stroke={fillColor}
           strokeWidth={strokeWidth}
           strokeDasharray={`${dash} ${circ}`}
           strokeLinecap="round"
           style={{
+            stroke: fillColor,
             transition: 'stroke-dasharray 0.7s cubic-bezier(.22,.9,.36,1), stroke 0.3s',
           }}
         />

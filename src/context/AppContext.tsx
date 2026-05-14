@@ -2,7 +2,7 @@ import { createContext, useContext, useState, useEffect, useCallback } from 'rea
 import type { ReactNode } from 'react'
 import type { Lang } from '../lib/i18n'
 
-export type StyleMode = 'classic' | 'hybrid' | 'minimal'
+export type StyleMode = 'classic' | 'minimal'
 
 interface AppContextValue {
   lang:              Lang

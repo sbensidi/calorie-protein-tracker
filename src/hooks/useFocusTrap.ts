@@ -31,9 +31,9 @@ export function useFocusTrap(
     const container = containerRef.current
     if (!container) return
 
-    // Move focus into the modal
-    const focusables = getFocusable(container)
-    if (focusables.length) focusables[0].focus()
+    // Move focus to the container itself, not the first interactive element,
+    // so the sheet opens without visually highlighting any button.
+    container.focus({ preventScroll: true })
 
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key !== 'Tab') return

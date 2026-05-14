@@ -56,7 +56,7 @@ export class ErrorBoundary extends Component<Props, State> {
             gap: 10,
           }}
         >
-          <span className="icon" style={{ fontSize: 28, color: 'var(--red)' }}>error</span>
+          <span className="icon" style={{ fontSize: 28, color: 'var(--danger)' }}>error</span>
           <p style={{ fontSize: 13, color: 'var(--text-2)', textAlign: 'center', margin: 0 }}>
             {msg}
           </p>
