@@ -94,7 +94,7 @@ export default function App() {
       provider: 'google',
       options: { redirectTo: window.location.origin },
     })
-    if (error) console.error('[linkGoogle]', error.message, error)
+    if (error) { import.meta.env.DEV && console.error('[linkGoogle]', error.message, error) }
   }
 
   // Sync theme/lang from Supabase on login; save back on change
@@ -258,8 +258,8 @@ export default function App() {
       {/* ── I8: offline indicator ────────────────────────────────── */}
       {!connected && (
         <div style={{
-          background: 'rgba(244,63,94,0.10)',
-          borderBottom: '1px solid rgba(244,63,94,0.2)',
+          background: 'var(--danger-tint)',
+          borderBottom: '1px solid var(--danger-border-lo)',
           padding: '6px 16px',
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
           fontSize: 12, fontWeight: 600, color: 'var(--danger)',
@@ -357,7 +357,6 @@ export default function App() {
                 lang={lang}
                 meals={meals}
                 history={history}
-                getSuggestions={getSuggestions}
                 getGoalForDate={getGoalForDate}
                 composedEntries={composedEntries}
                 composedGroups={composedGroups}
@@ -520,8 +519,8 @@ function AuthPage({ lang, onToggleLang }: { lang: Lang; onToggleLang: () => void
         const { error } = await supabase.auth.signInWithPassword({ email, password })
         if (error) throw error
       }
-    } catch (err: any) {
-      setError(err.message || 'Authentication error')
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Authentication error')
     }
     setLoading(false)
   }

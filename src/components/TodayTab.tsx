@@ -33,6 +33,22 @@ const MEAL_ICONS: Record<MealType, string> = {
   beverage:  'local_drink',
 }
 
+const MEAL_TINT: Record<MealType, string> = {
+  breakfast: 'var(--warning-tint)',
+  lunch:     'var(--positive-tint)',
+  dinner:    'var(--composed-tint)',
+  snack:     'var(--danger-tint)',
+  beverage:  'var(--accent-tint)',
+}
+
+const MEAL_BORDER_TOKEN: Record<MealType, string> = {
+  breakfast: 'var(--warning-border)',
+  lunch:     'var(--positive-border)',
+  dinner:    'var(--composed-border)',
+  snack:     'var(--danger-border)',
+  beverage:  'var(--accent-border)',
+}
+
 // ── localStorage helpers ────────────────────────────────────────
 function loadCollapsed(): Set<MealType> {
   try {
@@ -445,8 +461,8 @@ export function TodayTab({
               }}
               style={{
                 width: 26, height: 26, borderRadius: 8, flexShrink: 0,
-                background: editingGroupType === type ? 'rgba(245,158,11,0.12)' : 'var(--inp-bg)',
-                border: `1px solid ${editingGroupType === type ? 'rgba(245,158,11,0.3)' : 'var(--border)'}`,
+                background: editingGroupType === type ? 'var(--warning-tint)' : 'var(--inp-bg)',
+                border: `1px solid ${editingGroupType === type ? 'var(--warning-border)' : 'var(--border)'}`,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 cursor: 'pointer',
               }}
@@ -478,7 +494,7 @@ export function TodayTab({
               >
                 <div
                   className="type-picker-ico"
-                  style={{ background: `${MEAL_COLORS[mt]}18`, border: `1px solid ${MEAL_COLORS[mt]}30` }}
+                  style={{ background: MEAL_TINT[mt], border: `1px solid ${MEAL_BORDER_TOKEN[mt]}` }}
                 >
                   <span className="icon icon-sm" style={{ color: MEAL_COLORS[mt] }}>{MEAL_ICONS[mt]}</span>
                 </div>
@@ -611,7 +627,7 @@ export function TodayTab({
 
                   {/* Delete */}
                   <button className="group-action-btn" aria-label={t(lang, 'delete')} onClick={() => handleDeleteSelected(type)}>
-                    <div className="group-action-btn-ico" style={{ background: 'var(--danger-tint)', border: '1px solid rgba(244,63,94,0.2)' }}>
+                    <div className="group-action-btn-ico" style={{ background: 'var(--danger-tint)', border: '1px solid var(--danger-border-lo)' }}>
                       <span className="icon icon-sm" style={{ color: 'var(--danger-hi)' }}>delete</span>
                     </div>
                     <span style={{ color: 'var(--danger-hi)' }}>{t(lang, 'delete')}</span>

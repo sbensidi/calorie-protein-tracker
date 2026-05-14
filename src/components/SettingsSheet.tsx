@@ -864,7 +864,7 @@ function GoalsScreen({ lang, profile, goals, onSave, onSaveProfile, onSaveFluidG
 
           {/* Fluid */}
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-            <div style={{ width: 36, height: 36, borderRadius: 8, background: 'rgba(6,182,212,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <div style={{ width: 36, height: 36, borderRadius: 8, background: 'var(--cyan-tint)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
               <span className="icon icon-sm" style={{ color: 'var(--accent-hi)' }}>water_drop</span>
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>

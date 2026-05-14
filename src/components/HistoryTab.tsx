@@ -31,7 +31,6 @@ interface HistoryTabProps {
   lang:             Lang
   meals:            Meal[]
   history:          FoodHistory[]
-  getSuggestions:   (q: string) => FoodHistory[]
   getGoalForDate:   (date: string) => { calories: number; protein: number }
   composedEntries?: ComposedEntry[]
   composedGroups?:  ComposedGroup[]
