@@ -412,8 +412,8 @@ function UpdatePasswordPage({ lang, onDone, onToggleLang }: { lang: Lang; onDone
   const [done, setDone]         = useState(false)
 
   const handleUpdate = async () => {
-    if (!password || password.length < 6) {
-      setError(lang === 'he' ? 'הסיסמה חייבת להכיל לפחות 6 תווים' : 'Password must be at least 6 characters')
+    if (!password || password.length < 8) {
+      setError(lang === 'he' ? 'הסיסמה חייבת להכיל לפחות 8 תווים' : 'Password must be at least 8 characters')
       return
     }
     setLoading(true)
@@ -520,7 +520,12 @@ function AuthPage({ lang, onToggleLang }: { lang: Lang; onToggleLang: () => void
         if (error) throw error
       }
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Authentication error')
+      // Generic message prevents user enumeration via error text
+      const msg = err instanceof Error ? err.message : ''
+      const isCredErr = /credential|not found|invalid|not confirm/i.test(msg)
+      setError(isCredErr
+        ? (lang === 'he' ? 'פרטי התחברות שגויים' : 'Invalid credentials')
+        : (lang === 'he' ? 'שגיאת אימות — נסה שוב' : 'Authentication error — please try again'))
     }
     setLoading(false)
   }

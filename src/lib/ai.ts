@@ -1,5 +1,6 @@
 import type { NutritionResult, FoodHistory } from '../types'
 import { lookupHebrew } from './hebrewFoods'
+import { supabase } from './supabase'
 
 export class AiNetworkError   extends Error { name = 'AiNetworkError'   }
 export class AiRateLimitError extends Error { name = 'AiRateLimitError' }
@@ -82,8 +83,11 @@ async function callGroqProxy(
   amount: number,
   amountType: 'g' | 'unit'
 ): Promise<NutritionResult | null> {
+  const { data: { session } } = await supabase.auth.getSession()
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+  if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`
   let res: Response
-  try { res = await fetch('/api/nutrition', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ foodName, amount, amountType }) }) }
+  try { res = await fetch('/api/nutrition', { method: 'POST', headers, body: JSON.stringify({ foodName, amount, amountType }) }) }
   catch { throw new AiNetworkError() }
   if (res.status === 429) throw new AiRateLimitError()
   if (!res.ok) return null

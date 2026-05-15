@@ -17,7 +17,24 @@ export interface UserProfile {
   defaultServingGrams: number
 }
 
-const LS_KEY = 'user_profile'
+// Only non-sensitive preferences are cached locally — biometrics stay DB-only
+const LS_KEY = 'user_prefs'
+
+type UserPrefs = Pick<UserProfile,
+  'weightUnit' | 'volumeUnit' | 'fluidGoalMl' | 'fluidThresholdMl' | 'fluidZeroCalOnly' | 'defaultServingGrams'
+>
+
+function lsSave(p: UserProfile) {
+  const prefs: UserPrefs = {
+    weightUnit:          p.weightUnit,
+    volumeUnit:          p.volumeUnit,
+    fluidGoalMl:         p.fluidGoalMl,
+    fluidThresholdMl:    p.fluidThresholdMl,
+    fluidZeroCalOnly:    p.fluidZeroCalOnly,
+    defaultServingGrams: p.defaultServingGrams,
+  }
+  localStorage.setItem(LS_KEY, JSON.stringify(prefs))
+}
 
 const DEFAULT: UserProfile = {
   sex:                'm',
@@ -38,7 +55,8 @@ const DEFAULT: UserProfile = {
 function lsLoad(): UserProfile {
   try {
     const saved = localStorage.getItem(LS_KEY)
-    return saved ? { ...DEFAULT, ...JSON.parse(saved) } : DEFAULT
+    // Merge only safe preference fields — biometrics come from DB only
+    return saved ? { ...DEFAULT, ...(JSON.parse(saved) as Partial<UserPrefs>) } : DEFAULT
   } catch {
     return DEFAULT
   }
@@ -96,7 +114,7 @@ export function useProfile(userId: string | null) {
     if (!err && data) {
       const p = dbToProfile(data as Record<string, unknown>)
       setProfile(p)
-      localStorage.setItem(LS_KEY, JSON.stringify(p))
+      lsSave(p)
       setError(null)
     } else if (err?.code === 'PGRST116') {
       setError(null)
@@ -112,7 +130,7 @@ export function useProfile(userId: string | null) {
     const prev = profile
     const next = { ...profile, ...updates }
     setProfile(next)
-    localStorage.setItem(LS_KEY, JSON.stringify(next))
+    lsSave(next)
     if (!userId) return
     setError(null)
     const { error: err } = await supabase
@@ -122,7 +140,7 @@ export function useProfile(userId: string | null) {
       import.meta.env.DEV && console.error('Save profile error:', err)
       setError(err.message)
       setProfile(prev)
-      localStorage.setItem(LS_KEY, JSON.stringify(prev))
+      lsSave(prev)
     } else {
       setError(null)
     }

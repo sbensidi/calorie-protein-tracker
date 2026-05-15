@@ -1,5 +1,35 @@
 export const config = { runtime: 'edge' }
 
+declare const process: { env: Record<string, string | undefined> }
+
+// ── Rate limiting ─────────────────────────────────────────────────────────────
+const _rl = new Map<string, { count: number; resetAt: number }>()
+const RL_MAX    = 20
+const RL_WINDOW = 60_000
+
+function checkRateLimit(ip: string): boolean {
+  const now = Date.now()
+  const entry = _rl.get(ip)
+  if (!entry || now > entry.resetAt) { _rl.set(ip, { count: 1, resetAt: now + RL_WINDOW }); return true }
+  if (entry.count >= RL_MAX) return false
+  entry.count++
+  return true
+}
+
+async function verifySupabaseToken(token: string): Promise<boolean> {
+  const supabaseUrl = (process.env.VITE_SUPABASE_URL ?? '').replace(/\n/g, '')
+  const supabaseKey = (process.env.VITE_SUPABASE_ANON_KEY ?? '').replace(/\n/g, '')
+  if (!supabaseUrl || !supabaseKey) return false
+  try {
+    const res = await fetch(`${supabaseUrl}/auth/v1/user`, {
+      headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${token}` },
+    })
+    return res.ok
+  } catch {
+    return false
+  }
+}
+
 async function fetchWithTimeout(url: string, ms = 8000): Promise<Response> {
   const controller = new AbortController()
   const id = setTimeout(() => controller.abort(), ms)
@@ -59,6 +89,32 @@ async function lookupRaw(barcode: string): Promise<BarcodeProduct | null> {
 export default async function handler(req: Request): Promise<Response> {
   if (req.method !== 'GET') {
     return new Response('Method not allowed', { status: 405 })
+  }
+
+  // ── JWT authentication ─────────────────────────────────────────────────────
+  const authHeader = req.headers.get('authorization')
+  const token = authHeader?.replace('Bearer ', '').trim()
+  if (!token) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401,
+      headers: { 'Content-Type': 'application/json' },
+    })
+  }
+  const isValid = await verifySupabaseToken(token)
+  if (!isValid) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401,
+      headers: { 'Content-Type': 'application/json' },
+    })
+  }
+
+  // ── Rate limiting ─────────────────────────────────────────────────────────
+  const ip = req.headers.get('x-real-ip') ?? req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown'
+  if (!checkRateLimit(ip)) {
+    return new Response(JSON.stringify({ error: 'Rate limit exceeded' }), {
+      status: 429,
+      headers: { 'Content-Type': 'application/json', 'Retry-After': '60' },
+    })
   }
 
   const { searchParams } = new URL(req.url)

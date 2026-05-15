@@ -80,12 +80,44 @@ async function groqCall(apiKey: string, messages: { role: string; content: strin
   return data.choices?.[0]?.message?.content?.trim() ?? null
 }
 
+async function verifySupabaseToken(token: string): Promise<boolean> {
+  const supabaseUrl = (process.env.VITE_SUPABASE_URL ?? '').replace(/\n/g, '')
+  const supabaseKey = (process.env.VITE_SUPABASE_ANON_KEY ?? '').replace(/\n/g, '')
+  if (!supabaseUrl || !supabaseKey) return false
+  try {
+    const res = await fetch(`${supabaseUrl}/auth/v1/user`, {
+      headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${token}` },
+    })
+    return res.ok
+  } catch {
+    return false
+  }
+}
+
 export default async function handler(req: Request): Promise<Response> {
   if (req.method !== 'POST') {
     return new Response('Method not allowed', { status: 405 })
   }
 
-  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown'
+  // ── JWT authentication ─────────────────────────────────────────────────────
+  const authHeader = req.headers.get('authorization')
+  const token = authHeader?.replace('Bearer ', '').trim()
+  if (!token) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401,
+      headers: { 'Content-Type': 'application/json' },
+    })
+  }
+  const isValid = await verifySupabaseToken(token)
+  if (!isValid) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401,
+      headers: { 'Content-Type': 'application/json' },
+    })
+  }
+
+  // ── Rate limiting — use x-real-ip (set by Vercel, not spoofable) ──────────
+  const ip = req.headers.get('x-real-ip') ?? req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown'
   if (!checkRateLimit(ip)) {
     return new Response(JSON.stringify({ error: 'Rate limit exceeded' }), {
       status: 429,
@@ -109,11 +141,23 @@ export default async function handler(req: Request): Promise<Response> {
   }
 
   const { foodName, amount, amountType } = body
-  if (!foodName || typeof amount !== 'number') {
-    return new Response(JSON.stringify({ error: 'Missing fields' }), { status: 400 })
+
+  // ── Input validation ───────────────────────────────────────────────────────
+  if (!foodName || typeof foodName !== 'string') {
+    return new Response(JSON.stringify({ error: 'Missing foodName' }), { status: 400 })
+  }
+  if (typeof amount !== 'number' || !isFinite(amount) || amount <= 0) {
+    return new Response(JSON.stringify({ error: 'Invalid amount' }), { status: 400 })
+  }
+  if (amountType !== 'g' && amountType !== 'unit') {
+    return new Response(JSON.stringify({ error: 'Invalid amountType' }), { status: 400 })
   }
 
-  const safeName = String(foodName).slice(0, 100).replace(/"/g, '')
+  // Strip control characters and anything that could inject into prompts
+  const safeName = String(foodName)
+    .slice(0, 100)
+    .replace(/[\x00-\x1F\x7F"\\]/g, '')
+    .trim()
 
   // Step 1 — resolve Hebrew food name to English
   // Priority: dictionary → Google Translate → AI fallback
