@@ -40,11 +40,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
     localStorage.setItem('styleMode', styleMode)
   }, [styleMode])
 
-  const toggleLang = useCallback(() => {
-    const next: Lang = lang === 'he' ? 'en' : 'he'
-    setLang(next)
-    localStorage.setItem('lang', next)
+  useEffect(() => {
+    document.documentElement.lang = lang
+    document.documentElement.dir  = lang === 'he' ? 'rtl' : 'ltr'
+    localStorage.setItem('lang', lang)
   }, [lang])
+
+  const toggleLang = useCallback(() => {
+    setLang(l => l === 'he' ? 'en' : 'he')
+  }, [])
 
   const toggleTheme = useCallback(() => {
     setTheme(t => t === 'dark' ? 'light' : 'dark')
@@ -60,7 +64,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const applyLang = useCallback((l: Lang) => {
     setLang(l)
-    localStorage.setItem('lang', l)
   }, [])
 
   return (

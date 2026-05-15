@@ -1,13 +1,14 @@
-import { useState, useCallback, useRef, useEffect } from 'react'
+import { useState, useCallback, useRef, useEffect, lazy, Suspense } from 'react'
 import { useLockBodyScroll } from '../hooks/useLockBodyScroll'
 import type { FoodHistory, FoodLibraryItem, Meal, NutritionResult } from '../types'
 import type { Lang } from '../lib/i18n'
 import { t, dir, currentTime, today } from '../lib/i18n'
 import { calculateNutrition, AiRateLimitError, AiParseError } from '../lib/ai'
-import { BarcodeScanner } from './BarcodeScanner'
 import type { BarcodeScannerHandle } from './BarcodeScanner'
 import { ErrorBoundary } from './ErrorBoundary'
 import type { BarcodeProduct } from '../lib/barcodeApi'
+
+const BarcodeScanner = lazy(() => import('./BarcodeScanner').then(m => ({ default: m.BarcodeScanner })))
 import { FoodHistoryModal } from './FoodHistoryModal'
 import { UNITS, toBase, mlToGrams } from '../lib/units'
 import type { UnitId } from '../lib/units'
@@ -629,12 +630,14 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
       {scannerMounted && (
         <div style={{ display: mode === 'scan' && !scanProduct && !scanNotFound ? undefined : 'none' }}>
           <ErrorBoundary>
-            <BarcodeScanner
-              ref={scannerRef}
-              lang={lang}
-              onResult={handleScanResult}
-              onNotFound={handleScanNotFound}
-            />
+            <Suspense fallback={null}>
+              <BarcodeScanner
+                ref={scannerRef}
+                lang={lang}
+                onResult={handleScanResult}
+                onNotFound={handleScanNotFound}
+              />
+            </Suspense>
           </ErrorBoundary>
         </div>
       )}
@@ -1415,8 +1418,8 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
               >
                 <span style={{
                   position: 'absolute', width: 14, height: 14, borderRadius: '50%', background: 'var(--toggle-knob)',
-                  top: 3, transition: `${lang === 'he' ? 'left' : 'right'} .2s`,
-                  ...(lang === 'he' ? { left: fluidExcluded ? 17 : 3 } : { right: fluidExcluded ? 17 : 3 }),
+                  top: 3, insetInlineEnd: fluidExcluded ? 17 : 3,
+                  transition: 'inset-inline-end .2s',
                 }} />
               </button>
             </div>

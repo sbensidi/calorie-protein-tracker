@@ -67,3 +67,13 @@ export function formatAmount(amount: number, unit: UnitId, lang: 'he' | 'en' = '
 export const WEIGHT_UNITS: WeightUnit[] = ['g', 'oz']
 export const VOLUME_UNITS: VolumeUnit[] = ['ml', 'cup', 'tbsp', 'tsp', 'fl_oz']
 export const ALL_ENTRY_UNITS: UnitId[]  = ['g', 'oz', 'ml', 'cup', 'tbsp', 'tsp', 'fl_oz']
+
+/** Total calories for qty servings of a food (rounded to nearest kcal). */
+export function effectiveCalories(baseCalories: number, qty: number): number {
+  return Math.round(baseCalories * qty)
+}
+
+/** Per-serving base from a user-typed total, rounded to nearest kcal. */
+export function backCalcBase(typedTotal: number, qty: number): number {
+  return Math.round(typedTotal / qty)
+}

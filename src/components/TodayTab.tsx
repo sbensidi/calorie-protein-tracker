@@ -485,7 +485,7 @@ export function TodayTab({
 
         {/* ── Type picker (inline, under header) ─────────── */}
         {editingGroupType === type && (
-          <div className="type-picker">
+          <div className="type-picker" role="radiogroup" aria-label={lang === 'he' ? 'בחר סוג ארוחה' : 'Select meal type'}>
             {MEAL_TYPES.map(mt => (
               <div
                 key={mt}
@@ -669,7 +669,7 @@ export function TodayTab({
 
     return (
       <div className="compose-modal-backdrop" onClick={() => setComposeModal(null)}>
-        <div ref={composeModalRef} className="compose-modal" onClick={e => e.stopPropagation()}>
+        <div ref={composeModalRef} className="compose-modal" role="dialog" aria-modal="true" aria-label={lang === 'he' ? 'הגדרת ארוחה מורכבת' : 'Compose meal'} onClick={e => e.stopPropagation()}>
           {/* Title */}
           <div>
             <p style={{ fontSize: 16, fontWeight: 800, textAlign: 'center', margin: 0 }}>{t(lang, 'dishName')}</p>

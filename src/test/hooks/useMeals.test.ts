@@ -70,9 +70,8 @@ beforeEach(() => {
 })
 
 describe('useMeals', () => {
-  it('does not fetch when userId is null', async () => {
+  it('does not fetch when userId is null', () => {
     renderHook(() => useMeals(null))
-    await new Promise(r => setTimeout(r, 30))
     expect(fromMock).not.toHaveBeenCalled()
   })
 

@@ -100,6 +100,7 @@ function DayPanel({
               type="number"
               inputMode="numeric"
               className="inp"
+              aria-label={t(lang, 'calories')}
               style={{ height: compact ? 38 : undefined, paddingInlineEnd: calDiff ? 52 : undefined }}
               value={calVal === 0 ? '' : calVal}
               placeholder="0"
@@ -128,6 +129,7 @@ function DayPanel({
               type="number"
               inputMode="decimal"
               className="inp inp-green"
+              aria-label={t(lang, 'protein')}
               style={{ height: compact ? 38 : undefined, paddingInlineEnd: protDiff ? 52 : undefined }}
               value={protVal === 0 ? '' : protVal}
               placeholder="0"
@@ -156,6 +158,7 @@ function DayPanel({
               type="number"
               inputMode="numeric"
               className="inp"
+              aria-label={t(lang, 'fluid')}
               style={{ height: compact ? 38 : undefined, paddingInlineEnd: fluidDiff ? 52 : undefined, borderColor: 'var(--accent-border)' }}
               value={fluidVal === 0 ? '' : fluidVal}
               placeholder="0"
@@ -370,12 +373,12 @@ function MainScreen({ lang, connected, theme, styleMode, onProfile, onGoals, onF
               <span style={{
                 position: 'absolute',
                 top: 3,
-                ...(lang === 'he' ? { right: theme === 'dark' ? 3 : 23 } : { left: theme === 'dark' ? 3 : 23 }),
+                insetInlineStart: theme === 'dark' ? 3 : 23,
                 width: 22, height: 22,
                 borderRadius: '50%',
                 background: theme === 'dark' ? 'var(--accent)' : 'var(--warning)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                transition: `${lang === 'he' ? 'right' : 'left'} 0.25s cubic-bezier(.34,1.56,.64,1), background 0.25s`,
+                transition: 'inset-inline-start 0.25s cubic-bezier(.34,1.56,.64,1), background 0.25s',
                 boxShadow: '0 1px 4px rgba(0,0,0,0.3)',
               }}>
                 <span className="icon" style={{ fontSize: 13, color: 'var(--on-color)' }}>
@@ -540,9 +543,10 @@ function ProfileScreen({ lang, profile, onSave, showToast }: {
           { key: 'weight' as const, label: t(lang, 'weightKg'),  min: 30,  max: 300 },
         ]).map(({ key, label, min, max }) => (
           <div key={key}>
-            <label style={labelStyle}>{label}</label>
+            <label htmlFor={`profile-${key}`} style={labelStyle}>{label}</label>
             <div style={{ position: 'relative' }}>
               <input
+                id={`profile-${key}`}
                 type="number"
                 inputMode="numeric"
                 className="inp"
@@ -582,7 +586,7 @@ function ProfileScreen({ lang, profile, onSave, showToast }: {
             </p>
           </div>
           <span style={{ fontSize: 18, fontWeight: 800, color: 'var(--text)', flexShrink: 0, marginInlineStart: 10 }}>
-            {bmr.toLocaleString()} <span style={{ fontSize: 10, fontWeight: 400 }}>{t(lang, 'caloriesUnit')}</span>
+            {bmr.toLocaleString(lang === 'he' ? 'he-IL' : 'en-US')} <span style={{ fontSize: 10, fontWeight: 400 }}>{t(lang, 'caloriesUnit')}</span>
           </span>
         </div>
         <div style={{ height: 1, background: 'var(--border)' }} />
@@ -796,7 +800,7 @@ function GoalsScreen({ lang, profile, goals, onSave, onSaveProfile, onSaveFluidG
         <span className="icon icon-sm" style={{ color: 'var(--accent-hi)' }}>bolt</span>
         <p style={{ fontSize: 12, margin: 0 }}>
           <span style={{ fontWeight: 700, color: 'var(--text-2)' }}>TDEE: </span>
-          <span style={{ fontWeight: 800, color: 'var(--accent-hi)' }}>{tdee.toLocaleString()}</span>
+          <span style={{ fontWeight: 800, color: 'var(--accent-hi)' }}>{tdee.toLocaleString(lang === 'he' ? 'he-IL' : 'en-US')}</span>
           <span style={{ color: 'var(--text-3)', marginInlineStart: 3 }}>{lang === 'he' ? 'קק״ל/יום' : 'kcal/day'}</span>
         </p>
       </div>
@@ -818,20 +822,20 @@ function GoalsScreen({ lang, profile, goals, onSave, onSaveProfile, onSaveFluidG
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <p style={{ fontSize: 11, margin: 0 }}>
-                <span style={{ fontWeight: 800, color: 'var(--accent-hi)' }}>{suggestedCal.toLocaleString()}</span>
+                <span style={{ fontWeight: 800, color: 'var(--accent-hi)' }}>{suggestedCal.toLocaleString(lang === 'he' ? 'he-IL' : 'en-US')}</span>
                 <span style={{ color: 'var(--text-3)', marginInlineStart: 3 }}>{lang === 'he' ? 'קק״ל' : 'kcal'}</span>
               </p>
               <p dir={lang === 'he' ? 'rtl' : 'ltr'} style={{ fontSize: 10, color: 'var(--text-3)', margin: '2px 0 0', lineHeight: 1.5 }}>
                 {lang === 'he'
                   ? draftGoalType === 'lose'
-                    ? <>גרעון של 500 קק״ל/יום: <span dir="ltr">{tdee.toLocaleString()} − 500 = {suggestedCal.toLocaleString()}</span> קק״ל × 7 ≈ 0.5 ק״ג שומן/שבוע</>
+                    ? <>גרעון של 500 קק״ל/יום: <span dir="ltr">{tdee.toLocaleString(lang === 'he' ? 'he-IL' : 'en-US')} − 500 = {suggestedCal.toLocaleString(lang === 'he' ? 'he-IL' : 'en-US')}</span> קק״ל × 7 ≈ 0.5 ק״ג שומן/שבוע</>
                     : draftGoalType === 'gain'
-                      ? <>עודף של 300 קק״ל/יום: <span dir="ltr">{tdee.toLocaleString()} + 300 = {suggestedCal.toLocaleString()}</span> קק״ל × 7 ≈ 0.3 ק״ג/שבוע</>
+                      ? <>עודף של 300 קק״ל/יום: <span dir="ltr">{tdee.toLocaleString(lang === 'he' ? 'he-IL' : 'en-US')} + 300 = {suggestedCal.toLocaleString(lang === 'he' ? 'he-IL' : 'en-US')}</span> קק״ל × 7 ≈ 0.3 ק״ג/שבוע</>
                       : 'שמירה על משקל, שווה לצריכה האנרגטית היומית'
                   : draftGoalType === 'lose'
-                    ? <><span dir="ltr">500 kcal/day deficit: {tdee.toLocaleString()} − 500 = {suggestedCal.toLocaleString()} kcal × 7 ≈ 0.5 kg fat/week</span></>
+                    ? <><span dir="ltr">500 kcal/day deficit: {tdee.toLocaleString('en-US')} − 500 = {suggestedCal.toLocaleString('en-US')} kcal × 7 ≈ 0.5 kg fat/week</span></>
                     : draftGoalType === 'gain'
-                      ? <><span dir="ltr">+300 kcal/day surplus: {tdee.toLocaleString()} + 300 = {suggestedCal.toLocaleString()} kcal × 7 ≈ 0.3 kg/week</span></>
+                      ? <><span dir="ltr">+300 kcal/day surplus: {tdee.toLocaleString('en-US')} + 300 = {suggestedCal.toLocaleString('en-US')} kcal × 7 ≈ 0.3 kg/week</span></>
                       : 'Maintenance — matches your daily energy expenditure'}
               </p>
             </div>
@@ -1899,8 +1903,8 @@ function PreferencesScreen({ lang, profile, onSave, showToast }: {
         >
           <span style={{
             position: 'absolute', width: 18, height: 18, borderRadius: '50%', background: 'var(--toggle-knob)',
-            top: 4, transition: `${lang === 'he' ? 'left' : 'right'} .2s`,
-            ...(lang === 'he' ? { left: draft.fluidZeroCalOnly ? 4 : 22 } : { right: draft.fluidZeroCalOnly ? 4 : 22 }),
+            top: 4, insetInlineEnd: draft.fluidZeroCalOnly ? 4 : 22,
+            transition: 'inset-inline-end .2s',
           }} />
         </button>
       </div>
@@ -2025,7 +2029,7 @@ export function SettingsSheet({
         display: 'flex', justifyContent: 'center', alignItems: 'flex-end',
         pointerEvents: 'none',
       }}>
-      <div ref={sheetRef} tabIndex={-1} style={{
+      <div ref={sheetRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label={lang === 'he' ? 'הגדרות' : 'Settings'} style={{
         width: '100%', maxWidth: 560,
         pointerEvents: 'all',
         background: 'var(--bg)',

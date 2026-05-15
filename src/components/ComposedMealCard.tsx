@@ -3,6 +3,7 @@ import type { Meal, ComposedGroup } from '../types'
 import type { Lang } from '../lib/i18n'
 import { t, dir } from '../lib/i18n'
 import { MealCard } from './MealCard'
+import { useAppContext } from '../context/AppContext'
 
 type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'beverage'
 
@@ -27,6 +28,7 @@ export function ComposedMealCard({
   const [open, setOpen] = useState(true)
   const [editingName, setEditingName] = useState(false)
   const [nameInput, setNameInput] = useState(group.name)
+  const { styleMode } = useAppContext()
 
   const totalCal  = Math.round(meals.reduce((s, m) => s + m.calories, 0))
   const totalProt = Math.round(meals.reduce((s, m) => s + m.protein, 0) * 10) / 10
@@ -42,13 +44,19 @@ export function ComposedMealCard({
     <div className="composed-card">
       {/* ── Header ──────────────────────────────────────────── */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px' }}>
-        {/* Checkbox */}
-        <div
-          className={`cb${selected ? ' cb-on' : ''}`}
-          onClick={e => { e.stopPropagation(); onToggleSelect() }}
-        >
-          {selected && <span className="icon icon-sm" style={{ color: 'var(--composed)', fontSize: 13 }}>check</span>}
-        </div>
+        {/* Checkbox — hidden in minimal mode */}
+        {styleMode !== 'minimal' && (
+          <div
+            role="checkbox"
+            aria-checked={selected}
+            tabIndex={0}
+            className={`cb${selected ? ' cb-on' : ''}`}
+            onClick={e => { e.stopPropagation(); onToggleSelect() }}
+            onKeyDown={e => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); onToggleSelect() } }}
+          >
+            {selected && <span className="icon icon-sm" style={{ color: 'var(--composed)', fontSize: 13 }}>check</span>}
+          </div>
+        )}
 
         {/* Icon */}
         <div style={{

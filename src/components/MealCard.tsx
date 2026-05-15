@@ -297,8 +297,12 @@ export function MealCard({ meal, lang, weightUnit = 'g', showCheckbox, selected,
       {/* Checkbox — only shown when group is open */}
       {showCheckbox && (
         <div
+          role="checkbox"
+          aria-checked={selected}
+          tabIndex={0}
           className={`cb${selected ? ' cb-on' : ''}`}
           onClick={e => { e.stopPropagation(); onToggleSelect() }}
+          onKeyDown={e => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); onToggleSelect() } }}
         >
           {selected && <span className="icon icon-sm" style={{ color: 'var(--composed)', fontSize: 13 }}>check</span>}
         </div>

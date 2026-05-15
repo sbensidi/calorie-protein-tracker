@@ -126,6 +126,15 @@ export function useProfile(userId: string | null) {
 
   useEffect(() => { fetchProfile() }, [fetchProfile])
 
+  useEffect(() => {
+    if (!userId) return
+    const channel = supabase
+      .channel(`profile-${userId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles', filter: `id=eq.${userId}` }, () => fetchProfile())
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
+  }, [userId, fetchProfile])
+
   const saveProfile = useCallback(async (updates: Partial<UserProfile>) => {
     const prev = profile
     const next = { ...profile, ...updates }

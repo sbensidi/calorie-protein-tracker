@@ -43,8 +43,8 @@ export function DailySummary({ meals, date, goalCalories, goalProtein, lang, flu
       goal:        goalCalories,
       color:       'var(--accent-hi)',
       label:       lang === 'he' ? 'קלוריות' : 'Calories',
-      centerVal:   totalCalories.toLocaleString(),
-      centerGoal:  `${goalCalories.toLocaleString()} /`,
+      centerVal:   totalCalories.toLocaleString(lang === 'he' ? 'he-IL' : 'en-US'),
+      centerGoal:  `${goalCalories.toLocaleString(lang === 'he' ? 'he-IL' : 'en-US')} /`,
       remaining:   remStr(remCal, ` ${t(lang, 'caloriesUnit')}`),
       over:        remCal < 0,
     },
@@ -113,9 +113,9 @@ export function DailySummary({ meals, date, goalCalories, goalProtein, lang, flu
 
         {/* Cal meta */}
         <p style={{ fontSize: 12, fontWeight: 300, color: 'var(--text-2)', padding: '8px 4px 0', textAlign: 'end' }}>
-          {totalCalories.toLocaleString()}
+          {totalCalories.toLocaleString(lang === 'he' ? 'he-IL' : 'en-US')}
           {lang === 'he' ? ' מתוך ' : ' / '}
-          {goalCalories.toLocaleString()} {t(lang, 'caloriesUnit')}
+          {goalCalories.toLocaleString(lang === 'he' ? 'he-IL' : 'en-US')} {t(lang, 'caloriesUnit')}
         </p>
 
         {/* Protein bar */}

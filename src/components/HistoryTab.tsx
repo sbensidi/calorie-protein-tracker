@@ -171,9 +171,12 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
   // ── Empty state ────────────────────────────────────────────────────
   if (grouped.size === 0) {
     return (
-      <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-3)' }}>
+      <div style={{ textAlign: 'center', padding: '40px 16px', color: 'var(--text-3)' }}>
         <span className="icon" style={{ fontSize: 32, display: 'block', marginBottom: 8 }}>history</span>
         <p style={{ fontSize: 14, margin: 0 }}>{t(lang, 'noHistory')}</p>
+        <p style={{ fontSize: 12, margin: '6px 0 0', color: 'var(--text-3)' }}>
+          {lang === 'he' ? 'ארוחות שתוסיף היום יופיעו כאן מחר' : "Today's meals will appear here tomorrow"}
+        </p>
       </div>
     )
   }
@@ -1101,7 +1104,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
             }}>
             <p style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-3)', margin: '0 0 6px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{label}</p>
             <p style={{ fontSize: 0, margin: 0 }}>
-              <span style={{ fontSize: 22, fontWeight: 800, color }}>{typeof value === 'number' ? value.toLocaleString() : value}</span>
+              <span style={{ fontSize: 22, fontWeight: 800, color }}>{typeof value === 'number' ? value.toLocaleString(lang === 'he' ? 'he-IL' : 'en-US') : value}</span>
               <span style={{ fontSize: 10, color: 'var(--text-3)', marginInlineStart: 3 }}>{unit}</span>
             </p>
             {pct !== undefined && (
@@ -1186,7 +1189,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
               </span>
               <div style={{ display: 'flex', gap: 12, flex: 1, flexWrap: 'wrap' }}>
                 <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--accent-hi)', whiteSpace: 'nowrap' }}>
-                  {todayGoal.calories.toLocaleString()} <span style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-3)' }}>{t(lang, 'caloriesUnit')}</span>
+                  {todayGoal.calories.toLocaleString(lang === 'he' ? 'he-IL' : 'en-US')} <span style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-3)' }}>{t(lang, 'caloriesUnit')}</span>
                 </span>
                 <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--positive-hi)', whiteSpace: 'nowrap' }}>
                   {todayGoal.protein}g <span style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-3)' }}>{lang === 'he' ? 'חלבון' : 'protein'}</span>
@@ -1384,7 +1387,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                           {lang === 'he' ? 'יעד' : 'Goal'}
                           <span style={{ fontWeight: 700, color: 'var(--text-2)' }}>
                             {isCal7
-                              ? `${todayGoal.calories.toLocaleString()} ${t(lang, 'caloriesUnit')}`
+                              ? `${todayGoal.calories.toLocaleString(lang === 'he' ? 'he-IL' : 'en-US')} ${t(lang, 'caloriesUnit')}`
                               : isProt7
                                 ? `${todayGoal.protein}${t(lang, 'proteinUnit')}`
                                 : fmtMl(fluidGoalMl)}
@@ -1416,7 +1419,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                         </span>
                         <span style={{ color: 'var(--text-3)' }}>·</span>
                         <span style={{ color: 'var(--text-2)' }}>
-                          {lang === 'he' ? `ממוצע ${avg7Cal.toLocaleString()} קק״ל` : `avg ${avg7Cal.toLocaleString()} kcal`}
+                          {lang === 'he' ? `ממוצע ${avg7Cal.toLocaleString('he-IL')} קק״ל` : `avg ${avg7Cal.toLocaleString('en-US')} kcal`}
                         </span>
                         <span style={{
                           fontSize: 11, fontWeight: 600, borderRadius: 5, padding: '1px 6px',
@@ -1425,7 +1428,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                         }}>
                           {delta7Cal === 0
                             ? (lang === 'he' ? 'בדיוק ביעד' : 'on target')
-                            : `${delta7Cal > 0 ? '+' : '−'}${Math.abs(delta7Cal).toLocaleString()} ${lang === 'he' ? 'קק״ל' : 'kcal'}`}
+                            : `${delta7Cal > 0 ? '+' : '−'}${Math.abs(delta7Cal).toLocaleString(lang === 'he' ? 'he-IL' : 'en-US')} ${lang === 'he' ? 'קק״ל' : 'kcal'}`}
                         </span>
                       </div>
                       {/* protein row */}
@@ -1693,7 +1696,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                             <div style={{ width: 16, borderTop: `1.5px dashed ${goalLineColor30}` }} />
                             {lang === 'he' ? 'יעד' : 'Goal'}
                             <span style={{ fontWeight: 700, color: 'var(--text-2)' }}>
-                              {isCal30 ? `${lineGoal30.toLocaleString()} ${t(lang, 'caloriesUnit')}` : isProt30 ? `${lineGoal30}${t(lang, 'proteinUnit')}` : fmtMl(lineGoal30)}
+                              {isCal30 ? `${lineGoal30.toLocaleString(lang === 'he' ? 'he-IL' : 'en-US')} ${t(lang, 'caloriesUnit')}` : isProt30 ? `${lineGoal30}${t(lang, 'proteinUnit')}` : fmtMl(lineGoal30)}
                             </span>
                           </div>
                         </div>
@@ -1712,7 +1715,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                         </span>
                         <span style={{ color: 'var(--text-3)' }}>·</span>
                         <span style={{ color: 'var(--text-2)' }}>
-                          {lang === 'he' ? `ממוצע ${avg30Cal.toLocaleString()} קק״ל` : `avg ${avg30Cal.toLocaleString()} kcal`}
+                          {lang === 'he' ? `ממוצע ${avg30Cal.toLocaleString('he-IL')} קק״ל` : `avg ${avg30Cal.toLocaleString('en-US')} kcal`}
                         </span>
                         <span style={{
                           fontSize: 11, fontWeight: 600, borderRadius: 5, padding: '1px 6px',
@@ -1721,7 +1724,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                         }}>
                           {delta30Cal === 0
                             ? (lang === 'he' ? 'בדיוק ביעד' : 'on target')
-                            : `${delta30Cal > 0 ? '+' : '−'}${Math.abs(delta30Cal).toLocaleString()} ${lang === 'he' ? 'קק״ל' : 'kcal'}`}
+                            : `${delta30Cal > 0 ? '+' : '−'}${Math.abs(delta30Cal).toLocaleString(lang === 'he' ? 'he-IL' : 'en-US')} ${lang === 'he' ? 'קק״ל' : 'kcal'}`}
                         </span>
                       </div>
                       {/* protein row */}
