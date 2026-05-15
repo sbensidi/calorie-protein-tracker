@@ -33,7 +33,9 @@ export default function App() {
   const userSignedOut   = useRef(false)
 
   useEffect(() => {
+    const timeout = setTimeout(() => setAuthLoading(false), 12000) // fallback if SDK hangs
     supabase.auth.getSession().then(({ data: { session } }) => {
+      clearTimeout(timeout)
       if (session) hadSession.current = true
       setSession(session)
       setAuthLoading(false)
@@ -49,7 +51,7 @@ export default function App() {
       if (event === 'PASSWORD_RECOVERY') setIsRecovery(true)
       if (event === 'SIGNED_IN' && isRecovery) setIsRecovery(false)
     })
-    return () => subscription.unsubscribe()
+    return () => { clearTimeout(timeout); subscription.unsubscribe() }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
@@ -113,7 +115,7 @@ export default function App() {
   useEffect(() => {
     if (!userId || !prefsSynced.current) return
     supabase.from('profiles').upsert({ id: userId, theme, lang, updated_at: new Date().toISOString() }, { onConflict: 'id' })
-  }, [theme, lang]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [theme, lang, userId])
 
   const { toasts, showToast, dismissToast } = useToast()
   const { library, searchLibrary } = useFoodLibrary()
@@ -162,7 +164,13 @@ export default function App() {
     const err = mealsError || goalsError || historyError || groupsError || profileError
     if (err && err !== lastShownError.current) {
       lastShownError.current = err
-      showToast(lang === 'he' ? 'שגיאה בתקשורת עם השרת' : 'Server error. Please try again.', 'error')
+      const isOffline = !navigator.onLine
+      showToast(
+        isOffline
+          ? (lang === 'he' ? 'אין חיבור לאינטרנט' : 'No internet connection')
+          : (lang === 'he' ? 'שגיאה בתקשורת עם השרת' : 'Server error. Please try again.'),
+        'error',
+      )
     }
     if (!err) lastShownError.current = null
   }, [mealsError, goalsError, historyError, groupsError, profileError]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -184,7 +192,9 @@ export default function App() {
   if (authLoading) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)' }}>
-        <div style={{ width: 32, height: 32, border: '2px solid var(--accent)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+        <div role="status" aria-label={lang === 'he' ? 'טוען...' : 'Loading...'}>
+          <div style={{ width: 32, height: 32, border: '2px solid var(--accent)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+        </div>
       </div>
     )
   }
@@ -230,7 +240,7 @@ export default function App() {
                     onClick={() => setSettingsOpen(true)}
                     aria-label={lang === 'he' ? 'הגדרות' : 'Settings'}
                     style={{
-                      width: 34, height: 34, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      width: 44, height: 44, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
                       background: avatarUrl ? 'transparent' : emailInitial ? 'var(--accent-select)' : 'var(--qty-bg)',
                       border: avatarUrl ? '2px solid var(--border)' : '1px solid var(--border)',
                       color: avatarUrl ? 'transparent' : emailInitial ? 'var(--accent)' : 'var(--text-2)',
@@ -257,7 +267,7 @@ export default function App() {
 
       {/* ── I8: offline indicator ────────────────────────────────── */}
       {!connected && (
-        <div style={{
+        <div role="alert" style={{
           background: 'var(--danger-tint)',
           borderBottom: '1px solid var(--danger-border-lo)',
           padding: '6px 16px',
@@ -420,7 +430,10 @@ function UpdatePasswordPage({ lang, onDone, onToggleLang }: { lang: Lang; onDone
     setError('')
     const { error } = await supabase.auth.updateUser({ password })
     if (error) {
-      setError(error.message)
+      const isWeak = /password/i.test(error.message)
+      setError(isWeak
+        ? (lang === 'he' ? 'הסיסמה חלשה מדי' : 'Password is too weak')
+        : (lang === 'he' ? 'שגיאה בעדכון הסיסמה' : 'Failed to update password'))
     } else {
       setDone(true)
       setTimeout(onDone, 1800)
@@ -453,6 +466,7 @@ function UpdatePasswordPage({ lang, onDone, onToggleLang }: { lang: Lang; onDone
                 className="inp"
                 style={{ marginBottom: 8 }}
                 placeholder={t(lang, 'newPassword')}
+                aria-label={t(lang, 'newPassword')}
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 dir="ltr"
@@ -626,6 +640,7 @@ function AuthPage({ lang, onToggleLang }: { lang: Lang; onToggleLang: () => void
             className="inp"
             style={{ marginBottom: 8 }}
             placeholder={t(lang, 'email')}
+            aria-label={t(lang, 'email')}
             value={email}
             onChange={e => setEmail(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && handleAuth()}
@@ -638,6 +653,7 @@ function AuthPage({ lang, onToggleLang }: { lang: Lang; onToggleLang: () => void
                 type="password"
                 className="inp"
                 placeholder={t(lang, 'password')}
+                aria-label={t(lang, 'password')}
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && handleAuth()}

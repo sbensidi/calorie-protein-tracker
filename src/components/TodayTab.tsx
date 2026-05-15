@@ -775,7 +775,7 @@ export function TodayTab({
       {/* ── Add ingredient modal ──────────────────────────────── */}
       {addIngredientModal && (
         <div className="compose-modal-backdrop" onClick={() => setAddIngredientModal(null)}>
-          <div className="compose-modal" style={{ maxWidth: 420, padding: 0, overflow: 'hidden' }} onClick={e => e.stopPropagation()}>
+          <div className="compose-modal" role="dialog" aria-modal="true" aria-label={lang === 'he' ? 'הוסף רכיב' : 'Add ingredient'} style={{ maxWidth: 420, padding: 0, overflow: 'hidden' }} onClick={e => e.stopPropagation()}>
             <FoodEntryForm
               key={addIngredientModal.groupId}
               lang={lang}

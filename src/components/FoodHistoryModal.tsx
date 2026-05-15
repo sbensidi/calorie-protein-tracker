@@ -79,6 +79,9 @@ export function FoodHistoryModal({
     >
       <div
         className="compose-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-label={lang === 'he' ? 'היסטוריית מזון' : 'Food history'}
         style={{ maxWidth: 440, padding: 0, overflow: 'hidden', maxHeight: '80vh', display: 'flex', flexDirection: 'column' }}
         onClick={e => e.stopPropagation()}
       >

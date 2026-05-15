@@ -851,8 +851,36 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
 
             {filteredDates.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-3)' }}>
-                <span className="icon" style={{ fontSize: 28, display: 'block', marginBottom: 8 }}>search_off</span>
-                <p style={{ fontSize: 13, margin: 0 }}>{t(lang, 'noResults')}</p>
+                {debouncedSearch ? (
+                  <>
+                    <span className="icon" style={{ fontSize: 28, display: 'block', marginBottom: 8 }}>search_off</span>
+                    <p style={{ fontSize: 13, margin: 0 }}>
+                      {lang === 'he' ? `לא נמצאו תוצאות עבור "${debouncedSearch}"` : `No results for "${debouncedSearch}"`}
+                    </p>
+                    <button
+                      onClick={() => setSearch('')}
+                      style={{ marginTop: 10, fontSize: 12, color: 'var(--accent-hi)', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px', borderRadius: 6 }}
+                    >
+                      {lang === 'he' ? 'נקה חיפוש' : 'Clear search'}
+                    </button>
+                  </>
+                ) : statusFilter !== 'all' ? (
+                  <>
+                    <span className="icon" style={{ fontSize: 28, display: 'block', marginBottom: 8 }}>filter_list_off</span>
+                    <p style={{ fontSize: 13, margin: 0 }}>{t(lang, 'noResults')}</p>
+                    <button
+                      onClick={() => setStatusFilter('all')}
+                      style={{ marginTop: 10, fontSize: 12, color: 'var(--accent-hi)', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px', borderRadius: 6 }}
+                    >
+                      {lang === 'he' ? 'הצג הכל' : 'Show all'}
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <span className="icon" style={{ fontSize: 28, display: 'block', marginBottom: 8 }}>history</span>
+                    <p style={{ fontSize: 13, margin: 0 }}>{t(lang, 'noHistory')}</p>
+                  </>
+                )}
               </div>
             ) : (
               filteredDates.map((date, i) => {
@@ -888,6 +916,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
             return (
               <div className="compose-modal-backdrop" onClick={() => setHistoryModalOpen(false)}>
                 <div className="compose-modal"
+                  role="dialog" aria-modal="true" aria-label={lang === 'he' ? 'היסטוריית מזון' : 'Food history'}
                   style={{ maxWidth: 440, padding: 0, overflow: 'hidden', maxHeight: '80vh', display: 'flex', flexDirection: 'column' }}
                   onClick={e => e.stopPropagation()}
                 >
