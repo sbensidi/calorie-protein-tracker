@@ -1185,7 +1185,7 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
         </h2>
 
         <div style={{ position: 'relative', marginBottom: 10 }}>
-          <span className="icon" style={{ position: 'absolute', top: '50%', transform: 'translateY(-50%)', ...(lang === 'he' ? { right: 10 } : { left: 10 }), color: 'var(--text-3)', fontSize: 18, pointerEvents: 'none' }}>search</span>
+          <span className="icon" style={{ position: 'absolute', top: '50%', transform: 'translateY(-50%)', insetInlineStart: 10, color: 'var(--text-3)', fontSize: 18, pointerEvents: 'none' }}>search</span>
           <input className="inp" type="text" value={search} onChange={e => setSearch(e.target.value)}
             placeholder={t(lang, 'search')}
             dir={dir(lang)}
