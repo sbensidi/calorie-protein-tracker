@@ -30,10 +30,13 @@ export function useMeals(userId: string | null) {
   const fetchMeals = useCallback(async () => {
     if (!userId) return
     setLoading(true)
+    const cutoff = new Date()
+    cutoff.setDate(cutoff.getDate() - 90)
     const { data, error: err } = await supabase
       .from('meals')
-      .select('*')
+      .select('id,user_id,name,calories,protein,grams,date,meal_type,time_logged,created_at,fluid_ml,fluid_excluded')
       .eq('user_id', userId)
+      .gte('date', cutoff.toISOString().slice(0, 10))
       .order('date', { ascending: false })
       .order('time_logged', { ascending: true })
     if (err) setError(err.message)

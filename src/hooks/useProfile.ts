@@ -108,7 +108,7 @@ export function useProfile(userId: string | null) {
     setLoading(true)
     const { data, error: err } = await supabase
       .from('profiles')
-      .select('*')
+      .select('id,sex,age,height,weight,activity_level,goal_type,weight_unit,volume_unit,fluid_goal_ml,fluid_threshold_ml,fluid_zero_cal_only,default_serving_grams,updated_at')
       .eq('id', userId)
       .single()
     if (!err && data) {

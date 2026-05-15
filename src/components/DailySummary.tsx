@@ -112,7 +112,7 @@ export function DailySummary({ meals, date, goalCalories, goalProtein, lang, flu
         </div>
 
         {/* Cal meta */}
-        <p style={{ fontSize: 12, fontWeight: 300, color: 'var(--text-2)', padding: '8px 4px 0', textAlign: 'right' }}>
+        <p style={{ fontSize: 12, fontWeight: 300, color: 'var(--text-2)', padding: '8px 4px 0', textAlign: 'end' }}>
           {totalCalories.toLocaleString()}
           {lang === 'he' ? ' מתוך ' : ' / '}
           {goalCalories.toLocaleString()} {t(lang, 'caloriesUnit')}

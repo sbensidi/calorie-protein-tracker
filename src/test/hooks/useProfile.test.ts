@@ -115,9 +115,10 @@ describe('useProfile', () => {
     const { result } = renderHook(() => useProfile(USER))
     await waitFor(() => expect(result.current.loading).toBe(false))
 
-    await act(async () => { await result.current.saveProfile({ weight: 99 }) })
+    // Attempt to change a stored pref (fluidGoalMl is in UserPrefs → written to localStorage)
+    await act(async () => { await result.current.saveProfile({ fluidGoalMl: 9999 }) })
 
-    const stored = JSON.parse(localStorage.getItem('user_profile') ?? '{}')
-    expect(stored.weight).toBe(70) // reverted to DEFAULT
+    const stored = JSON.parse(localStorage.getItem('user_prefs') ?? '{}')
+    expect(stored.fluidGoalMl).toBe(2500) // reverted to DEFAULT
   })
 })

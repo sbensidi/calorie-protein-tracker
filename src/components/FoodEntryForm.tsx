@@ -449,8 +449,8 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
     setScanGrams('100')
   }
 
-  const numCalories = Number(editCalories) || 0
-  const numProtein  = Number(editProtein)  || 0
+  const numCalories = Math.max(0, Number(editCalories) || 0)
+  const numProtein  = Math.max(0, Number(editProtein)  || 0)
   const amountInGrams: number = (() => {
     if (isPcs) return 0
     const uid = entryUnit as UnitId
@@ -930,7 +930,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
 
           {/* Col 4 — calculate button */}
           <button
-            className="btn-primary"
+            className="btn-ghost"
             onClick={handleCalculate}
             disabled={!foodName.trim() || calculating}
             style={{ whiteSpace: 'nowrap', paddingInline: 16 }}
@@ -1387,8 +1387,8 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
           {isFluid && (
             <div style={{
               display: 'flex', alignItems: 'center', gap: 8,
-              background: fluidExcluded ? 'rgba(107,127,150,0.06)' : 'var(--accent-fill)',
-              border: `1px solid ${fluidExcluded ? 'rgba(107,127,150,0.12)' : 'var(--accent-select)'}`,
+              background: fluidExcluded ? 'var(--neutral-fill)' : 'var(--accent-fill)',
+              border: `1px solid ${fluidExcluded ? 'var(--neutral-chip)' : 'var(--accent-select)'}`,
               borderRadius: 9, padding: '7px 11px',
               margin: '10px 0',
               transition: 'background .2s, border-color .2s',
@@ -1409,14 +1409,14 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
                 onClick={() => setFluidExcluded(v => !v)}
                 style={{
                   width: 34, height: 20, borderRadius: 99, border: 'none', cursor: 'pointer',
-                  background: fluidExcluded ? 'rgba(107,127,150,0.25)' : 'var(--accent)',
+                  background: fluidExcluded ? 'var(--neutral-glow)' : 'var(--accent)',
                   position: 'relative', flexShrink: 0, transition: 'background .2s',
                 }}
               >
                 <span style={{
                   position: 'absolute', width: 14, height: 14, borderRadius: '50%', background: 'var(--toggle-knob)',
-                  top: 3, transition: 'right .2s',
-                  right: fluidExcluded ? 17 : 3,
+                  top: 3, transition: `${lang === 'he' ? 'left' : 'right'} .2s`,
+                  ...(lang === 'he' ? { left: fluidExcluded ? 17 : 3 } : { right: fluidExcluded ? 17 : 3 }),
                 }} />
               </button>
             </div>

@@ -369,12 +369,13 @@ function MainScreen({ lang, connected, theme, styleMode, onProfile, onGoals, onF
             >
               <span style={{
                 position: 'absolute',
-                top: 3, left: theme === 'dark' ? 3 : 23,
+                top: 3,
+                ...(lang === 'he' ? { right: theme === 'dark' ? 3 : 23 } : { left: theme === 'dark' ? 3 : 23 }),
                 width: 22, height: 22,
                 borderRadius: '50%',
                 background: theme === 'dark' ? 'var(--accent)' : 'var(--warning)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                transition: 'left 0.25s cubic-bezier(.34,1.56,.64,1), background 0.25s',
+                transition: `${lang === 'he' ? 'right' : 'left'} 0.25s cubic-bezier(.34,1.56,.64,1), background 0.25s`,
                 boxShadow: '0 1px 4px rgba(0,0,0,0.3)',
               }}>
                 <span className="icon" style={{ fontSize: 13, color: 'var(--on-color)' }}>
@@ -1184,7 +1185,7 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
           <input className="inp" type="text" value={search} onChange={e => setSearch(e.target.value)}
             placeholder={t(lang, 'search')}
             dir={dir(lang)}
-            style={lang === 'he' ? { paddingRight: 36, paddingLeft: search ? 32 : 12 } : { paddingLeft: 36, paddingRight: search ? 32 : 12 }}
+            style={{ paddingInlineStart: 36, paddingInlineEnd: search ? 32 : 12 }}
           />
           {search && (
             <button
@@ -1680,7 +1681,7 @@ function LibraryScreen({ lang }: { lang: Lang }) {
             placeholder={lang === 'he' ? 'חיפוש מזון...' : 'Search food...'}
             value={search}
             onChange={e => setSearch(e.target.value)}
-            style={{ ...(isRTL ? { paddingRight: 34, paddingLeft: search ? 32 : 12 } : { paddingLeft: 34, paddingRight: search ? 32 : 12 }) }}
+            style={{ paddingInlineStart: 34, paddingInlineEnd: search ? 32 : 12 }}
           />
           {search && (
             <button
@@ -1892,14 +1893,14 @@ function PreferencesScreen({ lang, profile, onSave, showToast }: {
           aria-label={lang === 'he' ? 'הפעל/בטל' : 'Toggle'}
           style={{
             width: 44, height: 26, borderRadius: 99, border: 'none', cursor: 'pointer', flexShrink: 0,
-            background: draft.fluidZeroCalOnly ? 'var(--accent)' : 'rgba(107,127,150,0.25)',
+            background: draft.fluidZeroCalOnly ? 'var(--accent)' : 'var(--neutral-glow)',
             position: 'relative', transition: 'background .2s',
           }}
         >
           <span style={{
             position: 'absolute', width: 18, height: 18, borderRadius: '50%', background: 'var(--toggle-knob)',
-            top: 4, transition: 'right .2s',
-            right: draft.fluidZeroCalOnly ? 4 : 22,
+            top: 4, transition: `${lang === 'he' ? 'left' : 'right'} .2s`,
+            ...(lang === 'he' ? { left: draft.fluidZeroCalOnly ? 4 : 22 } : { right: draft.fluidZeroCalOnly ? 4 : 22 }),
           }} />
         </button>
       </div>
@@ -2034,7 +2035,7 @@ export function SettingsSheet({
         borderRight: '1px solid var(--border)',
         borderRadius: '20px 20px 0 0',
         overflow: 'hidden',
-        height: 'min(90vh, 720px)',
+        height: 'min(90dvh, 720px)',
         display: 'flex', flexDirection: 'column',
         transform: isOpen ? 'translateY(0)' : 'translateY(105%)',
         transition: 'transform 0.35s cubic-bezier(.22,.9,.36,1)',

@@ -133,10 +133,11 @@ export function useFoodHistory(userId: string | null) {
     )
     historyRef.current = next
     setHistory(next)
-    await supabase
+    const { error: err } = await supabase
       .from('food_history')
       .update({ use_count: existing.use_count + 1, last_used: new Date().toISOString() })
       .eq('id', id)
+    if (err) console.error('[touchHistory]', err.message)
   }, [])
 
   return { history, error, upsertHistory, touchHistory, getSuggestions, deleteHistory, updateHistory }

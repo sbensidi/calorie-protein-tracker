@@ -22,6 +22,7 @@ function makeChain(res: { data?: unknown; error?: unknown } = {}) {
     delete: vi.fn().mockReturnThis(),
     upsert: vi.fn().mockReturnThis(),
     eq:     vi.fn().mockReturnThis(),
+    gte:    vi.fn().mockReturnThis(),
     is:     vi.fn().mockReturnThis(),
     order:  vi.fn().mockReturnThis(),
     single: vi.fn(() => Promise.resolve(resolved)),

@@ -38,14 +38,15 @@ export function MealCard({ meal, lang, weightUnit = 'g', showCheckbox, selected,
   )
 
   const saveEdit = () => {
+    if (!editName.trim()) return
     const w    = Number(editWeight) || 0
     const isVol = editWeightUnit !== 'pcs' && UNITS[editWeightUnit as UnitId].type === 'volume'
     const base  = editWeightUnit === 'pcs' ? w : toBase(w, editWeightUnit as UnitId)
     onEdit(meal.id, {
-      name:      editName,
+      name:      editName.trim(),
       meal_type: editMealType,
-      calories:  Number(editCalories) || 0,
-      protein:   Number(editProtein)  || 0,
+      calories:  Math.max(0, Number(editCalories) || 0),
+      protein:   Math.max(0, Number(editProtein)  || 0),
       grams:     editWeightUnit === 'pcs' ? -w : Math.round(base),
       ...(isVol ? { fluid_ml: base } : {}),
     })

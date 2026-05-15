@@ -285,7 +285,7 @@ export function TodayTab({
         count++
       })
     clearSelection(type)
-    if (count > 0) showToast(lang === 'he' ? `שוכפלו ${count} פריטים` : `Duplicated ${count} item${count !== 1 ? 's' : ''}`, 'success')
+    if (count > 0) showToast(lang === 'he' ? `שוכפלו ${count} ${count === 1 ? 'פריט' : 'פריטים'}` : `Duplicated ${count} item${count !== 1 ? 's' : ''}`, 'success')
   }
 
   const handleDeleteSelected = (type: MealType) => {
@@ -311,7 +311,7 @@ export function TodayTab({
     const cancelFn = scheduleDeletes(allMealIds, groupIds)
 
     showToast(
-      lang === 'he' ? `נמחקו ${count} פריטים` : `Deleted ${count} item${count !== 1 ? 's' : ''}`,
+      lang === 'he' ? `נמחקו ${count} ${count === 1 ? 'פריט' : 'פריטים'}` : `Deleted ${count} item${count !== 1 ? 's' : ''}`,
       'info',
       {
         action: {
@@ -489,8 +489,12 @@ export function TodayTab({
             {MEAL_TYPES.map(mt => (
               <div
                 key={mt}
+                role="radio"
+                aria-checked={mt === type}
+                tabIndex={0}
                 className={`type-picker-row${mt === type ? ' current' : ''}`}
                 onClick={() => handleChangeGroupType(type, mt)}
+                onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleChangeGroupType(type, mt) } }}
               >
                 <div
                   className="type-picker-ico"
@@ -841,7 +845,7 @@ export function TodayTab({
           borderLeft: '1px solid var(--border)',
           borderRight: '1px solid var(--border)',
           borderRadius: '20px 20px 0 0',
-          height: 'min(90vh, 720px)',
+          height: 'min(90dvh, 720px)',
           overflow: 'hidden',
           transform: entryOpen ? 'translateY(0)' : 'translateY(105%)',
           transition: 'transform 0.35s cubic-bezier(.22,.9,.36,1)',

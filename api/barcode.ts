@@ -4,7 +4,7 @@ declare const process: { env: Record<string, string | undefined> }
 
 // ── Rate limiting ─────────────────────────────────────────────────────────────
 const _rl = new Map<string, { count: number; resetAt: number }>()
-const RL_MAX    = 20
+const RL_MAX    = 10
 const RL_WINDOW = 60_000
 
 function checkRateLimit(ip: string): boolean {

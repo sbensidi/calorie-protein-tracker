@@ -230,6 +230,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
           <button
             key={key}
             onClick={() => switchFilter(key)}
+            aria-pressed={isActive}
             style={{
               flex: 1, fontSize: 11, fontWeight: 600, fontFamily: 'inherit',
               padding: '6px 4px', borderRadius: 10, cursor: 'pointer',
@@ -274,7 +275,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
             </p>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <span style={{ fontSize: 11, color: 'var(--text-3)' }}>
-                {data.meals.length} {t(lang, 'items')}
+                {data.meals.length} {t(lang, data.meals.length === 1 ? 'item' : 'items')}
               </span>
               {chevron && (
                 <span className="chevron-badge">
@@ -343,7 +344,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
           </p>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <span style={{ fontSize: 11, color: 'var(--text-3)' }}>
-              {data.meals.length} {t(lang, 'items')}
+              {data.meals.length} {t(lang, data.meals.length === 1 ? 'item' : 'items')}
             </span>
             <span style={{
               display: 'flex', alignItems: 'center', gap: 3,
@@ -651,6 +652,14 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                   <div
                     key={dateKey}
                     onClick={() => data && setSelectedBarDate(dateKey)}
+                    {...(data ? {
+                      role: 'button',
+                      tabIndex: 0,
+                      onKeyDown: (e: React.KeyboardEvent) => {
+                        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedBarDate(dateKey) }
+                      },
+                      'aria-label': `${dateKey}${data.calOk ? ' ✓' : ''}`,
+                    } : {})}
                     style={{
                       height: 38,
                       display: 'flex', flexDirection: 'column',
@@ -709,6 +718,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
               <div style={{ display: 'flex', gap: 6, alignItems: 'stretch' }}>
                 <button
                   onClick={() => setSortAsc(v => !v)}
+                  aria-label={sortAsc ? t(lang, 'sortOldFirst') : t(lang, 'sortNewFirst')}
                   title={sortAsc ? (t(lang, 'sortOldFirst')) : (t(lang, 'sortNewFirst'))}
                   style={{
                     flexShrink: 0, width: 36, borderRadius: 10, cursor: 'pointer',
@@ -1853,6 +1863,8 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
         <button
           className="fab-pill-btn"
           onClick={() => { switchView('cal'); setSelectedBarDate(null) }}
+          aria-label={lang === 'he' ? 'תצוגת לוח שנה' : 'Calendar view'}
+          aria-pressed={view === 'cal'}
           style={{
             width: fabBtnSize, height: fabBtnSize, borderRadius: 999,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -1866,6 +1878,8 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
         <button
           className="fab-pill-btn"
           onClick={() => { switchView('list'); setSelectedBarDate(null) }}
+          aria-label={lang === 'he' ? 'תצוגת רשימה' : 'List view'}
+          aria-pressed={view === 'list'}
           style={{
             width: fabBtnSize, height: fabBtnSize, borderRadius: 999,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -1879,6 +1893,8 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
         <button
           className="fab-pill-btn"
           onClick={() => { switchView('stats'); setSelectedBarDate(null) }}
+          aria-label={lang === 'he' ? 'תצוגת סטטיסטיקות' : 'Statistics view'}
+          aria-pressed={view === 'stats'}
           style={{
             width: fabBtnSize, height: fabBtnSize, borderRadius: 999,
             display: 'flex', alignItems: 'center', justifyContent: 'center',

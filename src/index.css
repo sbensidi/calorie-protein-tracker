@@ -86,6 +86,11 @@
   --cyan-hi:   #22d3ee;
   --cyan-tint: rgba(6,182,212,0.10);
   --cyan-fill: rgba(6,182,212,0.07);
+  /* Neutral — toggle track / muted UI (text-3 based) */
+  --neutral-fill:   rgba(107,127,150,0.06);
+  --neutral-chip:   rgba(107,127,150,0.12);
+  --neutral-glow:   rgba(107,127,150,0.25);
+  --neutral-border: rgba(107,127,150,0.35);
   /* Neutral surfaces (white overlay on dark bg) */
   --surface-1:   rgba(255,255,255,0.03);
   --surface-2:   rgba(255,255,255,0.05);
@@ -116,7 +121,7 @@
   /* Text */
   --text:   #0f1729;
   --text-2: #4a5770;
-  --text-3: #7a8fa6;
+  --text-3: #606e80;
   /* Accent — primary action / calories (darker for WCAG AA on light bg) */
   --accent:           #2563eb;
   --accent-hi:        #1d4ed8;
@@ -174,6 +179,11 @@
   --cyan-hi:   #0e7490;
   --cyan-tint: rgba(8,145,178,0.10);
   --cyan-fill: rgba(8,145,178,0.07);
+  /* Neutral — toggle track / muted UI (text-3 based, light mode uses #606e80) */
+  --neutral-fill:   rgba(96,110,128,0.06);
+  --neutral-chip:   rgba(96,110,128,0.12);
+  --neutral-glow:   rgba(96,110,128,0.25);
+  --neutral-border: rgba(96,110,128,0.35);
   /* Neutral surfaces (dark overlay on light bg) */
   --surface-1:   rgba(0,0,0,0.02);
   --surface-2:   rgba(0,0,0,0.04);
@@ -481,7 +491,7 @@ input[type="number"] { -moz-appearance: textfield; }
 
 /* Icon buttons */
 .icon-btn {
-  width: 30px; height: 30px;
+  width: 44px; height: 44px;
   border-radius: 7px;
   border: none;
   background: transparent;
@@ -497,7 +507,7 @@ input[type="number"] { -moz-appearance: textfield; }
 
 /* Qty selector */
 .qty-btn {
-  width: 34px; height: 34px;
+  width: 44px; height: 44px;
   border-radius: 50%;
   background: var(--qty-bg);
   border: 1px solid var(--border);

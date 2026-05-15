@@ -137,15 +137,17 @@ export function ComposedMealCard({
         )}
 
         {/* Chevron */}
-        <span
+        <button
           className="chevron-badge"
           onClick={e => { e.stopPropagation(); setOpen(o => !o) }}
-          style={{ cursor: 'pointer' }}
+          aria-label={open ? (lang === 'he' ? 'כווץ' : 'Collapse') : (lang === 'he' ? 'הרחב' : 'Expand')}
+          aria-expanded={open}
+          style={{ cursor: 'pointer', background: 'none', border: 'none', padding: 0 }}
         >
           <span className="icon icon-sm" style={{ color: 'var(--text-3)', transition: 'transform .2s', transform: open ? 'rotate(180deg)' : 'rotate(0deg)' }}>
             expand_more
           </span>
-        </span>
+        </button>
       </div>
 
       {/* ── Children ────────────────────────────────────────── */}
