@@ -118,7 +118,7 @@ export default function App() {
   }, [theme, lang, userId])
 
   const { toasts, showToast, dismissToast } = useToast()
-  const { library, searchLibrary } = useFoodLibrary()
+  const { library, searchLibrary, error: libraryError } = useFoodLibrary()
   const { profile, saveProfile, error: profileError } = useProfile(userId)
   const { meals, loading: mealsLoading, error: mealsError, addMeal, addMealWithId, updateMeal, deleteMeal, duplicateMeal } = useMeals(userId)
   const { goals, error: goalsError, saveGoals, getGoalForDate } = useGoals(userId)
@@ -157,13 +157,13 @@ export default function App() {
   // Surface hook errors as toasts — use a ref so the same error string re-triggers when it resets to null then back
   const lastShownError = useRef<string | null>(null)
   useEffect(() => {
-    const err = mealsError || goalsError || historyError || groupsError || profileError
+    const err = mealsError || goalsError || historyError || groupsError || profileError || libraryError
     if (err && err !== lastShownError.current) {
       lastShownError.current = err
       showToast(t(lang, navigator.onLine ? 'toastServerError' : 'toastOffline'), 'error')
     }
     if (!err) lastShownError.current = null
-  }, [mealsError, goalsError, historyError, groupsError, profileError]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [mealsError, goalsError, historyError, groupsError, profileError, libraryError]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const composedEntries = useMemo(() =>
     composedGroups.map(g => {

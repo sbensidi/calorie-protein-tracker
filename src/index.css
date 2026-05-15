@@ -337,6 +337,7 @@ input[type="number"] { -moz-appearance: textfield; }
     transition-duration:  0.01ms !important;
   }
   .skeleton-card { animation: none; opacity: 0.6; }
+  .skeleton      { animation: none; opacity: 0.5; }
 }
 
 /* Cards */

@@ -195,7 +195,7 @@ export function MealCard({ meal, lang, weightUnit = 'g', showCheckbox, selected,
           </div>
           <div>
             <label style={{ fontSize: 11, color: 'var(--text-2)', fontWeight: 600, display: 'block', marginBottom: 4 }}>
-              {lang === 'he' ? 'יחידה' : 'Unit'}
+              {t(lang, 'unitSingular')}
             </label>
             <select
               className="inp"
@@ -260,7 +260,7 @@ export function MealCard({ meal, lang, weightUnit = 'g', showCheckbox, selected,
                     ? `${(meal.fluid_ml / 1000).toFixed(1)}${lang === 'he' ? 'ל׳' : 'L'}`
                     : `${Math.round(meal.fluid_ml)}ml`)
                 : meal.grams < 0
-                  ? `${Math.abs(meal.grams)} ${lang === 'he' ? 'מנות' : 'serving(s)'}`
+                  ? `${Math.abs(meal.grams)} ${t(lang, 'unitLabel')}`
                   : formatWeight(meal.grams, weightUnit)}
             </span>
           </div>

@@ -190,6 +190,9 @@ export const translations = {
     servingLibraryHint:  'מנה לפי ספרייה',
     servingFuzzyMatch:   'התאמה: {name}',
     defaultServingGrams: 'גרמים למנה ברירת מחדל',
+    newDish:             'מנה חדשה',
+    total:               'סה״כ',
+    unitSingular:        'יחידה',
     toastAppUpdated:     'גרסה חדשה מותקנת',
     toastReload:         'טען מחדש',
     toastSessionExpired: 'פג תוקף הסשן — אנא התחבר שוב',
@@ -384,6 +387,9 @@ export const translations = {
     servingLibraryHint:  'serving from library',
     servingFuzzyMatch:   'Matched: {name}',
     defaultServingGrams: 'Default grams per serving',
+    newDish:             'New dish',
+    total:               'Total',
+    unitSingular:        'Unit',
     toastAppUpdated:     'App updated',
     toastReload:         'Reload',
     toastSessionExpired: 'Session expired — please sign in again',
@@ -393,6 +399,7 @@ export const translations = {
 } as const
 
 export type TranslationKey = keyof typeof translations.he
+export type MealTypeKey    = 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'beverage'
 
 export function t(lang: Lang, key: TranslationKey): string {
   return translations[lang][key]

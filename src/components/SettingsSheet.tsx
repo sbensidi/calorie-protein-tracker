@@ -3,7 +3,7 @@ import { useLockBodyScroll } from '../hooks/useLockBodyScroll'
 import { useFocusTrap } from '../hooks/useFocusTrap'
 import { useSheetScroll } from '../hooks/useSheetScroll'
 import { SheetHandle } from './SheetHandle'
-import type { Lang, DayKey } from '../lib/i18n'
+import type { Lang, DayKey, TranslationKey } from '../lib/i18n'
 import { t, dir, DAY_KEYS, DAY_SHORT_HE, DAY_SHORT_EN } from '../lib/i18n'
 import { toWeekIndex } from '../lib/utils'
 import type { Toast } from '../hooks/useToast'
@@ -68,7 +68,7 @@ function DayPanel({
           color: isToday ? 'var(--accent-hi)' : isCustom ? 'var(--library-hi, #a5b4fc)' : 'var(--text-2)',
           display: 'flex', alignItems: 'center', gap: 6,
         }}>
-          {t(lang, dayKey as any)}
+          {t(lang, dayKey as TranslationKey)}
           {isToday && (
             <span style={{
               fontSize: 9, fontWeight: 700, color: 'var(--accent)',
@@ -1261,7 +1261,7 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
                 const renderItem = (item: FoodHistory, inGroup = false, isLastInGroup = false) => {
                   const isEditing = editingId === item.id
                   const [amtNum, amtUnit] = item.grams < 0
-                    ? [String(Math.abs(item.grams)), lang === 'he' ? 'מנות' : 'serving(s)']
+                    ? [String(Math.abs(item.grams)), t(lang, 'unitLabel')]
                     : item.fluid_ml != null && item.fluid_ml > 0
                       ? item.fluid_ml >= 1000
                         ? [(item.fluid_ml / 1000).toFixed(1), lang === 'he' ? 'ל׳' : 'L']

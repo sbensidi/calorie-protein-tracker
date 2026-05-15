@@ -3,7 +3,7 @@ import { useDebounce } from '../hooks/useDebounce'
 import { useLockBodyScroll } from '../hooks/useLockBodyScroll'
 import { useAppContext } from '../context/AppContext'
 import type { Meal, FoodHistory, ComposedGroup } from '../types'
-import type { Lang } from '../lib/i18n'
+import type { Lang, MealTypeKey } from '../lib/i18n'
 import { t, dir, formatDate, today, HE_MONTHS, EN_MONTHS } from '../lib/i18n'
 import { DonutProgress } from './DonutProgress'
 import type { ComposedEntry } from './FoodEntryForm'
@@ -132,7 +132,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
   const searchInputRef   = useRef<HTMLInputElement>(null)
   const searchDropdownRef = useRef<HTMLDivElement>(null)
   const isRTL = lang === 'he'
-  const unitLabel = lang === 'he' ? 'מנות' : 'serving(s)'
+  const unitLabel = t(lang, 'unitLabel')
 
   const switchView = (v: 'cal' | 'list' | 'stats') => {
     setView(v)
@@ -533,7 +533,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                       </span>
                     </div>
                     {groupMealType && (
-                      <span style={{ fontSize: 10, color: 'var(--text-3)' }}>{t(lang, groupMealType as any)}</span>
+                      <span style={{ fontSize: 10, color: 'var(--text-3)' }}>{t(lang, groupMealType as MealTypeKey)}</span>
                     )}
                   </div>
                 </div>
@@ -545,7 +545,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                       const iQty = meal.fluid_ml != null && !meal.fluid_excluded
                         ? (meal.fluid_ml >= 1000 ? `${(meal.fluid_ml / 1000).toFixed(1)}${lang === 'he' ? 'ל׳' : 'L'}` : `${Math.round(meal.fluid_ml)}ml`)
                         : meal.grams < 0
-                          ? `${Math.abs(meal.grams)} ${lang === 'he' ? 'מנות' : 'serving(s)'}`
+                          ? `${Math.abs(meal.grams)} ${unitLabel}`
                           : `${meal.grams}g`
                       const isIngFirst = idx === 0
                       return (
@@ -578,7 +578,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
           const qty = meal.fluid_ml != null && !meal.fluid_excluded
             ? (meal.fluid_ml >= 1000 ? `${(meal.fluid_ml / 1000).toFixed(1)}${lang === 'he' ? 'ל׳' : 'L'}` : `${Math.round(meal.fluid_ml)}ml`)
             : meal.grams < 0
-              ? `${Math.abs(meal.grams)} ${lang === 'he' ? 'מנות' : 'serving(s)'}`
+              ? `${Math.abs(meal.grams)} ${unitLabel}`
               : `${meal.grams}g`
           return (
             <div key={meal.id} style={{ padding: '8px 0', borderBottom: isLast ? 'none' : '1px dashed var(--border)' }}>
@@ -602,7 +602,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                     {Math.round(meal.protein * 10) / 10}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.8 }}>{lang === 'he' ? 'ג׳ חלבון' : 'g protein'}</span>
                   </span>
                 </div>
-                <span style={{ fontSize: 10, color: 'var(--text-3)' }}>{t(lang, meal.meal_type as any)}</span>
+                <span style={{ fontSize: 10, color: 'var(--text-3)' }}>{t(lang, meal.meal_type as MealTypeKey)}</span>
               </div>
             </div>
           )

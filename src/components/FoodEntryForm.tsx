@@ -1096,7 +1096,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
                 const item = s.item
                 const itemIsUnit  = item.grams < 0
                 const itemIsFluid = item.fluid_ml != null && item.fluid_ml > 0
-                const amtDisplay  = itemIsUnit  ? `${Math.abs(item.grams)} ${lang === 'he' ? 'מנות' : 'serving(s)'}`
+                const amtDisplay  = itemIsUnit  ? `${Math.abs(item.grams)} ${t(lang, 'unitLabel')}`
                   : itemIsFluid ? (item.fluid_ml! >= 1000 ? `${(item.fluid_ml! / 1000).toFixed(1)}${lang === 'he' ? 'ל׳' : 'L'}` : `${Math.round(item.fluid_ml!)}ml`)
                   : `${item.grams}g`
                 return (
@@ -1317,7 +1317,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
             {/* Unit */}
             <div>
               <label style={{ fontSize: 11, color: 'var(--text-2)', fontWeight: 600, display: 'block', marginBottom: 4 }}>
-                {lang === 'he' ? 'יחידה' : 'Unit'}
+                {t(lang, 'unitSingular')}
               </label>
               <select
                 className="inp"

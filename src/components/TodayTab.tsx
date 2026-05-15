@@ -4,7 +4,7 @@ import { useFocusTrap } from '../hooks/useFocusTrap'
 import { useSheetScroll } from '../hooks/useSheetScroll'
 import { SheetHandle } from './SheetHandle'
 import type { Meal, FoodHistory, FoodLibraryItem, ComposedGroup } from '../types'
-import type { Lang } from '../lib/i18n'
+import type { Lang, MealTypeKey } from '../lib/i18n'
 import { t, dir, today, currentTime } from '../lib/i18n'
 import { FoodEntryForm } from './FoodEntryForm'
 import type { ComposedEntry } from './FoodEntryForm'
@@ -257,7 +257,7 @@ export function TodayTab({
     const sel = selectedIds[mealType]
     if (!sel || sel.size === 0) return
 
-    const name = composeName.trim() || (lang === 'he' ? 'מנה חדשה' : 'New dish')
+    const name = composeName.trim() || t(lang, 'newDish')
     const newGroup: ComposedGroup = {
       id: crypto.randomUUID(),
       name,
@@ -575,7 +575,7 @@ export function TodayTab({
                 }}
               >
                 <span className="icon" style={{ fontSize: 13 }}>add</span>
-                {lang === 'he' ? `הוסף ל${t(lang, type as any)}` : `Add to ${t(lang, type as any)}`}
+                {lang === 'he' ? `הוסף ל${t(lang, type as MealTypeKey)}` : `Add to ${t(lang, type as MealTypeKey)}`}
               </button>
             ) : (
               <button
@@ -589,7 +589,7 @@ export function TodayTab({
                 }}
               >
                 <span className="icon" style={{ fontSize: 14 }}>add</span>
-                {lang === 'he' ? `הוסף ל${t(lang, type as any)}` : `Add to ${t(lang, type as any)}`}
+                {lang === 'he' ? `הוסף ל${t(lang, type as MealTypeKey)}` : `Add to ${t(lang, type as MealTypeKey)}`}
               </button>
             )}
 
@@ -683,7 +683,7 @@ export function TodayTab({
           {/* Totals summary */}
           <div className="compose-modal-summary">
             <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)', flex: 1 }}>
-              {lang === 'he' ? 'סה״כ' : 'Total'}
+              {t(lang, 'total')}
             </span>
             <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--accent-hi)', display: 'flex', alignItems: 'baseline', gap: 2 }}>
               {totalCal} <span style={{ fontSize: 10, opacity: 0.7 }}>{t(lang, 'caloriesUnit')}</span>

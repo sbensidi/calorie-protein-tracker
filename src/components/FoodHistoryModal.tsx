@@ -32,7 +32,7 @@ export function FoodHistoryModal({
 }: FoodHistoryModalProps) {
   const searchRef = useRef<HTMLInputElement>(null)
   const isRTL = lang === 'he'
-  const unitLabel = lang === 'he' ? 'מנות' : 'serving(s)'
+  const unitLabel = t(lang, 'unitLabel')
   const { styleMode } = useAppContext()
   const minimal = styleMode === 'minimal'
 
