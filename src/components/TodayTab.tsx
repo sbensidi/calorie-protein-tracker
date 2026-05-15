@@ -327,12 +327,14 @@ export function TodayTab({
   const [entryOpen, setEntryOpen] = useState(false)
   const [entryDefaultType, setEntryDefaultType] = useState<MealType | undefined>(undefined)
   const openEntry = (type?: MealType) => { setEntryDefaultType(type); setEntryOpen(true) }
-  const entrySheetRef   = useRef<HTMLDivElement>(null)
-  const composeModalRef = useRef<HTMLDivElement>(null)
+  const entrySheetRef         = useRef<HTMLDivElement>(null)
+  const composeModalRef       = useRef<HTMLDivElement>(null)
+  const addIngredientModalRef = useRef<HTMLDivElement>(null)
   const anyModalOpen = entryOpen || !!composeModal || !!addIngredientModal
   useLockBodyScroll(anyModalOpen)
-  useFocusTrap(entrySheetRef,   entryOpen)
-  useFocusTrap(composeModalRef, !!composeModal)
+  useFocusTrap(entrySheetRef,         entryOpen)
+  useFocusTrap(composeModalRef,       !!composeModal)
+  useFocusTrap(addIngredientModalRef, !!addIngredientModal)
 
   // Escape key closes the topmost open modal
   useEffect(() => {
@@ -775,7 +777,7 @@ export function TodayTab({
       {/* ── Add ingredient modal ──────────────────────────────── */}
       {addIngredientModal && (
         <div className="compose-modal-backdrop" onClick={() => setAddIngredientModal(null)}>
-          <div className="compose-modal" role="dialog" aria-modal="true" aria-label={lang === 'he' ? 'הוסף רכיב' : 'Add ingredient'} style={{ maxWidth: 420, padding: 0, overflow: 'hidden' }} onClick={e => e.stopPropagation()}>
+          <div ref={addIngredientModalRef} className="compose-modal" role="dialog" aria-modal="true" aria-label={lang === 'he' ? 'הוסף רכיב' : 'Add ingredient'} style={{ maxWidth: 420, padding: 0, overflow: 'hidden' }} onClick={e => e.stopPropagation()}>
             <FoodEntryForm
               key={addIngredientModal.groupId}
               lang={lang}

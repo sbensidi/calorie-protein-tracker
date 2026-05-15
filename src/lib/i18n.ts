@@ -190,6 +190,11 @@ export const translations = {
     servingLibraryHint:  'מנה לפי ספרייה',
     servingFuzzyMatch:   'התאמה: {name}',
     defaultServingGrams: 'גרמים למנה ברירת מחדל',
+    toastAppUpdated:     'גרסה חדשה מותקנת',
+    toastReload:         'טען מחדש',
+    toastSessionExpired: 'פג תוקף הסשן — אנא התחבר שוב',
+    toastServerError:    'שגיאה בתקשורת עם השרת',
+    toastOffline:        'אין חיבור לאינטרנט',
   },
   en: {
     appTitle: 'Calorie Tracker',
@@ -379,6 +384,11 @@ export const translations = {
     servingLibraryHint:  'serving from library',
     servingFuzzyMatch:   'Matched: {name}',
     defaultServingGrams: 'Default grams per serving',
+    toastAppUpdated:     'App updated',
+    toastReload:         'Reload',
+    toastSessionExpired: 'Session expired — please sign in again',
+    toastServerError:    'Server error. Please try again.',
+    toastOffline:        'No internet connection',
   },
 } as const
 

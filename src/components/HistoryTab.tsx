@@ -35,6 +35,7 @@ interface HistoryTabProps {
   composedEntries?: ComposedEntry[]
   composedGroups?:  ComposedGroup[]
   fluidGoalMl?:     number
+  loading?:         boolean
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────
@@ -59,7 +60,7 @@ const STATUS_COLOR: Record<DayData['status'], { border: string; badge: string; t
 
 // ── Component ────────────────────────────────────────────────────────
 
-export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntries = [], composedGroups = [], fluidGoalMl = 2500 }: HistoryTabProps) {
+export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntries = [], composedGroups = [], fluidGoalMl = 2500, loading = false }: HistoryTabProps) {
   const { styleMode } = useAppContext()
   const todayKey = today()
 
@@ -167,6 +168,29 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
     () => Array.from(grouped.keys()).sort((a, b) => sortAsc ? a.localeCompare(b) : b.localeCompare(a)),
     [grouped, sortAsc],
   )
+
+  // ── Skeleton loading state ────────────────────────────────────────
+  if (loading && grouped.size === 0) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {[72, 56, 88].map((h, i) => (
+          <div key={i} className="card" style={{ padding: 14, animationDelay: `${i * 0.08}s` }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+              <div style={{ flex: 1 }}>
+                <div className="skeleton" style={{ height: 13, width: '40%', marginBottom: 8, borderRadius: 6 }} />
+                <div className="skeleton" style={{ height: 11, width: '65%', borderRadius: 6 }} />
+              </div>
+              <div style={{ display: 'flex', gap: 6 }}>
+                <div className="skeleton" style={{ width: 38, height: 38, borderRadius: 8 }} />
+                <div className="skeleton" style={{ width: 38, height: 38, borderRadius: 8 }} />
+              </div>
+            </div>
+            {h > 60 && <div className="skeleton" style={{ height: 10, width: '80%', marginTop: 10, borderRadius: 6 }} />}
+          </div>
+        ))}
+      </div>
+    )
+  }
 
   // ── Empty state ────────────────────────────────────────────────────
   if (grouped.size === 0) {

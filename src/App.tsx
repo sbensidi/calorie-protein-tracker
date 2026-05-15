@@ -128,11 +128,7 @@ export default function App() {
   // I9: show toast when session expired unexpectedly
   useEffect(() => {
     if (!expiredSession) return
-    showToast(
-      lang === 'he' ? 'פג תוקף הסשן — אנא התחבר שוב' : 'Session expired — please sign in again',
-      'error',
-      { durationMs: 8000 },
-    )
+    showToast(t(lang, 'toastSessionExpired'), 'error', { durationMs: 8000 })
     setExpiredSession(false)
   }, [expiredSession]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -149,9 +145,9 @@ export default function App() {
     const handler = () => {
       if (!existingCtrl) return
       showToast(
-        lang === 'he' ? 'גרסה חדשה מותקנת' : 'App updated',
+        t(lang, 'toastAppUpdated'),
         'info',
-        { action: { label: lang === 'he' ? 'טען מחדש' : 'Reload', onClick: () => window.location.reload() }, durationMs: 15000 },
+        { action: { label: t(lang, 'toastReload'), onClick: () => window.location.reload() }, durationMs: 15000 },
       )
     }
     navigator.serviceWorker.addEventListener('controllerchange', handler)
@@ -164,13 +160,7 @@ export default function App() {
     const err = mealsError || goalsError || historyError || groupsError || profileError
     if (err && err !== lastShownError.current) {
       lastShownError.current = err
-      const isOffline = !navigator.onLine
-      showToast(
-        isOffline
-          ? (lang === 'he' ? 'אין חיבור לאינטרנט' : 'No internet connection')
-          : (lang === 'he' ? 'שגיאה בתקשורת עם השרת' : 'Server error. Please try again.'),
-        'error',
-      )
+      showToast(t(lang, navigator.onLine ? 'toastServerError' : 'toastOffline'), 'error')
     }
     if (!err) lastShownError.current = null
   }, [mealsError, goalsError, historyError, groupsError, profileError]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -371,6 +361,7 @@ export default function App() {
                 composedEntries={composedEntries}
                 composedGroups={composedGroups}
                 fluidGoalMl={profile.fluidGoalMl}
+                loading={mealsLoading}
               />
             </Suspense>
           </ErrorBoundary>

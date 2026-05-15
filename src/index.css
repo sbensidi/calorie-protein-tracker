@@ -309,6 +309,10 @@ input[type="number"] { -moz-appearance: textfield; }
   border-radius: 14px;
   animation: skeleton-pulse 1.4s ease-in-out infinite;
 }
+.skeleton {
+  background: var(--surface-2);
+  animation: skeleton-pulse 1.4s ease-in-out infinite;
+}
 .delay-1   { animation-delay: .05s; }
 .delay-2   { animation-delay: .10s; }
 .delay-3   { animation-delay: .15s; }
