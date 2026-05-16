@@ -15,12 +15,13 @@ interface MealCardProps {
   onEdit: (id: string, updates: Partial<Meal>) => void
   enableWeightScaling?: boolean
   onDelete?: (id: string) => void
+  onDuplicate?: () => void
   listStyle?: boolean
 }
 
 type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'beverage'
 
-export function MealCard({ meal, lang, weightUnit = 'g', showCheckbox, selected, onToggleSelect, onEdit, enableWeightScaling = false, onDelete, listStyle = false }: MealCardProps) {
+export function MealCard({ meal, lang, weightUnit = 'g', showCheckbox, selected, onToggleSelect, onEdit, enableWeightScaling = false, onDelete, onDuplicate, listStyle = false }: MealCardProps) {
   const [editing, setEditing] = useState(false)
   const scalingRatios = useRef<{ calPerGram: number; protPerGram: number; perServing: boolean } | null>(null)
   const [editName,     setEditName]     = useState(meal.name)
@@ -246,6 +247,18 @@ export function MealCard({ meal, lang, weightUnit = 'g', showCheckbox, selected,
         display: 'flex', alignItems: 'center', gap: 10,
         padding: '8px 0',
       }}>
+        {showCheckbox && (
+          <div
+            role="checkbox"
+            aria-checked={selected}
+            tabIndex={0}
+            className={`cb${selected ? ' cb-on' : ''}`}
+            onClick={e => { e.stopPropagation(); onToggleSelect() }}
+            onKeyDown={e => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); onToggleSelect() } }}
+          >
+            {selected && <span className="icon icon-sm" style={{ color: 'var(--composed)', fontSize: 13 }}>check</span>}
+          </div>
+        )}
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 5, overflow: 'hidden' }}>
             <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>
@@ -282,6 +295,24 @@ export function MealCard({ meal, lang, weightUnit = 'g', showCheckbox, selected,
         >
           <span className="icon icon-sm">edit</span>
         </button>
+        {onDuplicate && (
+          <button
+            className="icon-btn"
+            onClick={e => { e.stopPropagation(); onDuplicate() }}
+            aria-label={t(lang, 'duplicate')}
+          >
+            <span className="icon icon-sm">content_copy</span>
+          </button>
+        )}
+        {onDelete && (
+          <button
+            className="icon-btn danger"
+            onClick={e => { e.stopPropagation(); onDelete(meal.id) }}
+            aria-label={t(lang, 'delete')}
+          >
+            <span className="icon icon-sm">delete</span>
+          </button>
+        )}
       </div>
     )
   }

@@ -120,7 +120,7 @@ export function DailySummary({ meals, date, goalCalories, goalProtein, lang, flu
 
         {/* Protein bar */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '20px 4px 0' }}>
-          <span style={{ fontSize: 11, fontWeight: 300, color: protOver ? 'var(--warning)' : 'var(--text-2)', whiteSpace: 'nowrap', flexShrink: 0 }}>
+          <span style={{ fontSize: 11, fontWeight: 300, color: protOver ? 'var(--warning)' : 'var(--positive-hi)', whiteSpace: 'nowrap', flexShrink: 0 }}>
             {lang === 'he'
               ? `חלבון ${Math.round(totalProtein)} / ${goalProtein}g`
               : `protein ${Math.round(totalProtein)} / ${goalProtein}g`}
@@ -129,11 +129,11 @@ export function DailySummary({ meals, date, goalCalories, goalProtein, lang, flu
             <div style={{
               position: 'absolute', top: 0, insetInlineStart: 0, bottom: 0,
               width: `${protPct * 100}%`, borderRadius: 2,
-              background: protOver ? 'var(--warning)' : 'var(--text)',
+              background: protOver ? 'var(--warning)' : 'var(--positive-hi)',
               transition: 'width 0.6s ease',
             }} />
           </div>
-          <span style={{ fontSize: 10, fontWeight: 300, color: protOver ? 'var(--warning)' : 'var(--text-3)', whiteSpace: 'nowrap', flexShrink: 0, minWidth: 26, textAlign: 'end' }}>
+          <span style={{ fontSize: 10, fontWeight: 300, color: protOver ? 'var(--warning)' : 'var(--positive-hi)', whiteSpace: 'nowrap', flexShrink: 0, minWidth: 26, textAlign: 'end' }}>
             {Math.round(protRatio * 100)}%
           </span>
         </div>

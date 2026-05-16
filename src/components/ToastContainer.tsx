@@ -46,6 +46,8 @@ export function ToastContainer({ toasts, onDismiss, lang }: ToastContainerProps)
             role="status"
             dir={lang === 'he' ? 'rtl' : 'ltr'}
             style={{
+              position: 'relative',
+              overflow: 'hidden',
               display: 'flex',
               alignItems: 'center',
               gap: 10,
@@ -89,6 +91,22 @@ export function ToastContainer({ toasts, onDismiss, lang }: ToastContainerProps)
             >
               <span className="icon icon-sm">close</span>
             </button>
+            {toast.action && (
+              <div
+                aria-hidden="true"
+                style={{
+                  position: 'absolute',
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  height: 2,
+                  background: c.icon,
+                  opacity: 0.5,
+                  transformOrigin: 'left',
+                  animation: `toast-progress ${toast.durationMs ?? 4000}ms linear forwards`,
+                }}
+              />
+            )}
           </div>
         )
       })}

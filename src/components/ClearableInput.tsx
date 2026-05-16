@@ -41,12 +41,8 @@ export const ClearableInput = forwardRef<HTMLInputElement, ClearableInputProps>(
           value={value}
           className={`inp${className ? ` ${className}` : ''}`}
           style={{
-            ...(startIcon
-              ? (isRTL ? { paddingRight: 36 } : { paddingLeft: 36 })
-              : {}),
-            ...(hasValue
-              ? (isRTL ? { paddingLeft: 32 } : { paddingRight: 32 })
-              : {}),
+            ...(startIcon ? { paddingInlineStart: 36 } : {}),
+            ...(hasValue  ? { paddingInlineEnd:   32 } : {}),
             ...style,
           }}
           {...rest}
