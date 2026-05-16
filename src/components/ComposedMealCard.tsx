@@ -43,7 +43,7 @@ export function ComposedMealCard({
 
   const saveName = () => {
     const trimmed = nameInput.trim()
-    if (trimmed) onRename(trimmed)
+    if (trimmed && trimmed !== group.name) onRename(trimmed)
     else setNameInput(group.name)
     setEditingName(false)
   }
@@ -147,6 +147,18 @@ export function ComposedMealCard({
               <span className="icon icon-sm">edit</span>
             </button>
 
+            {/* Dissolve — visible in header when open, so user doesn't need to scroll */}
+            {open && (
+              <button
+                className="icon-btn"
+                onClick={e => { e.stopPropagation(); onDeleteGroup() }}
+                aria-label={lang === 'he' ? 'פרק מנה לרכיבים' : 'Dissolve dish'}
+                title={lang === 'he' ? 'פרק מנה לרכיבים' : 'Dissolve dish'}
+              >
+                <span className="icon icon-sm" style={{ color: 'var(--danger-hi)', opacity: 0.7 }}>link_off</span>
+              </button>
+            )}
+
             {/* Chevron */}
             <button
               className="icon-btn"
@@ -198,21 +210,6 @@ export function ComposedMealCard({
             >
               <span className="icon" style={{ fontSize: 14 }}>add</span>
               {t(lang, 'addIngredient')}
-            </button>
-
-            {/* Dissolve */}
-            <button
-              onClick={onDeleteGroup}
-              style={{
-                marginBottom: 6, width: '100%', background: 'transparent',
-                border: '1px dashed var(--border)', borderRadius: 8,
-                padding: '6px 10px', fontFamily: 'inherit',
-                fontSize: 11, fontWeight: 600, color: 'var(--text-3)',
-                cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5,
-              }}
-            >
-              <span className="icon" style={{ fontSize: 14 }}>link_off</span>
-              {lang === 'he' ? 'פרק מנה לרכיבים' : 'Dissolve dish'}
             </button>
           </div>
         )}
@@ -335,6 +332,18 @@ export function ComposedMealCard({
           </button>
         )}
 
+        {/* Dissolve — visible in header when expanded */}
+        {!editingName && open && (
+          <button
+            className="icon-btn"
+            onClick={e => { e.stopPropagation(); onDeleteGroup() }}
+            aria-label={lang === 'he' ? 'פרק מנה לרכיבים' : 'Dissolve dish'}
+            title={lang === 'he' ? 'פרק מנה לרכיבים' : 'Dissolve dish'}
+          >
+            <span className="icon icon-sm" style={{ color: 'var(--danger-hi)', opacity: 0.7 }}>link_off</span>
+          </button>
+        )}
+
         {/* Chevron — hidden while editing name */}
         {!editingName && (
           <button
@@ -380,21 +389,6 @@ export function ComposedMealCard({
           >
             <span className="icon" style={{ fontSize: 14 }}>add</span>
             {t(lang, 'addIngredient')}
-          </button>
-
-          {/* Dissolve group link */}
-          <button
-            onClick={onDeleteGroup}
-            style={{
-              marginTop: 4, width: '100%', background: 'transparent',
-              border: '1px dashed var(--border)', borderRadius: 8,
-              padding: '6px 10px', fontFamily: 'inherit',
-              fontSize: 11, fontWeight: 600, color: 'var(--text-3)',
-              cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5,
-            }}
-          >
-            <span className="icon" style={{ fontSize: 14 }}>link_off</span>
-            {lang === 'he' ? 'פרק מנה לרכיבים' : 'Dissolve dish'}
           </button>
         </div>
       )}

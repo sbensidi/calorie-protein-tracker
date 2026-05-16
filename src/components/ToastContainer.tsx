@@ -27,7 +27,7 @@ export function ToastContainer({ toasts, onDismiss, lang }: ToastContainerProps)
       aria-atomic="false"
       style={{
         position: 'fixed',
-        bottom: 'calc(env(safe-area-inset-bottom, 0px) + 80px)',
+        bottom: 'calc(env(safe-area-inset-bottom, 0px) + 104px)',
         left: '50%',
         transform: 'translateX(-50%)',
         width: 'min(calc(100vw - 32px), 420px)',

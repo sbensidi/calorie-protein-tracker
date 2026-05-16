@@ -909,11 +909,12 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
             className="btn-ghost"
             onClick={handleCalculate}
             disabled={!foodName.trim() || calculating}
-            style={{ whiteSpace: 'nowrap', paddingInline: 16 }}
+            style={{ whiteSpace: 'nowrap', paddingInline: 16, display: 'flex', alignItems: 'center', gap: 6, opacity: calculating ? 0.7 : 1 }}
           >
-            {calculating
-              ? <span className="icon icon-sm" style={{ animation: 'spin 0.7s linear infinite', display: 'inline-block' }}>progress_activity</span>
-              : t(lang, 'calculate')}
+            {calculating && (
+              <span className="icon icon-sm" style={{ animation: 'spin 0.7s linear infinite', display: 'inline-block' }}>progress_activity</span>
+            )}
+            {calculating ? (lang === 'he' ? 'מחשב...' : 'Calculating...') : t(lang, 'calculate')}
           </button>
 
         </div>
