@@ -403,7 +403,7 @@ function MainScreen({ lang, connected, theme, styleMode, onProfile, onGoals, onF
                     cursor: 'pointer',
                     transition: 'all 0.2s',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    lineHeight: 1,
+                    lineHeight: 1, paddingBottom: 4,
                   }}
                 >
                   {t(lang, mode === 'classic' ? 'styleClassic' : 'styleMinimal')}
