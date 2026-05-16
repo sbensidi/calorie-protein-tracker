@@ -328,7 +328,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
               </span>
             </div>
             {chevron && (
-              <span className="icon icon-sm chevron-rotate" style={{ color: 'var(--text-3)', transition: 'transform 0.2s', flexShrink: 0 }}>expand_more</span>
+              <span className="icon icon-chevron chevron-rotate" style={{ color: 'var(--text-3)', transition: 'transform 0.2s', flexShrink: 0 }}>expand_more</span>
             )}
           </div>
           {/* Calories row */}
@@ -405,7 +405,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
           </div>
           {/* chevron at the end (left in RTL) */}
           {chevron && (
-            <span className="icon icon-sm chevron-rotate" style={{ color: 'var(--text-3)', transition: 'transform 0.2s', flexShrink: 0 }}>expand_more</span>
+            <span className="icon icon-chevron chevron-rotate" style={{ color: 'var(--text-3)', transition: 'transform 0.2s', flexShrink: 0 }}>expand_more</span>
           )}
         </div>
 
@@ -538,7 +538,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                       {row.meals.length} {t(lang, 'ingredients')}
                     </span>
                     <span style={{ flex: 1 }} />
-                    <span className="icon icon-sm" style={{ fontSize: 11, color: 'var(--text-3)', flexShrink: 0, transition: 'transform .2s', transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>
+                    <span className="icon icon-chevron" style={{ color: 'var(--text-3)', flexShrink: 0, transition: 'transform .2s', transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>
                       expand_more
                     </span>
                   </div>

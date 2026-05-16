@@ -452,7 +452,7 @@ export function TodayTab({
             >
               <span className="icon icon-sm">edit</span>
             </button>
-            <span className="icon icon-sm" style={{ fontSize: 12, color: 'var(--text-3)', transform: isCollapsed ? 'rotate(0deg)' : 'rotate(180deg)', transition: 'transform 0.2s' }}>
+            <span className="icon icon-chevron" style={{ color: 'var(--text-3)', transform: isCollapsed ? 'rotate(0deg)' : 'rotate(180deg)', transition: 'transform 0.2s' }}>
               expand_more
             </span>
           </div>
@@ -513,7 +513,7 @@ export function TodayTab({
             </button>
 
             <span className="chevron-badge" style={{ background: 'transparent', border: 'none' }}>
-              <span className="icon icon-sm" style={{ color: 'var(--text-3)', transform: isCollapsed ? 'rotate(0deg)' : 'rotate(180deg)' }}>
+              <span className="icon icon-chevron" style={{ color: 'var(--text-3)', transform: isCollapsed ? 'rotate(0deg)' : 'rotate(180deg)' }}>
                 expand_more
               </span>
             </span>

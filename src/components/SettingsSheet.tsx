@@ -997,7 +997,7 @@ function GoalsScreen({ lang, profile, goals, onSave, onSaveProfile, onSaveFluidG
               {Object.keys(overrides).length}
             </span>
           )}
-          <span className="icon icon-sm" style={{ color: 'var(--text-3)', transition: 'transform .2s', transform: weeklyOpen ? 'rotate(180deg)' : 'none' }}>
+          <span className="icon icon-chevron" style={{ color: 'var(--text-3)', transition: 'transform .2s', transform: weeklyOpen ? 'rotate(180deg)' : 'none' }}>
             expand_more
           </span>
         </button>
@@ -1518,7 +1518,7 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
                           </>
                         )}
                       </div>
-                      <span className="icon icon-sm" style={{ color: 'var(--text-3)', flexShrink: 0, transition: 'transform .2s', transform: isGroupExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>expand_more</span>
+                      <span className="icon icon-chevron" style={{ color: 'var(--text-3)', flexShrink: 0, transition: 'transform .2s', transform: isGroupExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>expand_more</span>
                     </button>
                     {/* Expanded items */}
                     {isGroupExpanded && (
@@ -1608,7 +1608,7 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
                           </div>
                         </div>
                         )}
-                        <span className="icon icon-sm" style={{ color: 'var(--text-3)', flexShrink: 0, transition: 'transform .2s', transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>expand_more</span>
+                        <span className="icon icon-chevron" style={{ color: 'var(--text-3)', flexShrink: 0, transition: 'transform .2s', transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>expand_more</span>
                       </button>
                       <button onClick={() => handleRemoveGroup(group.id, group.name)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--danger)', padding: 6, display: 'flex', borderRadius: 8, flexShrink: 0 }}>
                         <span className="icon icon-sm">delete</span>
