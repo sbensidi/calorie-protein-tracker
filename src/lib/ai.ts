@@ -123,6 +123,7 @@ async function callGroqDirect(
   // Step 1 — resolve Hebrew food name to English (dictionary first, AI fallback)
   let queryName = lookupHebrew(safeName) ?? safeName
 
+  // eslint-disable-next-line no-control-regex
   if (queryName === safeName && /[^\x00-\x7F]/.test(safeName)) {
     // Not in dictionary — try AI translation
     const translated = await groqCall(

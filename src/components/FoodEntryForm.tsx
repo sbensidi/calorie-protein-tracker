@@ -63,7 +63,7 @@ interface FoodEntryFormProps {
   library?: FoodLibraryItem[]
 }
 
-export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, defaultWeightUnit = 'g', defaultVolumeUnit: _defaultVolumeUnit = 'ml', onAdd, onUpsertHistory, onTouchHistory, defaultMealType, composedEntries, onAddComposed, fluidThresholdMl = 100, fluidZeroCalOnly = true, isOpen, defaultServingGrams = 150, library = [] }: FoodEntryFormProps) {
+export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, defaultWeightUnit = 'g', onAdd, onUpsertHistory, onTouchHistory, defaultMealType, composedEntries, onAddComposed, fluidThresholdMl = 100, fluidZeroCalOnly = true, isOpen, defaultServingGrams = 150, library = [] }: FoodEntryFormProps) {
   const [mode, setMode]               = useState<EntryMode>(
     () => (localStorage.getItem('entry-mode') as EntryMode) ?? 'scan'
   )
@@ -198,7 +198,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
 
   const handleFocus = () => { openDropdown(foodName) }
 
-  const handleBlur = (_e: React.FocusEvent) => {
+  const handleBlur = () => {
     setTimeout(() => {
       if (!dropdownRef.current?.contains(document.activeElement)) {
         setDropdownOpen(false)
@@ -380,7 +380,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
       setEditProtein('')
     }
     setCalculating(false)
-  }, [foodName, numericAmount, history, amountMode, entryUnit, searchLibrary])
+  }, [foodName, numericAmount, history, amountMode, entryUnit, isPcs, searchLibrary])
 
   const handleCancelNutrition = () => {
     setFoodName('')

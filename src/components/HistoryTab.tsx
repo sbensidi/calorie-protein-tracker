@@ -97,7 +97,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [expandedGroupIds, setExpandedGroupIds] = useState<Set<string>>(new Set())
   const toggleGroupExpand = (id: string) =>
-    setExpandedGroupIds(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n })
+    setExpandedGroupIds(prev => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n })
 
   // ── Scroll-aware sticky (list view only) ──────────────────────────
   const [scrolledDown, setScrolledDown] = useState(false)

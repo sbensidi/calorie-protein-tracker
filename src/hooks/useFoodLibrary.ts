@@ -34,7 +34,7 @@ export function useFoodLibrary() {
       .order('name_he')
       .then(({ data, error: err }) => {
         if (err) {
-          import.meta.env.DEV && console.error('useFoodLibrary fetch:', err)
+          if (import.meta.env.DEV) console.error('useFoodLibrary fetch:', err)
           setError(err.message)
         } else if (data) {
           setLibrary(data as FoodLibraryItem[])

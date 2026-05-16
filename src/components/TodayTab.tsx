@@ -128,14 +128,14 @@ export function TodayTab({
 
   const toggleComposedOpen = (id: string) => setOpenComposedIds(prev => {
     const next = new Set(prev)
-    next.has(id) ? next.delete(id) : next.add(id)
+    if (next.has(id)) next.delete(id); else next.add(id)
     return next
   })
 
   const toggleCollapse = (type: MealType) => {
     setCollapsed(prev => {
       const next = new Set(prev)
-      next.has(type) ? next.delete(type) : next.add(type)
+      if (next.has(type)) next.delete(type); else next.add(type)
       saveCollapsed(next)
       return next
     })
@@ -161,7 +161,7 @@ export function TodayTab({
   const toggleSelect = (type: MealType, id: string) => {
     setSelectedIds(prev => {
       const cur = new Set(prev[type] ?? [])
-      cur.has(id) ? cur.delete(id) : cur.add(id)
+      if (cur.has(id)) cur.delete(id); else cur.add(id)
       return { ...prev, [type]: cur }
     })
   }
@@ -201,7 +201,8 @@ export function TodayTab({
 
   // Clean up timers on unmount
   useEffect(() => {
-    return () => { pendingTimersRef.current.forEach(t => clearTimeout(t)) }
+    const timers = pendingTimersRef.current
+    return () => { timers.forEach(t => clearTimeout(t)) }
   }, [])
 
   const dissolveGroup = useCallback((groupId: string) => {

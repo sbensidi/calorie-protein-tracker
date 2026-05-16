@@ -105,7 +105,7 @@ function BarcodeScanner({ lang, onResult, onNotFound }, ref) {
         const controls = await reader.decodeFromStream(
           stream,
           videoRef.current!,
-          async (result, _err) => {
+          async (result) => {
             if (!result || detectedRef.current) return
             detectedRef.current = true
             controlsRef.current?.stop()

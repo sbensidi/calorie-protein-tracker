@@ -70,7 +70,7 @@ export function useMeals(userId: string | null) {
       user_id: userId,
       date: meal.date || today(),
     })
-    if (err) { import.meta.env.DEV && console.error('Add meal error:', err); setError(err.message) }
+    if (err) { if (import.meta.env.DEV) console.error('Add meal error:', err); setError(err.message) }
     else fetchMeals()
   }, [userId, fetchMeals])
 
@@ -84,7 +84,7 @@ export function useMeals(userId: string | null) {
       user_id: userId,
       date: meal.date || today(),
     })
-    if (err) { import.meta.env.DEV && console.error('Add meal error:', err); setError(err.message); return null }
+    if (err) { if (import.meta.env.DEV) console.error('Add meal error:', err); setError(err.message); return null }
     fetchMeals()
     return id
   }, [userId, fetchMeals])
@@ -93,7 +93,7 @@ export function useMeals(userId: string | null) {
     if (!userId) return
     setError(null)
     const { error: err } = await supabase.from('meals').update(updates).eq('id', id).eq('user_id', userId)
-    if (err) { import.meta.env.DEV && console.error('Update meal error:', err); setError(err.message) }
+    if (err) { if (import.meta.env.DEV) console.error('Update meal error:', err); setError(err.message) }
     else fetchMeals()
   }, [userId, fetchMeals])
 
@@ -101,7 +101,7 @@ export function useMeals(userId: string | null) {
     if (!userId) return
     setError(null)
     const { error: err } = await supabase.from('meals').delete().eq('id', id).eq('user_id', userId)
-    if (err) { import.meta.env.DEV && console.error('Delete meal error:', err); setError(err.message) }
+    if (err) { if (import.meta.env.DEV) console.error('Delete meal error:', err); setError(err.message) }
     else fetchMeals()
   }, [userId, fetchMeals])
 
@@ -120,7 +120,7 @@ export function useMeals(userId: string | null) {
       fluid_excluded: meal.fluid_excluded ?? false,
       time_logged: new Date().toTimeString().slice(0, 8),
     })
-    if (err) { import.meta.env.DEV && console.error('Duplicate meal error:', err); setError(err.message) }
+    if (err) { if (import.meta.env.DEV) console.error('Duplicate meal error:', err); setError(err.message) }
     else fetchMeals()
   }, [userId, fetchMeals])
 

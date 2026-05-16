@@ -19,5 +19,18 @@ export default defineConfig([
       ecmaVersion: 2020,
       globals: globals.browser,
     },
+    rules: {
+      // React Compiler experimental rules — disabled: the project does not use
+      // the React Compiler. These rules produce false positives on valid patterns
+      // (e.g. useEffect triggering a fetch that internally calls setState, or
+      // sub-components defined inside a parent for co-location readability).
+      'react-hooks/set-state-in-effect':         'off',
+      'react-hooks/purity':                      'off',
+      'react-hooks/static-components':           'off',
+      'react-hooks/preserve-manual-memoization': 'off',
+      'react-hooks/immutability':                'off',
+      // Allow _-prefixed names as intentionally unused (e.g. _init, _err)
+      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
+    },
   },
 ])

@@ -27,7 +27,7 @@ export function useFoodHistory(userId: string | null) {
       .eq('user_id', userId)
       .order('use_count', { ascending: false })
       .order('last_used', { ascending: false })
-    if (err) { import.meta.env.DEV && console.error('fetch food_history:', err); setError(err.message) }
+    if (err) { if (import.meta.env.DEV) console.error('fetch food_history:', err); setError(err.message) }
     else {
       const loaded = (data as unknown[]).filter(isFoodHistory)
       historyRef.current = loaded
@@ -70,7 +70,7 @@ export function useFoodHistory(userId: string | null) {
         .from('food_history')
         .update({ use_count: existing.use_count + 1, last_used: new Date().toISOString(), calories: item.calories, protein: item.protein, fluid_ml: item.fluid_ml ?? null })
         .eq('id', existing.id)
-      if (err) { import.meta.env.DEV && console.error('upsert food_history (update):', err); setError(err.message); return }
+      if (err) { if (import.meta.env.DEV) console.error('upsert food_history (update):', err); setError(err.message); return }
     } else {
       const { error: err } = await supabase.from('food_history').insert({
         user_id: userId,
@@ -79,7 +79,7 @@ export function useFoodHistory(userId: string | null) {
         use_count: 1,
         last_used: new Date().toISOString(),
       })
-      if (err) { import.meta.env.DEV && console.error('upsert food_history (insert):', err); setError(err.message); return }
+      if (err) { if (import.meta.env.DEV) console.error('upsert food_history (insert):', err); setError(err.message); return }
     }
     fetchHistory()
   }, [userId, fetchHistory])
@@ -107,7 +107,7 @@ export function useFoodHistory(userId: string | null) {
     historyRef.current = next
     setHistory(next)
     const { error: err } = await supabase.from('food_history').delete().eq('id', id).eq('user_id', userId)
-    if (err) { import.meta.env.DEV && console.error('delete food_history:', err); setError(err.message); historyRef.current = prev; setHistory(prev) }
+    if (err) { if (import.meta.env.DEV) console.error('delete food_history:', err); setError(err.message); historyRef.current = prev; setHistory(prev) }
     else fetchHistory()
   }, [userId, fetchHistory])
 
@@ -119,7 +119,7 @@ export function useFoodHistory(userId: string | null) {
     historyRef.current = next
     setHistory(next)
     const { error: err } = await supabase.from('food_history').update(updates).eq('id', id).eq('user_id', userId)
-    if (err) { import.meta.env.DEV && console.error('update food_history:', err); setError(err.message); historyRef.current = prev; setHistory(prev) }
+    if (err) { if (import.meta.env.DEV) console.error('update food_history:', err); setError(err.message); historyRef.current = prev; setHistory(prev) }
     else fetchHistory()
   }, [userId, fetchHistory])
 
