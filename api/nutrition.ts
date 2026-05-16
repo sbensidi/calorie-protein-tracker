@@ -80,7 +80,7 @@ async function groqCall(apiKey: string, messages: { role: string; content: strin
   return data.choices?.[0]?.message?.content?.trim() ?? null
 }
 
-import { verifySupabaseToken } from './_auth'
+import { verifySupabaseToken } from './_auth.js'
 
 export default async function handler(req: Request): Promise<Response> {
   if (req.method !== 'POST') {

@@ -2,7 +2,7 @@ export const config = { runtime: 'edge' }
 
 declare const process: { env: Record<string, string | undefined> }
 
-import { verifySupabaseToken } from './_auth'
+import { verifySupabaseToken } from './_auth.js'
 
 // ── Rate limiting ─────────────────────────────────────────────────────────────
 const _rl = new Map<string, { count: number; resetAt: number }>()
