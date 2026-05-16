@@ -149,8 +149,8 @@ export function ComposedMealCard({
 
             {/* Chevron */}
             <span
-              className="icon icon-sm"
-              style={{ fontSize: 12, color: 'var(--text-3)', transform: open ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s', flexShrink: 0 }}
+              className="icon"
+              style={{ fontSize: 20, color: 'var(--text-3)', transform: open ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s', flexShrink: 0 }}
             >
               expand_more
             </span>
@@ -340,7 +340,7 @@ export function ComposedMealCard({
             aria-expanded={open}
             style={{ cursor: 'pointer', background: 'none', border: 'none', padding: 0 }}
           >
-            <span className="icon icon-sm" style={{ color: 'var(--text-3)', transition: 'transform .2s', transform: open ? 'rotate(180deg)' : 'rotate(0deg)' }}>
+            <span className="icon" style={{ fontSize: 20, color: 'var(--text-3)', transition: 'transform .2s', transform: open ? 'rotate(180deg)' : 'rotate(0deg)' }}>
               expand_more
             </span>
           </button>
