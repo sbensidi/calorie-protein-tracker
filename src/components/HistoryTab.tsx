@@ -529,32 +529,37 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                   onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') toggleGroupExpand(row.group.id) }}
                   style={{ padding: '8px 0', cursor: 'pointer', userSelect: 'none' }}
                 >
-                  {/* Line 1: name · count | meal type · chevron */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 5, overflow: 'hidden' }}>
-                    <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>
-                      {row.group.name}
-                    </span>
-                    <span style={{ fontSize: 11, color: 'var(--text-3)', whiteSpace: 'nowrap', flexShrink: 0 }}>
-                      {row.meals.length} {t(lang, 'ingredients')}
-                    </span>
-                    {groupMealType && (
-                      <>
-                        <span style={{ fontSize: 11, color: 'var(--text-3)', flexShrink: 0 }}>|</span>
-                        <span style={{ fontSize: 11, color: 'var(--text-3)', whiteSpace: 'nowrap', flexShrink: 0 }}>{t(lang, groupMealType as MealTypeKey)}</span>
-                      </>
-                    )}
-                    <span style={{ flex: 1 }} />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    {/* Two-line content */}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      {/* Line 1: name · count | meal type */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 5, overflow: 'hidden' }}>
+                        <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>
+                          {row.group.name}
+                        </span>
+                        <span style={{ fontSize: 11, color: 'var(--text-3)', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                          {row.meals.length} {t(lang, 'ingredients')}
+                        </span>
+                        {groupMealType && (
+                          <>
+                            <span style={{ fontSize: 11, color: 'var(--text-3)', flexShrink: 0 }}>|</span>
+                            <span style={{ fontSize: 11, color: 'var(--text-3)', whiteSpace: 'nowrap', flexShrink: 0 }}>{t(lang, groupMealType as MealTypeKey)}</span>
+                          </>
+                        )}
+                      </div>
+                      {/* Line 2: calories | protein */}
+                      <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginTop: 3 }}>
+                        <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--accent-hi)', display: 'inline-flex', alignItems: 'baseline', gap: 2 }}>
+                          {gCal}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.8 }}>{t(lang, 'caloriesUnit')}</span>
+                        </span>
+                        <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--positive-hi)', display: 'inline-flex', alignItems: 'baseline', gap: 2 }}>
+                          {gProt}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.8 }}>{lang === 'he' ? 'ג׳ חלבון' : 'g protein'}</span>
+                        </span>
+                      </div>
+                    </div>
+                    {/* Chevron — centered to full header height */}
                     <span className="icon icon-chevron" style={{ color: 'var(--text-3)', flexShrink: 0, transition: 'transform .2s', transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>
                       expand_more
-                    </span>
-                  </div>
-                  {/* Line 2: calories | protein */}
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginTop: 3 }}>
-                    <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--accent-hi)', display: 'inline-flex', alignItems: 'baseline', gap: 2 }}>
-                      {gCal}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.8 }}>{t(lang, 'caloriesUnit')}</span>
-                    </span>
-                    <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--positive-hi)', display: 'inline-flex', alignItems: 'baseline', gap: 2 }}>
-                      {gProt}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.8 }}>{lang === 'he' ? 'ג׳ חלבון' : 'g protein'}</span>
                     </span>
                   </div>
                 </div>
