@@ -26,9 +26,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (saved === 'dark' || saved === 'light') return saved
     return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'
   })
-  const [styleMode, setStyleMode] = useState<StyleMode>(
-    () => (localStorage.getItem('styleMode') as StyleMode) ?? 'classic'
-  )
+  const [styleMode, setStyleMode] = useState<StyleMode>(() => {
+    const saved = localStorage.getItem('styleMode')
+    if (saved === 'classic' || saved === 'minimal') return saved
+    return 'classic'
+  })
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme

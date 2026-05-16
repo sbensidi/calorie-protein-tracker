@@ -201,6 +201,7 @@ export const translations = {
     toastSessionExpired: 'פג תוקף הסשן — אנא התחבר שוב',
     toastServerError:    'שגיאה בתקשורת עם השרת',
     toastOffline:        'אין חיבור לאינטרנט',
+    noHistoryHint:       'ארוחות שתוסיף היום יופיעו כאן מחר',
   },
   en: {
     appTitle: 'Calorie Tracker',
@@ -401,6 +402,7 @@ export const translations = {
     toastSessionExpired: 'Session expired — please sign in again',
     toastServerError:    'Server error. Please try again.',
     toastOffline:        'No internet connection',
+    noHistoryHint:       "Today's meals will appear here tomorrow",
   },
 } as const
 

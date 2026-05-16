@@ -205,7 +205,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
         <span className="icon" style={{ fontSize: 32, display: 'block', marginBottom: 8 }}>history</span>
         <p style={{ fontSize: 14, margin: 0 }}>{t(lang, 'noHistory')}</p>
         <p style={{ fontSize: 12, margin: '6px 0 0', color: 'var(--text-3)' }}>
-          {lang === 'he' ? 'ארוחות שתוסיף היום יופיעו כאן מחר' : "Today's meals will appear here tomorrow"}
+          {t(lang, 'noHistoryHint')}
         </p>
       </div>
     )

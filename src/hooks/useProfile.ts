@@ -53,6 +53,7 @@ const DEFAULT: UserProfile = {
 
 
 function lsLoad(): UserProfile {
+  localStorage.removeItem('user_profile')
   try {
     const saved = localStorage.getItem(LS_KEY)
     // Merge only safe preference fields — biometrics come from DB only
