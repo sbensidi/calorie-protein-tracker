@@ -660,10 +660,9 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
     }
     return true
   })
-  const TOPBAR_H = 57      // 56px header + 1px border
-  const STICKY_BAR_H = 108 // sort+filter row + gap + search row + padding
+  const TOPBAR_H = 57  // 56px header + 1px border
 
-  // Group filteredDates by month for sticky month separators
+  // Group filteredDates by month for month separators
   const monthGroups = (() => {
     const groups: { monthKey: string; label: string; dates: string[] }[] = []
     for (const date of filteredDates) {
@@ -959,11 +958,8 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
             ) : (
               monthGroups.map((group) => (
                 <div key={group.monthKey}>
-                  {/* Sticky month label — sticks below the filter bar while scrolling through the month */}
+                  {/* Month label separator */}
                   <div style={{
-                    position: 'sticky',
-                    top: TOPBAR_H + STICKY_BAR_H,
-                    zIndex: 8,
                     display: 'flex',
                     alignItems: 'center',
                     gap: 8,
