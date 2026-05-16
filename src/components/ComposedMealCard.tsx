@@ -154,7 +154,7 @@ export function ComposedMealCard({
               aria-label={open ? (lang === 'he' ? 'כווץ' : 'Collapse') : (lang === 'he' ? 'הרחב' : 'Expand')}
               aria-expanded={open}
             >
-              <span className="icon icon-sm" style={{ color: 'var(--text-3)', transform: open ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>
+              <span className="icon" style={{ fontSize: 24, color: 'var(--text-3)', transform: open ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>
                 expand_more
               </span>
             </button>
@@ -343,7 +343,7 @@ export function ComposedMealCard({
             aria-label={open ? (lang === 'he' ? 'כווץ' : 'Collapse') : (lang === 'he' ? 'הרחב' : 'Expand')}
             aria-expanded={open}
           >
-            <span className="icon icon-sm" style={{ color: 'var(--text-3)', transition: 'transform .2s', transform: open ? 'rotate(180deg)' : 'rotate(0deg)' }}>
+            <span className="icon" style={{ fontSize: 24, color: 'var(--text-3)', transition: 'transform .2s', transform: open ? 'rotate(180deg)' : 'rotate(0deg)' }}>
               expand_more
             </span>
           </button>
