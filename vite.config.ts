@@ -20,8 +20,6 @@ export default defineConfig({
         orientation: 'portrait',
         scope: '/',
         start_url: '/',
-        lang: 'he',
-        dir: 'rtl',
         icons: [
           { src: 'pwa-64x64.png',            sizes: '64x64',   type: 'image/png' },
           { src: 'pwa-192x192.png',           sizes: '192x192', type: 'image/png' },

@@ -186,6 +186,7 @@ export function DailySummary({ meals, date, goalCalories, goalProtein, lang, flu
                 value={m.value}
                 goal={m.goal}
                 type={m.type}
+                lang={lang}
                 size={96}
                 strokeWidth={9}
                 style={{ width: '100%', maxWidth: 96, height: 'auto', aspectRatio: '1', flexShrink: 1 }}

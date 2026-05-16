@@ -139,6 +139,11 @@
   /* Depth */
   --depth-1:     rgba(0,0,0,0.10);
   --depth-2:     rgba(0,0,0,0.12);
+  /* Shadows — full box-shadow values for consistent elevation */
+  --shadow-sm:  0 1px 4px rgba(0,0,0,0.30);
+  --shadow-md:  0 4px 16px rgba(0,0,0,0.20);
+  --shadow-lg:  0 8px 24px rgba(0,0,0,0.40);
+  --shadow-xl:  0 8px 32px rgba(0,0,0,0.50), 0 2px 8px rgba(0,0,0,0.30);
   /* Special */
   --modal-backdrop: rgba(0,0,0,0.65);
   --scanner-bg:     #04060a;

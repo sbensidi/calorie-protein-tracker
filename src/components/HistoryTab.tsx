@@ -414,7 +414,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
 
           {/* Calories */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1 }}>
-            <DonutProgress value={data.totalCalories} goal={data.goal.calories} type="calories" size={46} strokeWidth={4} />
+            <DonutProgress value={data.totalCalories} goal={data.goal.calories} type="calories" lang={lang} size={46} strokeWidth={4} />
             <div>
               <div style={{ fontSize: 9, fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 1 }}>
                 {lang === 'he' ? 'קלוריות' : 'Calories'}
@@ -435,7 +435,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
 
           {/* Protein */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1 }}>
-            <DonutProgress value={data.totalProtein} goal={data.goal.protein} type="protein" size={46} strokeWidth={4} />
+            <DonutProgress value={data.totalProtein} goal={data.goal.protein} type="protein" lang={lang} size={46} strokeWidth={4} />
             <div>
               <div style={{ fontSize: 9, fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 1 }}>
                 {lang === 'he' ? 'חלבון' : 'Protein'}
@@ -662,6 +662,21 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
   })
   const TOPBAR_H = 57  // 56px header + 1px border
 
+  // Group filteredDates by month for month separators
+  const monthGroups = (() => {
+    const groups: { monthKey: string; label: string; dates: string[] }[] = []
+    for (const date of filteredDates) {
+      const [year, month] = date.split('-').map(Number)
+      const monthKey = date.substring(0, 7)
+      const label = `${lang === 'he' ? HE_MONTHS[month - 1] : EN_MONTHS[month - 1]} ${year}`
+      if (groups.length === 0 || groups[groups.length - 1].monthKey !== monthKey) {
+        groups.push({ monthKey, label, dates: [] })
+      }
+      groups[groups.length - 1].dates.push(date)
+    }
+    return groups
+  })()
+
   // ── Single return — FAB always at stable position in the tree ─────
   return (
     <>
@@ -866,7 +881,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                       position: 'absolute', top: 'calc(46px + 4px)', left: 0, right: 0,
                       background: 'var(--bg-card2)', border: '1px solid var(--border-hi)',
                       borderRadius: 10, overflow: 'hidden', zIndex: 50,
-                      boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+                      boxShadow: 'var(--shadow-lg)',
                     }}>
                       {matchedComposed.map(entry => (
                         <button key={entry.id} onMouseDown={() => { setSearch(entry.name); setDropdownOpen(false) }}
@@ -941,19 +956,43 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                 )}
               </div>
             ) : (
-              filteredDates.map((date, i) => {
-                const data = grouped.get(date)!
-                return (
-                  <details key={date} className="card fade-up"
-                    style={{ animationDelay: `${i * 0.04}s`, overflow: 'hidden' }}
-                  >
-                    <summary style={{ padding: '14px 14px 12px' }}>
-                      <DayCardContent date={date} data={data} chevron />
-                    </summary>
-                    <MealsList data={data} />
-                  </details>
-                )
-              })
+              monthGroups.map((group) => (
+                <div key={group.monthKey}>
+                  {/* Month label separator */}
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    padding: '6px 2px',
+                    pointerEvents: 'none',
+                  }}>
+                    <span style={{
+                      fontSize: 10, fontWeight: 700, letterSpacing: '0.07em',
+                      textTransform: 'uppercase', color: 'var(--text-3)',
+                      background: 'var(--bg)', padding: '2px 8px',
+                      borderRadius: 20, border: '1px solid var(--border)',
+                    }}>
+                      {group.label}
+                    </span>
+                    <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+                  </div>
+
+                  {group.dates.map((date) => {
+                    const data = grouped.get(date)!
+                    const i = filteredDates.indexOf(date)
+                    return (
+                      <details key={date} className="card fade-up"
+                        style={{ animationDelay: `${i * 0.04}s`, overflow: 'hidden', marginTop: 6 }}
+                      >
+                        <summary style={{ padding: '14px 14px 12px' }}>
+                          <DayCardContent date={date} data={data} chevron />
+                        </summary>
+                        <MealsList data={data} />
+                      </details>
+                    )
+                  })}
+                </div>
+              ))
             )}
           </div>
 
@@ -1308,7 +1347,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                 display: 'grid', gridTemplateColumns: '1fr 1fr',
                 gap: 3, background: 'var(--bg-card2)', border: '1px solid var(--border-hi)',
                 borderRadius: 999, padding: 3, position: 'relative',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.2), inset 0 1px 0 var(--surface-2)',
+                boxShadow: 'var(--shadow-md), inset 0 1px 0 var(--surface-2)',
               }}>
                 {(['week', 'month'] as const).map(p => (
                   <button key={p} onClick={() => switchStatsPeriod(p)} style={{
@@ -1511,7 +1550,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                         <span style={{
                           fontSize: 11, fontWeight: 600, borderRadius: 5, padding: '1px 6px',
                           color: delta7Cal === 0 ? 'var(--positive-hi)' : delta7Cal > 0 ? 'var(--warning)' : 'var(--accent-hi)',
-                          background: delta7Cal === 0 ? 'var(--positive-fill)' : delta7Cal > 0 ? 'rgba(251,146,60,0.1)' : 'var(--accent-fill)',
+                          background: delta7Cal === 0 ? 'var(--positive-fill)' : delta7Cal > 0 ? 'var(--warning-tint)' : 'var(--accent-fill)',
                         }}>
                           {delta7Cal === 0
                             ? (lang === 'he' ? 'בדיוק ביעד' : 'on target')
@@ -1531,7 +1570,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                         <span style={{
                           fontSize: 11, fontWeight: 600, borderRadius: 5, padding: '1px 6px',
                           color: delta7Prot === 0 ? 'var(--positive-hi)' : delta7Prot > 0 ? 'var(--warning)' : 'var(--accent-hi)',
-                          background: delta7Prot === 0 ? 'var(--positive-fill)' : delta7Prot > 0 ? 'rgba(251,146,60,0.1)' : 'var(--accent-fill)',
+                          background: delta7Prot === 0 ? 'var(--positive-fill)' : delta7Prot > 0 ? 'var(--warning-tint)' : 'var(--accent-fill)',
                         }}>
                           {delta7Prot === 0
                             ? (lang === 'he' ? 'בדיוק ביעד' : 'on target')
@@ -1807,7 +1846,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                         <span style={{
                           fontSize: 11, fontWeight: 600, borderRadius: 5, padding: '1px 6px',
                           color: delta30Cal === 0 ? 'var(--positive-hi)' : delta30Cal > 0 ? 'var(--warning)' : 'var(--accent-hi)',
-                          background: delta30Cal === 0 ? 'var(--positive-fill)' : delta30Cal > 0 ? 'rgba(251,146,60,0.1)' : 'var(--accent-fill)',
+                          background: delta30Cal === 0 ? 'var(--positive-fill)' : delta30Cal > 0 ? 'var(--warning-tint)' : 'var(--accent-fill)',
                         }}>
                           {delta30Cal === 0
                             ? (lang === 'he' ? 'בדיוק ביעד' : 'on target')
@@ -1827,7 +1866,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                         <span style={{
                           fontSize: 11, fontWeight: 600, borderRadius: 5, padding: '1px 6px',
                           color: delta30Prot === 0 ? 'var(--positive-hi)' : delta30Prot > 0 ? 'var(--warning)' : 'var(--accent-hi)',
-                          background: delta30Prot === 0 ? 'var(--positive-fill)' : delta30Prot > 0 ? 'rgba(251,146,60,0.1)' : 'var(--accent-fill)',
+                          background: delta30Prot === 0 ? 'var(--positive-fill)' : delta30Prot > 0 ? 'var(--warning-tint)' : 'var(--accent-fill)',
                         }}>
                           {delta30Prot === 0
                             ? (lang === 'he' ? 'בדיוק ביעד' : 'on target')
@@ -1933,7 +1972,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
           borderRadius: 999,
           padding: fabPad,
           gap: fabGap,
-          boxShadow: '0 8px 32px rgba(0,0,0,0.5), 0 2px 8px rgba(0,0,0,0.3), inset 0 1px 0 var(--surface-2)',
+          boxShadow: 'var(--shadow-xl), inset 0 1px 0 var(--surface-2)',
         }}
       >
         {/* Sliding active indicator */}
