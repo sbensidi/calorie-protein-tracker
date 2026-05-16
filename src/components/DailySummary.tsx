@@ -176,7 +176,7 @@ export function DailySummary({ meals, date, goalCalories, goalProtein, lang, flu
       {/* ── Active: Option B — responsive rich-donut row ── */}
       <div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'flex-start', gap: 4 }}>
         {items.map(m => {
-          const pct = m.goal > 0 ? Math.min(100, Math.round((m.value / m.goal) * 100)) : 0
+          const pct = m.goal > 0 ? Math.round((m.value / m.goal) * 100) : 0
           return (
             <div
               key={m.type}
@@ -202,7 +202,7 @@ export function DailySummary({ meals, date, goalCalories, goalProtein, lang, flu
               />
               <div style={{ textAlign: 'center', width: '100%' }}>
                 <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)', margin: '0 0 2px', display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: 4 }}>
-                  <span style={{ fontSize: 10, fontWeight: 700, color: m.color, opacity: 0.8 }}>{pct}%</span>
+                  <span style={{ fontSize: 10, fontWeight: 700, color: m.over ? 'var(--danger)' : m.color, opacity: 0.8 }}>{pct}%</span>
                   {m.label}
                 </p>
                 <p style={{ fontSize: 10, fontWeight: 500, color: m.over ? 'var(--danger)' : 'var(--text-3)', margin: 0, lineHeight: 1.3 }}>
