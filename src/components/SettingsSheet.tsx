@@ -369,7 +369,7 @@ function MainScreen({ lang, connected, theme, styleMode, onProfile, onGoals, onF
                 background: theme === 'dark' ? 'var(--accent)' : 'var(--warning)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 transition: 'inset-inline-start 0.25s cubic-bezier(.34,1.56,.64,1), background 0.25s',
-                boxShadow: '0 1px 4px rgba(0,0,0,0.3)',
+                boxShadow: 'var(--shadow-sm)',
               }}>
                 <span className="icon" style={{ fontSize: 13, color: 'var(--on-color)' }}>
                   {theme === 'dark' ? 'dark_mode' : 'light_mode'}

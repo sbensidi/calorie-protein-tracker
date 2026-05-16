@@ -39,26 +39,28 @@ export function SheetHandle({ scrolledDown, onClose, onBack, isRTL }: SheetHandl
         {onBack && (
           <button
             onClick={onBack}
+            aria-label={isRTL ? 'חזרה' : 'Back'}
             style={{
               position: 'absolute', insetInlineStart: 12,
               background: 'none', border: 'none', cursor: 'pointer',
               color: 'var(--text-2)', padding: 4, display: 'flex',
             }}
           >
-            <span className="icon icon-sm">{isRTL ? 'arrow_forward' : 'arrow_back'}</span>
+            <span className="icon icon-sm" aria-hidden="true">{isRTL ? 'arrow_forward' : 'arrow_back'}</span>
           </button>
         )}
 
         {onClose && (
           <button
             onClick={onClose}
+            aria-label={isRTL ? 'סגור' : 'Close'}
             style={{
               position: 'absolute', insetInlineEnd: 12,
               background: 'none', border: 'none', cursor: 'pointer',
               color: 'var(--text-3)', padding: 4, display: 'flex',
             }}
           >
-            <span className="icon icon-sm">close</span>
+            <span className="icon icon-sm" aria-hidden="true">close</span>
           </button>
         )}
       </div>

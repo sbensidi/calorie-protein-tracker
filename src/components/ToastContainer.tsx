@@ -56,7 +56,7 @@ export function ToastContainer({ toasts, onDismiss, lang }: ToastContainerProps)
               background: c.bg,
               border: `1px solid ${c.border}`,
               backdropFilter: 'blur(12px)',
-              boxShadow: '0 4px 16px rgba(0,0,0,0.2)',
+              boxShadow: 'var(--shadow-md)',
               pointerEvents: 'all',
               animation: 'fadeUp 0.22s cubic-bezier(.22,.9,.36,1) both',
             }}

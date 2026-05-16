@@ -5,13 +5,14 @@ interface DonutProgressProps {
   value:           number
   goal:            number
   type:            'calories' | 'protein' | 'fluid'
+  lang?:           'he' | 'en'
   size?:           number
   strokeWidth?:    number
   centerContent?:  ReactNode
   style?:          React.CSSProperties
 }
 
-export const DonutProgress = memo(function DonutProgress({ value, goal, type, size = 56, strokeWidth = 5, centerContent, style }: DonutProgressProps) {
+export const DonutProgress = memo(function DonutProgress({ value, goal, type, lang = 'en', size = 56, strokeWidth = 5, centerContent, style }: DonutProgressProps) {
   const pct     = goal > 0 ? Math.min(1, value / goal) : 0
   const realPct = goal > 0 ? Math.round((value / goal) * 100) : 0
 
@@ -67,7 +68,11 @@ export const DonutProgress = memo(function DonutProgress({ value, goal, type, si
   return (
     <div
       role="img"
-      aria-label={`${type === 'calories' ? 'Calories' : type === 'protein' ? 'Protein' : 'Fluid'}: ${realPct}% of goal`}
+      aria-label={
+        lang === 'he'
+          ? `${type === 'calories' ? 'קלוריות' : type === 'protein' ? 'חלבון' : 'נוזלים'}: ${realPct}% מהיעד`
+          : `${type === 'calories' ? 'Calories' : type === 'protein' ? 'Protein' : 'Fluid'}: ${realPct}% of goal`
+      }
       style={{ position: 'relative', width: size, height: size, flexShrink: 0, ...style }}
     >
       <svg

@@ -968,7 +968,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
               borderRadius: 10,
               overflow: 'hidden',
               zIndex: 50,
-              boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+              boxShadow: 'var(--shadow-lg)',
             }}
           >
             {/* Composed dishes at top */}
