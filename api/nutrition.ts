@@ -1,5 +1,7 @@
 // Vercel Edge Function — Groq proxy
 // GROQ_API_KEY lives server-side only (no VITE_ prefix → never bundled to browser)
+import { verifySupabaseToken } from './_auth.js'
+
 export const config = { runtime: 'edge' }
 
 // Edge Runtime exposes process.env but TS doesn't know about it without @types/node
@@ -79,8 +81,6 @@ async function groqCall(apiKey: string, messages: { role: string; content: strin
   const data = await res.json()
   return data.choices?.[0]?.message?.content?.trim() ?? null
 }
-
-import { verifySupabaseToken } from './_auth.js'
 
 export default async function handler(req: Request): Promise<Response> {
   if (req.method !== 'POST') {
