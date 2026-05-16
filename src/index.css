@@ -1083,6 +1083,10 @@ details[open] summary .chevron-rotate {
 [data-style="minimal"] .inp { border-color: var(--border); }
 [data-style="minimal"] .inp:focus { border-color: var(--border-hi); }
 
+/* ── Scanner frame: accent instead of positive ── */
+[data-style="minimal"] .sc-corner { border-color: var(--accent); }
+[data-style="minimal"] .sc-line   { background: linear-gradient(to right, transparent, var(--accent) 20%, var(--accent) 80%, transparent); }
+
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    END MINIMAL THEME
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
