@@ -111,8 +111,8 @@ export function DailySummary({ meals, date, goalCalories, goalProtein, lang, flu
           }}>%</span>
         </div>
 
-        {/* Cal meta */}
-        <p style={{ fontSize: 12, fontWeight: 300, color: 'var(--text-2)', padding: '8px 4px 0', textAlign: 'end' }}>
+        {/* Cal meta — always right-aligned to sit below the hero number */}
+        <p style={{ fontSize: 12, fontWeight: 300, color: 'var(--text-2)', padding: '8px 4px 0', textAlign: lang === 'he' ? 'start' : 'end' }}>
           {totalCalories.toLocaleString(lang === 'he' ? 'he-IL' : 'en-US')}
           {lang === 'he' ? ' מתוך ' : ' / '}
           {goalCalories.toLocaleString(lang === 'he' ? 'he-IL' : 'en-US')} {t(lang, 'caloriesUnit')}
