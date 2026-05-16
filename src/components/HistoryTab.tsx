@@ -36,6 +36,7 @@ interface HistoryTabProps {
   composedGroups?:  ComposedGroup[]
   fluidGoalMl?:     number
   loading?:         boolean
+  weeklyTdee?:      number  // 7 × daily TDEE, for weight-impact calculation
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────
@@ -62,7 +63,7 @@ const STATUS_COLOR: Record<DayData['status'], { badge: string; text: string; ico
 
 // ── Component ────────────────────────────────────────────────────────
 
-export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntries = [], composedGroups = [], fluidGoalMl = 2500, loading = false }: HistoryTabProps) {
+export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntries = [], composedGroups = [], fluidGoalMl = 2500, loading = false, weeklyTdee = 0 }: HistoryTabProps) {
   const { styleMode } = useAppContext()
   const todayKey = today()
 
@@ -1433,31 +1434,79 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                       />
                     )}
                   </div>
-                  {/* Weekly calorie balance chip */}
+                  {/* Weekly calorie balance card */}
                   {last7.length > 0 && (() => {
-                    const isDeficit = weeklyBalanceCal < 0
-                    const isSurplus = weeklyBalanceCal > 0
-                    const chipBg    = isDeficit ? 'var(--positive-tint)' : isSurplus ? 'var(--warning-tint)' : 'var(--surface-3)'
-                    const chipBorder = isDeficit ? 'var(--positive-border)' : isSurplus ? 'var(--warning-border)' : 'var(--border)'
-                    const chipColor  = isDeficit ? 'var(--positive-hi)' : isSurplus ? 'var(--warning)' : 'var(--text-3)'
-                    const chipIcon   = isDeficit ? 'trending_down' : isSurplus ? 'trending_up' : 'check_circle'
-                    const absBalance = Math.abs(weeklyBalanceCal)
-                    const label = isDeficit
-                      ? (lang === 'he' ? `גירעון שבועי: ${absBalance.toLocaleString()} קק״ל` : `Weekly deficit: ${absBalance.toLocaleString()} kcal`)
-                      : isSurplus
-                      ? (lang === 'he' ? `עודף שבועי: ${absBalance.toLocaleString()} קק״ל` : `Weekly surplus: ${absBalance.toLocaleString()} kcal`)
-                      : (lang === 'he' ? 'בדיוק ביעד השבועי!' : 'Right on weekly target!')
+                    // Row 1: plan adherence (consumed vs. user goal)
+                    const planDiff      = weeklyBalanceCal  // positive = over goal
+                    const planOver      = planDiff > 0
+                    const planExact     = planDiff === 0
+                    const planColor     = planExact ? 'var(--text-3)' : planOver ? 'var(--warning)' : 'var(--positive-hi)'
+                    const planSign      = planDiff > 0 ? '+' : ''
+                    const planLabel     = lang === 'he'
+                      ? `${planSign}${Math.round(planDiff).toLocaleString('he-IL')} קק״ל מהיעד`
+                      : `${planSign}${Math.round(planDiff).toLocaleString()} kcal vs. plan`
+
+                    // Row 2: weight impact (consumed vs. TDEE)
+                    const hasWeightCalc = weeklyTdee > 0
+                    const tdeeBalance   = weeklyTotalCal - weeklyTdee          // negative = deficit
+                    const weightGrams   = Math.round(Math.abs(tdeeBalance) / 7.7)  // 7700 kcal/kg → /7.7 = grams
+                    const isWeightLoss  = tdeeBalance < 0
+                    const isWeightGain  = tdeeBalance > 0
+                    const weightColor   = isWeightLoss ? 'var(--positive-hi)' : isWeightGain ? 'var(--warning)' : 'var(--text-3)'
+                    const weightLabel   = isWeightLoss
+                      ? (lang === 'he' ? `ירידה של ~${weightGrams} גרם` : `~${weightGrams}g loss`)
+                      : isWeightGain
+                      ? (lang === 'he' ? `עלייה של ~${weightGrams} גרם` : `~${weightGrams}g gain`)
+                      : (lang === 'he' ? 'ללא שינוי במשקל' : 'no weight change')
+
                     return (
                       <div style={{
-                        display: 'flex', alignItems: 'center', gap: 8,
-                        background: chipBg, border: `1px solid ${chipBorder}`,
-                        borderRadius: 10, padding: '8px 12px',
+                        background: 'var(--bg-card)', border: '1px solid var(--border)',
+                        borderRadius: 12, padding: '10px 14px',
+                        display: 'flex', flexDirection: 'column', gap: 8,
                       }}>
-                        <span className="icon" style={{ fontSize: 16, color: chipColor, flexShrink: 0 }}>{chipIcon}</span>
-                        <span style={{ fontSize: 12, fontWeight: 700, color: chipColor, flex: 1 }}>{label}</span>
-                        <span style={{ fontSize: 10, color: 'var(--text-3)', flexShrink: 0 }}>
-                          {Math.round(weeklyTotalCal).toLocaleString()} / {Math.round(weeklyGoalCal).toLocaleString()} {t(lang, 'caloriesUnit')}
-                        </span>
+                        {/* Header */}
+                        <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.07em', margin: 0 }}>
+                          {lang === 'he' ? 'מאזן שבועי' : 'Weekly balance'}
+                        </p>
+
+                        {/* Plan row */}
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <span style={{ fontSize: 12, color: 'var(--text-2)' }}>
+                            {lang === 'he' ? 'יעד שבועי' : 'Weekly plan'}
+                          </span>
+                          <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+                            <span style={{ fontSize: 11, color: 'var(--text-3)', fontVariantNumeric: 'tabular-nums' }}>
+                              {Math.round(weeklyTotalCal).toLocaleString(lang === 'he' ? 'he-IL' : 'en-US')}
+                              {' / '}
+                              {Math.round(weeklyGoalCal).toLocaleString(lang === 'he' ? 'he-IL' : 'en-US')}
+                            </span>
+                            <span style={{ fontSize: 12, fontWeight: 700, color: planColor, fontVariantNumeric: 'tabular-nums' }}>
+                              {planExact ? '✓' : planLabel}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Weight impact row */}
+                        {hasWeightCalc && (
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid var(--border)', paddingTop: 8 }}>
+                            <span style={{ fontSize: 12, color: 'var(--text-2)' }}>
+                              {lang === 'he' ? 'השפעה על משקל' : 'Weight impact'}
+                            </span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                              <span style={{ fontSize: 12, fontWeight: 700, color: weightColor }}>
+                                {weightLabel}
+                              </span>
+                              <span style={{ fontSize: 10, color: 'var(--text-3)' }}>*</span>
+                            </div>
+                          </div>
+                        )}
+
+                        {hasWeightCalc && (
+                          <p style={{ fontSize: 10, color: 'var(--text-3)', margin: 0 }}>
+                            {lang === 'he' ? '* הערכה לפי TDEE מחושב' : '* estimate based on calculated TDEE'}
+                          </p>
+                        )}
                       </div>
                     )
                   })()}

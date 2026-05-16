@@ -140,6 +140,14 @@ export default function App() {
     await pruneMealId(id)
   }, [deleteMeal, pruneMealId])
 
+  // Weekly TDEE × 7 — for weight-impact row in HistoryTab
+  const weeklyTdee = useMemo(() => {
+    const { sex, age, height, weight, activityLevel } = profile
+    const bmr = 10 * weight + 6.25 * height - 5 * age + (sex === 'm' ? 5 : -161)
+    const multipliers = [1.2, 1.375, 1.55, 1.725, 1.9]
+    return Math.round(bmr * (multipliers[activityLevel] ?? 1.375)) * 7
+  }, [profile])
+
   // CSV export: build and trigger download of all meals
   const handleExportCsv = useCallback(() => {
     const header = 'date,meal_type,name,grams,calories,protein,fat,carbs,notes,time_logged'
@@ -405,6 +413,7 @@ export default function App() {
                 composedGroups={composedGroups}
                 fluidGoalMl={profile.fluidGoalMl}
                 loading={mealsLoading}
+                weeklyTdee={weeklyTdee}
               />
             </Suspense>
           </ErrorBoundary>
