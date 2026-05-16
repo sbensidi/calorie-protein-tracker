@@ -660,7 +660,23 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
     }
     return true
   })
-  const TOPBAR_H = 57  // 56px header + 1px border
+  const TOPBAR_H = 57      // 56px header + 1px border
+  const STICKY_BAR_H = 108 // sort+filter row + gap + search row + padding
+
+  // Group filteredDates by month for sticky month separators
+  const monthGroups = (() => {
+    const groups: { monthKey: string; label: string; dates: string[] }[] = []
+    for (const date of filteredDates) {
+      const [year, month] = date.split('-').map(Number)
+      const monthKey = date.substring(0, 7)
+      const label = `${lang === 'he' ? HE_MONTHS[month - 1] : EN_MONTHS[month - 1]} ${year}`
+      if (groups.length === 0 || groups[groups.length - 1].monthKey !== monthKey) {
+        groups.push({ monthKey, label, dates: [] })
+      }
+      groups[groups.length - 1].dates.push(date)
+    }
+    return groups
+  })()
 
   // ── Single return — FAB always at stable position in the tree ─────
   return (
@@ -941,19 +957,46 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                 )}
               </div>
             ) : (
-              filteredDates.map((date, i) => {
-                const data = grouped.get(date)!
-                return (
-                  <details key={date} className="card fade-up"
-                    style={{ animationDelay: `${i * 0.04}s`, overflow: 'hidden' }}
-                  >
-                    <summary style={{ padding: '14px 14px 12px' }}>
-                      <DayCardContent date={date} data={data} chevron />
-                    </summary>
-                    <MealsList data={data} />
-                  </details>
-                )
-              })
+              monthGroups.map((group) => (
+                <div key={group.monthKey}>
+                  {/* Sticky month label — sticks below the filter bar while scrolling through the month */}
+                  <div style={{
+                    position: 'sticky',
+                    top: TOPBAR_H + STICKY_BAR_H,
+                    zIndex: 8,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    padding: '6px 2px',
+                    pointerEvents: 'none',
+                  }}>
+                    <span style={{
+                      fontSize: 10, fontWeight: 700, letterSpacing: '0.07em',
+                      textTransform: 'uppercase', color: 'var(--text-3)',
+                      background: 'var(--bg)', padding: '2px 8px',
+                      borderRadius: 20, border: '1px solid var(--border)',
+                    }}>
+                      {group.label}
+                    </span>
+                    <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+                  </div>
+
+                  {group.dates.map((date) => {
+                    const data = grouped.get(date)!
+                    const i = filteredDates.indexOf(date)
+                    return (
+                      <details key={date} className="card fade-up"
+                        style={{ animationDelay: `${i * 0.04}s`, overflow: 'hidden', marginTop: 6 }}
+                      >
+                        <summary style={{ padding: '14px 14px 12px' }}>
+                          <DayCardContent date={date} data={data} chevron />
+                        </summary>
+                        <MealsList data={data} />
+                      </details>
+                    )
+                  })}
+                </div>
+              ))
             )}
           </div>
 

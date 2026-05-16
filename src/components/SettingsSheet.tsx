@@ -482,12 +482,13 @@ function ProfileScreen({ lang, profile, onSave, showToast }: {
   const set = <K extends keyof UserProfile>(key: K, val: UserProfile[K]) =>
     setDraft(p => ({ ...p, [key]: val }))
 
-  const { bmr, suggestedFluidMl, bmi, bmiCategory } = useMemo(() => {
+  const { bmr, tdeeAtLevel, suggestedFluidMl, bmi, bmiCategory } = useMemo(() => {
     const bmr             = calcBMR(draft)
+    const tdeeAtLevel     = Math.round(bmr * ACTIVITY_MULTIPLIERS[draft.activityLevel ?? 1])
     const suggestedFluidMl = Math.round(draft.weight * 35 / 100) * 100
     const bmiVal          = Math.round((draft.weight / ((draft.height / 100) ** 2)) * 10) / 10
     const bmiCategory     = bmiVal < 18.5 ? 'underweight' : bmiVal < 25 ? 'normal' : bmiVal < 30 ? 'overweight' : 'obese'
-    return { bmr, suggestedFluidMl, bmi: bmiVal, bmiCategory }
+    return { bmr, tdeeAtLevel, suggestedFluidMl, bmi: bmiVal, bmiCategory }
   }, [draft])
 
   const handleSave = () => {
@@ -585,6 +586,11 @@ function ProfileScreen({ lang, profile, onSave, showToast }: {
             <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-2)', margin: '0 0 2px' }}>BMR</p>
             <p style={{ fontSize: 10, color: 'var(--text-3)', margin: 0, lineHeight: 1.4 }}>
               {lang === 'he' ? 'חילוף חומרים בסיסי — ללא פעילות' : 'Basal Metabolic Rate — at rest'}
+            </p>
+            <p style={{ fontSize: 10, color: 'var(--accent-hi)', margin: '3px 0 0', lineHeight: 1.4 }}>
+              {lang === 'he'
+                ? `TDEE: ${tdeeAtLevel.toLocaleString('he-IL')} קק״ל עם רמת הפעילות שלך`
+                : `TDEE: ${tdeeAtLevel.toLocaleString()} kcal with your activity`}
             </p>
           </div>
           <span style={{ fontSize: 18, fontWeight: 800, color: 'var(--text)', flexShrink: 0, marginInlineStart: 10 }}>
