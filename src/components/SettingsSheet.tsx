@@ -402,6 +402,8 @@ function MainScreen({ lang, connected, theme, styleMode, onProfile, onGoals, onF
                     fontFamily: 'inherit',
                     cursor: 'pointer',
                     transition: 'all 0.2s',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    lineHeight: 1,
                   }}
                 >
                   {t(lang, mode === 'classic' ? 'styleClassic' : 'styleMinimal')}
