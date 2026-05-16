@@ -102,12 +102,21 @@ export function useComposedGroups(userId: string | null) {
     lsSave(next)
 
     if (!userId) return
-    await Promise.all(affected.map(g => {
+    const results = await Promise.all(affected.map(g => {
       const nextIds = g.mealIds.filter(id => id !== mealId)
       return nextIds.length === 0
         ? supabase.from('composed_groups').delete().eq('id', g.id).eq('user_id', userId)
         : supabase.from('composed_groups').update({ meal_ids: nextIds }).eq('id', g.id).eq('user_id', userId)
     }))
+    const anyFailed = results.some(({ error: err }, i) => {
+      if (err) { console.error(`[pruneMealId] group ${affected[i]?.id}:`, err.message); return true }
+      return false
+    })
+    if (anyFailed) {
+      groupsRef.current = current
+      setGroups(current)
+      lsSave(current)
+    }
   }, [userId])
 
   return { groups, error, upsert, remove, pruneMealId, refetch: fetch }

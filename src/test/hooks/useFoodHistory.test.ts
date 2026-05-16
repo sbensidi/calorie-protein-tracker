@@ -123,14 +123,18 @@ describe('useFoodHistory', () => {
     expect(updateChain.insert).not.toHaveBeenCalled()
   })
 
-  it('deleteHistory removes item optimistically', async () => {
-    fromMock.mockReturnValue(makeChain({ data: historyRows }))
+  it('deleteHistory removes item from state', async () => {
+    fromMock
+      .mockReturnValueOnce(makeChain({ data: historyRows }))         // initial fetch
+      .mockReturnValueOnce(makeChain())                               // delete call (success)
+      .mockReturnValue(makeChain({ data: [historyRows[1]] }))        // refetch: fh-1 gone
+
     const { result } = renderHook(() => useFoodHistory(USER))
     await waitFor(() => expect(result.current.history).toHaveLength(2))
 
-    act(() => { result.current.deleteHistory('fh-1') })
+    await act(async () => { await result.current.deleteHistory('fh-1') })
 
-    expect(result.current.history.find(h => h.id === 'fh-1')).toBeUndefined()
+    await waitFor(() => expect(result.current.history.find(h => h.id === 'fh-1')).toBeUndefined())
   })
 
   it('deleteHistory reverts on DB error', async () => {

@@ -111,7 +111,7 @@ export function useFoodHistory(userId: string | null) {
     else fetchHistory()
   }, [userId, fetchHistory])
 
-  const updateHistory = useCallback(async (id: string, updates: Partial<Pick<FoodHistory, 'name' | 'grams' | 'calories' | 'protein'>>) => {
+  const updateHistory = useCallback(async (id: string, updates: Partial<Pick<FoodHistory, 'name' | 'grams' | 'calories' | 'protein' | 'fluid_ml'>>) => {
     if (!userId) return
     setError(null)
     const prev = historyRef.current
@@ -128,15 +128,21 @@ export function useFoodHistory(userId: string | null) {
   const touchHistory = useCallback(async (id: string) => {
     const existing = historyRef.current.find(h => h.id === id)
     if (!existing) return
-    const next = historyRef.current.map(h =>
+    const prev = historyRef.current
+    const next = prev.map(h =>
       h.id === id ? { ...h, use_count: h.use_count + 1, last_used: new Date().toISOString() } : h
     )
     historyRef.current = next
     setHistory(next)
-    await supabase
+    const { error: err } = await supabase
       .from('food_history')
       .update({ use_count: existing.use_count + 1, last_used: new Date().toISOString() })
       .eq('id', id)
+    if (err) {
+      console.error('[touchHistory]', err.message)
+      historyRef.current = prev
+      setHistory(prev)
+    }
   }, [])
 
   return { history, error, upsertHistory, touchHistory, getSuggestions, deleteHistory, updateHistory }

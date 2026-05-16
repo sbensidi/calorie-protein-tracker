@@ -23,6 +23,7 @@ function saveCache(data: FoodLibraryItem[]) {
 export function useFoodLibrary() {
   const [library, setLibrary] = useState<FoodLibraryItem[]>(() => loadCache() ?? [])
   const [loading, setLoading] = useState(library.length === 0)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     const cached = loadCache()
@@ -31,8 +32,15 @@ export function useFoodLibrary() {
       .from('food_library')
       .select('id, name_he, name_en, category, calories_per_100g, protein_per_100g, fat_per_100g, carbs_per_100g, fiber_per_100g, serving_size, serving_unit, density, countable')
       .order('name_he')
-      .then(({ data }) => {
-        if (data) { setLibrary(data as FoodLibraryItem[]); saveCache(data as FoodLibraryItem[]) }
+      .then(({ data, error: err }) => {
+        if (err) {
+          import.meta.env.DEV && console.error('useFoodLibrary fetch:', err)
+          setError(err.message)
+        } else if (data) {
+          setLibrary(data as FoodLibraryItem[])
+          saveCache(data as FoodLibraryItem[])
+          setError(null)
+        }
         setLoading(false)
       })
   }, [])
@@ -51,5 +59,5 @@ export function useFoodLibrary() {
       .map(({ item }) => item)
   }, [libraryLower])
 
-  return { library, loading, searchLibrary }
+  return { library, loading, error, searchLibrary }
 }

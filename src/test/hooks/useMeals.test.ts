@@ -22,6 +22,7 @@ function makeChain(res: { data?: unknown; error?: unknown } = {}) {
     delete: vi.fn().mockReturnThis(),
     upsert: vi.fn().mockReturnThis(),
     eq:     vi.fn().mockReturnThis(),
+    gte:    vi.fn().mockReturnThis(),
     is:     vi.fn().mockReturnThis(),
     order:  vi.fn().mockReturnThis(),
     single: vi.fn(() => Promise.resolve(resolved)),
@@ -69,9 +70,8 @@ beforeEach(() => {
 })
 
 describe('useMeals', () => {
-  it('does not fetch when userId is null', async () => {
+  it('does not fetch when userId is null', () => {
     renderHook(() => useMeals(null))
-    await new Promise(r => setTimeout(r, 30))
     expect(fromMock).not.toHaveBeenCalled()
   })
 

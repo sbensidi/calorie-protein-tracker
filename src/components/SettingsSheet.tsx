@@ -3,17 +3,18 @@ import { useLockBodyScroll } from '../hooks/useLockBodyScroll'
 import { useFocusTrap } from '../hooks/useFocusTrap'
 import { useSheetScroll } from '../hooks/useSheetScroll'
 import { SheetHandle } from './SheetHandle'
-import type { Lang, DayKey } from '../lib/i18n'
+import type { Lang, DayKey, TranslationKey } from '../lib/i18n'
 import { t, dir, DAY_KEYS, DAY_SHORT_HE, DAY_SHORT_EN } from '../lib/i18n'
 import { toWeekIndex } from '../lib/utils'
 import type { Toast } from '../hooks/useToast'
 import type { Goal, FoodHistory, ComposedGroup, Meal } from '../types'
 import type { UserProfile } from '../hooks/useProfile'
 import { useFoodLibrary } from '../hooks/useFoodLibrary'
-import { UNITS, toBase, mlToGrams } from '../lib/units'
+import { UNITS, toBase, fromBase, mlToGrams } from '../lib/units'
 import type { UnitId } from '../lib/units'
 import { MealCard } from './MealCard'
 import { fuzzyScore } from '../lib/fuzzyMatch'
+import { useAppContext } from '../context/AppContext'
 
 const SEARCH_THRESHOLD = 0.45
 
@@ -56,22 +57,22 @@ function DayPanel({
 
   return (
     <div style={{
-      border: `1.5px solid ${isToday ? 'var(--blue-border-hi)' : isCustom ? 'var(--indigo-border)' : 'var(--border)'}`,
-      background: isToday ? 'var(--blue-fill)' : isCustom ? 'var(--indigo-fill)' : 'transparent',
+      border: `1.5px solid ${isToday ? 'var(--accent-border-hi)' : isCustom ? 'var(--library-border)' : 'var(--border)'}`,
+      background: isToday ? 'var(--accent-fill)' : isCustom ? 'var(--library-fill)' : 'transparent',
       borderRadius: 12,
       padding: compact ? '10px 12px' : 12,
     }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
         <span style={{
           fontSize: compact ? 12 : 13, fontWeight: 700,
-          color: isToday ? 'var(--blue-hi)' : isCustom ? 'var(--indigo-hi, #a5b4fc)' : 'var(--text-2)',
+          color: isToday ? 'var(--accent-hi)' : isCustom ? 'var(--library-hi, #a5b4fc)' : 'var(--text-2)',
           display: 'flex', alignItems: 'center', gap: 6,
         }}>
-          {t(lang, dayKey as any)}
+          {t(lang, dayKey as TranslationKey)}
           {isToday && (
             <span style={{
-              fontSize: 9, fontWeight: 700, color: 'var(--blue)',
-              background: 'var(--blue-chip)', borderRadius: 4, padding: '2px 5px',
+              fontSize: 9, fontWeight: 700, color: 'var(--accent)',
+              background: 'var(--accent-chip)', borderRadius: 4, padding: '2px 5px',
             }}>
               {t(lang, 'today')}
             </span>
@@ -90,7 +91,7 @@ function DayPanel({
       <div style={{ display: 'flex', gap: 8 }}>
         <div style={{ flex: 1 }}>
           {!compact && (
-            <label style={{ fontSize: 11, color: 'var(--blue-hi)', fontWeight: 600, display: 'block', marginBottom: 5 }}>
+            <label style={{ fontSize: 11, color: 'var(--accent-hi)', fontWeight: 600, display: 'block', marginBottom: 5 }}>
               {t(lang, 'calories')}
             </label>
           )}
@@ -99,6 +100,7 @@ function DayPanel({
               type="number"
               inputMode="numeric"
               className="inp"
+              aria-label={t(lang, 'calories')}
               style={{ height: compact ? 38 : undefined, paddingInlineEnd: calDiff ? 52 : undefined }}
               value={calVal === 0 ? '' : calVal}
               placeholder="0"
@@ -109,7 +111,7 @@ function DayPanel({
               <span style={{
                 position: 'absolute', insetInlineEnd: 8, top: '50%', transform: 'translateY(-50%)',
                 fontSize: 10, fontWeight: 600, pointerEvents: 'none',
-                color: calDiff.startsWith('(+') ? 'var(--green-hi)' : 'var(--red)',
+                color: calDiff.startsWith('(+') ? 'var(--positive-hi)' : 'var(--danger)',
               }}>
                 {calDiff}
               </span>
@@ -118,7 +120,7 @@ function DayPanel({
         </div>
         <div style={{ flex: 1 }}>
           {!compact && (
-            <label style={{ fontSize: 11, color: 'var(--green-hi)', fontWeight: 600, display: 'block', marginBottom: 5 }}>
+            <label style={{ fontSize: 11, color: 'var(--positive-hi)', fontWeight: 600, display: 'block', marginBottom: 5 }}>
               {t(lang, 'protein')}
             </label>
           )}
@@ -127,6 +129,7 @@ function DayPanel({
               type="number"
               inputMode="decimal"
               className="inp inp-green"
+              aria-label={t(lang, 'protein')}
               style={{ height: compact ? 38 : undefined, paddingInlineEnd: protDiff ? 52 : undefined }}
               value={protVal === 0 ? '' : protVal}
               placeholder="0"
@@ -137,7 +140,7 @@ function DayPanel({
               <span style={{
                 position: 'absolute', insetInlineEnd: 8, top: '50%', transform: 'translateY(-50%)',
                 fontSize: 10, fontWeight: 600, pointerEvents: 'none',
-                color: protDiff.startsWith('(+') ? 'var(--green-hi)' : 'var(--red)',
+                color: protDiff.startsWith('(+') ? 'var(--positive-hi)' : 'var(--danger)',
               }}>
                 {protDiff}
               </span>
@@ -146,7 +149,7 @@ function DayPanel({
         </div>
         <div style={{ flex: 1 }}>
           {!compact && (
-            <label style={{ fontSize: 11, color: 'var(--blue-hi)', fontWeight: 600, display: 'block', marginBottom: 5 }}>
+            <label style={{ fontSize: 11, color: 'var(--accent-hi)', fontWeight: 600, display: 'block', marginBottom: 5 }}>
               {t(lang, 'fluid')}
             </label>
           )}
@@ -155,7 +158,8 @@ function DayPanel({
               type="number"
               inputMode="numeric"
               className="inp"
-              style={{ height: compact ? 38 : undefined, paddingInlineEnd: fluidDiff ? 52 : undefined, borderColor: 'var(--blue-border)' }}
+              aria-label={t(lang, 'fluid')}
+              style={{ height: compact ? 38 : undefined, paddingInlineEnd: fluidDiff ? 52 : undefined, borderColor: 'var(--accent-border)' }}
               value={fluidVal === 0 ? '' : fluidVal}
               placeholder="0"
               onFocus={e => e.target.select()}
@@ -165,7 +169,7 @@ function DayPanel({
               <span style={{
                 position: 'absolute', insetInlineEnd: 8, top: '50%', transform: 'translateY(-50%)',
                 fontSize: 10, fontWeight: 600, pointerEvents: 'none',
-                color: fluidDiff.startsWith('(+') ? 'var(--green-hi)' : 'var(--red)',
+                color: fluidDiff.startsWith('(+') ? 'var(--positive-hi)' : 'var(--danger)',
               }}>
                 {fluidDiff}
               </span>
@@ -179,11 +183,11 @@ function DayPanel({
 
 // ── Main Screen ───────────────────────────────────────────────────────────────
 
-function MainScreen({ lang, connected, theme, styleMode, onProfile, onGoals, onFoodHistory, onLibrary, onPreferences, onToggleLang, onToggleTheme, onToggleStyleMode, onSignOut }: {
+function MainScreen({ lang, connected, theme, styleMode, onProfile, onGoals, onFoodHistory, onLibrary, onPreferences, onToggleLang, onToggleTheme, onSelectStyleMode, onSignOut, onLinkGoogle, hasGoogleLinked }: {
   lang:                Lang
   connected:           boolean
   theme:               'dark' | 'light'
-  styleMode:           'classic' | 'hybrid'
+  styleMode:           'classic' | 'minimal'
   onProfile:           () => void
   onGoals:             () => void
   onFoodHistory:       () => void
@@ -191,215 +195,272 @@ function MainScreen({ lang, connected, theme, styleMode, onProfile, onGoals, onF
   onPreferences:       () => void
   onToggleLang:        () => void
   onToggleTheme:       () => void
-  onToggleStyleMode:   () => void
+  onSelectStyleMode:   (m: 'classic' | 'minimal') => void
   onSignOut:           () => void
+  onLinkGoogle?:       () => void
+  hasGoogleLinked?:    boolean
 }) {
   const chevron = lang === 'he' ? 'chevron_left' : 'chevron_right'
+  const minimal = styleMode === 'minimal'
 
-  const rowBase: React.CSSProperties = {
-    display: 'flex', alignItems: 'center', gap: 12,
-    padding: '14px 12px', borderRadius: 12,
-    background: 'var(--bg-card)', border: '1px solid var(--border)',
+  const rowBase: React.CSSProperties = minimal ? {
+    display: 'flex', alignItems: 'center', gap: 10,
+    padding: '11px 0',
+    background: 'transparent', border: 'none', borderRadius: 0,
     cursor: 'pointer', width: '100%', fontFamily: 'inherit',
-    textAlign: 'start', transition: 'background 0.15s',
+    textAlign: 'start',
+  } : {
+    display: 'flex', alignItems: 'center', gap: 12,
+    padding: '13px 14px',
+    background: 'transparent', border: 'none', borderRadius: 0,
+    cursor: 'pointer', width: '100%', fontFamily: 'inherit',
+    textAlign: 'start', transition: 'background 0.12s',
+  }
+
+  const rowSep: React.CSSProperties = minimal ? { borderBottom: '1px dashed var(--border)' } : {}
+
+  const groupStyle: React.CSSProperties = minimal ? {} : {
+    background: 'var(--bg-card)',
+    border: '1px solid var(--border)',
+    borderRadius: 14,
+    overflow: 'hidden',
+  }
+
+  const divider: React.CSSProperties = minimal ? {} : {
+    borderTop: '1px solid var(--border)',
+    marginInline: 14,
   }
 
   return (
     <>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '8px 0 18px' }}>
+      <div style={{ margin: '8px 0 18px' }}>
         <h2 style={{ fontSize: 17, fontWeight: 800, color: 'var(--text)', margin: 0 }}>
           {t(lang, 'settings')}
         </h2>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-          <div style={{
-            width: 6, height: 6, borderRadius: '50%',
-            background: connected ? 'var(--green)' : 'var(--text-3)',
-            boxShadow: connected ? '0 0 5px var(--green)' : 'none',
-          }} />
-          <span style={{ fontSize: 11, color: 'var(--text-3)' }}>
-            {t(lang, connected ? 'connected' : 'disconnected')}
-          </span>
-        </div>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: minimal ? 0 : 10 }}>
 
-        {/* Personal Profile */}
-        <button onClick={onProfile} style={rowBase}>
-          <span className="icon" style={{ fontSize: 22, color: 'var(--blue)', flexShrink: 0 }}>person</span>
-          <div style={{ flex: 1, textAlign: 'start' }}>
-            <p style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', margin: 0 }}>
-              {t(lang, 'personalProfile')}
-            </p>
-            <p style={{ fontSize: 11, color: 'var(--text-3)', margin: '2px 0 0' }}>
-              {lang === 'he' ? 'גיל, גובה, משקל, פעילות, BMR, BMI' : 'Age, height, weight, activity, BMR, BMI'}
-            </p>
-          </div>
-          <span className="icon icon-sm" style={{ color: 'var(--text-3)', flexShrink: 0 }}>{chevron}</span>
-        </button>
+        {/* Group 1 — Navigation */}
+        <div style={groupStyle}>
+          <button onClick={onProfile} style={{ ...rowBase, ...rowSep }}>
+            {!minimal && <span className="icon" style={{ fontSize: 22, color: 'var(--accent)', flexShrink: 0 }}>person</span>}
+            <div style={{ flex: 1, textAlign: 'start' }}>
+              <p style={{ fontSize: minimal ? 13 : 14, fontWeight: 600, color: 'var(--text)', margin: 0 }}>
+                {t(lang, 'personalProfile')}
+              </p>
+              <p style={{ fontSize: 11, color: 'var(--text-3)', margin: '2px 0 0' }}>
+                {lang === 'he' ? 'גיל, גובה, משקל, פעילות, BMR, BMI' : 'Age, height, weight, activity, BMR, BMI'}
+              </p>
+            </div>
+            <span className="icon icon-sm" style={{ color: 'var(--text-3)', flexShrink: 0 }}>{chevron}</span>
+          </button>
 
-        {/* Daily Goals */}
-        <button onClick={onGoals} style={rowBase}>
-          <span className="icon" style={{ fontSize: 22, color: 'var(--green-hi)', flexShrink: 0 }}>track_changes</span>
-          <div style={{ flex: 1, textAlign: 'start' }}>
-            <p style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', margin: 0 }}>
-              {t(lang, 'dailyGoalsLabel')}
-            </p>
-            <p style={{ fontSize: 11, color: 'var(--text-3)', margin: '2px 0 0' }}>
-              {lang === 'he' ? 'קלוריות, חלבון, התאמות שבועיות' : 'Calories, protein, weekly adjustments'}
-            </p>
-          </div>
-          <span className="icon icon-sm" style={{ color: 'var(--text-3)', flexShrink: 0 }}>{chevron}</span>
-        </button>
+          {!minimal && <div style={divider} />}
+          <button onClick={onGoals} style={{ ...rowBase, ...rowSep }}>
+            {!minimal && <span className="icon" style={{ fontSize: 22, color: 'var(--positive-hi)', flexShrink: 0 }}>track_changes</span>}
+            <div style={{ flex: 1, textAlign: 'start' }}>
+              <p style={{ fontSize: minimal ? 13 : 14, fontWeight: 600, color: 'var(--text)', margin: 0 }}>
+                {t(lang, 'dailyGoalsLabel')}
+              </p>
+              <p style={{ fontSize: 11, color: 'var(--text-3)', margin: '2px 0 0' }}>
+                {lang === 'he' ? 'קלוריות, חלבון, התאמות שבועיות' : 'Calories, protein, weekly adjustments'}
+              </p>
+            </div>
+            <span className="icon icon-sm" style={{ color: 'var(--text-3)', flexShrink: 0 }}>{chevron}</span>
+          </button>
 
-        {/* Food History */}
-        <button onClick={onFoodHistory} style={rowBase}>
-          <span className="icon" style={{ fontSize: 22, color: 'var(--amber)', flexShrink: 0 }}>manage_search</span>
-          <div style={{ flex: 1, textAlign: 'start' }}>
-            <p style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', margin: 0 }}>
-              {t(lang, 'foodHistory')}
-            </p>
-            <p style={{ fontSize: 11, color: 'var(--text-3)', margin: '2px 0 0' }}>
-              {lang === 'he' ? 'עריכה ומחיקת מזונות מההיסטוריה' : 'Edit or delete saved food items'}
-            </p>
-          </div>
-          <span className="icon icon-sm" style={{ color: 'var(--text-3)', flexShrink: 0 }}>{chevron}</span>
-        </button>
+          {!minimal && <div style={divider} />}
+          <button onClick={onFoodHistory} style={{ ...rowBase, ...rowSep }}>
+            {!minimal && <span className="icon" style={{ fontSize: 22, color: 'var(--warning)', flexShrink: 0 }}>manage_search</span>}
+            <div style={{ flex: 1, textAlign: 'start' }}>
+              <p style={{ fontSize: minimal ? 13 : 14, fontWeight: 600, color: 'var(--text)', margin: 0 }}>
+                {t(lang, 'foodHistory')}
+              </p>
+              <p style={{ fontSize: 11, color: 'var(--text-3)', margin: '2px 0 0' }}>
+                {lang === 'he' ? 'עריכה ומחיקת מזונות מההיסטוריה' : 'Edit or delete saved food items'}
+              </p>
+            </div>
+            <span className="icon icon-sm" style={{ color: 'var(--text-3)', flexShrink: 0 }}>{chevron}</span>
+          </button>
 
-        {/* Food Library */}
-        <button onClick={onLibrary} style={rowBase}>
-          <span className="icon" style={{ fontSize: 22, color: 'var(--green-hi)', flexShrink: 0 }}>menu_book</span>
-          <div style={{ flex: 1, textAlign: 'start' }}>
-            <p style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', margin: 0 }}>
-              {t(lang, 'foodLibrary')}
-            </p>
-            <p style={{ fontSize: 11, color: 'var(--text-3)', margin: '2px 0 0' }}>
-              {lang === 'he' ? 'עיון ב-150+ מזונות מובנים' : 'Browse 150+ built-in foods'}
-            </p>
-          </div>
-          <span className="icon icon-sm" style={{ color: 'var(--text-3)', flexShrink: 0 }}>{chevron}</span>
-        </button>
+          {!minimal && <div style={divider} />}
+          <button onClick={onLibrary} style={{ ...rowBase, ...rowSep }}>
+            {!minimal && <span className="icon" style={{ fontSize: 22, color: 'var(--positive-hi)', flexShrink: 0 }}>menu_book</span>}
+            <div style={{ flex: 1, textAlign: 'start' }}>
+              <p style={{ fontSize: minimal ? 13 : 14, fontWeight: 600, color: 'var(--text)', margin: 0 }}>
+                {t(lang, 'foodLibrary')}
+              </p>
+              <p style={{ fontSize: 11, color: 'var(--text-3)', margin: '2px 0 0' }}>
+                {lang === 'he' ? 'עיון ב-150+ מזונות מובנים' : 'Browse 150+ built-in foods'}
+              </p>
+            </div>
+            <span className="icon icon-sm" style={{ color: 'var(--text-3)', flexShrink: 0 }}>{chevron}</span>
+          </button>
 
-        {/* Preferences */}
-        <button onClick={onPreferences} style={rowBase}>
-          <span className="icon" style={{ fontSize: 22, color: 'var(--indigo)', flexShrink: 0 }}>tune</span>
-          <div style={{ flex: 1, textAlign: 'start' }}>
-            <p style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', margin: 0 }}>
-              {t(lang, 'preferences')}
-            </p>
-            <p style={{ fontSize: 11, color: 'var(--text-3)', margin: '2px 0 0' }}>
-              {lang === 'he' ? 'יחידות מידה, זיהוי נוזלים' : 'Units, fluid detection'}
-            </p>
-          </div>
-          <span className="icon icon-sm" style={{ color: 'var(--text-3)', flexShrink: 0 }}>{chevron}</span>
-        </button>
-
-        {/* Language */}
-        <div style={{ ...rowBase, cursor: 'default' }}>
-          <span className="icon" style={{ fontSize: 22, color: 'var(--purple)', flexShrink: 0 }}>language</span>
-          <div style={{ flex: 1, textAlign: 'start' }}>
-            <p style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', margin: 0 }}>
-              {t(lang, 'language')}
-            </p>
-          </div>
-          <button
-            onClick={onToggleLang}
-            style={{
-              padding: '6px 16px', borderRadius: 999,
-              background: 'var(--qty-bg)', border: '1px solid var(--border)',
-              color: 'var(--text)', fontSize: 12, fontWeight: 700,
-              cursor: 'pointer', fontFamily: 'inherit',
-            }}
-          >
-            {lang === 'he' ? 'EN' : 'עב'}
+          {!minimal && <div style={divider} />}
+          <button onClick={onPreferences} style={{ ...rowBase, ...rowSep }}>
+            {!minimal && <span className="icon" style={{ fontSize: 22, color: 'var(--library)', flexShrink: 0 }}>tune</span>}
+            <div style={{ flex: 1, textAlign: 'start' }}>
+              <p style={{ fontSize: minimal ? 13 : 14, fontWeight: 600, color: 'var(--text)', margin: 0 }}>
+                {t(lang, 'preferences')}
+              </p>
+              <p style={{ fontSize: 11, color: 'var(--text-3)', margin: '2px 0 0' }}>
+                {lang === 'he' ? 'יחידות מידה, זיהוי נוזלים' : 'Units, fluid detection'}
+              </p>
+            </div>
+            <span className="icon icon-sm" style={{ color: 'var(--text-3)', flexShrink: 0 }}>{chevron}</span>
           </button>
         </div>
 
-        {/* Theme */}
-        <div style={{ ...rowBase, cursor: 'default' }}>
-          <span className="icon" style={{ fontSize: 22, color: 'var(--amber)', flexShrink: 0 }}>
-            {theme === 'dark' ? 'dark_mode' : 'light_mode'}
-          </span>
-          <div style={{ flex: 1, textAlign: 'start' }}>
-            <p style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', margin: 0 }}>
-              {t(lang, 'appearance')}
-            </p>
+        {/* Group 2 — Display */}
+        <div style={groupStyle}>
+          <div style={{ ...rowBase, ...rowSep, cursor: 'default' }}>
+            {!minimal && <span className="icon" style={{ fontSize: 22, color: 'var(--composed)', flexShrink: 0 }}>language</span>}
+            <div style={{ flex: 1, textAlign: 'start' }}>
+              <p style={{ fontSize: minimal ? 13 : 14, fontWeight: 600, color: 'var(--text)', margin: 0 }}>
+                {t(lang, 'language')}
+              </p>
+            </div>
+            <button
+              onClick={onToggleLang}
+              style={{
+                padding: '6px 16px', borderRadius: 999,
+                background: 'var(--qty-bg)', border: '1px solid var(--border)',
+                color: 'var(--text)', fontSize: 12, fontWeight: 700,
+                cursor: 'pointer', fontFamily: 'inherit',
+              }}
+            >
+              {lang === 'he' ? 'EN' : 'עב'}
+            </button>
           </div>
-          {/* Toggle pill */}
-          <button
-            onClick={onToggleTheme}
-            aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-            style={{
-              position: 'relative',
-              width: 50, height: 28,
-              borderRadius: 999,
-              border: 'none',
-              cursor: 'pointer',
-              padding: 0,
-              background: theme === 'dark' ? 'var(--blue-glow)' : 'var(--amber-glow)',
-              transition: 'background 0.25s',
-              flexShrink: 0,
-            }}
-          >
-            <span style={{
-              position: 'absolute',
-              top: 3, left: theme === 'dark' ? 3 : 23,
-              width: 22, height: 22,
-              borderRadius: '50%',
-              background: theme === 'dark' ? 'var(--blue)' : 'var(--amber)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              transition: 'left 0.25s cubic-bezier(.34,1.56,.64,1), background 0.25s',
-              boxShadow: '0 1px 4px rgba(0,0,0,0.3)',
-            }}>
-              <span className="icon" style={{ fontSize: 13, color: 'var(--on-color)' }}>
-                {theme === 'dark' ? 'dark_mode' : 'light_mode'}
+
+          {!minimal && <div style={divider} />}
+          <div style={{ ...rowBase, ...rowSep, cursor: 'default' }}>
+            {!minimal && <span className="icon" style={{ fontSize: 22, color: 'var(--warning)', flexShrink: 0 }}>
+              {theme === 'dark' ? 'dark_mode' : 'light_mode'}
+            </span>}
+            <div style={{ flex: 1, textAlign: 'start' }}>
+              <p style={{ fontSize: minimal ? 13 : 14, fontWeight: 600, color: 'var(--text)', margin: 0 }}>
+                {t(lang, 'appearance')}
+              </p>
+            </div>
+            <button
+              onClick={onToggleTheme}
+              aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+              style={{
+                position: 'relative',
+                width: 50, height: 28,
+                borderRadius: 999,
+                border: 'none',
+                cursor: 'pointer',
+                padding: 0,
+                background: theme === 'dark' ? 'var(--accent-glow)' : 'var(--warning-glow)',
+                transition: 'background 0.25s',
+                flexShrink: 0,
+              }}
+            >
+              <span style={{
+                position: 'absolute',
+                top: 3,
+                insetInlineStart: theme === 'dark' ? 3 : 23,
+                width: 22, height: 22,
+                borderRadius: '50%',
+                background: theme === 'dark' ? 'var(--accent)' : 'var(--warning)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                transition: 'inset-inline-start 0.25s cubic-bezier(.34,1.56,.64,1), background 0.25s',
+                boxShadow: '0 1px 4px rgba(0,0,0,0.3)',
+              }}>
+                <span className="icon" style={{ fontSize: 13, color: 'var(--on-color)' }}>
+                  {theme === 'dark' ? 'dark_mode' : 'light_mode'}
+                </span>
               </span>
-            </span>
+            </button>
+          </div>
+
+          {!minimal && <div style={divider} />}
+          <div style={{ ...rowBase, ...rowSep, cursor: 'default' }}>
+            {!minimal && <span className="icon" style={{ fontSize: 22, color: 'var(--accent)', flexShrink: 0 }}>palette</span>}
+            <div style={{ flex: 1, textAlign: 'start' }}>
+              <p style={{ fontSize: minimal ? 13 : 14, fontWeight: 600, color: 'var(--text)', margin: 0 }}>
+                {t(lang, 'themeStyle')}
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+              {(['classic', 'minimal'] as const).map(mode => (
+                <button
+                  key={mode}
+                  onClick={() => onSelectStyleMode(mode)}
+                  style={{
+                    padding: '5px 10px',
+                    borderRadius: 999,
+                    border: styleMode === mode ? '1px solid var(--accent-border-hi)' : '1px solid var(--border)',
+                    background: styleMode === mode ? 'var(--accent-select)' : 'transparent',
+                    color: styleMode === mode ? 'var(--accent)' : 'var(--text-2)',
+                    fontSize: 12,
+                    fontWeight: styleMode === mode ? 700 : 400,
+                    fontFamily: 'inherit',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                  }}
+                >
+                  {t(lang, mode === 'classic' ? 'styleClassic' : 'styleMinimal')}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Group 3 — Account */}
+        <div style={groupStyle}>
+          {onLinkGoogle && !hasGoogleLinked && (<>
+            <button
+              onClick={onLinkGoogle}
+              style={{ ...rowBase, ...rowSep }}
+            >
+              {!minimal && (
+                <svg width="22" height="22" viewBox="0 0 24 24" style={{ flexShrink: 0 }}>
+                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/>
+                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                </svg>
+              )}
+              <div style={{ flex: 1, textAlign: 'start' }}>
+                <p style={{ fontSize: minimal ? 13 : 14, fontWeight: 600, color: 'var(--text)', margin: 0 }}>
+                  {t(lang, 'linkGoogle')}
+                </p>
+                {!minimal && (
+                  <p style={{ fontSize: 11, color: 'var(--text-3)', margin: '2px 0 0' }}>
+                    {t(lang, 'linkGoogleSub')}
+                  </p>
+                )}
+              </div>
+              {!minimal && <span className="icon icon-sm" style={{ color: 'var(--text-3)', flexShrink: 0 }}>{chevron}</span>}
+            </button>
+            {!minimal && <div style={divider} />}
+          </>)}
+
+          <button
+            onClick={onSignOut}
+            style={{ ...rowBase, ...(minimal ? { paddingTop: 14 } : {}) }}
+          >
+            {!minimal && <span className="icon" style={{ fontSize: 22, color: 'var(--danger)', flexShrink: 0 }}>logout</span>}
+            <p style={{ fontSize: minimal ? 13 : 14, fontWeight: 600, color: 'var(--danger)', margin: 0, flex: 1, textAlign: 'start' }}>
+              {t(lang, 'signOut')}
+            </p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0 }}>
+              <div style={{
+                width: 6, height: 6, borderRadius: '50%',
+                background: connected ? 'var(--status-ok)' : 'var(--text-3)',
+                boxShadow: connected ? '0 0 5px var(--status-ok)' : 'none',
+              }} />
+              <span style={{ fontSize: 11, color: 'var(--text-3)' }}>
+                {t(lang, connected ? 'connected' : 'disconnected')}
+              </span>
+            </div>
           </button>
         </div>
-
-        {/* Theme style picker */}
-        <div style={{ ...rowBase, cursor: 'default' }}>
-          <span className="icon" style={{ fontSize: 22, color: 'var(--blue)', flexShrink: 0 }}>palette</span>
-          <div style={{ flex: 1, textAlign: 'start' }}>
-            <p style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', margin: 0 }}>
-              {t(lang, 'themeStyle')}
-            </p>
-          </div>
-          <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
-            {(['classic', 'hybrid'] as const).map(mode => (
-              <button
-                key={mode}
-                onClick={() => { if (styleMode !== mode) onToggleStyleMode() }}
-                style={{
-                  padding: '5px 12px',
-                  borderRadius: 999,
-                  border: styleMode === mode ? '1px solid var(--blue-border-hi)' : '1px solid var(--border)',
-                  background: styleMode === mode ? 'var(--blue-select)' : 'transparent',
-                  color: styleMode === mode ? 'var(--blue)' : 'var(--text-2)',
-                  fontSize: 13,
-                  fontWeight: styleMode === mode ? 700 : 400,
-                  fontFamily: 'inherit',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
-                }}
-              >
-                {t(lang, mode === 'classic' ? 'styleClassic' : 'styleHybrid')}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Sign Out */}
-        <button
-          onClick={onSignOut}
-          style={{ ...rowBase, background: 'rgba(244,63,94,0.04)', border: '1px solid var(--red-glow)' }}
-        >
-          <span className="icon" style={{ fontSize: 22, color: 'var(--red)', flexShrink: 0 }}>logout</span>
-          <p style={{ fontSize: 14, fontWeight: 700, color: 'var(--red)', margin: 0, flex: 1, textAlign: 'start' }}>
-            {t(lang, 'signOut')}
-          </p>
-        </button>
       </div>
     </>
   )
@@ -434,7 +495,7 @@ function ProfileScreen({ lang, profile, onSave, showToast }: {
     showToast(lang === 'he' ? 'הפרופיל נשמר' : 'Profile saved', 'success')
   }
 
-  const bmiColor = bmiCategory === 'normal' ? 'var(--green-hi)' : bmiCategory === 'obese' ? 'var(--red)' : 'var(--amber)'
+  const bmiColor = bmiCategory === 'normal' ? 'var(--positive-hi)' : bmiCategory === 'obese' ? 'var(--danger)' : 'var(--warning)'
   const bmiLabel = { underweight: lang === 'he' ? 'תת משקל' : 'Underweight', normal: lang === 'he' ? 'משקל תקין' : 'Normal', overweight: lang === 'he' ? 'עודף משקל' : 'Overweight', obese: lang === 'he' ? 'השמנה' : 'Obese' }[bmiCategory]
 
   const labelStyle: React.CSSProperties = {
@@ -462,9 +523,9 @@ function ProfileScreen({ lang, profile, onSave, showToast }: {
               style={{
                 flex: 1, padding: '10px 0', borderRadius: 10, fontFamily: 'inherit',
                 fontSize: 13, fontWeight: 700, cursor: 'pointer',
-                background: draft.sex === s ? 'var(--blue-select)' : 'var(--bg-card)',
-                border: `1.5px solid ${draft.sex === s ? 'var(--blue)' : 'var(--border)'}`,
-                color: draft.sex === s ? 'var(--blue-hi)' : 'var(--text-2)',
+                background: draft.sex === s ? 'var(--accent-select)' : 'var(--bg-card)',
+                border: `1.5px solid ${draft.sex === s ? 'var(--accent)' : 'var(--border)'}`,
+                color: draft.sex === s ? 'var(--accent-hi)' : 'var(--text-2)',
                 transition: 'all .15s',
               }}
             >
@@ -482,9 +543,10 @@ function ProfileScreen({ lang, profile, onSave, showToast }: {
           { key: 'weight' as const, label: t(lang, 'weightKg'),  min: 30,  max: 300 },
         ]).map(({ key, label, min, max }) => (
           <div key={key}>
-            <label style={labelStyle}>{label}</label>
+            <label htmlFor={`profile-${key}`} style={labelStyle}>{label}</label>
             <div style={{ position: 'relative' }}>
               <input
+                id={`profile-${key}`}
                 type="number"
                 inputMode="numeric"
                 className="inp"
@@ -524,7 +586,7 @@ function ProfileScreen({ lang, profile, onSave, showToast }: {
             </p>
           </div>
           <span style={{ fontSize: 18, fontWeight: 800, color: 'var(--text)', flexShrink: 0, marginInlineStart: 10 }}>
-            {bmr.toLocaleString()} <span style={{ fontSize: 10, fontWeight: 400 }}>{t(lang, 'caloriesUnit')}</span>
+            {bmr.toLocaleString(lang === 'he' ? 'he-IL' : 'en-US')} <span style={{ fontSize: 10, fontWeight: 400 }}>{t(lang, 'caloriesUnit')}</span>
           </span>
         </div>
         <div style={{ height: 1, background: 'var(--border)' }} />
@@ -721,9 +783,9 @@ function GoalsScreen({ lang, profile, goals, onSave, onSaveProfile, onSaveFluidG
               style={{
                 flex: 1, padding: '10px 4px', borderRadius: 10, fontFamily: 'inherit',
                 fontSize: 12, fontWeight: 700, cursor: 'pointer',
-                background: draftGoalType === gt ? 'var(--blue-select)' : 'var(--bg-card)',
-                border: `1.5px solid ${draftGoalType === gt ? 'var(--blue)' : 'var(--border)'}`,
-                color: draftGoalType === gt ? 'var(--blue-hi)' : 'var(--text-2)',
+                background: draftGoalType === gt ? 'var(--accent-select)' : 'var(--bg-card)',
+                border: `1.5px solid ${draftGoalType === gt ? 'var(--accent)' : 'var(--border)'}`,
+                color: draftGoalType === gt ? 'var(--accent-hi)' : 'var(--text-2)',
                 transition: 'all .15s',
               }}
             >
@@ -734,20 +796,20 @@ function GoalsScreen({ lang, profile, goals, onSave, onSaveProfile, onSaveFluidG
       </div>
 
       {/* TDEE banner */}
-      <div style={{ background: 'var(--blue-fill)', border: '1px solid var(--blue-glow)', borderRadius: 10, padding: '10px 14px', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
-        <span className="icon icon-sm" style={{ color: 'var(--blue-hi)' }}>bolt</span>
+      <div style={{ background: 'var(--accent-fill)', border: '1px solid var(--accent-glow)', borderRadius: 10, padding: '10px 14px', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
+        <span className="icon icon-sm" style={{ color: 'var(--accent-hi)' }}>bolt</span>
         <p style={{ fontSize: 12, margin: 0 }}>
           <span style={{ fontWeight: 700, color: 'var(--text-2)' }}>TDEE: </span>
-          <span style={{ fontWeight: 800, color: 'var(--blue-hi)' }}>{tdee.toLocaleString()}</span>
+          <span style={{ fontWeight: 800, color: 'var(--accent-hi)' }}>{tdee.toLocaleString(lang === 'he' ? 'he-IL' : 'en-US')}</span>
           <span style={{ color: 'var(--text-3)', marginInlineStart: 3 }}>{lang === 'he' ? 'קק״ל/יום' : 'kcal/day'}</span>
         </p>
       </div>
 
       {/* Suggestions card */}
-      <div style={{ background: 'rgba(59,130,246,0.06)', border: '1px solid var(--blue-select)', borderRadius: 12, padding: '12px 14px', marginBottom: 16 }}>
+      <div style={{ background: 'var(--accent-fill)', border: '1px solid var(--accent-select)', borderRadius: 12, padding: '12px 14px', marginBottom: 16 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
-          <span className="icon icon-sm" style={{ color: 'var(--blue-hi)' }}>auto_fix_high</span>
-          <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--blue-hi)', margin: 0 }}>
+          <span className="icon icon-sm" style={{ color: 'var(--accent-hi)' }}>auto_fix_high</span>
+          <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent-hi)', margin: 0 }}>
             {t(lang, 'profileRecs')}
           </p>
         </div>
@@ -755,25 +817,25 @@ function GoalsScreen({ lang, profile, goals, onSave, onSaveProfile, onSaveFluidG
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 12 }}>
           {/* Calories */}
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-            <div style={{ width: 36, height: 36, borderRadius: 8, background: 'var(--blue-chip)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <span className="icon icon-sm" style={{ color: 'var(--blue-hi)' }}>local_fire_department</span>
+            <div style={{ width: 36, height: 36, borderRadius: 8, background: 'var(--accent-chip)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <span className="icon icon-sm" style={{ color: 'var(--accent-hi)' }}>local_fire_department</span>
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <p style={{ fontSize: 11, margin: 0 }}>
-                <span style={{ fontWeight: 800, color: 'var(--blue-hi)' }}>{suggestedCal.toLocaleString()}</span>
+                <span style={{ fontWeight: 800, color: 'var(--accent-hi)' }}>{suggestedCal.toLocaleString(lang === 'he' ? 'he-IL' : 'en-US')}</span>
                 <span style={{ color: 'var(--text-3)', marginInlineStart: 3 }}>{lang === 'he' ? 'קק״ל' : 'kcal'}</span>
               </p>
               <p dir={lang === 'he' ? 'rtl' : 'ltr'} style={{ fontSize: 10, color: 'var(--text-3)', margin: '2px 0 0', lineHeight: 1.5 }}>
                 {lang === 'he'
                   ? draftGoalType === 'lose'
-                    ? <>גרעון של 500 קק״ל/יום: <span dir="ltr">{tdee.toLocaleString()} − 500 = {suggestedCal.toLocaleString()}</span> קק״ל × 7 ≈ 0.5 ק״ג שומן/שבוע</>
+                    ? <>גרעון של 500 קק״ל/יום: <span dir="ltr">{tdee.toLocaleString(lang === 'he' ? 'he-IL' : 'en-US')} − 500 = {suggestedCal.toLocaleString(lang === 'he' ? 'he-IL' : 'en-US')}</span> קק״ל × 7 ≈ 0.5 ק״ג שומן/שבוע</>
                     : draftGoalType === 'gain'
-                      ? <>עודף של 300 קק״ל/יום: <span dir="ltr">{tdee.toLocaleString()} + 300 = {suggestedCal.toLocaleString()}</span> קק״ל × 7 ≈ 0.3 ק״ג/שבוע</>
+                      ? <>עודף של 300 קק״ל/יום: <span dir="ltr">{tdee.toLocaleString(lang === 'he' ? 'he-IL' : 'en-US')} + 300 = {suggestedCal.toLocaleString(lang === 'he' ? 'he-IL' : 'en-US')}</span> קק״ל × 7 ≈ 0.3 ק״ג/שבוע</>
                       : 'שמירה על משקל, שווה לצריכה האנרגטית היומית'
                   : draftGoalType === 'lose'
-                    ? <><span dir="ltr">500 kcal/day deficit: {tdee.toLocaleString()} − 500 = {suggestedCal.toLocaleString()} kcal × 7 ≈ 0.5 kg fat/week</span></>
+                    ? <><span dir="ltr">500 kcal/day deficit: {tdee.toLocaleString('en-US')} − 500 = {suggestedCal.toLocaleString('en-US')} kcal × 7 ≈ 0.5 kg fat/week</span></>
                     : draftGoalType === 'gain'
-                      ? <><span dir="ltr">+300 kcal/day surplus: {tdee.toLocaleString()} + 300 = {suggestedCal.toLocaleString()} kcal × 7 ≈ 0.3 kg/week</span></>
+                      ? <><span dir="ltr">+300 kcal/day surplus: {tdee.toLocaleString('en-US')} + 300 = {suggestedCal.toLocaleString('en-US')} kcal × 7 ≈ 0.3 kg/week</span></>
                       : 'Maintenance — matches your daily energy expenditure'}
               </p>
             </div>
@@ -781,12 +843,12 @@ function GoalsScreen({ lang, profile, goals, onSave, onSaveProfile, onSaveFluidG
 
           {/* Protein */}
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-            <div style={{ width: 36, height: 36, borderRadius: 8, background: 'var(--green-chip)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <span className="icon icon-sm" style={{ color: 'var(--green-hi)' }}>fitness_center</span>
+            <div style={{ width: 36, height: 36, borderRadius: 8, background: 'var(--positive-chip)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <span className="icon icon-sm" style={{ color: 'var(--positive-hi)' }}>fitness_center</span>
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <p style={{ fontSize: 11, margin: 0 }}>
-                <span style={{ fontWeight: 800, color: 'var(--green-hi)' }}>{suggestedProt}</span>
+                <span style={{ fontWeight: 800, color: 'var(--positive-hi)' }}>{suggestedProt}</span>
                 <span style={{ color: 'var(--text-3)', marginInlineStart: 3 }}>{lang === 'he' ? 'ג׳ חלבון' : 'g protein'}</span>
               </p>
               <p dir={lang === 'he' ? 'rtl' : 'ltr'} style={{ fontSize: 10, color: 'var(--text-3)', margin: '2px 0 0', lineHeight: 1.5 }}>
@@ -807,12 +869,12 @@ function GoalsScreen({ lang, profile, goals, onSave, onSaveProfile, onSaveFluidG
 
           {/* Fluid */}
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-            <div style={{ width: 36, height: 36, borderRadius: 8, background: 'rgba(6,182,212,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <span className="icon icon-sm" style={{ color: 'var(--blue-hi)' }}>water_drop</span>
+            <div style={{ width: 36, height: 36, borderRadius: 8, background: 'var(--cyan-tint)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <span className="icon icon-sm" style={{ color: 'var(--accent-hi)' }}>water_drop</span>
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <p style={{ fontSize: 11, margin: 0 }}>
-                <span style={{ fontWeight: 800, color: 'var(--blue-hi)' }}>
+                <span style={{ fontWeight: 800, color: 'var(--accent-hi)' }}>
                   {suggestedFluidMl >= 1000 ? (suggestedFluidMl / 1000).toFixed(1) : suggestedFluidMl}
                 </span>
                 <span style={{ color: 'var(--text-3)', marginInlineStart: 3 }}>
@@ -831,8 +893,8 @@ function GoalsScreen({ lang, profile, goals, onSave, onSaveProfile, onSaveFluidG
           style={{
             width: '100%', padding: '8px 14px', borderRadius: 8, fontSize: 12, fontWeight: 700,
             cursor: 'pointer', fontFamily: 'inherit',
-            background: 'var(--blue-chip)', border: '1px solid var(--blue-glow)',
-            color: 'var(--blue-hi)',
+            background: 'var(--accent-chip)', border: '1px solid var(--accent-glow)',
+            color: 'var(--accent-hi)',
           }}
         >
           {t(lang, 'applyAll')}
@@ -848,7 +910,7 @@ function GoalsScreen({ lang, profile, goals, onSave, onSaveProfile, onSaveFluidG
       </p>
       <div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>
         <div style={{ flex: 1 }}>
-          <label style={{ ...labelStyle, color: 'var(--blue-hi)' }}>
+          <label style={{ ...labelStyle, color: 'var(--accent-hi)' }}>
             {t(lang, 'calories')} ({t(lang, 'caloriesUnit')})
           </label>
           <div style={{ position: 'relative' }}>
@@ -869,7 +931,7 @@ function GoalsScreen({ lang, profile, goals, onSave, onSaveProfile, onSaveFluidG
           </div>
         </div>
         <div style={{ flex: 1 }}>
-          <label style={{ ...labelStyle, color: 'var(--green-hi)' }}>
+          <label style={{ ...labelStyle, color: 'var(--positive-hi)' }}>
             {t(lang, 'protein')} ({t(lang, 'proteinUnit')})
           </label>
           <div style={{ position: 'relative' }}>
@@ -890,12 +952,12 @@ function GoalsScreen({ lang, profile, goals, onSave, onSaveProfile, onSaveFluidG
           </div>
         </div>
         <div style={{ flex: 1 }}>
-          <label style={{ ...labelStyle, color: 'var(--blue-hi)' }}>
+          <label style={{ ...labelStyle, color: 'var(--accent-hi)' }}>
             {lang === 'he' ? 'נוזלים (מ״ל)' : 'Fluid (ml)'}
           </label>
           <div style={{ position: 'relative' }}>
             <input type="number" inputMode="numeric" className="inp"
-              style={{ paddingInlineEnd: defFluidGoal > 0 ? 32 : undefined, borderColor: 'var(--blue-border)' }}
+              style={{ paddingInlineEnd: defFluidGoal > 0 ? 32 : undefined, borderColor: 'var(--accent-border)' }}
               value={defFluidGoal === 0 ? '' : defFluidGoal} placeholder="0"
               onFocus={e => e.target.select()}
               onChange={e => setDefFluidGoal(Number(e.target.value))} />
@@ -929,7 +991,7 @@ function GoalsScreen({ lang, profile, goals, onSave, onSaveProfile, onSaveFluidG
             {t(lang, 'weeklyAdjustments')}
           </p>
           {Object.keys(overrides).length > 0 && (
-            <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--indigo-hi)', background: 'var(--indigo-chip)', borderRadius: 10, padding: '2px 7px' }}>
+            <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--library-hi)', background: 'var(--library-chip)', borderRadius: 10, padding: '2px 7px' }}>
               {Object.keys(overrides).length}
             </span>
           )}
@@ -966,21 +1028,21 @@ function GoalsScreen({ lang, profile, goals, onSave, onSaveProfile, onSaveFluidG
                       display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5,
                       padding: '8px 2px 6px', borderRadius: 10, cursor: 'pointer',
                       fontFamily: 'inherit', position: 'relative',
-                      border: `1.5px solid ${isSelected ? 'var(--indigo)' : isCustom ? 'color-mix(in srgb, var(--indigo) 45%, transparent)' : isToday ? 'color-mix(in srgb, var(--blue) 50%, transparent)' : 'var(--border)'}`,
-                      background: isSelected ? 'color-mix(in srgb, var(--indigo) 15%, transparent)' : isCustom ? 'var(--indigo-tint)' : isToday ? 'var(--blue-tint)' : 'transparent',
-                      boxShadow: isSelected ? '0 0 0 3px color-mix(in srgb, var(--indigo) 20%, transparent)' : 'none',
+                      border: `1.5px solid ${isSelected ? 'var(--library)' : isCustom ? 'color-mix(in srgb, var(--library) 45%, transparent)' : isToday ? 'color-mix(in srgb, var(--accent) 50%, transparent)' : 'var(--border)'}`,
+                      background: isSelected ? 'color-mix(in srgb, var(--library) 15%, transparent)' : isCustom ? 'var(--library-tint)' : isToday ? 'var(--accent-tint)' : 'transparent',
+                      boxShadow: isSelected ? '0 0 0 3px color-mix(in srgb, var(--library) 20%, transparent)' : 'none',
                       transition: 'all .15s',
                     }}
                   >
                     {isToday && (
-                      <span style={{ position: 'absolute', top: -6, left: '50%', transform: 'translateX(-50%)', background: 'var(--blue)', color: 'var(--on-color)', fontSize: 7, fontWeight: 700, padding: '1px 4px', borderRadius: 4, whiteSpace: 'nowrap' }}>
+                      <span style={{ position: 'absolute', top: -6, left: '50%', transform: 'translateX(-50%)', background: 'var(--accent)', color: 'var(--on-color)', fontSize: 7, fontWeight: 700, padding: '1px 4px', borderRadius: 4, whiteSpace: 'nowrap' }}>
                         {t(lang, 'today')}
                       </span>
                     )}
-                    <span style={{ fontSize: 10, fontWeight: 700, color: isSelected ? 'var(--text)' : isCustom ? 'var(--indigo-hi)' : isToday ? 'var(--blue-hi)' : 'var(--text-3)' }}>
+                    <span style={{ fontSize: 10, fontWeight: 700, color: isSelected ? 'var(--text)' : isCustom ? 'var(--library-hi)' : isToday ? 'var(--accent-hi)' : 'var(--text-3)' }}>
                       {dayShort(dayKey)}
                     </span>
-                    <div style={{ width: 5, height: 5, borderRadius: '50%', background: isCustom ? 'var(--indigo)' : isToday ? 'var(--blue)' : 'var(--border)' }} />
+                    <div style={{ width: 5, height: 5, borderRadius: '50%', background: isCustom ? 'var(--library)' : isToday ? 'var(--accent)' : 'var(--border)' }} />
                   </button>
                 )
               })}
@@ -1031,17 +1093,20 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
   composedGroups: ComposedGroup[]
   meals:          Meal[]
   onDelete:       (id: string) => void
-  onUpdate:       (id: string, updates: Partial<Pick<FoodHistory, 'name' | 'grams' | 'calories' | 'protein'>>) => void
+  onUpdate:       (id: string, updates: Partial<Pick<FoodHistory, 'name' | 'grams' | 'calories' | 'protein' | 'fluid_ml'>>) => void
   onUpdateMeal:   (id: string, updates: Partial<Meal>) => void
   onRemoveGroup:  (id: string) => void
   showToast:      (msg: string, type: 'success' | 'error' | 'info') => void
 }) {
+  const { styleMode } = useAppContext()
+  const minimal = styleMode === 'minimal'
   const [search, setSearch]       = useState('')
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editDraft, setEditDraft] = useState<{ name: string; grams: string; calories: string; protein: string }>({ name: '', grams: '', calories: '', protein: '' })
+  const [editUnit,  setEditUnit]  = useState<UnitId | 'pcs'>('g')
   const [filter, setFilter]       = useState<'all' | 'foods' | 'beverage' | 'composed'>('all')
-  // Per-gram ratios of the item being edited — used for proportional scaling when grams changes
-  const editRatios = useRef({ calPerGram: 0, protPerGram: 0 })
+  // Ratios per base unit (grams or ml) — used for proportional scaling when amount changes
+  const editRatios = useRef({ calPerBase: 0, protPerBase: 0 })
   const [expandedGroupId, setExpandedGroupId]           = useState<string | null>(null)
   const [expandedHistoryGroup, setExpandedHistoryGroup] = useState<string | null>(null)
 
@@ -1078,26 +1143,57 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
     : composedGroups
 
   const startEdit = (item: FoodHistory) => {
-    const absGrams = Math.abs(item.grams) || 1
-    editRatios.current = { calPerGram: item.calories / absGrams, protPerGram: item.protein / absGrams }
+    let initialUnit: UnitId | 'pcs' = 'g'
+    let displayAmt: number
+    let base: number
+    if (item.grams < 0) {
+      initialUnit = 'pcs'; displayAmt = Math.abs(item.grams); base = displayAmt
+    } else if (item.fluid_ml != null && item.fluid_ml > 0) {
+      initialUnit = 'ml'; displayAmt = Math.round(item.fluid_ml); base = item.fluid_ml
+    } else {
+      initialUnit = 'g'; displayAmt = item.grams; base = item.grams
+    }
+    editRatios.current = { calPerBase: item.calories / (base || 1), protPerBase: item.protein / (base || 1) }
+    setEditUnit(initialUnit)
     setEditingId(item.id)
-    setEditDraft({ name: item.name, grams: String(item.grams), calories: String(Math.round(item.calories)), protein: String(Math.round(item.protein * 10) / 10) })
+    setEditDraft({ name: item.name, grams: String(displayAmt), calories: String(Math.round(item.calories)), protein: String(Math.round(item.protein * 10) / 10) })
   }
 
-  const handleGramsChange = (val: string) => {
-    const g = Math.abs(Number(val)) || 0
-    const { calPerGram, protPerGram } = editRatios.current
+  const handleAmountChange = (val: string) => {
+    const displayAmt = Math.abs(Number(val)) || 0
+    const base = editUnit === 'pcs' ? displayAmt : toBase(displayAmt, editUnit as UnitId)
+    const { calPerBase, protPerBase } = editRatios.current
     setEditDraft(d => ({
       ...d,
       grams:    val,
-      calories: g > 0 ? String(Math.round(calPerGram  * g))           : d.calories,
-      protein:  g > 0 ? String(Math.round(protPerGram * g * 10) / 10) : d.protein,
+      calories: base > 0 ? String(Math.round(calPerBase  * base))           : d.calories,
+      protein:  base > 0 ? String(Math.round(protPerBase * base * 10) / 10) : d.protein,
     }))
+  }
+
+  const handleUnitChange = (newUnit: UnitId | 'pcs') => {
+    if (editUnit !== 'pcs' && newUnit !== 'pcs' && editUnit !== newUnit) {
+      const displayAmt = Math.abs(Number(editDraft.grams)) || 0
+      const base = toBase(displayAmt, editUnit as UnitId)
+      const newDisplay = fromBase(base, newUnit as UnitId)
+      setEditDraft(d => ({ ...d, grams: String(Math.round(newDisplay * 100) / 100) }))
+    }
+    setEditUnit(newUnit)
   }
 
   const saveEdit = () => {
     if (!editingId) return
-    onUpdate(editingId, { name: editDraft.name, grams: Number(editDraft.grams), calories: Number(editDraft.calories), protein: Number(editDraft.protein) })
+    const displayAmt = Math.abs(Number(editDraft.grams))
+    const isVol = editUnit !== 'pcs' && UNITS[editUnit as UnitId]?.type === 'volume'
+    const isPcs = editUnit === 'pcs'
+    const base  = isPcs ? displayAmt : toBase(displayAmt, editUnit as UnitId)
+    onUpdate(editingId, {
+      name:     editDraft.name,
+      grams:    isPcs ? -displayAmt : Math.round(base),
+      calories: Number(editDraft.calories),
+      protein:  Number(editDraft.protein),
+      fluid_ml: isVol ? base : null,
+    })
     setEditingId(null)
     showToast(t(lang, 'saved'), 'success')
   }
@@ -1121,11 +1217,11 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
         </h2>
 
         <div style={{ position: 'relative', marginBottom: 10 }}>
-          <span className="icon" style={{ position: 'absolute', top: '50%', transform: 'translateY(-50%)', ...(lang === 'he' ? { right: 10 } : { left: 10 }), color: 'var(--text-3)', fontSize: 18, pointerEvents: 'none' }}>search</span>
+          <span className="icon" style={{ position: 'absolute', top: '50%', transform: 'translateY(-50%)', insetInlineStart: 10, color: 'var(--text-3)', fontSize: 18, pointerEvents: 'none' }}>search</span>
           <input className="inp" type="text" value={search} onChange={e => setSearch(e.target.value)}
             placeholder={t(lang, 'search')}
             dir={dir(lang)}
-            style={lang === 'he' ? { paddingRight: 36, paddingLeft: search ? 32 : 12 } : { paddingLeft: 36, paddingRight: search ? 32 : 12 }}
+            style={{ paddingInlineStart: 36, paddingInlineEnd: search ? 32 : 12 }}
           />
           {search && (
             <button
@@ -1139,6 +1235,9 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
         </div>
 
         {/* Filter chips */}
+        <div style={{ position: 'relative' }}>
+          <div style={{ position: 'absolute', left: 0, top: 0, bottom: 10, width: 24, background: 'linear-gradient(to right, var(--bg), transparent)', zIndex: 1, pointerEvents: 'none' }} />
+          <div style={{ position: 'absolute', right: 0, top: 0, bottom: 10, width: 24, background: 'linear-gradient(to left, var(--bg), transparent)', zIndex: 1, pointerEvents: 'none' }} />
         <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 10, scrollbarWidth: 'none' }}>
           {([
             { key: 'all',      labelHe: `הכל (${history.length + composedGroups.length})`,   labelEn: `All (${history.length + composedGroups.length})` },
@@ -1152,13 +1251,14 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
               style={{
                 padding: '5px 12px', borderRadius: 999, border: 'none', cursor: 'pointer', fontFamily: 'inherit',
                 fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap', transition: 'background .12s, color .12s',
-                background: filter === key ? 'var(--blue)' : 'var(--surface-2)',
+                background: filter === key ? 'var(--accent)' : 'var(--surface-2)',
                 color: filter === key ? 'var(--on-color)' : 'var(--text-2)',
               }}
             >
               {lang === 'he' ? labelHe : labelEn}
             </button>
           ))}
+        </div>
         </div>
       </div>
 
@@ -1187,17 +1287,17 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
               <p style={{ fontSize: 13, margin: 0 }}>{lang === 'he' ? 'לא נמצאו תוצאות' : 'No results'}</p>
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: minimal ? 0 : 6 }}>
               {historyGroups.map(groupItems => {
                 const groupKey  = groupItems[0].name.toLowerCase()
                 const isGroup   = groupItems.length > 1
                 const isGroupExpanded = expandedHistoryGroup === groupKey
 
                 // Render a single history item (used for both flat and within a group)
-                const renderItem = (item: FoodHistory, inGroup = false) => {
+                const renderItem = (item: FoodHistory, inGroup = false, isLastInGroup = false) => {
                   const isEditing = editingId === item.id
                   const [amtNum, amtUnit] = item.grams < 0
-                    ? [String(Math.abs(item.grams)), lang === 'he' ? 'מנות' : 'serving(s)']
+                    ? [String(Math.abs(item.grams)), t(lang, 'unitLabel')]
                     : item.fluid_ml != null && item.fluid_ml > 0
                       ? item.fluid_ml >= 1000
                         ? [(item.fluid_ml / 1000).toFixed(1), lang === 'he' ? 'ל׳' : 'L']
@@ -1206,15 +1306,50 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
                   const usesLabel = lang === 'he'
                     ? (item.use_count === 1 ? 'שימוש' : 'שימושים')
                     : (item.use_count === 1 ? 'use' : 'uses')
+                  const isFluid = item.fluid_ml != null && item.fluid_ml > 0
                   return (
                     <div
                       key={item.id}
-                      style={inGroup
-                        ? { borderBottom: '1px solid var(--border)' }
-                        : { background: 'var(--bg-card)', border: `1px solid ${isEditing ? 'var(--blue)' : 'var(--border)'}`, borderRadius: 12, overflow: 'hidden', transition: 'border-color .15s' }
+                      style={minimal
+                        ? { borderBottom: isLastInGroup ? 'none' : '1px dashed var(--border)' }
+                        : inGroup
+                          ? { borderBottom: '1px solid var(--border)' }
+                          : { background: 'var(--bg-card)', border: `1px solid ${isEditing ? 'var(--accent)' : 'var(--border)'}`, borderRadius: 12, overflow: 'hidden', transition: 'border-color .15s' }
                       }
                     >
                       {!isEditing ? (
+                        minimal ? (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 0' }}>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ display: 'flex', alignItems: 'baseline', gap: 5, overflow: 'hidden' }}>
+                                {!inGroup && (
+                                  <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>
+                                    {item.name}
+                                    {isFluid && <span className="icon" style={{ fontSize: 12, color: 'var(--cyan-hi)', opacity: 0.8, verticalAlign: 'middle', margin: '0 4px' }}>water_drop</span>}
+                                  </span>
+                                )}
+                                <span style={{ fontSize: inGroup ? 12 : 11, fontWeight: inGroup ? 600 : 400, color: inGroup ? 'var(--text)' : 'var(--text-3)', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                                  {amtNum} {amtUnit}
+                                </span>
+                                <span style={{ fontSize: 10, color: 'var(--text-3)', whiteSpace: 'nowrap', flexShrink: 0 }}>| {item.use_count} {usesLabel}</span>
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginTop: inGroup ? 0 : 2 }}>
+                                <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--accent-hi)', display: 'inline-flex', alignItems: 'baseline', gap: 2 }}>
+                                  {Math.round(item.calories)}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.8 }}>{t(lang, 'caloriesUnit')}</span>
+                                </span>
+                                <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--positive-hi)', display: 'inline-flex', alignItems: 'baseline', gap: 2 }}>
+                                  {Math.round(item.protein * 10) / 10}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.8 }}>{lang === 'he' ? 'ג׳ חלבון' : 'g protein'}</span>
+                                </span>
+                              </div>
+                            </div>
+                            <button onClick={() => startEdit(item)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 4, display: 'flex', borderRadius: 6, flexShrink: 0 }}>
+                              <span className="icon icon-sm">edit</span>
+                            </button>
+                            <button onClick={() => handleDelete(item.id, item.name)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--danger)', padding: 4, display: 'flex', borderRadius: 6, flexShrink: 0 }}>
+                              <span className="icon icon-sm">delete</span>
+                            </button>
+                          </div>
+                        ) : (
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: inGroup ? '8px 12px' : '10px 12px' }}>
                           <div style={{ flex: 1, minWidth: 0 }}>
                             {!inGroup && (
@@ -1226,11 +1361,11 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
                               </span>
                               <span style={{ color: 'var(--border)' }}>·</span>
                               <span style={{ display: 'inline-flex', gap: 4, alignItems: 'baseline', whiteSpace: 'nowrap' }}>
-                                <span style={{ color: 'var(--blue-hi)', fontWeight: 600 }}>{Math.round(item.calories)}</span><span style={{ fontSize: 10 }}>{t(lang, 'caloriesUnit')}</span>
+                                <span style={{ color: 'var(--accent-hi)', fontWeight: 600 }}>{Math.round(item.calories)}</span><span style={{ fontSize: 10 }}>{t(lang, 'caloriesUnit')}</span>
                               </span>
                               <span style={{ color: 'var(--border)' }}>·</span>
                               <span style={{ display: 'inline-flex', gap: 4, alignItems: 'baseline', whiteSpace: 'nowrap' }}>
-                                <span style={{ color: 'var(--green-hi)', fontWeight: 600 }}>{Math.round(item.protein * 10) / 10}</span><span style={{ fontSize: 10 }}>{t(lang, 'proteinUnit')}</span>
+                                <span style={{ color: 'var(--positive-hi)', fontWeight: 600 }}>{Math.round(item.protein * 10) / 10}</span><span style={{ fontSize: 10 }}>{t(lang, 'proteinUnit')}</span>
                               </span>
                               <span style={{ color: 'var(--border)' }}>·</span>
                               <span style={{ display: 'inline-flex', gap: 4, alignItems: 'baseline', whiteSpace: 'nowrap' }}>
@@ -1241,10 +1376,11 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
                           <button onClick={() => startEdit(item)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 6, display: 'flex', borderRadius: 8 }}>
                             <span className="icon icon-sm">edit</span>
                           </button>
-                          <button onClick={() => handleDelete(item.id, item.name)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--red)', padding: 6, display: 'flex', borderRadius: 8 }}>
+                          <button onClick={() => handleDelete(item.id, item.name)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--danger)', padding: 6, display: 'flex', borderRadius: 8 }}>
                             <span className="icon icon-sm">delete</span>
                           </button>
                         </div>
+                        )
                       ) : (
                         <div style={{ padding: 10, display: 'flex', flexDirection: 'column', gap: 6 }}>
                           <div style={{ position: 'relative' }}>
@@ -1257,18 +1393,16 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
                               </button>
                             )}
                           </div>
-                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6 }}>
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 6 }}>
                             <div>
                               <label style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-3)', display: 'block', marginBottom: 3 }}>
-                                {Number(editDraft.grams) < 0
-                                  ? (lang === 'he' ? 'מנה' : 'serving')
-                                  : (lang === 'he' ? 'גרם (g)' : 'Weight (g)')}
+                                {lang === 'he' ? 'כמות' : 'Amount'}
                               </label>
                               <div style={{ position: 'relative' }}>
                                 <input className="inp" type="number" inputMode="decimal" value={editDraft.grams}
                                   onFocus={e => e.target.select()}
-                                  onChange={e => handleGramsChange(e.target.value)}
-                                  style={{ ...inputSm, borderColor: 'var(--blue-border)', paddingInlineEnd: editDraft.grams ? 28 : 8 }} />
+                                  onChange={e => handleAmountChange(e.target.value)}
+                                  style={{ ...inputSm, borderColor: 'var(--accent-border)', paddingInlineEnd: editDraft.grams ? 28 : 8 }} />
                                 {editDraft.grams && (
                                   <button onMouseDown={e => { e.preventDefault(); setEditDraft(d => ({ ...d, grams: '' })) }} tabIndex={-1}
                                     style={{ position: 'absolute', insetInlineEnd: 0, top: 0, bottom: 0, width: 28, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -1278,7 +1412,23 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
                               </div>
                             </div>
                             <div>
-                              <label style={{ fontSize: 10, fontWeight: 600, color: 'var(--blue-hi)', display: 'flex', alignItems: 'center', gap: 3, marginBottom: 3 }}>
+                              <label style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-3)', display: 'block', marginBottom: 3 }}>
+                                {lang === 'he' ? 'יחידה' : 'Unit'}
+                              </label>
+                              <select className="inp" value={editUnit} onChange={e => handleUnitChange(e.target.value as UnitId | 'pcs')}
+                                style={{ ...inputSm, width: '100%' }}>
+                                <option value="g">g</option>
+                                <option value="oz">{lang === 'he' ? UNITS.oz.abbr_he : 'oz'}</option>
+                                <option value="ml">ml</option>
+                                <option value="cup">{lang === 'he' ? UNITS.cup.abbr_he : 'cup'}</option>
+                                <option value="tbsp">{lang === 'he' ? UNITS.tbsp.abbr_he : 'tbsp'}</option>
+                                <option value="tsp">{lang === 'he' ? UNITS.tsp.abbr_he : 'tsp'}</option>
+                                <option value="fl_oz">{lang === 'he' ? UNITS.fl_oz.abbr_he : 'fl oz'}</option>
+                                <option value="pcs">{lang === 'he' ? 'מנה' : 'serving'}</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label style={{ fontSize: 10, fontWeight: 600, color: 'var(--accent-hi)', display: 'flex', alignItems: 'center', gap: 3, marginBottom: 3 }}>
                                 {lang === 'he' ? `קלוריות (${t(lang, 'caloriesUnit')})` : `Calories (${t(lang, 'caloriesUnit')})`}
                                 <span className="icon" style={{ fontSize: 10, opacity: 0.6 }} title={lang === 'he' ? 'מחושב אוטומטית לפי גרם' : 'Auto-scaled from grams'}>calculate</span>
                               </label>
@@ -1296,7 +1446,7 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
                               </div>
                             </div>
                             <div>
-                              <label style={{ fontSize: 10, fontWeight: 600, color: 'var(--green-hi)', display: 'flex', alignItems: 'center', gap: 3, marginBottom: 3 }}>
+                              <label style={{ fontSize: 10, fontWeight: 600, color: 'var(--positive-hi)', display: 'flex', alignItems: 'center', gap: 3, marginBottom: 3 }}>
                                 {lang === 'he' ? `חלבון (${t(lang, 'proteinUnit')})` : `Protein (${t(lang, 'proteinUnit')})`}
                                 <span className="icon" style={{ fontSize: 10, opacity: 0.6 }} title={lang === 'he' ? 'מחושב אוטומטית לפי גרם' : 'Auto-scaled from grams'}>calculate</span>
                               </label>
@@ -1335,23 +1485,51 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
                 // Multi-weight group — collapsible
                 const totalUses = groupItems.reduce((s, x) => s + x.use_count, 0)
                 return (
-                  <div key={groupKey} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
+                  <div key={groupKey} style={minimal
+                    ? { borderBottom: isGroupExpanded ? 'none' : '1px dashed var(--border)' }
+                    : { background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }
+                  }>
                     {/* Group header */}
                     <button
                       onClick={() => setExpandedHistoryGroup(isGroupExpanded ? null : groupKey)}
-                      style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', width: '100%', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'start', fontFamily: 'inherit', borderBottom: isGroupExpanded ? '1px solid var(--border)' : 'none' }}
+                      style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'start', fontFamily: 'inherit',
+                        padding: minimal ? '8px 0' : '10px 12px',
+                        borderBottom: minimal ? 'none' : (isGroupExpanded ? '1px solid var(--border)' : 'none'),
+                      }}
                     >
-                      <span className="icon icon-sm" style={{ color: 'var(--text-3)', flexShrink: 0 }}>layers</span>
+                      {!minimal && <span className="icon icon-sm" style={{ color: 'var(--text-3)', flexShrink: 0 }}>layers</span>}
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{groupItems[0].name}</p>
-                        <p style={{ fontSize: 11, color: 'var(--text-3)', margin: '2px 0 0' }}>
-                          {groupItems.length} {lang === 'he' ? 'גרסאות' : 'variants'} · {lang === 'he' ? `${totalUses} שימ׳` : `${totalUses} uses`}
-                        </p>
+                        {minimal ? (
+                          <>
+                            <div style={{ display: 'flex', alignItems: 'baseline', gap: 5, overflow: 'hidden' }}>
+                              <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>{groupItems[0].name}</span>
+                              <span style={{ fontSize: 10, color: 'var(--text-3)', whiteSpace: 'nowrap', flexShrink: 0 }}>{groupItems.length} {lang === 'he' ? 'גרסאות' : 'variants'}</span>
+                            </div>
+                            <span style={{ fontSize: 10, color: 'var(--text-3)' }}>{lang === 'he' ? `${totalUses} שימ׳` : `${totalUses} uses`}</span>
+                          </>
+                        ) : (
+                          <>
+                            <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{groupItems[0].name}</p>
+                            <p style={{ fontSize: 11, color: 'var(--text-3)', margin: '2px 0 0' }}>
+                              {groupItems.length} {lang === 'he' ? 'גרסאות' : 'variants'} · {lang === 'he' ? `${totalUses} שימ׳` : `${totalUses} uses`}
+                            </p>
+                          </>
+                        )}
                       </div>
                       <span className="icon icon-sm" style={{ color: 'var(--text-3)', flexShrink: 0, transition: 'transform .2s', transform: isGroupExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>expand_more</span>
                     </button>
                     {/* Expanded items */}
-                    {isGroupExpanded && groupItems.map(item => renderItem(item, true))}
+                    {isGroupExpanded && (
+                      <div style={minimal ? {
+                        background: 'var(--composed-tint)',
+                        borderTop: '1px solid var(--border)',
+                        borderBottom: '1px solid var(--border)',
+                        marginInline: -16,
+                        paddingInline: 16,
+                      } : {}}>
+                        {groupItems.map((item, gi) => renderItem(item, true, gi === groupItems.length - 1))}
+                      </div>
+                    )}
                   </div>
                 )
               })}
@@ -1374,30 +1552,52 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
               <p style={{ fontSize: 13, margin: 0 }}>{composedGroups.length === 0 ? (lang === 'he' ? 'אין מנות מורכבות' : 'No composed dishes') : (lang === 'he' ? 'לא נמצאו תוצאות' : 'No results')}</p>
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: minimal ? 0 : 10 }}>
             {filteredGroups.map(group => {
                 const groupMeals = meals.filter(m => group.mealIds.includes(m.id))
                 const totalCal   = Math.round(groupMeals.reduce((s, m) => s + m.calories, 0))
                 const totalProt  = Math.round(groupMeals.reduce((s, m) => s + m.protein, 0) * 10) / 10
                 const isExpanded = expandedGroupId === group.id
                 return (
-                  <div key={group.id} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
+                  <div key={group.id} style={minimal
+                    ? { borderBottom: isExpanded ? 'none' : '1px dashed var(--border)' }
+                    : { background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }
+                  }>
                     {/* Group header — tap to expand/collapse */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderBottom: isExpanded && groupMeals.length > 0 ? '1px solid var(--border)' : undefined }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10,
+                      padding: minimal ? '8px 0' : '10px 12px',
+                      borderBottom: isExpanded && groupMeals.length > 0 && !minimal ? '1px solid var(--border)' : undefined,
+                    }}>
                       <button
                         onClick={() => setExpandedGroupId(isExpanded ? null : group.id)}
                         style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 10, background: 'none', border: 'none', cursor: 'pointer', padding: 0, minWidth: 0, textAlign: 'start' }}
                       >
-                        <span className="icon icon-sm" style={{ color: 'var(--purple)', flexShrink: 0 }}>restaurant</span>
+                        {!minimal && <span className="icon icon-sm" style={{ color: 'var(--composed)', flexShrink: 0 }}>restaurant</span>}
+                        {minimal ? (
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ display: 'flex', alignItems: 'baseline', gap: 5, overflow: 'hidden' }}>
+                              <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>{group.name}</span>
+                              <span style={{ fontSize: 10, color: 'var(--composed)', whiteSpace: 'nowrap', flexShrink: 0 }}>{groupMeals.length} {lang === 'he' ? 'מרכיבים' : 'items'}</span>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginTop: 2 }}>
+                              <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--accent-hi)', display: 'inline-flex', alignItems: 'baseline', gap: 2 }}>
+                                {totalCal}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.8 }}>{t(lang, 'caloriesUnit')}</span>
+                              </span>
+                              <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--positive-hi)', display: 'inline-flex', alignItems: 'baseline', gap: 2 }}>
+                                {totalProt}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.8 }}>{lang === 'he' ? 'ג׳ חלבון' : 'g protein'}</span>
+                              </span>
+                            </div>
+                          </div>
+                        ) : (
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{group.name}</p>
                           <div style={{ display: 'flex', flexDirection: 'row', direction: lang === 'he' ? 'rtl' : 'ltr', gap: 5, alignItems: 'baseline', margin: '2px 0 0', fontSize: 11, color: 'var(--text-3)' }}>
                             <span style={{ display: 'inline-flex', gap: 4, alignItems: 'baseline', whiteSpace: 'nowrap' }}>
-                              <span style={{ color: 'var(--blue-hi)', fontWeight: 600 }}>{totalCal}</span><span style={{ fontSize: 10 }}>{t(lang, 'caloriesUnit')}</span>
+                              <span style={{ color: 'var(--accent-hi)', fontWeight: 600 }}>{totalCal}</span><span style={{ fontSize: 10 }}>{t(lang, 'caloriesUnit')}</span>
                             </span>
                             <span style={{ color: 'var(--border)' }}>·</span>
                             <span style={{ display: 'inline-flex', gap: 4, alignItems: 'baseline', whiteSpace: 'nowrap' }}>
-                              <span style={{ color: 'var(--green-hi)', fontWeight: 600 }}>{totalProt}</span><span style={{ fontSize: 10 }}>{t(lang, 'proteinUnit')}</span>
+                              <span style={{ color: 'var(--positive-hi)', fontWeight: 600 }}>{totalProt}</span><span style={{ fontSize: 10 }}>{t(lang, 'proteinUnit')}</span>
                             </span>
                             <span style={{ color: 'var(--border)' }}>·</span>
                             <span style={{ display: 'inline-flex', gap: 4, alignItems: 'baseline', whiteSpace: 'nowrap' }}>
@@ -1405,29 +1605,41 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
                             </span>
                           </div>
                         </div>
+                        )}
                         <span className="icon icon-sm" style={{ color: 'var(--text-3)', flexShrink: 0, transition: 'transform .2s', transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>expand_more</span>
                       </button>
-                      <button onClick={() => handleRemoveGroup(group.id, group.name)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--red)', padding: 6, display: 'flex', borderRadius: 8, flexShrink: 0 }}>
+                      <button onClick={() => handleRemoveGroup(group.id, group.name)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--danger)', padding: 6, display: 'flex', borderRadius: 8, flexShrink: 0 }}>
                         <span className="icon icon-sm">delete</span>
                       </button>
                     </div>
                     {/* Individual meals — shown only when expanded */}
-                    {isExpanded && groupMeals.map(meal => (
-                      <div key={meal.id} style={{ borderBottom: '1px solid var(--border-subtle, var(--border))' }}>
-                        <MealCard
-                          meal={meal}
-                          lang={lang}
-                          showCheckbox={false}
-                          selected={false}
-                          onToggleSelect={() => {}}
-                          onEdit={(id, updates) => {
-                            onUpdateMeal(id, updates)
-                            showToast(t(lang, 'saved'), 'success')
-                          }}
-                          enableWeightScaling
-                        />
+                    {isExpanded && (
+                      <div style={minimal ? {
+                        background: 'var(--composed-tint)',
+                        borderTop: '1px solid var(--border)',
+                        borderBottom: '1px solid var(--border)',
+                        marginInline: -16,
+                        paddingInline: 16,
+                      } : {}}>
+                        {groupMeals.map((meal, mi) => (
+                          <div key={meal.id} style={{ borderBottom: minimal ? (mi === groupMeals.length - 1 ? 'none' : '1px dashed var(--border)') : '1px solid var(--border-subtle, var(--border))' }}>
+                            <MealCard
+                              meal={meal}
+                              lang={lang}
+                              showCheckbox={false}
+                              selected={false}
+                              onToggleSelect={() => {}}
+                              onEdit={(id, updates) => {
+                                onUpdateMeal(id, updates)
+                                showToast(t(lang, 'saved'), 'success')
+                              }}
+                              enableWeightScaling
+                              listStyle={minimal}
+                            />
+                          </div>
+                        ))}
                       </div>
-                    ))}
+                    )}
                   </div>
                 )
               })}
@@ -1519,7 +1731,7 @@ function LibraryScreen({ lang }: { lang: Lang }) {
             placeholder={lang === 'he' ? 'חיפוש מזון...' : 'Search food...'}
             value={search}
             onChange={e => setSearch(e.target.value)}
-            style={{ ...(isRTL ? { paddingRight: 34, paddingLeft: search ? 32 : 12 } : { paddingLeft: 34, paddingRight: search ? 32 : 12 }) }}
+            style={{ paddingInlineStart: 34, paddingInlineEnd: search ? 32 : 12 }}
           />
           {search && (
             <button
@@ -1533,23 +1745,27 @@ function LibraryScreen({ lang }: { lang: Lang }) {
         </div>
 
         {/* Category chips */}
-        <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 10, scrollbarWidth: 'none' }}>
-          {[{ cat: null, label: lang === 'he' ? `הכל (${library.length})` : `All (${library.length})` },
-            ...categories.filter(c => categoryCounts[c]).map(c => ({ cat: c, label: `${catLabels[c] ?? c} (${categoryCounts[c]})` }))
-          ].map(({ cat, label }) => (
-            <button
-              key={cat ?? '__all'}
-              onClick={() => setActiveCategory(cat)}
-              style={{
-                padding: '5px 12px', borderRadius: 999, border: 'none', cursor: 'pointer', fontFamily: 'inherit',
-                fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap', transition: 'background .12s, color .12s',
-                background: activeCategory === cat ? 'var(--blue)' : 'var(--surface-2)',
-                color: activeCategory === cat ? 'var(--on-color)' : 'var(--text-2)',
-              }}
-            >
-              {label}
-            </button>
-          ))}
+        <div style={{ position: 'relative' }}>
+          <div style={{ position: 'absolute', left: 0, top: 0, bottom: 10, width: 24, background: 'linear-gradient(to right, var(--bg), transparent)', zIndex: 1, pointerEvents: 'none' }} />
+          <div style={{ position: 'absolute', right: 0, top: 0, bottom: 10, width: 24, background: 'linear-gradient(to left, var(--bg), transparent)', zIndex: 1, pointerEvents: 'none' }} />
+          <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 10, scrollbarWidth: 'none' }}>
+            {[{ cat: null, label: lang === 'he' ? `הכל (${library.length})` : `All (${library.length})` },
+              ...categories.filter(c => categoryCounts[c]).map(c => ({ cat: c, label: `${catLabels[c] ?? c} (${categoryCounts[c]})` }))
+            ].map(({ cat, label }) => (
+              <button
+                key={cat ?? '__all'}
+                onClick={() => setActiveCategory(cat)}
+                style={{
+                  padding: '5px 12px', borderRadius: 999, border: 'none', cursor: 'pointer', fontFamily: 'inherit',
+                  fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap', transition: 'background .12s, color .12s',
+                  background: activeCategory === cat ? 'var(--accent)' : 'var(--surface-2)',
+                  color: activeCategory === cat ? 'var(--on-color)' : 'var(--text-2)',
+                }}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -1610,9 +1826,9 @@ function LibraryScreen({ lang }: { lang: Lang }) {
                       : `/${ss}${su}`
                     return (
                       <>
-                        <span style={{ fontSize: 11, color: 'var(--blue-hi)', fontWeight: 700 }}>{cal}<span style={{ fontSize: 10, fontWeight: 500, marginInlineStart: 2, opacity: 0.8 }}>kcal</span></span>
+                        <span style={{ fontSize: 11, color: 'var(--accent-hi)', fontWeight: 700 }}>{cal}<span style={{ fontSize: 10, fontWeight: 500, marginInlineStart: 2, opacity: 0.8 }}>kcal</span></span>
                         <span style={{ fontSize: 10, color: 'var(--text-3)' }}>·</span>
-                        <span style={{ fontSize: 11, color: 'var(--green-hi)', fontWeight: 700 }}>{prot}<span style={{ fontSize: 10, fontWeight: 500, marginInlineStart: 2, opacity: 0.8 }}>g prot</span></span>
+                        <span style={{ fontSize: 11, color: 'var(--positive-hi)', fontWeight: 700 }}>{prot}<span style={{ fontSize: 10, fontWeight: 500, marginInlineStart: 2, opacity: 0.8 }}>g prot</span></span>
                         <span style={{ fontSize: 10, color: 'var(--text-3)' }}>·</span>
                         <span style={{ fontSize: 10, color: 'var(--text-3)' }}>{perLabel}</span>
                       </>
@@ -1681,9 +1897,9 @@ function PreferencesScreen({ lang, profile, onSave, showToast }: {
                 style={{
                   flex: 1, padding: '8px 0', borderRadius: 10, fontFamily: 'inherit',
                   fontSize: 13, fontWeight: 700, cursor: 'pointer',
-                  background: draft.weightUnit === u ? 'var(--blue-select)' : 'var(--bg-card)',
-                  border: `1.5px solid ${draft.weightUnit === u ? 'var(--blue)' : 'var(--border)'}`,
-                  color: draft.weightUnit === u ? 'var(--blue-hi)' : 'var(--text-2)',
+                  background: draft.weightUnit === u ? 'var(--accent-select)' : 'var(--bg-card)',
+                  border: `1.5px solid ${draft.weightUnit === u ? 'var(--accent)' : 'var(--border)'}`,
+                  color: draft.weightUnit === u ? 'var(--accent-hi)' : 'var(--text-2)',
                   transition: 'all .15s',
                 }}
               >
@@ -1731,14 +1947,14 @@ function PreferencesScreen({ lang, profile, onSave, showToast }: {
           aria-label={lang === 'he' ? 'הפעל/בטל' : 'Toggle'}
           style={{
             width: 44, height: 26, borderRadius: 99, border: 'none', cursor: 'pointer', flexShrink: 0,
-            background: draft.fluidZeroCalOnly ? 'var(--blue)' : 'rgba(107,127,150,0.25)',
+            background: draft.fluidZeroCalOnly ? 'var(--accent)' : 'var(--neutral-glow)',
             position: 'relative', transition: 'background .2s',
           }}
         >
           <span style={{
             position: 'absolute', width: 18, height: 18, borderRadius: '50%', background: 'var(--toggle-knob)',
-            top: 4, transition: 'right .2s',
-            right: draft.fluidZeroCalOnly ? 4 : 22,
+            top: 4, insetInlineEnd: draft.fluidZeroCalOnly ? 4 : 22,
+            transition: 'inset-inline-end .2s',
           }} />
         </button>
       </div>
@@ -1799,14 +2015,16 @@ interface SettingsSheetProps {
   onSaveGoals:     (updates: Partial<Goal>) => void
   onToggleLang:    () => void
   onSignOut:       () => void
+  onLinkGoogle?:   () => void
+  hasGoogleLinked?: boolean
   theme:               'dark' | 'light'
-  styleMode:           'classic' | 'hybrid'
+  styleMode:           'classic' | 'minimal'
   onToggleTheme:       () => void
-  onToggleStyleMode:   () => void
+  onSelectStyleMode:   (m: 'classic' | 'minimal') => void
   showToast:       (message: string, type: Toast['type']) => void
   history:         FoodHistory[]
   onDeleteHistory: (id: string) => void
-  onUpdateHistory: (id: string, updates: Partial<Pick<FoodHistory, 'name' | 'grams' | 'calories' | 'protein'>>) => void
+  onUpdateHistory: (id: string, updates: Partial<Pick<FoodHistory, 'name' | 'grams' | 'calories' | 'protein' | 'fluid_ml'>>) => void
   composedGroups:  ComposedGroup[]
   onRemoveGroup:   (id: string) => void
   meals:           Meal[]
@@ -1814,7 +2032,7 @@ interface SettingsSheetProps {
 }
 
 export function SettingsSheet({
-  isOpen, onClose, lang, connected, profile, onSaveProfile, goals, onSaveGoals, onToggleLang, onSignOut, theme, styleMode, onToggleTheme, onToggleStyleMode, showToast,
+  isOpen, onClose, lang, connected, profile, onSaveProfile, goals, onSaveGoals, onToggleLang, onSignOut, onLinkGoogle, hasGoogleLinked, theme, styleMode, onToggleTheme, onSelectStyleMode, showToast,
   history, onDeleteHistory, onUpdateHistory, composedGroups, onRemoveGroup, meals, onUpdateMeal,
 }: SettingsSheetProps) {
   const [screen, setScreen] = useState<Screen>('main')
@@ -1861,16 +2079,17 @@ export function SettingsSheet({
         display: 'flex', justifyContent: 'center', alignItems: 'flex-end',
         pointerEvents: 'none',
       }}>
-      <div ref={sheetRef} style={{
+      <div ref={sheetRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label={lang === 'he' ? 'הגדרות' : 'Settings'} style={{
         width: '100%', maxWidth: 560,
         pointerEvents: 'all',
         background: 'var(--bg)',
+        outline: 'none',
         borderTop: '1px solid var(--border)',
         borderLeft: '1px solid var(--border)',
         borderRight: '1px solid var(--border)',
         borderRadius: '20px 20px 0 0',
         overflow: 'hidden',
-        height: 'min(90vh, 720px)',
+        height: 'min(90dvh, 720px)',
         display: 'flex', flexDirection: 'column',
         transform: isOpen ? 'translateY(0)' : 'translateY(105%)',
         transition: 'transform 0.35s cubic-bezier(.22,.9,.36,1)',
@@ -1907,8 +2126,10 @@ export function SettingsSheet({
                 onPreferences={() => setScreen('preferences')}
                 onToggleLang={onToggleLang}
                 onToggleTheme={onToggleTheme}
-                onToggleStyleMode={onToggleStyleMode}
+                onSelectStyleMode={onSelectStyleMode}
                 onSignOut={() => { handleClose(); onSignOut() }}
+                onLinkGoogle={onLinkGoogle}
+                hasGoogleLinked={hasGoogleLinked}
               />
             )}
             {screen === 'profile' && (

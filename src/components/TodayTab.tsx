@@ -4,24 +4,25 @@ import { useFocusTrap } from '../hooks/useFocusTrap'
 import { useSheetScroll } from '../hooks/useSheetScroll'
 import { SheetHandle } from './SheetHandle'
 import type { Meal, FoodHistory, FoodLibraryItem, ComposedGroup } from '../types'
-import type { Lang } from '../lib/i18n'
+import type { Lang, MealTypeKey } from '../lib/i18n'
 import { t, dir, today, currentTime } from '../lib/i18n'
 import { FoodEntryForm } from './FoodEntryForm'
 import type { ComposedEntry } from './FoodEntryForm'
 import { MealCard } from './MealCard'
 import { ComposedMealCard } from './ComposedMealCard'
 import { DailySummary } from './DailySummary'
+import { useAppContext } from '../context/AppContext'
 
 type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'beverage'
 
 const MEAL_TYPES: MealType[] = ['breakfast', 'lunch', 'dinner', 'snack', 'beverage']
 
 const MEAL_COLORS: Record<MealType, string> = {
-  breakfast: 'var(--amber)',
-  lunch:     'var(--green)',
-  dinner:    'var(--purple)',
-  snack:     'var(--red)',
-  beverage:  'var(--blue)',
+  breakfast: 'var(--warning)',
+  lunch:     'var(--positive)',
+  dinner:    'var(--composed)',
+  snack:     'var(--danger)',
+  beverage:  'var(--accent)',
 }
 
 const MEAL_ICONS: Record<MealType, string> = {
@@ -30,6 +31,22 @@ const MEAL_ICONS: Record<MealType, string> = {
   dinner:    'nights_stay',
   snack:     'nutrition',
   beverage:  'local_drink',
+}
+
+const MEAL_TINT: Record<MealType, string> = {
+  breakfast: 'var(--warning-tint)',
+  lunch:     'var(--positive-tint)',
+  dinner:    'var(--composed-tint)',
+  snack:     'var(--danger-tint)',
+  beverage:  'var(--accent-tint)',
+}
+
+const MEAL_BORDER_TOKEN: Record<MealType, string> = {
+  breakfast: 'var(--warning-border)',
+  lunch:     'var(--positive-border)',
+  dinner:    'var(--composed-border)',
+  snack:     'var(--danger-border)',
+  beverage:  'var(--accent-border)',
 }
 
 // ── localStorage helpers ────────────────────────────────────────
@@ -86,6 +103,8 @@ export function TodayTab({
   const fluidTodayMl  = useMemo(() => todayMeals.reduce((s, m) => s + (m.fluid_ml ?? 0), 0), [todayMeals])
 
 
+  const { styleMode } = useAppContext()
+
   // ── Pending deletes (undo support) — declared before mealsByType ────────────
   const [pendingDeleteIds, setPendingDeleteIds] = useState<Set<string>>(new Set())
   const pendingTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map())
@@ -105,6 +124,13 @@ export function TodayTab({
 
   // ── Collapsible groups ───────────────────────────────────────
   const [collapsed, setCollapsed] = useState<Set<MealType>>(loadCollapsed)
+  const [openComposedIds, setOpenComposedIds] = useState<Set<string>>(new Set())
+
+  const toggleComposedOpen = (id: string) => setOpenComposedIds(prev => {
+    const next = new Set(prev)
+    next.has(id) ? next.delete(id) : next.add(id)
+    return next
+  })
 
   const toggleCollapse = (type: MealType) => {
     setCollapsed(prev => {
@@ -178,7 +204,14 @@ export function TodayTab({
     return () => { pendingTimersRef.current.forEach(t => clearTimeout(t)) }
   }, [])
 
-  const dissolveGroup = (groupId: string) => onRemoveGroup(groupId)
+  const dissolveGroup = useCallback((groupId: string) => {
+    const cancelFn = scheduleDeletes([], [groupId])
+    showToast(
+      lang === 'he' ? 'הקבוצה נמחקה' : 'Group deleted',
+      'info',
+      { action: { label: lang === 'he' ? 'בטל' : 'Undo', onClick: cancelFn }, durationMs: 4000 },
+    )
+  }, [scheduleDeletes, showToast, lang])
 
   // ── Add ingredient modal ─────────────────────────────────────
   const [addIngredientModal, setAddIngredientModal] = useState<{ groupId: string; mealType: MealType } | null>(null)
@@ -193,7 +226,7 @@ export function TodayTab({
   }
 
   // ── Clone composed group into today ─────────────────────────
-  const handleAddComposed = useCallback(async (composedId: string) => {
+  const handleAddComposed = useCallback(async (composedId: string, mealType: MealType) => {
     const group = composedGroups.find(g => g.id === composedId)
     if (!group) return
     const newMealIds: string[] = []
@@ -202,7 +235,7 @@ export function TodayTab({
       if (!src) continue
       const newId = await onAddMealWithId({
         date:           today(),
-        meal_type:      src.meal_type,
+        meal_type:      mealType,
         name:           src.name,
         grams:          src.grams,
         calories:       src.calories,
@@ -238,7 +271,7 @@ export function TodayTab({
     const sel = selectedIds[mealType]
     if (!sel || sel.size === 0) return
 
-    const name = composeName.trim() || (lang === 'he' ? 'מנה חדשה' : 'New dish')
+    const name = composeName.trim() || t(lang, 'newDish')
     const newGroup: ComposedGroup = {
       id: crypto.randomUUID(),
       name,
@@ -266,7 +299,7 @@ export function TodayTab({
         count++
       })
     clearSelection(type)
-    if (count > 0) showToast(lang === 'he' ? `שוכפלו ${count} פריטים` : `Duplicated ${count} item${count !== 1 ? 's' : ''}`, 'success')
+    if (count > 0) showToast(lang === 'he' ? `שוכפלו ${count} ${count === 1 ? 'פריט' : 'פריטים'}` : `Duplicated ${count} item${count !== 1 ? 's' : ''}`, 'success')
   }
 
   const handleDeleteSelected = (type: MealType) => {
@@ -292,7 +325,7 @@ export function TodayTab({
     const cancelFn = scheduleDeletes(allMealIds, groupIds)
 
     showToast(
-      lang === 'he' ? `נמחקו ${count} פריטים` : `Deleted ${count} item${count !== 1 ? 's' : ''}`,
+      lang === 'he' ? `נמחקו ${count} ${count === 1 ? 'פריט' : 'פריטים'}` : `Deleted ${count} item${count !== 1 ? 's' : ''}`,
       'info',
       {
         action: {
@@ -304,16 +337,33 @@ export function TodayTab({
     )
   }
 
+  const handleDeleteTypeGroup = (type: MealType) => {
+    const typeMealsAll = mealsByType[type]
+    if (typeMealsAll.length === 0) return
+    const groupsOfType = composedGroups.filter(g => g.mealIds.some(id => typeMealsAll.find(m => m.id === id)))
+    const allMealIds = typeMealsAll.map(m => m.id)
+    const groupIds   = groupsOfType.map(g => g.id)
+    setEditingGroupType(null)
+    const cancelFn = scheduleDeletes(allMealIds, groupIds)
+    showToast(
+      lang === 'he' ? `קבוצת ${t(lang, type)} נמחקה` : `${t(lang, type as MealTypeKey)} group deleted`,
+      'info',
+      { action: { label: lang === 'he' ? 'בטל' : 'Undo', onClick: cancelFn }, durationMs: 4000 },
+    )
+  }
+
   // ── Entry sheet ──────────────────────────────────────────────
   const [entryOpen, setEntryOpen] = useState(false)
   const [entryDefaultType, setEntryDefaultType] = useState<MealType | undefined>(undefined)
   const openEntry = (type?: MealType) => { setEntryDefaultType(type); setEntryOpen(true) }
-  const entrySheetRef   = useRef<HTMLDivElement>(null)
-  const composeModalRef = useRef<HTMLDivElement>(null)
+  const entrySheetRef         = useRef<HTMLDivElement>(null)
+  const composeModalRef       = useRef<HTMLDivElement>(null)
+  const addIngredientModalRef = useRef<HTMLDivElement>(null)
   const anyModalOpen = entryOpen || !!composeModal || !!addIngredientModal
   useLockBodyScroll(anyModalOpen)
-  useFocusTrap(entrySheetRef,   entryOpen)
-  useFocusTrap(composeModalRef, !!composeModal)
+  useFocusTrap(entrySheetRef,         entryOpen)
+  useFocusTrap(composeModalRef,       !!composeModal)
+  useFocusTrap(addIngredientModalRef, !!addIngredientModal)
 
   // Escape key closes the topmost open modal
   useEffect(() => {
@@ -342,7 +392,7 @@ export function TodayTab({
   )
 
   // ── Render: meal group ───────────────────────────────────────
-  const mealGroup = (type: MealType, i: number) => {
+  const mealGroup = (type: MealType, i: number, total: number) => {
     const typeMeals   = mealsByType[type]
     const isCollapsed = collapsed.has(type)
     const selSet      = selectedIds[type] ?? new Set<string>()
@@ -368,87 +418,124 @@ export function TodayTab({
     const selCount = selSet.size
 
     return (
-      <div key={type} className="card fade-up" style={{ animationDelay: `${i * 0.05}s`, marginBottom: 12, overflow: 'hidden' }}>
+      <div key={type} className={styleMode === 'minimal' ? 'fade-up' : 'card fade-up'} style={{ animationDelay: `${i * 0.05}s`, marginBottom: styleMode === 'minimal' ? 0 : 12, overflow: 'hidden', ...(styleMode === 'minimal' ? { borderTop: '1px solid var(--border)', ...(i === total - 1 ? { borderBottom: '1px solid var(--border)' } : {}) } : {}) }}>
 
-        {/* ── Group header (full row clickable) ──────────── */}
-        <div
-          role="button"
-          tabIndex={0}
-          aria-expanded={!isCollapsed}
-          aria-label={`${t(lang, type)} — ${isCollapsed ? (lang === 'he' ? 'פתח' : 'expand') : (lang === 'he' ? 'כווץ' : 'collapse')}`}
-          onClick={() => toggleCollapse(type)}
-          onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') toggleCollapse(type) }}
-          style={{
-            display: 'flex', alignItems: 'center', gap: 7,
-            padding: '12px 14px', cursor: 'pointer',
-            userSelect: 'none',
-          }}
-        >
-          <span className="icon icon-sm" style={{ color: MEAL_COLORS[type] }}>
-            {MEAL_ICONS[type]}
-          </span>
-          <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-2)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-            {t(lang, type)}
-          </span>
-
-          {/* Totals when collapsed */}
-          {isCollapsed && (
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginInlineStart: 8 }}>
-              <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 2, fontSize: 12, fontWeight: 700, color: 'var(--blue-hi)' }}>
-                <span>{totalCal}</span>
-                <span style={{ fontSize: 10, fontWeight: 600, opacity: 0.8 }}>{t(lang, 'caloriesUnit')}</span>
-              </span>
-              <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 2, fontSize: 12, fontWeight: 700, color: 'var(--green-hi)' }}>
-                <span>{totalProt}</span>
-                <span style={{ fontSize: 10, fontWeight: 600, opacity: 0.8 }}>{t(lang, 'proteinUnit')}</span>
-              </span>
-            </span>
-          )}
-
-          <span style={{ flex: 1 }} />
-
-          {/* Pencil — change group type */}
-          <button
-            onClick={e => {
-              e.stopPropagation()
-              setEditingGroupType(editingGroupType === type ? null : type)
-            }}
-            style={{
-              width: 26, height: 26, borderRadius: 8, flexShrink: 0,
-              background: editingGroupType === type ? 'rgba(245,158,11,0.12)' : 'var(--inp-bg)',
-              border: `1px solid ${editingGroupType === type ? 'rgba(245,158,11,0.3)' : 'var(--border)'}`,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer',
-            }}
-            aria-label={t(lang, 'changeGroup')}
+        {/* ── Group header ────────────────────────────────── */}
+        {styleMode === 'minimal' ? (
+          /* Minimal: label + totals summary + chevron, fully collapsible */
+          <div
+            role="button"
+            tabIndex={0}
+            aria-expanded={!isCollapsed}
+            onClick={() => toggleCollapse(type)}
+            onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') toggleCollapse(type) }}
+            style={{ padding: '10px 4px', minHeight: 44, display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', userSelect: 'none', borderBottom: `1px solid ${isCollapsed ? 'transparent' : 'var(--border)'}`, boxSizing: 'border-box' }}
           >
-            <span className="icon icon-sm" style={{ color: editingGroupType === type ? 'var(--amber)' : 'var(--text-3)' }}>
-              edit
+            <span style={{ fontSize: 10, fontWeight: 600, color: 'var(--text)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
+              {t(lang, type)}
             </span>
-          </button>
-
-          <span style={{ width: 6 }} />
-
-          {/* Chevron */}
-          <span className="chevron-badge">
-            <span className="icon icon-sm" style={{ color: 'var(--text-3)', transform: isCollapsed ? 'rotate(0deg)' : 'rotate(180deg)' }}>
+            {typeMeals.length > 0 && (
+              <span style={{ display: 'flex', alignItems: 'baseline', gap: 4, flexShrink: 0, fontSize: 11, opacity: isCollapsed ? 1 : 0 }}>
+                <span style={{ fontWeight: 500, color: 'var(--accent-hi)' }}>{totalCal}</span>
+                <span style={{ fontWeight: 400, color: 'var(--text-3)' }}>{t(lang, 'caloriesUnit')}</span>
+                <span style={{ color: 'var(--border)', fontWeight: 300, padding: '0 2px' }}>|</span>
+                <span style={{ fontWeight: 500, color: 'var(--positive-hi)' }}>{totalProt}</span>
+                <span style={{ fontWeight: 400, color: 'var(--text-3)' }}>{lang === 'he' ? "גר׳ חלבון" : 'g protein'}</span>
+              </span>
+            )}
+            <span style={{ flex: 1 }} />
+            <button
+              onClick={e => { e.stopPropagation(); setEditingGroupType(editingGroupType === type ? null : type) }}
+              className="icon-btn"
+              style={{ color: editingGroupType === type ? 'var(--warning)' : undefined, background: editingGroupType === type ? 'var(--warning-tint)' : undefined, border: editingGroupType === type ? '1px solid var(--warning-border)' : undefined }}
+              aria-label={t(lang, 'changeGroup')}
+            >
+              <span className="icon icon-sm">edit</span>
+            </button>
+            <span className="icon icon-sm" style={{ fontSize: 12, color: 'var(--text-3)', transform: isCollapsed ? 'rotate(0deg)' : 'rotate(180deg)', transition: 'transform 0.2s' }}>
               expand_more
             </span>
-          </span>
-        </div>
+          </div>
+        ) : (
+          /* Classic/hybrid: full collapsible header with icon + buttons */
+          <div
+            role="button"
+            tabIndex={0}
+            aria-expanded={!isCollapsed}
+            aria-label={`${t(lang, type)} — ${isCollapsed ? (lang === 'he' ? 'פתח' : 'expand') : (lang === 'he' ? 'כווץ' : 'collapse')}`}
+            onClick={() => toggleCollapse(type)}
+            onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') toggleCollapse(type) }}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 7,
+              padding: '12px 14px', cursor: 'pointer',
+              userSelect: 'none',
+            }}
+          >
+            <span className="icon icon-sm" style={{ color: MEAL_COLORS[type] }}>
+              {MEAL_ICONS[type]}
+            </span>
+            <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-2)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+              {t(lang, type)}
+            </span>
+
+            {isCollapsed && (
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginInlineStart: 8 }}>
+                <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 2, fontSize: 12, fontWeight: 700, color: 'var(--accent-hi)' }}>
+                  <span>{totalCal}</span>
+                  <span style={{ fontSize: 10, fontWeight: 600, opacity: 0.8 }}>{t(lang, 'caloriesUnit')}</span>
+                </span>
+                <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 2, fontSize: 12, fontWeight: 700, color: 'var(--positive-hi)' }}>
+                  <span>{totalProt}</span>
+                  <span style={{ fontSize: 10, fontWeight: 600, opacity: 0.8 }}>{t(lang, 'proteinUnit')}</span>
+                </span>
+              </span>
+            )}
+
+            <span style={{ flex: 1 }} />
+
+            <button
+              onClick={e => {
+                e.stopPropagation()
+                setEditingGroupType(editingGroupType === type ? null : type)
+              }}
+              style={{
+                width: 32, height: 32, borderRadius: 8, flexShrink: 0,
+                background: editingGroupType === type ? 'var(--warning-tint)' : 'transparent',
+                border: editingGroupType === type ? '1px solid var(--warning-border)' : 'none',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: 'pointer',
+              }}
+              aria-label={t(lang, 'changeGroup')}
+            >
+              <span className="icon icon-sm" style={{ color: editingGroupType === type ? 'var(--warning)' : 'var(--text-3)' }}>
+                edit
+              </span>
+            </button>
+
+            <span className="chevron-badge" style={{ background: 'transparent', border: 'none' }}>
+              <span className="icon icon-sm" style={{ color: 'var(--text-3)', transform: isCollapsed ? 'rotate(0deg)' : 'rotate(180deg)' }}>
+                expand_more
+              </span>
+            </span>
+          </div>
+        )}
 
         {/* ── Type picker (inline, under header) ─────────── */}
         {editingGroupType === type && (
-          <div className="type-picker">
+          <div className="type-picker" role="radiogroup" aria-label={lang === 'he' ? 'בחר סוג ארוחה' : 'Select meal type'}>
             {MEAL_TYPES.map(mt => (
               <div
                 key={mt}
+                role="radio"
+                aria-checked={mt === type}
+                tabIndex={0}
                 className={`type-picker-row${mt === type ? ' current' : ''}`}
                 onClick={() => handleChangeGroupType(type, mt)}
+                onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleChangeGroupType(type, mt) } }}
               >
                 <div
                   className="type-picker-ico"
-                  style={{ background: `${MEAL_COLORS[mt]}18`, border: `1px solid ${MEAL_COLORS[mt]}30` }}
+                  style={{ background: MEAL_TINT[mt], border: `1px solid ${MEAL_BORDER_TOKEN[mt]}` }}
                 >
                   <span className="icon icon-sm" style={{ color: MEAL_COLORS[mt] }}>{MEAL_ICONS[mt]}</span>
                 </div>
@@ -456,16 +543,37 @@ export function TodayTab({
                   {t(lang, mt)}
                 </span>
                 <div className={`type-picker-radio${mt === type ? ' on' : ''}`}>
-                  {mt === type && <span className="icon" style={{ fontSize: 11, color: 'var(--amber)' }}>check</span>}
+                  {mt === type && <span className="icon" style={{ fontSize: 11, color: 'var(--warning)' }}>check</span>}
                 </div>
               </div>
             ))}
+            {/* ── Delete type group ── */}
+            <div
+              role="button"
+              tabIndex={0}
+              className="type-picker-row"
+              onClick={() => handleDeleteTypeGroup(type)}
+              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleDeleteTypeGroup(type) } }}
+            >
+              <div className="type-picker-ico" style={{ background: 'var(--danger-tint)', border: '1px solid var(--danger-border-lo)' }}>
+                <span className="icon icon-sm" style={{ color: 'var(--danger-hi)' }}>delete</span>
+              </div>
+              <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--danger-hi)', flex: 1 }}>
+                {lang === 'he' ? `מחק את כל ${t(lang, type as MealTypeKey)}` : `Delete all ${t(lang, type as MealTypeKey)}`}
+              </span>
+            </div>
           </div>
         )}
 
         {/* ── Meal cards ──────────────────────────────────── */}
         {!isCollapsed && (
-          <div style={{ borderTop: '1px solid var(--border)', padding: '8px 10px 10px' }}>
+          <div
+            className={styleMode === 'minimal' ? 'expand-down' : undefined}
+            style={styleMode === 'minimal'
+              ? { padding: '0 0 10px' }
+              : { borderTop: '1px solid var(--border)', padding: '14px 10px 10px' }
+            }
+          >
 
             {/* Composed groups */}
             {groupsHere.map(group => {
@@ -483,47 +591,67 @@ export function TodayTab({
                   onRename={name => renameGroup(group.id, name)}
                   onDeleteGroup={() => dissolveGroup(group.id)}
                   onAddIngredient={() => setAddIngredientModal({ groupId: group.id, mealType: type })}
+                  onChangeMealType={newType => groupMeals.forEach(m => onEditMeal(m.id, { meal_type: newType }))}
+                  open={openComposedIds.has(group.id)}
+                  onToggleOpen={() => toggleComposedOpen(group.id)}
                 />
               )
             })}
 
             {/* Standalone meals */}
-            {standalones.map(meal => (
-              <MealCard
-                key={meal.id}
-                meal={meal}
-                lang={lang}
-                weightUnit={defaultWeightUnit}
-                showCheckbox={true}
-                selected={selSet.has(meal.id)}
-                onToggleSelect={() => toggleSelect(type, meal.id)}
-                onEdit={onEditMeal}
-                enableWeightScaling
-              />
+            {standalones.map((meal) => (
+              <div key={meal.id} style={styleMode === 'minimal' ? { borderBottom: '1px dashed var(--border)' } : {}}>
+                <MealCard
+                  meal={meal}
+                  lang={lang}
+                  weightUnit={defaultWeightUnit}
+                  showCheckbox
+                  selected={selSet.has(meal.id)}
+                  onToggleSelect={() => toggleSelect(type, meal.id)}
+                  onEdit={onEditMeal}
+                  enableWeightScaling
+                  listStyle={styleMode === 'minimal'}
+                />
+              </div>
             ))}
 
             {/* Quick-add to this section */}
-            <button
-              onClick={() => openEntry(type)}
-              style={{
-                marginTop: 4, width: '100%', background: 'transparent',
-                border: '1px dashed var(--border)', borderRadius: 8,
-                padding: '6px 10px', fontFamily: 'inherit',
-                fontSize: 11, fontWeight: 600, color: MEAL_COLORS[type],
-                cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5,
-              }}
-            >
-              <span className="icon" style={{ fontSize: 14 }}>add</span>
-              {lang === 'he' ? `הוסף ל${t(lang, type as any)}` : `Add to ${t(lang, type as any)}`}
-            </button>
+            {selCount === 0 && (styleMode === 'minimal' ? (
+              <button
+                onClick={() => openEntry(type)}
+                style={{
+                  marginTop: 10, background: 'var(--inp-bg)', border: '1px solid var(--border)',
+                  borderRadius: 20, padding: '6px 14px', fontFamily: 'inherit',
+                  fontSize: 11, fontWeight: 500, color: 'var(--text-2)',
+                  cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 5,
+                }}
+              >
+                <span className="icon" style={{ fontSize: 13 }}>add</span>
+                {lang === 'he' ? `הוסף ל${t(lang, type as MealTypeKey)}` : `Add to ${t(lang, type as MealTypeKey)}`}
+              </button>
+            ) : (
+              <button
+                onClick={() => openEntry(type)}
+                style={{
+                  marginTop: 4, width: '100%', background: 'transparent',
+                  border: '1px dashed var(--border)', borderRadius: 8,
+                  padding: '6px 10px', fontFamily: 'inherit',
+                  fontSize: 11, fontWeight: 600, color: MEAL_COLORS[type],
+                  cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5,
+                }}
+              >
+                <span className="icon" style={{ fontSize: 14 }}>add</span>
+                {lang === 'he' ? `הוסף ל${t(lang, type as MealTypeKey)}` : `Add to ${t(lang, type as MealTypeKey)}`}
+              </button>
+            ))}
 
             {/* ── Action bar (shown when anything selected) ── */}
             {selCount > 0 && (
               <div className="group-action-bar">
                 {/* Header row */}
                 <div className="group-action-bar-header">
-                  <span className="icon icon-sm" style={{ color: 'var(--purple)', fontSize: 16 }}>check_circle</span>
-                  <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--purple)', flex: 1 }}>
+                  <span className="icon icon-sm" style={{ color: 'var(--composed)', fontSize: 16 }}>check_circle</span>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--composed)', flex: 1 }}>
                     {selCount} {t(lang, 'nSelected')}
                   </span>
                   <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-3)' }}>
@@ -541,26 +669,26 @@ export function TodayTab({
                 <div className="group-action-bar-btns">
                   {/* Duplicate */}
                   <button className="group-action-btn" aria-label={t(lang, 'duplicate')} onClick={() => handleDuplicateSelected(type)}>
-                    <div className="group-action-btn-ico" style={{ background: 'var(--green-fill)', border: '1px solid var(--green-select)' }}>
-                      <span className="icon icon-sm" style={{ color: 'var(--green-hi)' }}>content_copy</span>
+                    <div className="group-action-btn-ico" style={{ background: 'var(--positive-fill)', border: '1px solid var(--positive-select)' }}>
+                      <span className="icon icon-sm" style={{ color: 'var(--positive-hi)' }}>content_copy</span>
                     </div>
-                    <span style={{ color: 'var(--green-hi)' }}>{t(lang, 'duplicate')}</span>
+                    <span style={{ color: 'var(--positive-hi)' }}>{t(lang, 'duplicate')}</span>
                   </button>
 
                   {/* Create dish */}
                   <button className="group-action-btn" aria-label={t(lang, 'createDish')} onClick={() => openComposeModal(type)}>
-                    <div className="group-action-btn-ico" style={{ background: 'var(--purple-tint)', border: '1px solid var(--purple-glow)' }}>
-                      <span className="icon icon-sm" style={{ color: 'var(--purple)' }}>restaurant</span>
+                    <div className="group-action-btn-ico" style={{ background: 'var(--composed-tint)', border: '1px solid var(--composed-glow)' }}>
+                      <span className="icon icon-sm" style={{ color: 'var(--composed)' }}>restaurant</span>
                     </div>
-                    <span style={{ color: 'var(--purple)' }}>{t(lang, 'createDish')}</span>
+                    <span style={{ color: 'var(--composed)' }}>{t(lang, 'createDish')}</span>
                   </button>
 
                   {/* Delete */}
                   <button className="group-action-btn" aria-label={t(lang, 'delete')} onClick={() => handleDeleteSelected(type)}>
-                    <div className="group-action-btn-ico" style={{ background: 'var(--red-tint)', border: '1px solid rgba(244,63,94,0.2)' }}>
-                      <span className="icon icon-sm" style={{ color: 'var(--red-hi)' }}>delete</span>
+                    <div className="group-action-btn-ico" style={{ background: 'var(--danger-tint)', border: '1px solid var(--danger-border-lo)' }}>
+                      <span className="icon icon-sm" style={{ color: 'var(--danger-hi)' }}>delete</span>
                     </div>
-                    <span style={{ color: 'var(--red-hi)' }}>{t(lang, 'delete')}</span>
+                    <span style={{ color: 'var(--danger-hi)' }}>{t(lang, 'delete')}</span>
                   </button>
                 </div>
               </div>
@@ -572,7 +700,7 @@ export function TodayTab({
   }
 
   // ── Meal groups list ─────────────────────────────────────────
-  const items = visibleTypes.map((type, i) => mealGroup(type, i))
+  const items = visibleTypes.map((type, i) => mealGroup(type, i, visibleTypes.length))
 
   // ── Compose modal ────────────────────────────────────────────
   const composeModalEl = composeModal && (() => {
@@ -595,7 +723,7 @@ export function TodayTab({
 
     return (
       <div className="compose-modal-backdrop" onClick={() => setComposeModal(null)}>
-        <div ref={composeModalRef} className="compose-modal" onClick={e => e.stopPropagation()}>
+        <div ref={composeModalRef} className="compose-modal" role="dialog" aria-modal="true" aria-label={lang === 'he' ? 'הגדרת ארוחה מורכבת' : 'Compose meal'} onClick={e => e.stopPropagation()}>
           {/* Title */}
           <div>
             <p style={{ fontSize: 16, fontWeight: 800, textAlign: 'center', margin: 0 }}>{t(lang, 'dishName')}</p>
@@ -607,12 +735,12 @@ export function TodayTab({
           {/* Totals summary */}
           <div className="compose-modal-summary">
             <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)', flex: 1 }}>
-              {lang === 'he' ? 'סה״כ' : 'Total'}
+              {t(lang, 'total')}
             </span>
-            <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--blue-hi)', display: 'flex', alignItems: 'baseline', gap: 2 }}>
+            <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--accent-hi)', display: 'flex', alignItems: 'baseline', gap: 2 }}>
               {totalCal} <span style={{ fontSize: 10, opacity: 0.7 }}>{t(lang, 'caloriesUnit')}</span>
             </span>
-            <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--green-hi)', display: 'flex', alignItems: 'baseline', gap: 2, marginInlineStart: 12 }}>
+            <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--positive-hi)', display: 'flex', alignItems: 'baseline', gap: 2, marginInlineStart: 12 }}>
               {totalProt} <span style={{ fontSize: 10, opacity: 0.7 }}>{t(lang, 'proteinUnit')}</span>
             </span>
           </div>
@@ -621,7 +749,7 @@ export function TodayTab({
           <div className="compose-modal-items">
             {items.map((item, idx) => (
               <div key={idx} className="compose-modal-item">
-                <div style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--purple-border-hi)', flexShrink: 0 }} />
+                <div style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--composed-border-hi)', flexShrink: 0 }} />
                 <span style={{ flex: 1, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</span>
                 <span style={{ color: 'var(--text-3)', flexShrink: 0 }}>
                   {item.cal} {t(lang, 'caloriesUnit')} · {item.prot} {t(lang, 'proteinUnit')}
@@ -634,7 +762,7 @@ export function TodayTab({
           <div style={{ position: 'relative' }}>
             <input
               className="inp"
-              style={{ borderColor: 'var(--purple-border-hi)', paddingInlineEnd: composeName ? 32 : 12 }}
+              style={{ borderColor: 'var(--composed-border-hi)', paddingInlineEnd: composeName ? 32 : 12 }}
               placeholder={t(lang, 'dishName') + '...'}
               value={composeName}
               onChange={e => setComposeName(e.target.value)}
@@ -701,7 +829,7 @@ export function TodayTab({
       {/* ── Add ingredient modal ──────────────────────────────── */}
       {addIngredientModal && (
         <div className="compose-modal-backdrop" onClick={() => setAddIngredientModal(null)}>
-          <div className="compose-modal" style={{ maxWidth: 420, padding: 0, overflow: 'hidden' }} onClick={e => e.stopPropagation()}>
+          <div ref={addIngredientModalRef} className="compose-modal" role="dialog" aria-modal="true" aria-label={lang === 'he' ? 'הוסף רכיב' : 'Add ingredient'} style={{ maxWidth: 420, padding: 0, overflow: 'hidden' }} onClick={e => e.stopPropagation()}>
             <FoodEntryForm
               key={addIngredientModal.groupId}
               lang={lang}
@@ -723,18 +851,18 @@ export function TodayTab({
         </div>
       )}
 
-      {/* ── FAB ──────────────────────────────────────────────────── */}
-      <button
+      {/* ── FAB — hidden on empty state ── */}
+      {todayMeals.length > 0 && <button
         onClick={() => openEntry()}
         aria-label={lang === 'he' ? 'הוסף ארוחה' : 'Add meal'}
         className="fab-btn"
         style={{
           position: 'fixed',
-          bottom: 'calc(28px + env(safe-area-inset-bottom, 0px))',
+          bottom: 'calc(32px + env(safe-area-inset-bottom, 0px))',
           insetInlineEnd: 'max(calc((100vw - 560px) / 2 + 24px), 24px)',
           zIndex: 40,
           width: 56, height: 56, borderRadius: '50%',
-          background: 'var(--blue)',
+          background: 'var(--accent)',
           color: 'var(--on-color)',
           border: 'none',
           cursor: 'pointer',
@@ -744,7 +872,7 @@ export function TodayTab({
         onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)' }}
       >
         <span className="icon" style={{ fontSize: 28 }}>add</span>
-      </button>
+      </button>}
 
       {/* ── Entry bottom sheet ────────────────────────────────────── */}
       <div
@@ -771,10 +899,8 @@ export function TodayTab({
           borderLeft: '1px solid var(--border)',
           borderRight: '1px solid var(--border)',
           borderRadius: '20px 20px 0 0',
-          // Tall by default so dropdowns have room; overflow visible so
-          // absolutely-positioned dropdowns are never clipped by the sheet.
-          height: 'min(90vh, 720px)',
-          overflow: 'visible',
+          height: 'min(90dvh, 720px)',
+          overflow: 'hidden',
           transform: entryOpen ? 'translateY(0)' : 'translateY(105%)',
           transition: 'transform 0.35s cubic-bezier(.22,.9,.36,1)',
           display: 'flex',
@@ -807,7 +933,7 @@ export function TodayTab({
               onUpsertHistory={onUpsertHistory}
               onTouchHistory={onTouchHistory}
               composedEntries={composedEntries}
-              onAddComposed={id => { handleAddComposed(id); setEntryOpen(false) }}
+              onAddComposed={(id, mealType) => { handleAddComposed(id, mealType); setEntryOpen(false) }}
               fluidThresholdMl={fluidThresholdMl}
               fluidZeroCalOnly={fluidZeroCalOnly}
               isOpen={entryOpen}

@@ -5,6 +5,7 @@ import { t } from '../lib/i18n'
 import { ClearableInput } from './ClearableInput'
 import type { ComposedEntry } from './FoodEntryForm'
 import { fuzzyScore } from '../lib/fuzzyMatch'
+import { useAppContext } from '../context/AppContext'
 
 const SEARCH_THRESHOLD = 0.45
 
@@ -31,7 +32,9 @@ export function FoodHistoryModal({
 }: FoodHistoryModalProps) {
   const searchRef = useRef<HTMLInputElement>(null)
   const isRTL = lang === 'he'
-  const unitLabel = lang === 'he' ? 'מנות' : 'serving(s)'
+  const unitLabel = t(lang, 'unitLabel')
+  const { styleMode } = useAppContext()
+  const minimal = styleMode === 'minimal'
 
   // Auto-focus search on open
   useEffect(() => {
@@ -76,7 +79,10 @@ export function FoodHistoryModal({
     >
       <div
         className="compose-modal"
-        style={{ maxWidth: 440, padding: 0, overflow: 'hidden', maxHeight: '80vh', display: 'flex', flexDirection: 'column' }}
+        role="dialog"
+        aria-modal="true"
+        aria-label={lang === 'he' ? 'היסטוריית מזון' : 'Food history'}
+        style={{ maxWidth: 440, padding: 0, overflow: 'hidden', maxHeight: '80dvh', display: 'flex', flexDirection: 'column' }}
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
@@ -122,25 +128,49 @@ export function FoodHistoryModal({
                   key={entry.id}
                   onClick={() => onSelectComposed?.(entry)}
                   style={{
-                    display: 'flex', alignItems: 'center', width: '100%',
-                    padding: '10px 14px', background: 'transparent', border: 'none',
-                    borderBottom: '1px solid var(--border)',
-                    cursor: 'pointer', gap: 10, textAlign: 'start', fontFamily: 'inherit',
+                    display: 'block', width: '100%',
+                    padding: minimal ? '8px 14px' : '10px 14px',
+                    background: 'transparent', border: 'none',
+                    borderBottom: minimal ? `1px dashed var(--border)` : '1px solid var(--border)',
+                    cursor: 'pointer', textAlign: 'start', fontFamily: 'inherit',
                     transition: 'background .12s',
                   }}
-                  onMouseEnter={e => (e.currentTarget.style.background = 'var(--purple-tint)')}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'var(--composed-tint)')}
                   onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                 >
-                  <span className="icon icon-sm" style={{ color: 'var(--purple)', flexShrink: 0 }}>restaurant</span>
-                  <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {entry.name}
-                  </span>
-                  <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-                    <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--blue-hi)' }}>{entry.calories}</span>
-                    <span style={{ fontSize: 11, color: 'var(--text-3)' }}>{t(lang, 'caloriesUnit')}</span>
-                    <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--green-hi)', marginInlineStart: 4 }}>{entry.protein}</span>
-                    <span style={{ fontSize: 11, color: 'var(--text-3)' }}>{t(lang, 'proteinUnit')}</span>
-                  </div>
+                  {minimal ? (
+                    <>
+                      <div style={{ display: 'flex', alignItems: 'baseline', gap: 5, overflow: 'hidden' }}>
+                        <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>
+                          {entry.name}
+                        </span>
+                        <span style={{ fontSize: 10, color: 'var(--composed)', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                          {t(lang, 'myDishes')}
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginTop: 2 }}>
+                        <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--accent-hi)', display: 'inline-flex', alignItems: 'baseline', gap: 2 }}>
+                          {entry.calories}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.8 }}>{t(lang, 'caloriesUnit')}</span>
+                        </span>
+                        <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--positive-hi)', display: 'inline-flex', alignItems: 'baseline', gap: 2 }}>
+                          {entry.protein}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.8 }}>{lang === 'he' ? 'ג׳ חלבון' : 'g protein'}</span>
+                        </span>
+                      </div>
+                    </>
+                  ) : (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <span className="icon icon-sm" style={{ color: 'var(--composed)', flexShrink: 0 }}>restaurant</span>
+                      <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {entry.name}
+                      </span>
+                      <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent-hi)' }}>{entry.calories}</span>
+                        <span style={{ fontSize: 11, color: 'var(--text-3)' }}>{t(lang, 'caloriesUnit')}</span>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--positive-hi)', marginInlineStart: 4 }}>{entry.protein}</span>
+                        <span style={{ fontSize: 11, color: 'var(--text-3)' }}>{t(lang, 'proteinUnit')}</span>
+                      </div>
+                    </div>
+                  )}
                 </button>
               ))}
               {filtered.length > 0 && (
@@ -161,34 +191,63 @@ export function FoodHistoryModal({
             const amtDisplay  = itemIsUnit  ? `${Math.abs(item.grams)} ${unitLabel}`
               : itemIsFluid ? (item.fluid_ml! >= 1000 ? `${(item.fluid_ml! / 1000).toFixed(1)}${lang === 'he' ? 'ל׳' : 'L'}` : `${Math.round(item.fluid_ml!)}ml`)
               : `${item.grams}g`
+            const isLast = i === filtered.length - 1
             return (
               <button
                 key={item.id}
                 onClick={() => onSelectHistory(item)}
                 style={{
-                  display: 'flex', alignItems: 'center', width: '100%',
-                  padding: '10px 14px', background: 'transparent', border: 'none',
-                  borderBottom: i < filtered.length - 1 ? '1px solid var(--border)' : 'none',
-                  cursor: 'pointer', gap: 10, textAlign: 'start', fontFamily: 'inherit',
+                  display: 'block', width: '100%',
+                  padding: minimal ? '8px 14px' : '10px 14px',
+                  background: 'transparent', border: 'none',
+                  borderBottom: minimal
+                    ? (isLast ? 'none' : '1px dashed var(--border)')
+                    : (isLast ? 'none' : '1px solid var(--border)'),
+                  cursor: 'pointer', textAlign: 'start', fontFamily: 'inherit',
                   transition: 'background .12s',
                 }}
                 onMouseEnter={e => (e.currentTarget.style.background = 'var(--inp-bg)')}
                 onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
               >
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {item.name}
-                  </p>
-                  <p style={{ fontSize: 11, color: 'var(--text-3)', margin: '2px 0 0' }}>
-                    {amtDisplay} · {item.use_count} {t(lang, 'uses')}
-                  </p>
-                </div>
-                <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--blue-hi)' }}>{Math.round(item.calories)}</span>
-                  <span style={{ fontSize: 11, color: 'var(--text-3)' }}>{t(lang, 'caloriesUnit')}</span>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--green-hi)', marginInlineStart: 4 }}>{Math.round(item.protein * 10) / 10}</span>
-                  <span style={{ fontSize: 11, color: 'var(--text-3)' }}>{t(lang, 'proteinUnit')}</span>
-                </div>
+                {minimal ? (
+                  <>
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 5, overflow: 'hidden' }}>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>
+                        {item.name}
+                        {itemIsFluid && <span className="icon" style={{ fontSize: 12, color: 'var(--cyan-hi)', opacity: 0.8, verticalAlign: 'middle', margin: '0 4px' }}>water_drop</span>}
+                      </span>
+                      <span style={{ fontSize: 11, color: 'var(--text-3)', whiteSpace: 'nowrap', flexShrink: 0 }}>{amtDisplay}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginTop: 2 }}>
+                      <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+                        <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--accent-hi)', display: 'inline-flex', alignItems: 'baseline', gap: 2 }}>
+                          {Math.round(item.calories)}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.8 }}>{t(lang, 'caloriesUnit')}</span>
+                        </span>
+                        <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--positive-hi)', display: 'inline-flex', alignItems: 'baseline', gap: 2 }}>
+                          {Math.round(item.protein * 10) / 10}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.8 }}>{lang === 'he' ? 'ג׳ חלבון' : 'g protein'}</span>
+                        </span>
+                      </div>
+                      <span style={{ fontSize: 10, color: 'var(--text-3)' }}>{item.use_count} {t(lang, 'uses')}</span>
+                    </div>
+                  </>
+                ) : (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {item.name}
+                      </p>
+                      <p style={{ fontSize: 11, color: 'var(--text-3)', margin: '2px 0 0' }}>
+                        {amtDisplay} · {item.use_count} {t(lang, 'uses')}
+                      </p>
+                    </div>
+                    <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent-hi)' }}>{Math.round(item.calories)}</span>
+                      <span style={{ fontSize: 11, color: 'var(--text-3)' }}>{t(lang, 'caloriesUnit')}</span>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--positive-hi)', marginInlineStart: 4 }}>{Math.round(item.protein * 10) / 10}</span>
+                      <span style={{ fontSize: 11, color: 'var(--text-3)' }}>{t(lang, 'proteinUnit')}</span>
+                    </div>
+                  </div>
+                )}
               </button>
             )
           })}

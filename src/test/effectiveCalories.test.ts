@@ -1,17 +1,8 @@
 import { describe, it, expect } from 'vitest'
+import { effectiveCalories, backCalcBase } from '../lib/units'
 
-// Issue 4: confirmation inputs show effectiveCalories/effectiveProtein directly.
-// User types total → back-calculate per-item base → re-display as total.
-// There is a known rounding edge case: typed=299, qty=3 → base=100 → shows 300.
-// This is acceptable for calorie tracking; the hint "N per item" surfaces the discrepancy.
-
-function effectiveCalories(baseCalories: number, qty: number): number {
-  return Math.round(baseCalories * qty)
-}
-
-function backCalcBase(typedTotal: number, qty: number): number {
-  return Math.round(typedTotal / qty)
-}
+// Known rounding edge case: typed=299, qty=3 → base=100 → shows 300.
+// Acceptable for calorie tracking; the "N per item" hint surfaces the discrepancy.
 
 describe('effectiveCalories — display', () => {
   it('qty=1: effective equals base', () => {
@@ -40,15 +31,13 @@ describe('backCalcBase — round-trip', () => {
   })
 
   it('known rounding discrepancy: typed=299, qty=3', () => {
-    // User types 299 → back-calc base = round(299/3) = round(99.67) = 100
-    // Display re-shows 100*3 = 300, not 299
     const typedTotal = 299
     const qty = 3
     const base = backCalcBase(typedTotal, qty) // 100
     expect(base).toBe(100)
     const redisplayed = effectiveCalories(base, qty) // 300
-    expect(redisplayed).toBe(300) // intentional: ±1 kcal rounding is acceptable
-    expect(Math.abs(redisplayed - typedTotal)).toBeLessThanOrEqual(qty) // error bounded by qty
+    expect(redisplayed).toBe(300)
+    expect(Math.abs(redisplayed - typedTotal)).toBeLessThanOrEqual(qty)
   })
 
   it('qty=1: no rounding occurs', () => {

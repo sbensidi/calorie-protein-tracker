@@ -1,18 +1,20 @@
-import { useState, useCallback, useRef, useEffect } from 'react'
+import { useState, useCallback, useRef, useEffect, lazy, Suspense } from 'react'
 import { useLockBodyScroll } from '../hooks/useLockBodyScroll'
 import type { FoodHistory, FoodLibraryItem, Meal, NutritionResult } from '../types'
 import type { Lang } from '../lib/i18n'
 import { t, dir, currentTime, today } from '../lib/i18n'
 import { calculateNutrition, AiRateLimitError, AiParseError } from '../lib/ai'
-import { BarcodeScanner } from './BarcodeScanner'
 import type { BarcodeScannerHandle } from './BarcodeScanner'
 import { ErrorBoundary } from './ErrorBoundary'
 import type { BarcodeProduct } from '../lib/barcodeApi'
+
+const BarcodeScanner = lazy(() => import('./BarcodeScanner').then(m => ({ default: m.BarcodeScanner })))
 import { FoodHistoryModal } from './FoodHistoryModal'
 import { UNITS, toBase, mlToGrams } from '../lib/units'
 import type { UnitId } from '../lib/units'
 import { fuzzyMatchLibrary } from '../lib/fuzzyMatch'
 import type { LibraryMatch } from '../lib/fuzzyMatch'
+import { useAppContext } from '../context/AppContext'
 
 type EntryUnit = UnitId | 'pcs'
 
@@ -38,6 +40,7 @@ export interface ComposedEntry {
 type CombinedSuggestion =
   | { source: 'history'; item: FoodHistory }
   | { source: 'library'; item: FoodLibraryItem }
+  | { source: 'fuzzy';   item: FoodLibraryItem }
 
 interface FoodEntryFormProps {
   lang: Lang
@@ -51,7 +54,7 @@ interface FoodEntryFormProps {
   onTouchHistory?: (id: string) => void
   defaultMealType?: MealType
   composedEntries?: ComposedEntry[]
-  onAddComposed?: (composedId: string) => void
+  onAddComposed?: (composedId: string, mealType: MealType) => void
   fluidGoalMl?: number
   fluidThresholdMl?: number
   fluidZeroCalOnly?: boolean
@@ -64,19 +67,21 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
   const [mode, setMode]               = useState<EntryMode>(
     () => (localStorage.getItem('entry-mode') as EntryMode) ?? 'scan'
   )
-  // Mount BarcodeScanner only once the user has actually visited the scan tab.
-  // This prevents getUserMedia from firing when the form opens in manual mode.
-  // Once mounted we keep it mounted (just hidden) so the stream stays alive.
-  const [scannerMounted, setScannerMounted] = useState(
-    () => (localStorage.getItem('entry-mode') as EntryMode) === 'scan'
-  )
+  // Mount BarcodeScanner only once the sheet is actually open AND the user visits scan mode.
+  // Starting as false prevents getUserMedia from firing while the sheet is still offscreen.
+  const [scannerMounted, setScannerMounted] = useState(false)
   const scannerRef  = useRef<BarcodeScannerHandle>(null)
 
-  // Stop camera stream when the parent sheet closes (sheet stays mounted via CSS transform, so
-  // unmount cleanup never fires — this effect is the only reliable trigger)
+  // When the sheet opens in scan mode, mount the scanner for the first time.
+  // When the sheet closes, stop the camera stream (sheet stays in DOM via CSS transform,
+  // so unmount cleanup never fires — this effect is the only reliable trigger).
   useEffect(() => {
-    if (isOpen === false) scannerRef.current?.stop()
-  }, [isOpen])
+    if (isOpen) {
+      if (mode === 'scan') setScannerMounted(true)
+    } else {
+      scannerRef.current?.stop()
+    }
+  }, [isOpen, mode])
 
   const [scanProduct,  setScanProduct]  = useState<BarcodeProduct | null>(null)
   const [scanNotFound, setScanNotFound] = useState<string | null>(null) // barcode that wasn't found
@@ -93,6 +98,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
       const t = defaultMealType ?? mealTypeByTime()
       setMealType(t)
       setScanMealType(t)
+      setComposedMealType(t)
     }
   }, [isOpen, defaultMealType])
 
@@ -103,7 +109,6 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
   const [aiError, setAiError]         = useState<'network' | 'notFound' | 'rateLimit' | 'parseError' | null>(null)
   const libraryDensityRef             = useRef<number | null>(null) // density from library selection
   const matchedLibraryItemRef         = useRef<LibraryMatch | null>(null)
-  const matchDismissedRef             = useRef(false) // user explicitly dismissed the fuzzy chip
   const [matchedLib, setMatchedLib]   = useState<LibraryMatch | null>(null)
   const servingGramsRef               = useRef(defaultServingGrams) // kept fresh for use inside useCallback
 
@@ -115,7 +120,8 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
   const lastCalcRef = useRef(0)  // debounce: timestamp of last calculate call
 
   // Composed entry pending confirmation
-  const [pendingComposed, setPendingComposed] = useState<ComposedEntry | null>(null)
+  const [pendingComposed, setPendingComposed]       = useState<ComposedEntry | null>(null)
+  const [composedMealType, setComposedMealType]     = useState<MealType>(() => defaultMealType ?? mealTypeByTime())
 
   // History modal
   const [historyModalOpen, setHistoryModalOpen] = useState(false)
@@ -156,16 +162,28 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
     setDropdownOpen(combined.length > 0)
   }
 
-  // Debounced fuzzy match: when user types a food name manually (no library selection),
-  // try to identify a library match so the serving hint can appear without requiring Calculate.
+  // Debounced fuzzy match: prepend best-guess library item into the dropdown so
+  // the user can pick it explicitly. Exact matches are applied immediately (reliable).
   useEffect(() => {
     if (!foodName.trim() || library.length === 0) return
     if (matchedLibraryItemRef.current?.confidence === 'exact') return
-    if (matchDismissedRef.current) return
     const timer = setTimeout(() => {
       const match = fuzzyMatchLibrary(foodName, library, lang)
-      matchedLibraryItemRef.current = match
-      setMatchedLib(match)
+      if (!match) return
+      if (match.confidence === 'exact') {
+        matchedLibraryItemRef.current = match
+        setMatchedLib(match)
+      } else {
+        // Fuzzy: inject into dropdown as first item (deduplicated)
+        setSuggestions(prev => {
+          const alreadyIn = prev.some(s =>
+            (s.source === 'library' || s.source === 'fuzzy') && s.item.id === match.item.id
+          )
+          if (alreadyIn) return prev
+          return [{ source: 'fuzzy' as const, item: match.item }, ...prev.filter(s => s.source !== 'fuzzy')]
+        })
+        setDropdownOpen(true)
+      }
     }, 400)
     return () => clearTimeout(timer)
   }, [foodName, library, lang])
@@ -175,7 +193,6 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
     openDropdown(v)
     setNutrition(null)
     setSelectedHistoryId(null)   // user is typing a new name — no longer a history selection
-    matchDismissedRef.current = false  // new query → allow fuzzy match again
     if (!v.trim()) { matchedLibraryItemRef.current = null; setMatchedLib(null) }
   }
 
@@ -324,12 +341,6 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
         setCalculating(false)
         return
       }
-      // Fuzzy match — still try to identify the item for serving hint purposes
-      if (library.length > 0) {
-        const fuzzy = fuzzyMatchLibrary(foodName, library, lang)
-        matchedLibraryItemRef.current = fuzzy
-        setMatchedLib(fuzzy)
-      }
     }
 
     // Step 3+: AI (Groq → USDA fallback inside calculateNutrition)
@@ -439,8 +450,8 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
     setScanGrams('100')
   }
 
-  const numCalories = Number(editCalories) || 0
-  const numProtein  = Number(editProtein)  || 0
+  const numCalories = Math.max(0, Number(editCalories) || 0)
+  const numProtein  = Math.max(0, Number(editProtein)  || 0)
   const amountInGrams: number = (() => {
     if (isPcs) return 0
     const uid = entryUnit as UnitId
@@ -510,6 +521,8 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
   ]
 
   const isRTL = lang === 'he'
+  const { styleMode } = useAppContext()
+  const minimal = styleMode === 'minimal'
 
   // Clear button — spans full height of wrapper, icon centered via flexbox
   const clearBtnStyle = (): React.CSSProperties => ({
@@ -542,7 +555,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
     {pendingComposed && (
       <div className="card" style={{ padding: 16, marginBottom: 20 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-          <span className="icon icon-sm" style={{ color: 'var(--purple)' }}>restaurant</span>
+          <span className="icon icon-sm" style={{ color: 'var(--composed)' }}>restaurant</span>
           <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', flex: 1 }}>
             {pendingComposed.name}
           </span>
@@ -553,23 +566,34 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
             <span className="icon icon-sm">close</span>
           </button>
         </div>
-        <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
-          <div style={{ flex: 1, background: 'var(--blue-fill)', border: '1px solid color-mix(in srgb, var(--blue) 14%, transparent)', borderRadius: 10, padding: '10px 12px' }}>
-            <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--blue-hi)', letterSpacing: '0.04em', margin: '0 0 3px' }}>{t(lang, 'calories').toUpperCase()}</p>
+        <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+          <div style={{ flex: 1, background: 'var(--accent-fill)', border: '1px solid color-mix(in srgb, var(--accent) 14%, transparent)', borderRadius: 10, padding: '10px 12px' }}>
+            <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--accent-hi)', letterSpacing: '0.04em', margin: '0 0 3px' }}>{t(lang, 'calories').toUpperCase()}</p>
             <p style={{ fontSize: 20, fontWeight: 800, color: 'var(--text)', margin: 0, lineHeight: 1 }}>{pendingComposed.calories}</p>
             <p style={{ fontSize: 10, color: 'var(--text-3)', margin: '2px 0 0' }}>{t(lang, 'caloriesUnit')}</p>
           </div>
-          <div style={{ flex: 1, background: 'var(--green-fill)', border: '1px solid color-mix(in srgb, var(--green) 14%, transparent)', borderRadius: 10, padding: '10px 12px' }}>
-            <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--green-hi)', letterSpacing: '0.04em', margin: '0 0 3px' }}>{t(lang, 'protein').toUpperCase()}</p>
+          <div style={{ flex: 1, background: 'var(--positive-fill)', border: '1px solid color-mix(in srgb, var(--positive) 14%, transparent)', borderRadius: 10, padding: '10px 12px' }}>
+            <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--positive-hi)', letterSpacing: '0.04em', margin: '0 0 3px' }}>{t(lang, 'protein').toUpperCase()}</p>
             <p style={{ fontSize: 20, fontWeight: 800, color: 'var(--text)', margin: 0, lineHeight: 1 }}>{pendingComposed.protein}</p>
             <p style={{ fontSize: 10, color: 'var(--text-3)', margin: '2px 0 0' }}>{t(lang, 'proteinUnit')}</p>
           </div>
         </div>
+        {/* Meal type selector */}
+        <select
+          className="inp"
+          style={{ width: '100%', fontSize: 16, marginBottom: 14 }}
+          value={composedMealType}
+          onChange={e => setComposedMealType(e.target.value as MealType)}
+        >
+          {mealTypeOptions.map(o => (
+            <option key={o.value} value={o.value}>{o.label}</option>
+          ))}
+        </select>
         <div style={{ display: 'flex', gap: 8 }}>
           <button
             className="btn-confirm"
             style={{ flex: 1 }}
-            onClick={() => { onAddComposed?.(pendingComposed.id); setPendingComposed(null) }}
+            onClick={() => { onAddComposed?.(pendingComposed.id, composedMealType); setPendingComposed(null) }}
           >
             {t(lang, 'add')}
           </button>
@@ -582,21 +606,21 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
 
     {!pendingComposed && <div className="card" style={{ padding: 16, marginBottom: 20 }}>
 
-      {/* ── Segmented control ─────────────────────────────────── */}
+      {/* ── Segmented control: manual first → right in RTL, left in LTR ── */}
       <div className="seg-control" style={{ marginBottom: 14 }}>
-        <button
-          className={`seg-btn ${mode === 'scan' ? 'seg-btn--scan' : ''}`}
-          onClick={() => switchMode('scan')}
-        >
-          <span className="icon icon-sm">barcode_scanner</span>
-          {t(lang, 'scanBarcode')}
-        </button>
         <button
           className={`seg-btn ${mode === 'manual' ? 'seg-btn--manual' : ''}`}
           onClick={() => switchMode('manual')}
         >
           <span className="icon icon-sm">edit</span>
           {t(lang, 'manualEntry')}
+        </button>
+        <button
+          className={`seg-btn ${mode === 'scan' ? 'seg-btn--scan' : ''}`}
+          onClick={() => switchMode('scan')}
+        >
+          <span className="icon icon-sm">barcode_scanner</span>
+          {t(lang, 'scanBarcode')}
         </button>
       </div>
 
@@ -606,12 +630,14 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
       {scannerMounted && (
         <div style={{ display: mode === 'scan' && !scanProduct && !scanNotFound ? undefined : 'none' }}>
           <ErrorBoundary>
-            <BarcodeScanner
-              ref={scannerRef}
-              lang={lang}
-              onResult={handleScanResult}
-              onNotFound={handleScanNotFound}
-            />
+            <Suspense fallback={null}>
+              <BarcodeScanner
+                ref={scannerRef}
+                lang={lang}
+                onResult={handleScanResult}
+                onNotFound={handleScanNotFound}
+              />
+            </Suspense>
           </ErrorBoundary>
         </div>
       )}
@@ -641,12 +667,12 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
           {/* Product found badge */}
           <div style={{
             display: 'flex', alignItems: 'center', gap: 7,
-            background: 'var(--green-fill)',
-            border: '1px solid var(--green-select)',
+            background: 'var(--positive-fill)',
+            border: '1px solid var(--positive-select)',
             borderRadius: 10, padding: '8px 11px',
           }}>
-            <span className="icon icon-sm" style={{ color: 'var(--green-hi)' }}>check_circle</span>
-            <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--green-hi)', flex: 1 }}>
+            <span className="icon icon-sm" style={{ color: 'var(--positive-hi)' }}>check_circle</span>
+            <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--positive-hi)', flex: 1 }}>
               {t(lang, 'productFound')}
             </span>
             <span style={{ fontSize: 10, color: 'var(--text-3)', fontWeight: 500 }}>
@@ -673,13 +699,13 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
               {t(lang, 'per100g')}
             </p>
             <div style={{ display: 'flex', gap: 8 }}>
-              <div style={{ flex: 1, background: 'var(--blue-fill)', border: '1px solid color-mix(in srgb, var(--blue) 14%, transparent)', borderRadius: 10, padding: '10px 12px' }}>
-                <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--blue-hi)', letterSpacing: '0.04em', marginBottom: 3 }}>{t(lang, 'calories').toUpperCase()}</p>
+              <div style={{ flex: 1, background: 'var(--accent-fill)', border: '1px solid color-mix(in srgb, var(--accent) 14%, transparent)', borderRadius: 10, padding: '10px 12px' }}>
+                <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--accent-hi)', letterSpacing: '0.04em', marginBottom: 3 }}>{t(lang, 'calories').toUpperCase()}</p>
                 <p style={{ fontSize: 20, fontWeight: 800, color: 'var(--text)', margin: 0, lineHeight: 1 }}>{scanProduct.caloriesPer100g}</p>
                 <p style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 2 }}>{t(lang, 'caloriesUnit')}</p>
               </div>
-              <div style={{ flex: 1, background: 'var(--green-fill)', border: '1px solid color-mix(in srgb, var(--green) 14%, transparent)', borderRadius: 10, padding: '10px 12px' }}>
-                <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--green-hi)', letterSpacing: '0.04em', marginBottom: 3 }}>{t(lang, 'protein').toUpperCase()}</p>
+              <div style={{ flex: 1, background: 'var(--positive-fill)', border: '1px solid color-mix(in srgb, var(--positive) 14%, transparent)', borderRadius: 10, padding: '10px 12px' }}>
+                <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--positive-hi)', letterSpacing: '0.04em', marginBottom: 3 }}>{t(lang, 'protein').toUpperCase()}</p>
                 <p style={{ fontSize: 20, fontWeight: 800, color: 'var(--text)', margin: 0, lineHeight: 1 }}>{scanProduct.proteinPer100g}</p>
                 <p style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 2 }}>{t(lang, 'proteinUnit')}</p>
               </div>
@@ -688,33 +714,28 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
 
           <div style={{ height: 1, background: 'var(--border)' }} />
 
-          {/* Grams + meal type */}
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-2)', flexShrink: 0 }}>
-              {t(lang, 'grams')}
-            </span>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
-              <button
-                className="qty-btn"
-                onClick={() => setScanGrams(g => String(Math.max(10, Math.round((Number(g) || 0) - 10))))}
-              >−</button>
+          {/* Weight + meal type row */}
+          <div style={{ display: 'flex', gap: 8 }}>
+            <div style={{ position: 'relative', width: 110, flexShrink: 0 }}>
               <input
                 type="number"
                 inputMode="decimal"
                 className="inp"
-                style={{ width: 64, textAlign: 'center', padding: '0 4px' }}
+                style={{ textAlign: 'center', paddingInlineEnd: 28, fontSize: 16 }}
                 value={scanGrams}
                 onFocus={e => e.target.select()}
                 onChange={e => setScanGrams(e.target.value)}
               />
-              <button
-                className="qty-btn"
-                onClick={() => setScanGrams(g => String((Number(g) || 0) + 10))}
-              >+</button>
+              <span style={{
+                position: 'absolute', insetInlineEnd: 10, top: '50%', transform: 'translateY(-50%)',
+                fontSize: 11, fontWeight: 600, color: 'var(--text-3)', pointerEvents: 'none',
+              }}>
+                {lang === 'he' ? 'ג׳' : 'g'}
+              </span>
             </div>
             <select
               className="inp"
-              style={{ flex: 1 }}
+              style={{ flex: 1, fontSize: 16 }}
               value={scanMealType}
               onChange={e => setScanMealType(e.target.value as MealType)}
             >
@@ -735,23 +756,24 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
               <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-3)', flex: 1 }}>
                 {t(lang, 'totalGrams').replace('גרמים', '').replace('grams', '').trim() || 'סה״כ'}
               </span>
-              <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 2, fontSize: 15, fontWeight: 800, color: 'var(--blue-hi)' }}>
+              <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 2, fontSize: 15, fontWeight: 800, color: 'var(--accent-hi)' }}>
                 {scanCal}
                 <span style={{ fontSize: 10, fontWeight: 600, opacity: 0.7 }}>{t(lang, 'caloriesUnit')}</span>
               </span>
-              <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 2, fontSize: 15, fontWeight: 800, color: 'var(--green-hi)', marginInlineStart: 8 }}>
+              <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 2, fontSize: 15, fontWeight: 800, color: 'var(--positive-hi)', marginInlineStart: 8 }}>
                 {scanProt}
                 <span style={{ fontSize: 10, fontWeight: 600, opacity: 0.7 }}>{t(lang, 'proteinUnit')}</span>
+                <span style={{ fontSize: 10, fontWeight: 500, opacity: 0.55 }}>{t(lang, 'protein')}</span>
               </span>
             </div>
           )}
 
           {/* Actions */}
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div style={{ display: 'flex', gap: 8, paddingTop: 4 }}>
             <button className="btn-confirm" onClick={handleScanAdd} style={{ flex: 1 }} disabled={scanG <= 0}>
               {t(lang, 'add')}
             </button>
-            <button className="btn-ghost" onClick={handleScanAgain} style={{ flexShrink: 0, paddingInline: 14 }}>
+            <button className="btn-ghost" onClick={handleScanAgain} style={{ flexShrink: 0, paddingInline: 14, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <span className="icon icon-sm">barcode_scanner</span>
             </button>
           </div>
@@ -765,9 +787,9 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
       {/* Input form — hidden once nutrition is confirmed (isolation: Issue 8) */}
       {nutrition === null && (
       <>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 64px 84px', gap: 8 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
 
-        {/* Row 1 col 1 — food name */}
+        {/* Row 1 — food name (full width) */}
         <div style={{ position: 'relative' }}>
           <input
             ref={inputRef}
@@ -778,9 +800,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
             onFocus={handleFocus}
             onBlur={handleBlur}
             dir={dir(lang)}
-            style={isRTL
-              ? { fontSize: 16, paddingLeft: foodName ? 78 : 46, paddingRight: 12 }
-              : { fontSize: 16, paddingRight: foodName ? 78 : 46, paddingLeft: 12 }}
+            style={{ fontSize: 16, paddingInlineStart: 12, paddingInlineEnd: foodName ? 78 : 46 }}
           />
           {/* History browse button */}
           <button
@@ -819,118 +839,102 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
           )}
         </div>
 
-        {/* Row 1 col 2 — numeric amount */}
-        <input
-          type="number"
-          inputMode="decimal"
-          className="inp"
-          style={{ textAlign: 'center', fontSize: 16 }}
-          placeholder={(() => {
-            const labels: Record<string, { he: string; en: string }> = {
-              g:     { he: 'גרם',       en: 'g'     },
-              oz:    { he: 'אונקיה',    en: 'oz'    },
-              ml:    { he: 'מ"ל',       en: 'ml'    },
-              cup:   { he: 'כוס',       en: 'cup'   },
-              tbsp:  { he: 'כף',        en: 'tbsp'  },
-              tsp:   { he: 'כפית',      en: 'tsp'   },
-              fl_oz: { he: "פל.אונ׳",   en: 'fl oz' },
-              pcs:   { he: 'מנה',       en: 'serving' },
-            }
-            return lang === 'he' ? labels[entryUnit].he : labels[entryUnit].en
-          })()}
-          value={amountStr}
-          onFocus={e => e.target.select()}
-          onChange={e => { setAmountStr(e.target.value); setNutrition(null) }}
-        />
+        {/* Row 2 — amount | unit | meal type | calculate */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr auto', gap: 8 }}>
 
-        {/* Row 1 col 3 — unit dropdown */}
-        <select
-          className="inp"
-          value={entryUnit}
-          onChange={e => {
-            const next = e.target.value as EntryUnit
-            setEntryUnit(next)
-            setNutrition(null)
-            libraryDensityRef.current = null
-          }}
-          style={{ fontSize: 16, fontWeight: 700, cursor: 'pointer', textOverflow: 'ellipsis', overflow: 'hidden' }}
-        >
-          {([
-            { v: 'g',     he: 'גרם',        en: 'g'     },
-            { v: 'oz',    he: 'אונקיה',      en: 'oz'    },
-            { v: 'ml',    he: 'מ"ל',         en: 'ml'    },
-            { v: 'cup',   he: 'כוס',         en: 'cup'   },
-            { v: 'tbsp',  he: 'כף',          en: 'tbsp'  },
-            { v: 'tsp',   he: 'כפית',        en: 'tsp'   },
-            { v: 'fl_oz', he: 'פל.אונ׳',    en: 'fl oz' },
-            { v: 'pcs',   he: 'מנה',         en: 'serving' },
-          ] as const).map(u => (
-            <option key={u.v} value={u.v}>{lang === 'he' ? u.he : u.en}</option>
-          ))}
-        </select>
+          {/* Col 1 — numeric amount */}
+          <input
+            type="number"
+            inputMode="decimal"
+            className="inp"
+            style={{ textAlign: 'center', fontSize: 16 }}
+            placeholder={(() => {
+              const labels: Record<string, { he: string; en: string }> = {
+                g:     { he: 'גרם',       en: 'g'     },
+                oz:    { he: 'אונקיה',    en: 'oz'    },
+                ml:    { he: 'מ"ל',       en: 'ml'    },
+                cup:   { he: 'כוס',       en: 'cup'   },
+                tbsp:  { he: 'כף',        en: 'tbsp'  },
+                tsp:   { he: 'כפית',      en: 'tsp'   },
+                fl_oz: { he: "פל.אונ׳",   en: 'fl oz' },
+                pcs:   { he: 'מנה',       en: 'serving' },
+              }
+              return lang === 'he' ? labels[entryUnit].he : labels[entryUnit].en
+            })()}
+            value={amountStr}
+            onFocus={e => e.target.select()}
+            onChange={e => { setAmountStr(e.target.value); setNutrition(null) }}
+          />
 
-        {/* Row 2 col 1 — meal type */}
-        <select
-          className="inp"
-          style={{ fontSize: 16 }}
-          value={mealType}
-          onChange={e => setMealType(e.target.value as MealType)}
-        >
-          {mealTypeOptions.map(o => (
-            <option key={o.value} value={o.value}>{o.label}</option>
-          ))}
-        </select>
+          {/* Col 2 — unit dropdown */}
+          <select
+            className="inp"
+            value={entryUnit}
+            onChange={e => {
+              const next = e.target.value as EntryUnit
+              setEntryUnit(next)
+              setNutrition(null)
+              libraryDensityRef.current = null
+            }}
+            style={{ fontSize: 16, fontWeight: 700, cursor: 'pointer', textOverflow: 'ellipsis', overflow: 'hidden' }}
+          >
+            {([
+              { v: 'g',     he: 'גרם',        en: 'g'     },
+              { v: 'oz',    he: 'אונקיה',      en: 'oz'    },
+              { v: 'ml',    he: 'מ"ל',         en: 'ml'    },
+              { v: 'cup',   he: 'כוס',         en: 'cup'   },
+              { v: 'tbsp',  he: 'כף',          en: 'tbsp'  },
+              { v: 'tsp',   he: 'כפית',        en: 'tsp'   },
+              { v: 'fl_oz', he: 'פל.אונ׳',    en: 'fl oz' },
+              { v: 'pcs',   he: 'מנה',         en: 'serving' },
+            ] as const).map(u => (
+              <option key={u.v} value={u.v}>{lang === 'he' ? u.he : u.en}</option>
+            ))}
+          </select>
 
-        {/* Row 2 cols 2+3 — calculate button */}
-        <button
-          className="btn-primary"
-          onClick={handleCalculate}
-          disabled={!foodName.trim() || calculating}
-          style={{ gridColumn: '2 / 4', width: '100%' }}
-        >
-          {calculating
-            ? <span className="icon icon-sm" style={{ animation: 'spin 0.7s linear infinite', display: 'inline-block' }}>progress_activity</span>
-            : t(lang, 'calculate')}
-        </button>
+          {/* Col 3 — meal type */}
+          <select
+            className="inp"
+            style={{ fontSize: 16 }}
+            value={mealType}
+            onChange={e => setMealType(e.target.value as MealType)}
+          >
+            {mealTypeOptions.map(o => (
+              <option key={o.value} value={o.value}>{o.label}</option>
+            ))}
+          </select>
+
+          {/* Col 4 — calculate button */}
+          <button
+            className="btn-ghost"
+            onClick={handleCalculate}
+            disabled={!foodName.trim() || calculating}
+            style={{ whiteSpace: 'nowrap', paddingInline: 16 }}
+          >
+            {calculating
+              ? <span className="icon icon-sm" style={{ animation: 'spin 0.7s linear infinite', display: 'inline-block' }}>progress_activity</span>
+              : t(lang, 'calculate')}
+          </button>
+
+        </div>
 
       </div>
 
-      {/* Serving hint + fuzzy match chip */}
-      {(entryUnit === 'pcs' || matchedLib?.confidence === 'fuzzy') && (
+      {/* Serving hint */}
+      {entryUnit === 'pcs' && (
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 6 }}>
-          {entryUnit === 'pcs' && (
-            <span style={{
-              fontSize: 10, fontWeight: 600, color: 'var(--text-3)',
-              background: 'var(--bg-card)', border: '1px solid var(--border)',
-              borderRadius: 8, padding: '3px 8px',
-            }}>
-              {lang === 'he' ? `מנה ≈ ${servingGrams}ג׳` : `serving ≈ ${servingGrams}g`}
-              {matchedLib?.item.countable && matchedLib.item.serving_size != null && (
-                <span style={{ marginInlineStart: 4, color: 'var(--blue-hi)', opacity: 0.8 }}>
-                  <span className="icon" style={{ fontSize: 10, verticalAlign: 'middle' }}>library_books</span>
-                </span>
-              )}
-            </span>
-          )}
-          {matchedLib?.confidence === 'fuzzy' && (
-            <span style={{
-              display: 'inline-flex', alignItems: 'center', gap: 4,
-              fontSize: 10, fontWeight: 600, color: 'var(--indigo-hi)',
-              background: 'var(--indigo-chip)', border: '1px solid color-mix(in srgb, var(--indigo) 25%, transparent)',
-              borderRadius: 8, padding: '3px 6px 3px 8px',
-            }}>
-              {lang === 'he'
-                ? `התאמה: ${matchedLib.item.name_he}`
-                : `Matched: ${matchedLib.item.name_en}`}
-              <button
-                onMouseDown={e => { e.preventDefault(); matchedLibraryItemRef.current = null; setMatchedLib(null); matchDismissedRef.current = true }}
-                tabIndex={-1}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', color: 'var(--indigo-hi)', opacity: 0.7, lineHeight: 1 }}
-              >
-                <span className="icon" style={{ fontSize: 12 }}>close</span>
-              </button>
-            </span>
-          )}
+          <span style={{
+            fontSize: 10, fontWeight: 600, color: 'var(--text-3)',
+            background: 'var(--bg-card)', border: '1px solid var(--border)',
+            borderRadius: 8, padding: '3px 8px',
+          }}>
+            {lang === 'he' ? `מנה ≈ ${servingGrams}ג׳` : `serving ≈ ${servingGrams}g`}
+            {matchedLib?.item.countable && matchedLib.item.serving_size != null && (
+              <span style={{ marginInlineStart: 4, color: 'var(--accent-hi)', opacity: 0.8 }}>
+                <span className="icon" style={{ fontSize: 10, verticalAlign: 'middle' }}>library_books</span>
+              </span>
+            )}
+          </span>
         </div>
       )}
 
@@ -972,31 +976,100 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
                 key={entry.id}
                 onMouseDown={() => handleComposedSelect(entry)}
                 style={{
-                  display: 'flex', alignItems: 'center', width: '100%',
-                  padding: '9px 12px', background: 'transparent', border: 'none',
-                  borderBottom: '1px solid var(--border)',
-                  cursor: 'pointer', gap: 10, textAlign: 'start', fontFamily: 'inherit',
+                  display: 'block', width: '100%',
+                  padding: minimal ? '8px 12px' : '9px 12px', background: 'transparent', border: 'none',
+                  borderBottom: minimal ? '1px dashed var(--border)' : '1px solid var(--border)',
+                  cursor: 'pointer', textAlign: 'start', fontFamily: 'inherit',
                   transition: 'background .12s',
                 }}
-                onMouseEnter={e => (e.currentTarget.style.background = 'var(--purple-tint)')}
+                onMouseEnter={e => (e.currentTarget.style.background = 'var(--composed-tint)')}
                 onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
               >
-                <span className="icon icon-sm" style={{ color: 'var(--purple)', flexShrink: 0 }}>restaurant</span>
-                <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {entry.name}
-                </span>
-                <span style={{ fontSize: 11, color: 'var(--blue-hi)', flexShrink: 0, fontWeight: 600 }}>{entry.calories}</span>
-                <span style={{ fontSize: 11, color: 'var(--green-hi)', flexShrink: 0, fontWeight: 600 }}>{entry.protein}g</span>
+                {minimal ? (
+                  <>
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 5, overflow: 'hidden' }}>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>{entry.name}</span>
+                      <span style={{ fontSize: 10, color: 'var(--composed)', whiteSpace: 'nowrap', flexShrink: 0 }}>{lang === 'he' ? 'מנה מורכבת' : 'dish'}</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginTop: 2 }}>
+                      <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--accent-hi)', display: 'inline-flex', alignItems: 'baseline', gap: 2 }}>
+                        {entry.calories}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.8 }}>{t(lang, 'caloriesUnit')}</span>
+                      </span>
+                      <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--positive-hi)', display: 'inline-flex', alignItems: 'baseline', gap: 2 }}>
+                        {entry.protein}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.8 }}>{lang === 'he' ? 'ג׳ חלבון' : 'g protein'}</span>
+                      </span>
+                    </div>
+                  </>
+                ) : (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <span className="icon icon-sm" style={{ color: 'var(--composed)', flexShrink: 0 }}>restaurant</span>
+                    <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{entry.name}</span>
+                    <span style={{ fontSize: 11, color: 'var(--accent-hi)', flexShrink: 0, fontWeight: 600 }}>{entry.calories}</span>
+                    <span style={{ fontSize: 11, color: 'var(--positive-hi)', flexShrink: 0, fontWeight: 600 }}>{entry.protein}g</span>
+                  </div>
+                )}
               </button>
             ))}
-            {/* Food history + library items */}
+            {/* Food history + library items (+ fuzzy best-guess at top) */}
             {suggestions.map((s, i) => {
               const isLast = i === suggestions.length - 1
+              if (s.source === 'fuzzy') {
+                const item     = s.item
+                const name     = lang === 'he' ? item.name_he : item.name_en
+                const unit     = (item.serving_unit as UnitId) in UNITS ? (item.serving_unit as UnitId) : 'g'
+                const servBase = item.serving_size ?? 100
+                const grams    = item.density ? mlToGrams(toBase(servBase, unit), item.density) : toBase(servBase, unit)
+                const cal      = Math.round(item.calories_per_100g * grams / 100)
+                const prot     = Math.round(item.protein_per_100g  * grams / 100 * 10) / 10
+                return (
+                  <button
+                    key={`fuzzy-${item.id}`}
+                    onMouseDown={() => handleLibrarySelect(item)}
+                    style={{
+                      display: 'block', width: '100%',
+                      padding: minimal ? '8px 12px' : '9px 12px', background: 'var(--library-fill)', border: 'none',
+                      borderBottom: minimal ? '1px dashed var(--border)' : '1px solid var(--border)',
+                      cursor: 'pointer', textAlign: 'start', fontFamily: 'inherit',
+                      transition: 'background .12s',
+                    }}
+                    onMouseEnter={e => (e.currentTarget.style.background = 'var(--library-tint)')}
+                    onMouseLeave={e => (e.currentTarget.style.background = 'var(--library-fill)')}
+                  >
+                    {minimal ? (
+                      <>
+                        <div style={{ display: 'flex', alignItems: 'baseline', gap: 5, overflow: 'hidden' }}>
+                          <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>{name}</span>
+                          <span style={{ fontSize: 10, color: 'var(--library-hi)', whiteSpace: 'nowrap', flexShrink: 0 }}>{lang === 'he' ? 'ספרייה · קרוב' : 'library · close'}</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginTop: 2 }}>
+                          <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--accent-hi)', display: 'inline-flex', alignItems: 'baseline', gap: 2 }}>
+                            {cal}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.8 }}>{t(lang, 'caloriesUnit')}</span>
+                          </span>
+                          <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--positive-hi)', display: 'inline-flex', alignItems: 'baseline', gap: 2 }}>
+                            {prot}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.8 }}>{lang === 'he' ? 'ג׳ חלבון' : 'g protein'}</span>
+                          </span>
+                        </div>
+                      </>
+                    ) : (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <span className="icon icon-sm" style={{ color: 'var(--library)', flexShrink: 0 }}>library_books</span>
+                        <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</span>
+                        <span style={{
+                          fontSize: 9, fontWeight: 700, color: 'var(--library-hi)',
+                          background: 'var(--library-chip)', borderRadius: 4, padding: '1px 5px', flexShrink: 0,
+                        }}>{lang === 'he' ? 'קרוב' : 'close'}</span>
+                        <span style={{ fontSize: 11, color: 'var(--accent-hi)', flexShrink: 0, fontWeight: 600 }}>{cal}</span>
+                        <span style={{ fontSize: 11, color: 'var(--positive-hi)', flexShrink: 0, fontWeight: 600 }}>{prot}g</span>
+                      </div>
+                    )}
+                  </button>
+                )
+              }
               if (s.source === 'history') {
                 const item = s.item
                 const itemIsUnit  = item.grams < 0
                 const itemIsFluid = item.fluid_ml != null && item.fluid_ml > 0
-                const amtDisplay  = itemIsUnit  ? `${Math.abs(item.grams)} ${lang === 'he' ? 'מנות' : 'serving(s)'}`
+                const amtDisplay  = itemIsUnit  ? `${Math.abs(item.grams)} ${t(lang, 'unitLabel')}`
                   : itemIsFluid ? (item.fluid_ml! >= 1000 ? `${(item.fluid_ml! / 1000).toFixed(1)}${lang === 'he' ? 'ל׳' : 'L'}` : `${Math.round(item.fluid_ml!)}ml`)
                   : `${item.grams}g`
                 return (
@@ -1004,22 +1077,42 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
                     key={`h-${item.id}`}
                     onMouseDown={() => handleSuggestionSelect(item)}
                     style={{
-                      display: 'flex', alignItems: 'center', width: '100%',
-                      padding: '9px 12px', background: 'transparent', border: 'none',
-                      borderBottom: isLast ? 'none' : '1px solid var(--border)',
-                      cursor: 'pointer', gap: 10, textAlign: 'start', fontFamily: 'inherit',
+                      display: 'block', width: '100%',
+                      padding: minimal ? '8px 12px' : '9px 12px', background: 'transparent', border: 'none',
+                      borderBottom: isLast ? 'none' : (minimal ? '1px dashed var(--border)' : '1px solid var(--border)'),
+                      cursor: 'pointer', textAlign: 'start', fontFamily: 'inherit',
                       transition: 'background .12s',
                     }}
                     onMouseEnter={e => (e.currentTarget.style.background = 'var(--surface-2)')}
                     onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                   >
-                    <span className="icon icon-sm" style={{ color: 'var(--text-2)', flexShrink: 0 }}>history</span>
-                    <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {item.name}
-                    </span>
-                    <span style={{ fontSize: 11, color: 'var(--text-2)', flexShrink: 0 }}>{amtDisplay}</span>
-                    <span style={{ fontSize: 11, color: 'var(--blue-hi)', flexShrink: 0, fontWeight: 600 }}>{Math.round(item.calories)}</span>
-                    <span style={{ fontSize: 11, color: 'var(--green-hi)', flexShrink: 0, fontWeight: 600 }}>{Math.round(item.protein * 10) / 10}g</span>
+                    {minimal ? (
+                      <>
+                        <div style={{ display: 'flex', alignItems: 'baseline', gap: 5, overflow: 'hidden' }}>
+                          <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>
+                            {item.name}
+                            {item.fluid_ml != null && item.fluid_ml > 0 && <span className="icon" style={{ fontSize: 12, color: 'var(--cyan-hi)', opacity: 0.8, verticalAlign: 'middle', margin: '0 4px' }}>water_drop</span>}
+                          </span>
+                          <span style={{ fontSize: 11, color: 'var(--text-3)', whiteSpace: 'nowrap', flexShrink: 0 }}>{amtDisplay}</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginTop: 2 }}>
+                          <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--accent-hi)', display: 'inline-flex', alignItems: 'baseline', gap: 2 }}>
+                            {Math.round(item.calories)}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.8 }}>{t(lang, 'caloriesUnit')}</span>
+                          </span>
+                          <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--positive-hi)', display: 'inline-flex', alignItems: 'baseline', gap: 2 }}>
+                            {Math.round(item.protein * 10) / 10}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.8 }}>{lang === 'he' ? 'ג׳ חלבון' : 'g protein'}</span>
+                          </span>
+                        </div>
+                      </>
+                    ) : (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <span className="icon icon-sm" style={{ color: 'var(--text-2)', flexShrink: 0 }}>history</span>
+                        <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</span>
+                        <span style={{ fontSize: 11, color: 'var(--text-2)', flexShrink: 0 }}>{amtDisplay}</span>
+                        <span style={{ fontSize: 11, color: 'var(--accent-hi)', flexShrink: 0, fontWeight: 600 }}>{Math.round(item.calories)}</span>
+                        <span style={{ fontSize: 11, color: 'var(--positive-hi)', flexShrink: 0, fontWeight: 600 }}>{Math.round(item.protein * 10) / 10}g</span>
+                      </div>
+                    )}
                   </button>
                 )
               } else {
@@ -1044,22 +1137,40 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
                     key={`lib-${item.id}`}
                     onMouseDown={() => handleLibrarySelect(item)}
                     style={{
-                      display: 'flex', alignItems: 'center', width: '100%',
-                      padding: '9px 12px', background: 'var(--amber-fill)', border: 'none',
-                      borderBottom: isLast ? 'none' : '1px solid var(--border)',
-                      cursor: 'pointer', gap: 10, textAlign: 'start', fontFamily: 'inherit',
+                      display: 'block', width: '100%',
+                      padding: minimal ? '8px 12px' : '9px 12px', background: 'var(--warning-fill)', border: 'none',
+                      borderBottom: isLast ? 'none' : (minimal ? '1px dashed var(--border)' : '1px solid var(--border)'),
+                      cursor: 'pointer', textAlign: 'start', fontFamily: 'inherit',
                       transition: 'background .12s',
                     }}
-                    onMouseEnter={e => (e.currentTarget.style.background = 'var(--amber-tint)')}
-                    onMouseLeave={e => (e.currentTarget.style.background = 'var(--amber-fill)')}
+                    onMouseEnter={e => (e.currentTarget.style.background = 'var(--warning-tint)')}
+                    onMouseLeave={e => (e.currentTarget.style.background = 'var(--warning-fill)')}
                   >
-                    <span className="icon icon-sm" style={{ color: 'var(--amber)', flexShrink: 0 }}>menu_book</span>
-                    <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {name}
-                    </span>
-                    <span style={{ fontSize: 11, color: 'var(--text-2)', flexShrink: 0 }}>{amtDisplay}</span>
-                    <span style={{ fontSize: 11, color: 'var(--blue-hi)', flexShrink: 0, fontWeight: 600 }}>{cal}</span>
-                    <span style={{ fontSize: 11, color: 'var(--green-hi)', flexShrink: 0, fontWeight: 600 }}>{prot}g</span>
+                    {minimal ? (
+                      <>
+                        <div style={{ display: 'flex', alignItems: 'baseline', gap: 5, overflow: 'hidden' }}>
+                          <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>{name}</span>
+                          <span style={{ fontSize: 11, color: 'var(--text-3)', whiteSpace: 'nowrap', flexShrink: 0 }}>{amtDisplay}</span>
+                          <span style={{ fontSize: 10, color: 'var(--warning)', whiteSpace: 'nowrap', flexShrink: 0 }}>{lang === 'he' ? 'ספרייה' : 'library'}</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginTop: 2 }}>
+                          <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--accent-hi)', display: 'inline-flex', alignItems: 'baseline', gap: 2 }}>
+                            {cal}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.8 }}>{t(lang, 'caloriesUnit')}</span>
+                          </span>
+                          <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--positive-hi)', display: 'inline-flex', alignItems: 'baseline', gap: 2 }}>
+                            {prot}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.8 }}>{lang === 'he' ? 'ג׳ חלבון' : 'g protein'}</span>
+                          </span>
+                        </div>
+                      </>
+                    ) : (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <span className="icon icon-sm" style={{ color: 'var(--warning)', flexShrink: 0 }}>menu_book</span>
+                        <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</span>
+                        <span style={{ fontSize: 11, color: 'var(--text-2)', flexShrink: 0 }}>{amtDisplay}</span>
+                        <span style={{ fontSize: 11, color: 'var(--accent-hi)', flexShrink: 0, fontWeight: 600 }}>{cal}</span>
+                        <span style={{ fontSize: 11, color: 'var(--positive-hi)', flexShrink: 0, fontWeight: 600 }}>{prot}g</span>
+                      </div>
+                    )}
                   </button>
                 )
               }
@@ -1072,7 +1183,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
 
       <div aria-live="polite" aria-atomic="true">
         {aiError && (
-          <p style={{ fontSize: 12, color: 'var(--red)', marginTop: 8, display: 'flex', alignItems: 'center', gap: 4 }}>
+          <p style={{ fontSize: 12, color: 'var(--danger)', marginTop: 8, display: 'flex', alignItems: 'center', gap: 4 }}>
             <span className="icon icon-sm">
               {aiError === 'network' ? 'wifi_off' : aiError === 'rateLimit' ? 'timer_off' : aiError === 'parseError' ? 'error' : 'search_off'}
             </span>
@@ -1097,7 +1208,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 8, marginBottom: 12 }}>
             {/* Calories */}
             <div>
-              <label style={{ fontSize: 11, color: 'var(--blue-hi)', fontWeight: 600, display: 'block', marginBottom: 4 }}>
+              <label style={{ fontSize: 11, color: 'var(--accent-hi)', fontWeight: 600, display: 'block', marginBottom: 4 }}>
                 {t(lang, 'calories')}
               </label>
               <div style={{ position: 'relative' }}>
@@ -1105,7 +1216,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
                   type="number"
                   inputMode="numeric"
                   className="inp"
-                  style={{ borderColor: 'var(--blue-glow)', fontSize: 16, paddingInlineEnd: editCalories !== '' ? 32 : 12 }}
+                  style={{ borderColor: 'var(--accent-glow)', fontSize: 16, paddingInlineEnd: editCalories !== '' ? 32 : 12 }}
                   value={editCalories}
                   placeholder="0"
                   onChange={e => setEditCalories(e.target.value === '' ? '' : Math.round(Number(e.target.value)))}
@@ -1121,7 +1232,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
 
             {/* Protein */}
             <div>
-              <label style={{ fontSize: 11, color: 'var(--green-hi)', fontWeight: 600, display: 'block', marginBottom: 4 }}>
+              <label style={{ fontSize: 11, color: 'var(--positive-hi)', fontWeight: 600, display: 'block', marginBottom: 4 }}>
                 {lang === 'he' ? 'חלבון (ג׳)' : 'Protein (g)'}
               </label>
               <div style={{ position: 'relative' }}>
@@ -1130,7 +1241,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
                   inputMode="decimal"
                   step="0.1"
                   className="inp inp-green"
-                  style={{ borderColor: 'var(--green-glow)', fontSize: 16, paddingInlineEnd: editProtein !== '' ? 32 : 12 }}
+                  style={{ borderColor: 'var(--positive-glow)', fontSize: 16, paddingInlineEnd: editProtein !== '' ? 32 : 12 }}
                   value={editProtein}
                   placeholder="0"
                   onChange={e => setEditProtein(e.target.value === '' ? '' : Math.round(Number(e.target.value) * 10) / 10)}
@@ -1179,7 +1290,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
             {/* Unit */}
             <div>
               <label style={{ fontSize: 11, color: 'var(--text-2)', fontWeight: 600, display: 'block', marginBottom: 4 }}>
-                {lang === 'he' ? 'יחידה' : 'Unit'}
+                {t(lang, 'unitSingular')}
               </label>
               <select
                 className="inp"
@@ -1252,8 +1363,8 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
           {isFluid && (
             <div style={{
               display: 'flex', alignItems: 'center', gap: 8,
-              background: fluidExcluded ? 'rgba(107,127,150,0.06)' : 'var(--blue-fill)',
-              border: `1px solid ${fluidExcluded ? 'rgba(107,127,150,0.12)' : 'var(--blue-select)'}`,
+              background: fluidExcluded ? 'var(--neutral-fill)' : 'var(--accent-fill)',
+              border: `1px solid ${fluidExcluded ? 'var(--neutral-chip)' : 'var(--accent-select)'}`,
               borderRadius: 9, padding: '7px 11px',
               margin: '10px 0',
               transition: 'background .2s, border-color .2s',
@@ -1261,7 +1372,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
               <span className="icon" style={{ fontSize: 16, color: 'var(--cyan-hi)', flexShrink: 0 }}>water_drop</span>
               <span style={{
                 fontSize: 12, fontWeight: 600, flex: 1,
-                color: fluidExcluded ? 'var(--text-3)' : 'var(--blue-hi)',
+                color: fluidExcluded ? 'var(--text-3)' : 'var(--accent-hi)',
                 textDecoration: fluidExcluded ? 'line-through' : 'none',
                 opacity: fluidExcluded ? 0.7 : 1,
               }}>
@@ -1274,14 +1385,14 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
                 onClick={() => setFluidExcluded(v => !v)}
                 style={{
                   width: 34, height: 20, borderRadius: 99, border: 'none', cursor: 'pointer',
-                  background: fluidExcluded ? 'rgba(107,127,150,0.25)' : 'var(--blue)',
+                  background: fluidExcluded ? 'var(--neutral-glow)' : 'var(--accent)',
                   position: 'relative', flexShrink: 0, transition: 'background .2s',
                 }}
               >
                 <span style={{
                   position: 'absolute', width: 14, height: 14, borderRadius: '50%', background: 'var(--toggle-knob)',
-                  top: 3, transition: 'right .2s',
-                  right: fluidExcluded ? 17 : 3,
+                  top: 3, insetInlineEnd: fluidExcluded ? 17 : 3,
+                  transition: 'inset-inline-end .2s',
                 }} />
               </button>
             </div>

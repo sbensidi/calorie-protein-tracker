@@ -12,6 +12,10 @@ vi.mock('../../lib/supabase', () => ({
 import { supabase } from '../../lib/supabase'
 import { useProfile } from '../../hooks/useProfile'
 
+function makeChannel() {
+  return { on: vi.fn().mockReturnThis(), subscribe: vi.fn() }
+}
+
 function makeChain(res: { data?: unknown; error?: unknown } = {}) {
   const resolved = { data: res.data ?? null, error: res.error ?? null }
   const chain = {
@@ -26,7 +30,8 @@ function makeChain(res: { data?: unknown; error?: unknown } = {}) {
   return chain
 }
 
-const fromMock = supabase.from as ReturnType<typeof vi.fn>
+const fromMock    = supabase.from as ReturnType<typeof vi.fn>
+const channelMock = supabase.channel as ReturnType<typeof vi.fn>
 
 const USER = 'user-xyz'
 
@@ -51,6 +56,7 @@ beforeEach(() => {
   localStorage.clear()
   // Default: no DB row (PGRST116)
   fromMock.mockReturnValue(makeChain({ data: null, error: { code: 'PGRST116', message: 'no rows' } }))
+  channelMock.mockReturnValue(makeChannel())
 })
 
 describe('useProfile', () => {
@@ -60,9 +66,8 @@ describe('useProfile', () => {
     expect(result.current.error).toBeNull()
   })
 
-  it('does not call DB when userId is null', async () => {
+  it('does not call DB when userId is null', () => {
     renderHook(() => useProfile(null))
-    await new Promise(r => setTimeout(r, 30))
     expect(fromMock).not.toHaveBeenCalled()
   })
 
@@ -115,9 +120,10 @@ describe('useProfile', () => {
     const { result } = renderHook(() => useProfile(USER))
     await waitFor(() => expect(result.current.loading).toBe(false))
 
-    await act(async () => { await result.current.saveProfile({ weight: 99 }) })
+    // Attempt to change a stored pref (fluidGoalMl is in UserPrefs → written to localStorage)
+    await act(async () => { await result.current.saveProfile({ fluidGoalMl: 9999 }) })
 
-    const stored = JSON.parse(localStorage.getItem('user_profile') ?? '{}')
-    expect(stored.weight).toBe(70) // reverted to DEFAULT
+    const stored = JSON.parse(localStorage.getItem('user_prefs') ?? '{}')
+    expect(stored.fluidGoalMl).toBe(2500) // reverted to DEFAULT
   })
 })

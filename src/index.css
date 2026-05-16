@@ -1,5 +1,39 @@
 @import "tailwindcss";
 
+/* Self-hosted fonts — no Google Fonts CDN dependency (critical for PWA offline) */
+@font-face {
+  font-family: 'Material Symbols Rounded';
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+  src: url('/fonts/material-symbols-rounded.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Heebo';
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: swap;
+  src: url('/fonts/heebo-hebrew.woff2') format('woff2');
+  unicode-range: U+0307-0308, U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F;
+}
+@font-face {
+  font-family: 'Heebo';
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: swap;
+  src: url('/fonts/heebo-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Heebo';
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: swap;
+  src: url('/fonts/heebo-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
 :root {
   /* Z-index scale */
   --z-sticky:   10;
@@ -8,9 +42,14 @@
   --z-backdrop: 99;
   --z-sheet:    100;
   --z-toast:    300;
+
   /* Always white — text / icon / knob on top of colored backgrounds */
   --on-color:    #ffffff;
   --toggle-knob: #ffffff;
+
+  /* Semantic status — fixed, never neutralized by theme or style mode */
+  --status-ok:  #22c55e;
+  --status-err: #f43f5e;
 }
 
 [data-theme="dark"] {
@@ -24,35 +63,68 @@
   --text:   #dde4f0;
   --text-2: #94a8be;
   --text-3: #6b7f96;
-  /* Brand (vivid on dark) */
-  --blue:      #3b82f6;
-  --blue-hi:   #60a5fa;
-  --green:     #10b981;
-  --green-hi:  #34d399;
-  --green-soft:#6ee7b7;
-  --red:       #f43f5e;
-  --red-hi:    #f87171;
-  --amber:     #f59e0b;
+  /* Accent — primary action / calories */
+  --accent:           #3b82f6;
+  --accent-hi:        #60a5fa;
+  --accent-fill:      rgba(59,130,246,0.07);
+  --accent-tint:      rgba(59,130,246,0.10);
+  --accent-chip:      rgba(59,130,246,0.12);
+  --accent-select:    rgba(59,130,246,0.18);
+  --accent-glow:      rgba(59,130,246,0.25);
+  --accent-border:    rgba(59,130,246,0.35);
+  --accent-border-hi: rgba(59,130,246,0.40);
+  /* Positive — protein / success */
+  --positive:           #10b981;
+  --positive-hi:        #34d399;
+  --positive-soft:      #6ee7b7;
+  --positive-fill:      rgba(16,185,129,0.07);
+  --positive-tint:      rgba(16,185,129,0.10);
+  --positive-chip:      rgba(16,185,129,0.12);
+  --positive-select:    rgba(16,185,129,0.18);
+  --positive-glow:      rgba(16,185,129,0.25);
+  --positive-border:    rgba(16,185,129,0.35);
+  /* Composed — composed meals */
+  --composed:           #8b5cf6;
+  --composed-tint:      rgba(139,92,246,0.10);
+  --composed-fill:      rgba(139,92,246,0.07);
+  --composed-chip:      rgba(139,92,246,0.12);
+  --composed-select:    rgba(139,92,246,0.18);
+  --composed-glow:      rgba(139,92,246,0.25);
+  --composed-border:    rgba(139,92,246,0.35);
+  --composed-border-hi: rgba(139,92,246,0.50);
+  /* Danger — errors / destructive */
+  --danger:           #f43f5e;
+  --danger-hi:        #f87171;
+  --danger-fill:      rgba(244,63,94,0.07);
+  --danger-tint:      rgba(244,63,94,0.10);
+  --danger-chip:      rgba(244,63,94,0.12);
+  --danger-select:    rgba(244,63,94,0.15);
+  --danger-glow:      rgba(244,63,94,0.20);
+  --danger-border-lo: rgba(244,63,94,0.25);
+  --danger-border:    rgba(244,63,94,0.35);
+  /* Warning — over-goal / caution */
+  --warning:        #f59e0b;
+  --warning-tint:   rgba(245,158,11,0.10);
+  --warning-fill:   rgba(245,158,11,0.07);
+  --warning-glow:   rgba(245,158,11,0.25);
+  --warning-border: rgba(245,158,11,0.35);
+  /* Library — food library / fuzzy match */
+  --library:        #6366f1;
+  --library-hi:     #a5b4fc;
+  --library-fill:   rgba(99,102,241,0.07);
+  --library-tint:   rgba(99,102,241,0.12);
+  --library-chip:   rgba(99,102,241,0.12);
+  --library-border: rgba(99,102,241,0.35);
+  /* Cyan — fluid / hydration (no semantic alias) */
   --cyan:      #06b6d4;
   --cyan-hi:   #22d3ee;
   --cyan-tint: rgba(6,182,212,0.10);
-  --purple:    #8b5cf6;
-  --indigo:    #6366f1;
-  --indigo-hi: #a5b4fc;
-  /* Tints — base (0.10) */
-  --blue-tint:   rgba(59,130,246,0.10);
-  --green-tint:  rgba(16,185,129,0.10);
-  --red-tint:    rgba(244,63,94,0.10);
-  --amber-tint:  rgba(245,158,11,0.10);
-  --indigo-tint: rgba(99,102,241,0.12);
-  --purple-tint: rgba(139,92,246,0.10);
-  --cyan-tint:   rgba(6,182,212,0.10);
-  /* Semantic fills — subtle card/panel backgrounds */
-  --blue-fill:    rgba(59,130,246,0.07);
-  --green-fill:   rgba(16,185,129,0.07);
-  --cyan-fill:    rgba(6,182,212,0.07);
-  --indigo-fill:  rgba(99,102,241,0.07);
-  --amber-fill:   rgba(245,158,11,0.07);
+  --cyan-fill: rgba(6,182,212,0.07);
+  /* Neutral — toggle track / muted UI (text-3 based) */
+  --neutral-fill:   rgba(107,127,150,0.06);
+  --neutral-chip:   rgba(107,127,150,0.12);
+  --neutral-glow:   rgba(107,127,150,0.25);
+  --neutral-border: rgba(107,127,150,0.35);
   /* Neutral surfaces (white overlay on dark bg) */
   --surface-1:   rgba(255,255,255,0.03);
   --surface-2:   rgba(255,255,255,0.05);
@@ -64,37 +136,13 @@
   --icon-hover:  rgba(255,255,255,0.08);
   --qty-bg:      rgba(255,255,255,0.06);
   --qty-hover:   rgba(255,255,255,0.11);
-  /* Depth (dark overlay — less prominent in light mode) */
+  /* Depth */
   --depth-1:     rgba(0,0,0,0.10);
   --depth-2:     rgba(0,0,0,0.12);
   /* Special */
   --modal-backdrop: rgba(0,0,0,0.65);
   --scanner-bg:     #04060a;
   --text-on-brand:  rgba(255,255,255,0.90);
-  /* Extended opacity scale — add new tokens here instead of hardcoding rgba() in components */
-  --blue-chip:      rgba(59,130,246,0.12);
-  --blue-select:    rgba(59,130,246,0.18);
-  --blue-glow:      rgba(59,130,246,0.25);
-  --blue-border:    rgba(59,130,246,0.35);
-  --blue-border-hi: rgba(59,130,246,0.40);
-  --green-chip:     rgba(16,185,129,0.12);
-  --green-select:   rgba(16,185,129,0.18);
-  --green-glow:     rgba(16,185,129,0.25);
-  --green-border:   rgba(16,185,129,0.35);
-  --red-chip:       rgba(244,63,94,0.12);
-  --red-select:     rgba(244,63,94,0.15);
-  --red-glow:       rgba(244,63,94,0.20);
-  --red-border-lo:  rgba(244,63,94,0.25);
-  --red-border:     rgba(244,63,94,0.35);
-  --amber-glow:     rgba(245,158,11,0.25);
-  --amber-border:   rgba(245,158,11,0.35);
-  --indigo-border:  rgba(99,102,241,0.35);
-  --purple-fill:      rgba(139,92,246,0.07);
-  --purple-chip:      rgba(139,92,246,0.12);
-  --purple-select:    rgba(139,92,246,0.18);
-  --purple-glow:      rgba(139,92,246,0.25);
-  --purple-border:    rgba(139,92,246,0.35);
-  --purple-border-hi: rgba(139,92,246,0.50);
 }
 
 [data-theme="light"] {
@@ -107,36 +155,69 @@
   /* Text */
   --text:   #0f1729;
   --text-2: #4a5770;
-  --text-3: #7a8fa6;
-  /* Brand (darker for WCAG AA on light bg) */
-  --blue:      #2563eb;
-  --blue-hi:   #1d4ed8;
-  --green:     #059669;
-  --green-hi:  #047857;
-  --green-soft:#0d9263; /* darkened for light-bg contrast (was #6ee7b7 — fails WCAG AA) */
-  --red:       #dc2626;
-  --red-hi:    #ef4444;
-  --amber:     #b45309;
+  --text-3: #606e80;
+  /* Accent — primary action / calories (darker for WCAG AA on light bg) */
+  --accent:           #2563eb;
+  --accent-hi:        #1d4ed8;
+  --accent-fill:      rgba(37,99,235,0.07);
+  --accent-tint:      rgba(37,99,235,0.10);
+  --accent-chip:      rgba(37,99,235,0.12);
+  --accent-select:    rgba(37,99,235,0.18);
+  --accent-glow:      rgba(37,99,235,0.25);
+  --accent-border:    rgba(37,99,235,0.35);
+  --accent-border-hi: rgba(37,99,235,0.40);
+  /* Positive — protein / success */
+  --positive:           #059669;
+  --positive-hi:        #047857;
+  --positive-soft:      #0d9263; /* darkened for light-bg contrast (was #6ee7b7 — fails WCAG AA) */
+  --positive-fill:      rgba(5,150,105,0.07);
+  --positive-tint:      rgba(5,150,105,0.10);
+  --positive-chip:      rgba(5,150,105,0.12);
+  --positive-select:    rgba(5,150,105,0.18);
+  --positive-glow:      rgba(5,150,105,0.25);
+  --positive-border:    rgba(5,150,105,0.35);
+  /* Composed — composed meals */
+  --composed:           #6d28d9;
+  --composed-tint:      rgba(109,40,217,0.10);
+  --composed-fill:      rgba(109,40,217,0.07);
+  --composed-chip:      rgba(109,40,217,0.12);
+  --composed-select:    rgba(109,40,217,0.18);
+  --composed-glow:      rgba(109,40,217,0.25);
+  --composed-border:    rgba(109,40,217,0.35);
+  --composed-border-hi: rgba(109,40,217,0.50);
+  /* Danger — errors / destructive */
+  --danger:           #dc2626;
+  --danger-hi:        #ef4444;
+  --danger-fill:      rgba(220,38,38,0.07);
+  --danger-tint:      rgba(220,38,38,0.10);
+  --danger-chip:      rgba(220,38,38,0.12);
+  --danger-select:    rgba(220,38,38,0.15);
+  --danger-glow:      rgba(220,38,38,0.20);
+  --danger-border-lo: rgba(220,38,38,0.25);
+  --danger-border:    rgba(220,38,38,0.35);
+  /* Warning — over-goal / caution */
+  --warning:        #b45309;
+  --warning-tint:   rgba(180,83,9,0.10);
+  --warning-fill:   rgba(180,83,9,0.07);
+  --warning-glow:   rgba(180,83,9,0.25);
+  --warning-border: rgba(180,83,9,0.35);
+  /* Library — food library / fuzzy match */
+  --library:        #4338ca;
+  --library-hi:     #3730a3;
+  --library-fill:   rgba(67,56,202,0.07);
+  --library-tint:   rgba(67,56,202,0.12);
+  --library-chip:   rgba(67,56,202,0.12);
+  --library-border: rgba(67,56,202,0.35);
+  /* Cyan — fluid / hydration */
   --cyan:      #0891b2;
   --cyan-hi:   #0e7490;
   --cyan-tint: rgba(8,145,178,0.10);
-  --purple:    #6d28d9;
-  --indigo:    #4338ca;
-  --indigo-hi: #3730a3;
-  /* Tints — base (0.10) */
-  --blue-tint:   rgba(37,99,235,0.10);
-  --green-tint:  rgba(5,150,105,0.10);
-  --red-tint:    rgba(220,38,38,0.10);
-  --amber-tint:  rgba(180,83,9,0.10);
-  --indigo-tint: rgba(67,56,202,0.12);
-  --purple-tint: rgba(109,40,217,0.10);
-  --cyan-tint:   rgba(8,145,178,0.10);
-  /* Semantic fills */
-  --blue-fill:    rgba(37,99,235,0.07);
-  --green-fill:   rgba(5,150,105,0.07);
-  --cyan-fill:    rgba(8,145,178,0.07);
-  --indigo-fill:  rgba(67,56,202,0.07);
-  --amber-fill:   rgba(180,83,9,0.07);
+  --cyan-fill: rgba(8,145,178,0.07);
+  /* Neutral — toggle track / muted UI (text-3 based, light mode uses #606e80) */
+  --neutral-fill:   rgba(96,110,128,0.06);
+  --neutral-chip:   rgba(96,110,128,0.12);
+  --neutral-glow:   rgba(96,110,128,0.25);
+  --neutral-border: rgba(96,110,128,0.35);
   /* Neutral surfaces (dark overlay on light bg) */
   --surface-1:   rgba(0,0,0,0.02);
   --surface-2:   rgba(0,0,0,0.04);
@@ -155,35 +236,11 @@
   --modal-backdrop: rgba(0,0,0,0.40);
   --scanner-bg:     #0e1117;
   --text-on-brand:  rgba(0,0,0,0.65);
-  /* Extended opacity scale */
-  --blue-chip:      rgba(37,99,235,0.12);
-  --blue-select:    rgba(37,99,235,0.18);
-  --blue-glow:      rgba(37,99,235,0.25);
-  --blue-border:    rgba(37,99,235,0.35);
-  --blue-border-hi: rgba(37,99,235,0.40);
-  --green-chip:     rgba(5,150,105,0.12);
-  --green-select:   rgba(5,150,105,0.18);
-  --green-glow:     rgba(5,150,105,0.25);
-  --green-border:   rgba(5,150,105,0.35);
-  --red-chip:       rgba(220,38,38,0.12);
-  --red-select:     rgba(220,38,38,0.15);
-  --red-glow:       rgba(220,38,38,0.20);
-  --red-border-lo:  rgba(220,38,38,0.25);
-  --red-border:     rgba(220,38,38,0.35);
-  --amber-glow:     rgba(180,83,9,0.25);
-  --amber-border:   rgba(180,83,9,0.35);
-  --indigo-border:  rgba(67,56,202,0.35);
-  --purple-fill:      rgba(109,40,217,0.07);
-  --purple-chip:      rgba(109,40,217,0.12);
-  --purple-select:    rgba(109,40,217,0.18);
-  --purple-glow:      rgba(109,40,217,0.25);
-  --purple-border:    rgba(109,40,217,0.35);
-  --purple-border-hi: rgba(109,40,217,0.50);
 }
 
 /* Accessibility: focus ring */
 :focus-visible {
-  outline: 2px solid var(--blue);
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
   border-radius: 6px;
 }
@@ -264,6 +321,10 @@ input[type="number"] { -moz-appearance: textfield; }
   from { opacity: 0; transform: translateY(10px); }
   to   { opacity: 1; transform: translateY(0); }
 }
+@keyframes toast-progress {
+  from { transform: scaleX(1); }
+  to   { transform: scaleX(0); }
+}
 @keyframes bar-fill {
   from { width: 0%; }
 }
@@ -274,11 +335,20 @@ input[type="number"] { -moz-appearance: textfield; }
   0%, 100% { opacity: 1; }
   50%       { opacity: 0.4; }
 }
+@keyframes expandDown {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.expand-down { animation: expandDown 0.2s cubic-bezier(.22,.9,.36,1) both; }
 
 .fade-up   { animation: fadeUp 0.3s cubic-bezier(.22,.9,.36,1) both; }
 .skeleton-card {
   background: var(--surface-2);
   border-radius: 14px;
+  animation: skeleton-pulse 1.4s ease-in-out infinite;
+}
+.skeleton {
+  background: var(--surface-2);
   animation: skeleton-pulse 1.4s ease-in-out infinite;
 }
 .delay-1   { animation-delay: .05s; }
@@ -289,7 +359,7 @@ input[type="number"] { -moz-appearance: textfield; }
 /* ── Accessibility ──────────────────────────────────────────────── */
 /* Keyboard focus rings — visible only on keyboard navigation */
 :focus-visible {
-  outline: 2px solid var(--blue);
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 /* Suppress focus ring on mouse click */
@@ -305,6 +375,7 @@ input[type="number"] { -moz-appearance: textfield; }
     transition-duration:  0.01ms !important;
   }
   .skeleton-card { animation: none; opacity: 0.6; }
+  .skeleton      { animation: none; opacity: 0.5; }
 }
 
 /* Cards */
@@ -315,8 +386,8 @@ input[type="number"] { -moz-appearance: textfield; }
 }
 
 /* Progress bars */
-.bar-blue  { background: var(--blue);  animation: bar-fill 0.6s cubic-bezier(.22,.9,.36,1) both; }
-.bar-green { background: var(--green); animation: bar-fill 0.6s cubic-bezier(.22,.9,.36,1) both; }
+.bar-blue  { background: var(--accent);  animation: bar-fill 0.6s cubic-bezier(.22,.9,.36,1) both; }
+.bar-green { background: var(--positive); animation: bar-fill 0.6s cubic-bezier(.22,.9,.36,1) both; }
 
 /* Inputs */
 .inp {
@@ -333,12 +404,12 @@ input[type="number"] { -moz-appearance: textfield; }
   outline: none;
 }
 .inp::placeholder { color: var(--text-3); }
-.inp:focus { border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-chip); }
-.inp-green:focus { border-color: var(--green); box-shadow: 0 0 0 3px var(--green-chip); }
+.inp:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-chip); }
+.inp-green:focus { border-color: var(--positive); box-shadow: 0 0 0 3px var(--positive-chip); }
 
 /* Buttons */
 .btn-primary {
-  background: var(--blue);
+  background: var(--accent);
   color: #fff;
   border: none;
   border-radius: 10px;
@@ -355,7 +426,7 @@ input[type="number"] { -moz-appearance: textfield; }
 .btn-primary:disabled { opacity: 0.35; cursor: not-allowed; }
 
 .btn-confirm {
-  background: var(--green);
+  background: var(--positive);
   color: #fff;
   border: none;
   border-radius: 10px;
@@ -439,8 +510,8 @@ input[type="number"] { -moz-appearance: textfield; }
   top: 3px;
   bottom: 3px;
   border-radius: 9px;
-  background: var(--blue);
-  box-shadow: 0 2px 10px rgba(59,130,246,0.35);
+  background: var(--accent);
+  box-shadow: 0 2px 10px var(--accent-glow);
   pointer-events: none;
   z-index: 0;
   transition: left 0.28s cubic-bezier(.34,1.56,.64,1), width 0.28s cubic-bezier(.34,1.56,.64,1);
@@ -448,10 +519,10 @@ input[type="number"] { -moz-appearance: textfield; }
 
 /* FAB circular add button */
 .fab-btn {
-  box-shadow: 0 4px 20px rgba(59,130,246,0.5);
+  box-shadow: 0 4px 20px var(--accent-glow);
   transition: transform 0.15s, box-shadow 0.15s;
 }
-.fab-btn:hover { box-shadow: 0 6px 28px rgba(59,130,246,0.65); }
+.fab-btn:hover { box-shadow: 0 6px 28px var(--accent-border); }
 
 /* FAB icon button press */
 .fab-pill-btn {
@@ -463,7 +534,7 @@ input[type="number"] { -moz-appearance: textfield; }
 
 /* Icon buttons */
 .icon-btn {
-  width: 30px; height: 30px;
+  width: 44px; height: 44px;
   border-radius: 7px;
   border: none;
   background: transparent;
@@ -475,11 +546,11 @@ input[type="number"] { -moz-appearance: textfield; }
 .icon-btn:hover           { background: var(--icon-hover); color: var(--text); }
 .icon-btn:active          { transform: scale(0.88); }
 .icon-btn:disabled        { opacity: 0.3; cursor: default; pointer-events: none; }
-.icon-btn.danger:hover    { background: rgba(244,63,94,0.12); color: var(--red); }
+.icon-btn.danger:hover    { background: var(--danger-chip); color: var(--danger); }
 
 /* Qty selector */
 .qty-btn {
-  width: 34px; height: 34px;
+  width: 44px; height: 44px;
   border-radius: 50%;
   background: var(--qty-bg);
   border: 1px solid var(--border);
@@ -500,16 +571,16 @@ input[type="number"] { -moz-appearance: textfield; }
   display: inline-flex; align-items: center; gap: 4px;
   padding: 3px 10px;
   border-radius: 999px;
-  background: var(--blue-tint);
-  border: 1px solid var(--blue-glow);
-  color: var(--blue-hi);
+  background: var(--accent-tint);
+  border: 1px solid var(--accent-glow);
+  color: var(--accent-hi);
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
   transition: background .15s, transform .1s;
   font-family: inherit;
 }
-.chip:hover  { background: var(--blue-select); }
+.chip:hover  { background: var(--accent-select); }
 .chip:active { transform: scale(0.95); }
 
 /* Select */
@@ -528,7 +599,7 @@ details summary::-webkit-details-marker { display: none; }
 
 /* Chevron badge — shared between History list cards and Today meal groups */
 .chevron-badge {
-  width: 24px; height: 24px;
+  width: 44px; height: 44px;
   border-radius: 7px;
   background: var(--surface-2);
   border: 1px solid var(--border);
@@ -551,10 +622,10 @@ details[open] .chevron-badge .icon { transform: rotate(180deg); }
   transition: background .12s, border-color .12s;
   user-select: none;
 }
-.cb:hover { border-color: var(--purple-border-hi); }
+.cb:hover { border-color: var(--composed-border-hi); }
 .cb.cb-on {
-  background: var(--purple-tint);
-  border-color: var(--purple-border-hi);
+  background: var(--composed-tint);
+  border-color: var(--composed-border-hi);
 }
 
 /* ── Group type-picker (inline panel under group header) ────────── */
@@ -584,22 +655,22 @@ details[open] .chevron-badge .icon { transform: rotate(180deg); }
   flex-shrink: 0;
 }
 .type-picker-radio.on {
-  background: var(--amber-tint);
-  border-color: var(--amber-border);
+  background: var(--warning-tint);
+  border-color: var(--warning-border);
 }
 
 /* ── Group action bar (below meal list, on selection) ───────────── */
 .group-action-bar {
-  border: 1px solid var(--purple-glow);
+  border: 1px solid var(--composed-glow);
   border-radius: 11px;
   overflow: hidden;
-  margin-top: 6px;
+  margin-top: 10px;
 }
 .group-action-bar-header {
   display: flex; align-items: center; gap: 8px;
   padding: 8px 12px;
-  background: var(--purple-fill);
-  border-bottom: 1px solid var(--purple-chip);
+  background: var(--composed-fill);
+  border-bottom: 1px solid var(--composed-chip);
 }
 .group-action-bar-btns {
   display: flex;
@@ -619,16 +690,21 @@ details[open] .chevron-badge .icon { transform: rotate(180deg); }
   display: flex; align-items: center; justify-content: center;
 }
 
+/* ── details[open] chevron rotation (History list view) ───────── */
+details[open] summary .chevron-rotate {
+  transform: rotate(180deg);
+}
+
 /* ── Composed meal card ─────────────────────────────────────────── */
 .composed-card {
   background: var(--depth-2);
-  border: 1px solid var(--purple-tint);
+  border: 1px solid var(--composed-tint);
   border-radius: 11px;
   overflow: hidden;
   margin-bottom: 4px;
 }
 .composed-children {
-  border-top: 1px solid var(--purple-tint);
+  border-top: 1px solid var(--composed-tint);
   background: var(--depth-1);
   padding: 6px 8px 8px;
   display: flex; flex-direction: column; gap: 3px;
@@ -673,6 +749,37 @@ details[open] .chevron-badge .icon { transform: rotate(180deg); }
   font-size: 12px; color: var(--text-2);
 }
 
+/* ── Secondary tabs (underline style — period toggles, sub-navigation) ── */
+.tabs-secondary {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 3px;
+}
+.tabs-secondary__btn {
+  flex: 1;
+  padding: 7px 0;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  cursor: pointer;
+  color: var(--text-3);
+  transition: all .2s;
+}
+.tabs-secondary__btn.active {
+  background: var(--accent-select);
+  border-color: var(--accent-border);
+  color: var(--accent-hi);
+  font-weight: 700;
+}
+
 /* ── Segmented control (manual / scan toggle) ──────────────────── */
 .seg-control {
   display: flex;
@@ -695,14 +802,14 @@ details[open] .chevron-badge .icon { transform: rotate(180deg); }
   transition: background .15s, color .15s, border-color .15s;
 }
 .seg-btn--manual {
-  background: var(--blue-chip);
-  color: var(--blue-hi);
-  border: 1px solid var(--blue-glow);
+  background: var(--accent-chip);
+  color: var(--accent-hi);
+  border: 1px solid var(--accent-glow);
 }
 .seg-btn--scan {
-  background: var(--green-chip);
-  color: var(--green-hi);
-  border: 1px solid var(--green-glow);
+  background: var(--accent-chip);
+  color: var(--accent-hi);
+  border: 1px solid var(--accent-glow);
 }
 
 /* ── Barcode scanner viewfinder ─────────────────────────────────── */
@@ -748,7 +855,7 @@ details[open] .chevron-badge .icon { transform: rotate(180deg); }
 .sc-corner {
   position: absolute;
   width: 20px; height: 20px;
-  border-color: var(--green-hi);
+  border-color: var(--positive-hi);
   border-style: solid;
   border-width: 0;
   opacity: 0.9;
@@ -761,7 +868,7 @@ details[open] .chevron-badge .icon { transform: rotate(180deg); }
   position: absolute;
   left: 6%; right: 6%; top: 30%;
   height: 1.5px;
-  background: linear-gradient(to right, transparent, var(--green-hi) 20%, var(--green-hi) 80%, transparent);
+  background: linear-gradient(to right, transparent, var(--positive-hi) 20%, var(--positive-hi) 80%, transparent);
   opacity: 0.75;
   animation: sc-sweep 2s ease-in-out infinite;
 }
@@ -784,113 +891,198 @@ details[open] .chevron-badge .icon { transform: rotate(180deg); }
 }
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   HYBRID THEME — Coral + Sand
-   To remove: delete this entire block (search "HYBRID THEME")
+   MINIMAL THEME — purely additive, full revert = delete this block
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 
-[data-style="hybrid"][data-theme="dark"] {
-  /* Backgrounds — warm charcoal instead of navy-black */
-  --bg:        #222220;
-  --bg-card:   #2a2a28;
-  --bg-card2:  #313130;
-
-  /* Text — warm cream instead of cool-white */
-  --text:   #f0eeea;
-  --text-2: #8a7e72;
-  --text-3: #635850;
-
-  /* Calories → Coral */
-  --blue:    #ff6b4a;
-  --blue-hi: #ff8568;
-
-  /* Protein → Sand */
-  --green:     #c4965a;
-  --green-hi:  #d4aa72;
-  --green-soft:#d4aa72;
-
-  /* Coral tint scale */
-  --blue-fill:      rgba(255,107,74,0.07);
-  --blue-tint:      rgba(255,107,74,0.10);
-  --blue-chip:      rgba(255,107,74,0.12);
-  --blue-select:    rgba(255,107,74,0.18);
-  --blue-glow:      rgba(255,107,74,0.25);
-  --blue-border:    rgba(255,107,74,0.35);
-  --blue-border-hi: rgba(255,107,74,0.40);
-
-  /* Sand tint scale */
-  --green-fill:   rgba(196,150,90,0.07);
-  --green-tint:   rgba(196,150,90,0.10);
-  --green-chip:   rgba(196,150,90,0.12);
-  --green-select: rgba(196,150,90,0.18);
-  --green-glow:   rgba(196,150,90,0.25);
-  --green-border: rgba(196,150,90,0.35);
-
-  /* Dinner — muted rose (replaces purple) */
-  --purple:       #c06878;
-  --purple-tint:      rgba(192,104,120,0.10);
-  --purple-fill:      rgba(192,104,120,0.07);
-  --purple-chip:      rgba(192,104,120,0.12);
-  --purple-select:    rgba(192,104,120,0.18);
-  --purple-glow:      rgba(192,104,120,0.25);
-  --purple-border:    rgba(192,104,120,0.35);
-  --purple-border-hi: rgba(192,104,120,0.50);
+/* ── Single source of truth for the minimal accent color ──────────
+   Change ONE value here → the entire minimal palette updates.
+   The scale is computed via color-mix(in oklch) for perceptually
+   uniform mixing (oklch preserves hue better than sRGB/HSL).      */
+[data-style="minimal"] {
+  --accent: #0d9488;
 }
 
-[data-style="hybrid"][data-theme="light"] {
-  /* Backgrounds — warm off-white instead of cool gray */
-  --bg:        #f0efe9;
-  --bg-card:   #ffffff;
-  --bg-card2:  #e8e7e1;
+[data-style="minimal"][data-theme="dark"] {
+  /* ── Neutrals (pure, no hue tint) ── */
+  --bg:        #242422;
+  --bg-card:   transparent;
+  --bg-card2:  #2d2c2a;
+  --surface-1: rgba(255,255,255,0.03);
+  --surface-2: rgba(255,255,255,0.06);
+  --text:      #f0eeeb;
+  --text-2:    rgba(240,238,235,0.50);
+  --text-3:    rgba(240,238,235,0.40);
+  --border:    rgba(255,255,255,0.12);
+  --border-hi: rgba(255,255,255,0.20);
 
-  /* Text — warm near-black instead of cool-blue-black */
-  --text:   #1a1a18;
-  --text-2: #6a5e52;
-  --text-3: #9a8e84;
+  /* ── Accent scale — all derived from --accent ── */
+  /* WCAG AA: lighten for text/icon on dark bg (5.0:1 ✓) */
+  --accent-hi:        color-mix(in oklch, var(--accent), white 25%);
+  --accent-fill:      color-mix(in oklch, var(--accent), transparent 93%);
+  --accent-tint:      color-mix(in oklch, var(--accent), transparent 90%);
+  --accent-chip:      color-mix(in oklch, var(--accent), transparent 88%);
+  --accent-select:    color-mix(in oklch, var(--accent), transparent 82%);
+  --accent-glow:      color-mix(in oklch, var(--accent), transparent 75%);
+  --accent-border:    color-mix(in oklch, var(--accent), transparent 65%);
+  --accent-border-hi: color-mix(in oklch, var(--accent), transparent 50%);
 
-  /* Calories → Coral (darkened for WCAG AA on light) */
-  --blue:    #c43a20;
-  --blue-hi: #a83018;
+  /* ── Danger → accent (single-color rule in minimal) ── */
+  --danger:           var(--accent);
+  --danger-hi:        var(--accent-hi);
+  --danger-fill:      var(--accent-fill);
+  --danger-tint:      var(--accent-tint);
+  --danger-chip:      var(--accent-chip);
+  --danger-select:    var(--accent-select);
+  --danger-glow:      var(--accent-glow);
+  --danger-border-lo: var(--accent-border);
+  --danger-border:    var(--accent-border);
 
-  /* Protein → Sand (darkened for WCAG AA on light) */
-  --green:     #7a5030;
-  --green-hi:  #5a3a20;
-  --green-soft:#5a3a20;
-
-  /* Coral tint scale */
-  --blue-fill:      rgba(196,58,32,0.06);
-  --blue-tint:      rgba(196,58,32,0.10);
-  --blue-chip:      rgba(196,58,32,0.12);
-  --blue-select:    rgba(196,58,32,0.18);
-  --blue-glow:      rgba(196,58,32,0.25);
-  --blue-border:    rgba(196,58,32,0.35);
-  --blue-border-hi: rgba(196,58,32,0.40);
-
-  /* Sand tint scale */
-  --green-fill:   rgba(122,80,48,0.06);
-  --green-tint:   rgba(122,80,48,0.10);
-  --green-chip:   rgba(122,80,48,0.12);
-  --green-select: rgba(122,80,48,0.18);
-  --green-glow:   rgba(122,80,48,0.25);
-  --green-border: rgba(122,80,48,0.35);
-
-  /* Dinner — muted rose (replaces purple) */
-  --purple:       #8b3545;
-  --purple-tint:      rgba(139,53,69,0.10);
-  --purple-fill:      rgba(139,53,69,0.07);
-  --purple-chip:      rgba(139,53,69,0.12);
-  --purple-select:    rgba(139,53,69,0.18);
-  --purple-glow:      rgba(139,53,69,0.25);
-  --purple-border:    rgba(139,53,69,0.35);
-  --purple-border-hi: rgba(139,53,69,0.50);
+  /* ── Protein → amber (second color in minimal, pairs with teal accent) ── */
+  --positive:           #fbbf24;
+  --positive-hi:        #fbbf24;
+  --positive-soft:      rgba(251,191,36,0.60);
+  --positive-fill:      rgba(251,191,36,0.05);
+  --positive-tint:      rgba(251,191,36,0.08);
+  --positive-chip:      rgba(251,191,36,0.11);
+  --positive-select:    rgba(251,191,36,0.16);
+  --positive-glow:      rgba(251,191,36,0.24);
+  --positive-border:    rgba(251,191,36,0.38);
+  --composed:           rgba(240,238,235,0.35);
+  --composed-tint:      rgba(240,238,235,0.04);
+  --composed-fill:      rgba(240,238,235,0.03);
+  --composed-chip:      rgba(240,238,235,0.07);
+  --composed-select:    rgba(240,238,235,0.10);
+  --composed-glow:      rgba(240,238,235,0.14);
+  --composed-border:    rgba(240,238,235,0.22);
+  --composed-border-hi: rgba(240,238,235,0.30);
+  --warning:            rgba(240,238,235,0.50);
+  --warning-tint:       rgba(240,238,235,0.04);
+  --warning-fill:       rgba(240,238,235,0.03);
+  --warning-glow:       rgba(240,238,235,0.14);
+  --warning-border:     rgba(240,238,235,0.22);
+  --library:            rgba(240,238,235,0.40);
+  --library-hi:         rgba(240,238,235,0.40);
+  --library-fill:       rgba(240,238,235,0.03);
+  --library-tint:       rgba(240,238,235,0.04);
+  --library-chip:       rgba(240,238,235,0.07);
+  --library-border:     rgba(240,238,235,0.22);
 }
 
-/* Component shadow overrides — tab pill + FAB */
-[data-style="hybrid"] .tab-indicator {
-  box-shadow: 0 2px 10px rgba(255,107,74,0.35);
+[data-style="minimal"][data-theme="light"] {
+  /* ── Neutrals (pure, no hue tint) ── */
+  --bg:        #f5f5f2;
+  --bg-card:   transparent;
+  --bg-card2:  #eceae8;
+  --surface-1: rgba(0,0,0,0.02);
+  --surface-2: rgba(0,0,0,0.05);
+  --text:      #1a1a18;
+  --text-2:    rgba(26,26,24,0.70);
+  --text-3:    rgba(26,26,24,0.60);
+  --border:    rgba(0,0,0,0.12);
+  --border-hi: rgba(0,0,0,0.20);
+
+  /* ── Accent scale — all derived from --accent ── */
+  /* WCAG AA: slightly darken for text + button on light bg (4.9:1 ✓) */
+  --accent-hi:        color-mix(in oklch, var(--accent), black 8%);
+  --accent-fill:      color-mix(in oklch, var(--accent), transparent 94%);
+  --accent-tint:      color-mix(in oklch, var(--accent), transparent 92%);
+  --accent-chip:      color-mix(in oklch, var(--accent), transparent 90%);
+  --accent-select:    color-mix(in oklch, var(--accent), transparent 86%);
+  --accent-glow:      color-mix(in oklch, var(--accent), transparent 78%);
+  --accent-border:    color-mix(in oklch, var(--accent), transparent 68%);
+  --accent-border-hi: color-mix(in oklch, var(--accent), transparent 52%);
+
+  /* ── Danger → accent (single-color rule in minimal) ── */
+  --danger:           var(--accent);
+  --danger-hi:        var(--accent-hi);
+  --danger-fill:      var(--accent-fill);
+  --danger-tint:      var(--accent-tint);
+  --danger-chip:      var(--accent-chip);
+  --danger-select:    var(--accent-select);
+  --danger-glow:      var(--accent-glow);
+  --danger-border-lo: var(--accent-border);
+  --danger-border:    var(--accent-border);
+
+  /* ── Protein → amber (second color in minimal, pairs with teal accent) ── */
+  --positive:           #d97706;
+  --positive-hi:        #b45309;
+  --positive-soft:      rgba(180,83,9,0.60);
+  --positive-fill:      rgba(180,83,9,0.05);
+  --positive-tint:      rgba(180,83,9,0.08);
+  --positive-chip:      rgba(180,83,9,0.11);
+  --positive-select:    rgba(180,83,9,0.15);
+  --positive-glow:      rgba(180,83,9,0.22);
+  --positive-border:    rgba(180,83,9,0.35);
+  --composed:           rgba(26,26,24,0.30);
+  --composed-tint:      rgba(26,26,24,0.03);
+  --composed-fill:      rgba(26,26,24,0.02);
+  --composed-chip:      rgba(26,26,24,0.06);
+  --composed-select:    rgba(26,26,24,0.09);
+  --composed-glow:      rgba(26,26,24,0.12);
+  --composed-border:    rgba(26,26,24,0.20);
+  --composed-border-hi: rgba(26,26,24,0.28);
+  --warning:            rgba(26,26,24,0.55);
+  --warning-tint:       rgba(26,26,24,0.04);
+  --warning-fill:       rgba(26,26,24,0.03);
+  --warning-glow:       rgba(26,26,24,0.12);
+  --warning-border:     rgba(26,26,24,0.20);
+  --library:            rgba(26,26,24,0.50);
+  --library-hi:         rgba(26,26,24,0.50);
+  --library-fill:       rgba(26,26,24,0.03);
+  --library-tint:       rgba(26,26,24,0.04);
+  --library-chip:       rgba(26,26,24,0.06);
+  --library-border:     rgba(26,26,24,0.20);
 }
-[data-style="hybrid"] .fab-btn       { box-shadow: 0 4px 20px rgba(255,107,74,0.5); }
-[data-style="hybrid"] .fab-btn:hover { box-shadow: 0 6px 28px rgba(255,107,74,0.65); }
+
+/* ── Card reset: no bg, no shadow, hairline bottom border only ── */
+[data-style="minimal"] .card {
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  border-bottom: 1px solid var(--border) !important;
+}
+
+/* ── Composed card ── */
+[data-style="minimal"] .composed-card {
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  border-bottom: 1px solid var(--border) !important;
+}
+[data-style="minimal"] .composed-children {
+  background: transparent !important;
+  border-top: 1px solid var(--border) !important;
+}
+
+/* ── Typography: pull back weights ── */
+[data-style="minimal"] * { font-weight: 300; }
+[data-style="minimal"] .icon,
+[data-style="minimal"] .icon-sm { font-weight: 400; }
+
+/* ── Modals/overlays: force solid opaque background — no bleed-through ── */
+[data-style="minimal"] .compose-modal {
+  background: var(--bg) !important;
+  border: 1px solid var(--border-hi) !important;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.6), 0 4px 16px rgba(0,0,0,0.4) !important;
+}
+[data-style="minimal"] .compose-modal-summary {
+  background: var(--surface-1) !important;
+}
+[data-style="minimal"] .compose-modal-item {
+  background: var(--surface-1) !important;
+}
+
+/* ── FAB shadow → derived from --accent ── */
+[data-style="minimal"] .fab-btn       { background: var(--accent) !important; box-shadow: 0 4px 20px var(--accent-glow); }
+[data-style="minimal"] .fab-btn:hover { box-shadow: 0 6px 28px color-mix(in oklch, var(--accent), transparent 45%); }
+[data-style="minimal"] .btn-confirm   { background: var(--accent); }
+
+/* ── Inputs: lighter borders ── */
+[data-style="minimal"] .inp { border-color: var(--border); }
+[data-style="minimal"] .inp:focus { border-color: var(--border-hi); }
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   END HYBRID THEME
+   END MINIMAL THEME
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */

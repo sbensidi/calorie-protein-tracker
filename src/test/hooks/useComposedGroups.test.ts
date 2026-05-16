@@ -58,15 +58,21 @@ describe('useComposedGroups', () => {
     expect(result.current.groups[0].mealIds).toEqual(['m1', 'm2'])
   })
 
-  it('upsert adds new group to state immediately', async () => {
+  it('upsert adds new group to state (optimistic then confirmed)', async () => {
+    const newRow = { id: 'g99', name: 'New Group', meal_ids: ['m9'] }
+    fromMock
+      .mockReturnValueOnce(makeChain({ data: [] }))           // initial fetch
+      .mockReturnValueOnce(makeChain())                        // upsert DB call (success)
+      .mockReturnValue(makeChain({ data: [newRow] }))          // refetch after upsert
+
     const { result } = renderHook(() => useComposedGroups(USER))
     await waitFor(() => expect(result.current.groups).toHaveLength(0))
 
-    act(() => {
-      result.current.upsert({ id: 'g99', name: 'New Group', mealIds: ['m9'] })
+    await act(async () => {
+      await result.current.upsert({ id: 'g99', name: 'New Group', mealIds: ['m9'] })
     })
 
-    expect(result.current.groups.find(g => g.id === 'g99')).toBeDefined()
+    await waitFor(() => expect(result.current.groups.find(g => g.id === 'g99')).toBeDefined())
   })
 
   it('remove deletes group from state and calls DB delete', async () => {

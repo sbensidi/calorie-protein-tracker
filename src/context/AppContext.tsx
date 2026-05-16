@@ -2,17 +2,17 @@ import { createContext, useContext, useState, useEffect, useCallback } from 'rea
 import type { ReactNode } from 'react'
 import type { Lang } from '../lib/i18n'
 
-type StyleMode = 'classic' | 'hybrid'
+export type StyleMode = 'classic' | 'minimal'
 
 interface AppContextValue {
-  lang:             Lang
-  theme:            'dark' | 'light'
-  styleMode:        StyleMode
-  toggleLang:       () => void
-  toggleTheme:      () => void
-  toggleStyleMode:  () => void
-  setTheme:         (t: 'dark' | 'light') => void
-  setLang:          (l: Lang) => void
+  lang:              Lang
+  theme:             'dark' | 'light'
+  styleMode:         StyleMode
+  toggleLang:        () => void
+  toggleTheme:       () => void
+  selectStyleMode:   (m: StyleMode) => void
+  setTheme:          (t: 'dark' | 'light') => void
+  setLang:           (l: Lang) => void
 }
 
 const AppContext = createContext<AppContextValue | null>(null)
@@ -26,9 +26,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (saved === 'dark' || saved === 'light') return saved
     return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'
   })
-  const [styleMode, setStyleMode] = useState<StyleMode>(
-    () => (localStorage.getItem('styleMode') as StyleMode) ?? 'classic'
-  )
+  const [styleMode, setStyleMode] = useState<StyleMode>(() => {
+    const saved = localStorage.getItem('styleMode')
+    if (saved === 'classic' || saved === 'minimal') return saved
+    return 'classic'
+  })
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme
@@ -40,18 +42,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
     localStorage.setItem('styleMode', styleMode)
   }, [styleMode])
 
-  const toggleLang = useCallback(() => {
-    const next: Lang = lang === 'he' ? 'en' : 'he'
-    setLang(next)
-    localStorage.setItem('lang', next)
+  useEffect(() => {
+    document.documentElement.lang = lang
+    document.documentElement.dir  = lang === 'he' ? 'rtl' : 'ltr'
+    localStorage.setItem('lang', lang)
   }, [lang])
+
+  const toggleLang = useCallback(() => {
+    setLang(l => l === 'he' ? 'en' : 'he')
+  }, [])
 
   const toggleTheme = useCallback(() => {
     setTheme(t => t === 'dark' ? 'light' : 'dark')
   }, [])
 
-  const toggleStyleMode = useCallback(() => {
-    setStyleMode(s => s === 'classic' ? 'hybrid' : 'classic')
+  const selectStyleMode = useCallback((m: StyleMode) => {
+    setStyleMode(m)
   }, [])
 
   const applyTheme = useCallback((t: 'dark' | 'light') => {
@@ -60,11 +66,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const applyLang = useCallback((l: Lang) => {
     setLang(l)
-    localStorage.setItem('lang', l)
   }, [])
 
   return (
-    <AppContext.Provider value={{ lang, theme, styleMode, toggleLang, toggleTheme, toggleStyleMode, setTheme: applyTheme, setLang: applyLang }}>
+    <AppContext.Provider value={{ lang, theme, styleMode, toggleLang, toggleTheme, selectStyleMode, setTheme: applyTheme, setLang: applyLang }}>
       {children}
     </AppContext.Provider>
   )
