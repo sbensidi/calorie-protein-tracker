@@ -714,26 +714,14 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
 
           <div style={{ height: 1, background: 'var(--border)' }} />
 
-          {/* Grams stepper */}
-          <div style={{ display: 'flex', gap: 6 }}>
-            <button
-              onClick={() => setScanGrams(g => String(Math.max(10, Math.round((Number(g) || 0) - 10))))}
-              style={{
-                flexShrink: 0, width: 46, height: 46, borderRadius: 10,
-                border: '1px solid var(--border)', background: 'var(--inp-bg)',
-                color: 'var(--text-2)', cursor: 'pointer', display: 'flex',
-                alignItems: 'center', justifyContent: 'center',
-                transition: 'background .15s',
-              }}
-            >
-              <span className="icon icon-sm">remove</span>
-            </button>
-            <div style={{ flex: 1, position: 'relative' }}>
+          {/* Weight + meal type row */}
+          <div style={{ display: 'flex', gap: 8 }}>
+            <div style={{ position: 'relative', width: 110, flexShrink: 0 }}>
               <input
                 type="number"
                 inputMode="decimal"
                 className="inp"
-                style={{ textAlign: 'center', paddingInlineEnd: 28 }}
+                style={{ textAlign: 'center', paddingInlineEnd: 28, fontSize: 16 }}
                 value={scanGrams}
                 onFocus={e => e.target.select()}
                 onChange={e => setScanGrams(e.target.value)}
@@ -745,31 +733,17 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
                 {lang === 'he' ? 'ג׳' : 'g'}
               </span>
             </div>
-            <button
-              onClick={() => setScanGrams(g => String((Number(g) || 0) + 10))}
-              style={{
-                flexShrink: 0, width: 46, height: 46, borderRadius: 10,
-                border: '1px solid var(--border)', background: 'var(--inp-bg)',
-                color: 'var(--text-2)', cursor: 'pointer', display: 'flex',
-                alignItems: 'center', justifyContent: 'center',
-                transition: 'background .15s',
-              }}
+            <select
+              className="inp"
+              style={{ flex: 1, fontSize: 16 }}
+              value={scanMealType}
+              onChange={e => setScanMealType(e.target.value as MealType)}
             >
-              <span className="icon icon-sm">add</span>
-            </button>
+              {mealTypeOptions.map(o => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
           </div>
-
-          {/* Meal type */}
-          <select
-            className="inp"
-            style={{ fontSize: 16 }}
-            value={scanMealType}
-            onChange={e => setScanMealType(e.target.value as MealType)}
-          >
-            {mealTypeOptions.map(o => (
-              <option key={o.value} value={o.value}>{o.label}</option>
-            ))}
-          </select>
 
           {/* Calculated total */}
           {scanG > 0 && (
@@ -789,16 +763,17 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
               <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 2, fontSize: 15, fontWeight: 800, color: 'var(--positive-hi)', marginInlineStart: 8 }}>
                 {scanProt}
                 <span style={{ fontSize: 10, fontWeight: 600, opacity: 0.7 }}>{t(lang, 'proteinUnit')}</span>
+                <span style={{ fontSize: 10, fontWeight: 500, opacity: 0.55 }}>{t(lang, 'protein')}</span>
               </span>
             </div>
           )}
 
           {/* Actions */}
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div style={{ display: 'flex', gap: 8, paddingTop: 4 }}>
             <button className="btn-confirm" onClick={handleScanAdd} style={{ flex: 1 }} disabled={scanG <= 0}>
               {t(lang, 'add')}
             </button>
-            <button className="btn-ghost" onClick={handleScanAgain} style={{ flexShrink: 0, paddingInline: 14 }}>
+            <button className="btn-ghost" onClick={handleScanAgain} style={{ flexShrink: 0, paddingInline: 14, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <span className="icon icon-sm">barcode_scanner</span>
             </button>
           </div>
@@ -825,9 +800,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
             onFocus={handleFocus}
             onBlur={handleBlur}
             dir={dir(lang)}
-            style={isRTL
-              ? { fontSize: 16, paddingLeft: foodName ? 78 : 46, paddingRight: 12 }
-              : { fontSize: 16, paddingRight: foodName ? 78 : 46, paddingLeft: 12 }}
+            style={{ fontSize: 16, paddingInlineStart: 12, paddingInlineEnd: foodName ? 78 : 46 }}
           />
           {/* History browse button */}
           <button

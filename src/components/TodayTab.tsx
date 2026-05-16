@@ -124,6 +124,13 @@ export function TodayTab({
 
   // ── Collapsible groups ───────────────────────────────────────
   const [collapsed, setCollapsed] = useState<Set<MealType>>(loadCollapsed)
+  const [openComposedIds, setOpenComposedIds] = useState<Set<string>>(new Set())
+
+  const toggleComposedOpen = (id: string) => setOpenComposedIds(prev => {
+    const next = new Set(prev)
+    next.has(id) ? next.delete(id) : next.add(id)
+    return next
+  })
 
   const toggleCollapse = (type: MealType) => {
     setCollapsed(prev => {
@@ -197,7 +204,14 @@ export function TodayTab({
     return () => { pendingTimersRef.current.forEach(t => clearTimeout(t)) }
   }, [])
 
-  const dissolveGroup = (groupId: string) => onRemoveGroup(groupId)
+  const dissolveGroup = useCallback((groupId: string) => {
+    const cancelFn = scheduleDeletes([], [groupId])
+    showToast(
+      lang === 'he' ? 'הקבוצה נמחקה' : 'Group deleted',
+      'info',
+      { action: { label: lang === 'he' ? 'בטל' : 'Undo', onClick: cancelFn }, durationMs: 4000 },
+    )
+  }, [scheduleDeletes, showToast, lang])
 
   // ── Add ingredient modal ─────────────────────────────────────
   const [addIngredientModal, setAddIngredientModal] = useState<{ groupId: string; mealType: MealType } | null>(null)
@@ -323,6 +337,21 @@ export function TodayTab({
     )
   }
 
+  const handleDeleteTypeGroup = (type: MealType) => {
+    const typeMealsAll = mealsByType[type]
+    if (typeMealsAll.length === 0) return
+    const groupsOfType = composedGroups.filter(g => g.mealIds.some(id => typeMealsAll.find(m => m.id === id)))
+    const allMealIds = typeMealsAll.map(m => m.id)
+    const groupIds   = groupsOfType.map(g => g.id)
+    setEditingGroupType(null)
+    const cancelFn = scheduleDeletes(allMealIds, groupIds)
+    showToast(
+      lang === 'he' ? `קבוצת ${t(lang, type)} נמחקה` : `${t(lang, type as MealTypeKey)} group deleted`,
+      'info',
+      { action: { label: lang === 'he' ? 'בטל' : 'Undo', onClick: cancelFn }, durationMs: 4000 },
+    )
+  }
+
   // ── Entry sheet ──────────────────────────────────────────────
   const [entryOpen, setEntryOpen] = useState(false)
   const [entryDefaultType, setEntryDefaultType] = useState<MealType | undefined>(undefined)
@@ -363,7 +392,7 @@ export function TodayTab({
   )
 
   // ── Render: meal group ───────────────────────────────────────
-  const mealGroup = (type: MealType, i: number) => {
+  const mealGroup = (type: MealType, i: number, total: number) => {
     const typeMeals   = mealsByType[type]
     const isCollapsed = collapsed.has(type)
     const selSet      = selectedIds[type] ?? new Set<string>()
@@ -389,7 +418,7 @@ export function TodayTab({
     const selCount = selSet.size
 
     return (
-      <div key={type} className={styleMode === 'minimal' ? 'fade-up' : 'card fade-up'} style={{ animationDelay: `${i * 0.05}s`, marginBottom: styleMode === 'minimal' ? 0 : 12, overflow: 'hidden', ...(styleMode === 'minimal' && i > 0 ? { borderTop: '1px solid var(--border)', paddingTop: 4, marginTop: 4 } : {}) }}>
+      <div key={type} className={styleMode === 'minimal' ? 'fade-up' : 'card fade-up'} style={{ animationDelay: `${i * 0.05}s`, marginBottom: styleMode === 'minimal' ? 0 : 12, overflow: 'hidden', ...(styleMode === 'minimal' ? { borderTop: '1px solid var(--border)', ...(i === total - 1 ? { borderBottom: '1px solid var(--border)' } : {}) } : {}) }}>
 
         {/* ── Group header ────────────────────────────────── */}
         {styleMode === 'minimal' ? (
@@ -415,6 +444,14 @@ export function TodayTab({
               </span>
             )}
             <span style={{ flex: 1 }} />
+            <button
+              onClick={e => { e.stopPropagation(); setEditingGroupType(editingGroupType === type ? null : type) }}
+              className="icon-btn"
+              style={{ color: editingGroupType === type ? 'var(--warning)' : undefined, background: editingGroupType === type ? 'var(--warning-tint)' : undefined, border: editingGroupType === type ? '1px solid var(--warning-border)' : undefined }}
+              aria-label={t(lang, 'changeGroup')}
+            >
+              <span className="icon icon-sm">edit</span>
+            </button>
             <span className="icon icon-sm" style={{ fontSize: 12, color: 'var(--text-3)', transform: isCollapsed ? 'rotate(0deg)' : 'rotate(180deg)', transition: 'transform 0.2s' }}>
               expand_more
             </span>
@@ -462,9 +499,9 @@ export function TodayTab({
                 setEditingGroupType(editingGroupType === type ? null : type)
               }}
               style={{
-                width: 26, height: 26, borderRadius: 8, flexShrink: 0,
-                background: editingGroupType === type ? 'var(--warning-tint)' : 'var(--inp-bg)',
-                border: `1px solid ${editingGroupType === type ? 'var(--warning-border)' : 'var(--border)'}`,
+                width: 32, height: 32, borderRadius: 8, flexShrink: 0,
+                background: editingGroupType === type ? 'var(--warning-tint)' : 'transparent',
+                border: editingGroupType === type ? '1px solid var(--warning-border)' : 'none',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 cursor: 'pointer',
               }}
@@ -475,9 +512,7 @@ export function TodayTab({
               </span>
             </button>
 
-            <span style={{ width: 6 }} />
-
-            <span className="chevron-badge">
+            <span className="chevron-badge" style={{ background: 'transparent', border: 'none' }}>
               <span className="icon icon-sm" style={{ color: 'var(--text-3)', transform: isCollapsed ? 'rotate(0deg)' : 'rotate(180deg)' }}>
                 expand_more
               </span>
@@ -512,6 +547,21 @@ export function TodayTab({
                 </div>
               </div>
             ))}
+            {/* ── Delete type group ── */}
+            <div
+              role="button"
+              tabIndex={0}
+              className="type-picker-row"
+              onClick={() => handleDeleteTypeGroup(type)}
+              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleDeleteTypeGroup(type) } }}
+            >
+              <div className="type-picker-ico" style={{ background: 'var(--danger-tint)', border: '1px solid var(--danger-border-lo)' }}>
+                <span className="icon icon-sm" style={{ color: 'var(--danger-hi)' }}>delete</span>
+              </div>
+              <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--danger-hi)', flex: 1 }}>
+                {lang === 'he' ? `מחק את כל ${t(lang, type as MealTypeKey)}` : `Delete all ${t(lang, type as MealTypeKey)}`}
+              </span>
+            </div>
           </div>
         )}
 
@@ -520,7 +570,7 @@ export function TodayTab({
           <div
             className={styleMode === 'minimal' ? 'expand-down' : undefined}
             style={styleMode === 'minimal'
-              ? { padding: '0 0 6px' }
+              ? { padding: '0 0 10px' }
               : { borderTop: '1px solid var(--border)', padding: '14px 10px 10px' }
             }
           >
@@ -542,6 +592,8 @@ export function TodayTab({
                   onDeleteGroup={() => dissolveGroup(group.id)}
                   onAddIngredient={() => setAddIngredientModal({ groupId: group.id, mealType: type })}
                   onChangeMealType={newType => groupMeals.forEach(m => onEditMeal(m.id, { meal_type: newType }))}
+                  open={openComposedIds.has(group.id)}
+                  onToggleOpen={() => toggleComposedOpen(group.id)}
                 />
               )
             })}
@@ -553,7 +605,7 @@ export function TodayTab({
                   meal={meal}
                   lang={lang}
                   weightUnit={defaultWeightUnit}
-                  showCheckbox={styleMode !== 'minimal'}
+                  showCheckbox
                   selected={selSet.has(meal.id)}
                   onToggleSelect={() => toggleSelect(type, meal.id)}
                   onEdit={onEditMeal}
@@ -564,7 +616,7 @@ export function TodayTab({
             ))}
 
             {/* Quick-add to this section */}
-            {styleMode === 'minimal' ? (
+            {selCount === 0 && (styleMode === 'minimal' ? (
               <button
                 onClick={() => openEntry(type)}
                 style={{
@@ -591,7 +643,7 @@ export function TodayTab({
                 <span className="icon" style={{ fontSize: 14 }}>add</span>
                 {lang === 'he' ? `הוסף ל${t(lang, type as MealTypeKey)}` : `Add to ${t(lang, type as MealTypeKey)}`}
               </button>
-            )}
+            ))}
 
             {/* ── Action bar (shown when anything selected) ── */}
             {selCount > 0 && (
@@ -648,7 +700,7 @@ export function TodayTab({
   }
 
   // ── Meal groups list ─────────────────────────────────────────
-  const items = visibleTypes.map((type, i) => mealGroup(type, i))
+  const items = visibleTypes.map((type, i) => mealGroup(type, i, visibleTypes.length))
 
   // ── Compose modal ────────────────────────────────────────────
   const composeModalEl = composeModal && (() => {
@@ -799,8 +851,8 @@ export function TodayTab({
         </div>
       )}
 
-      {/* ── FAB — circular, same in all modes. CSS [data-style="minimal"] .fab-btn overrides color. ── */}
-      <button
+      {/* ── FAB — hidden on empty state ── */}
+      {todayMeals.length > 0 && <button
         onClick={() => openEntry()}
         aria-label={lang === 'he' ? 'הוסף ארוחה' : 'Add meal'}
         className="fab-btn"
@@ -820,7 +872,7 @@ export function TodayTab({
         onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)' }}
       >
         <span className="icon" style={{ fontSize: 28 }}>add</span>
-      </button>
+      </button>}
 
       {/* ── Entry bottom sheet ────────────────────────────────────── */}
       <div

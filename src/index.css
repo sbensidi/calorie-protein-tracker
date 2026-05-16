@@ -1,5 +1,39 @@
 @import "tailwindcss";
 
+/* Self-hosted fonts — no Google Fonts CDN dependency (critical for PWA offline) */
+@font-face {
+  font-family: 'Material Symbols Rounded';
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+  src: url('/fonts/material-symbols-rounded.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Heebo';
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: swap;
+  src: url('/fonts/heebo-hebrew.woff2') format('woff2');
+  unicode-range: U+0307-0308, U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F;
+}
+@font-face {
+  font-family: 'Heebo';
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: swap;
+  src: url('/fonts/heebo-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Heebo';
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: swap;
+  src: url('/fonts/heebo-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
 :root {
   /* Z-index scale */
   --z-sticky:   10;
@@ -287,6 +321,10 @@ input[type="number"] { -moz-appearance: textfield; }
   from { opacity: 0; transform: translateY(10px); }
   to   { opacity: 1; transform: translateY(0); }
 }
+@keyframes toast-progress {
+  from { transform: scaleX(1); }
+  to   { transform: scaleX(0); }
+}
 @keyframes bar-fill {
   from { width: 0%; }
 }
@@ -561,7 +599,7 @@ details summary::-webkit-details-marker { display: none; }
 
 /* Chevron badge — shared between History list cards and Today meal groups */
 .chevron-badge {
-  width: 24px; height: 24px;
+  width: 44px; height: 44px;
   border-radius: 7px;
   background: var(--surface-2);
   border: 1px solid var(--border);
@@ -626,7 +664,7 @@ details[open] .chevron-badge .icon { transform: rotate(180deg); }
   border: 1px solid var(--composed-glow);
   border-radius: 11px;
   overflow: hidden;
-  margin-top: 6px;
+  margin-top: 10px;
 }
 .group-action-bar-header {
   display: flex; align-items: center; gap: 8px;
@@ -650,6 +688,11 @@ details[open] .chevron-badge .icon { transform: rotate(180deg); }
 .group-action-btn-ico {
   width: 32px; height: 32px; border-radius: 9px;
   display: flex; align-items: center; justify-content: center;
+}
+
+/* ── details[open] chevron rotation (History list view) ───────── */
+details[open] summary .chevron-rotate {
+  transform: rotate(180deg);
 }
 
 /* ── Composed meal card ─────────────────────────────────────────── */
@@ -764,9 +807,9 @@ details[open] .chevron-badge .icon { transform: rotate(180deg); }
   border: 1px solid var(--accent-glow);
 }
 .seg-btn--scan {
-  background: var(--positive-chip);
-  color: var(--positive-hi);
-  border: 1px solid var(--positive-glow);
+  background: var(--accent-chip);
+  color: var(--accent-hi);
+  border: 1px solid var(--accent-glow);
 }
 
 /* ── Barcode scanner viewfinder ─────────────────────────────────── */
@@ -1034,6 +1077,7 @@ details[open] .chevron-badge .icon { transform: rotate(180deg); }
 /* ── FAB shadow → derived from --accent ── */
 [data-style="minimal"] .fab-btn       { background: var(--accent) !important; box-shadow: 0 4px 20px var(--accent-glow); }
 [data-style="minimal"] .fab-btn:hover { box-shadow: 0 6px 28px color-mix(in oklch, var(--accent), transparent 45%); }
+[data-style="minimal"] .btn-confirm   { background: var(--accent); }
 
 /* ── Inputs: lighter borders ── */
 [data-style="minimal"] .inp { border-color: var(--border); }

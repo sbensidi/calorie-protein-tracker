@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useRef, useCallback, lazy, Suspense } fro
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from './lib/supabase'
 import { t, dir, today } from './lib/i18n'
-import type { Lang } from './lib/i18n'
+import type { Lang, TranslationKey } from './lib/i18n'
 import { useAppContext } from './context/AppContext'
 import { useMeals } from './hooks/useMeals'
 import { useGoals } from './hooks/useGoals'
@@ -138,20 +138,25 @@ export default function App() {
     await pruneMealId(id)
   }, [deleteMeal, pruneMealId])
 
-  // C5: show a non-intrusive toast when a new SW version takes over (skip first install)
+  // C5: show a persistent toast when a new SW is waiting — user must click to reload
   useEffect(() => {
-    if (!('serviceWorker' in navigator)) return
-    const existingCtrl = navigator.serviceWorker.controller
-    const handler = () => {
-      if (!existingCtrl) return
+    const showUpdateToast = (update: () => void) => {
       showToast(
         t(lang, 'toastAppUpdated'),
         'info',
-        { action: { label: t(lang, 'toastReload'), onClick: () => window.location.reload() }, durationMs: 15000 },
+        { action: { label: t(lang, 'toastReload'), onClick: update }, durationMs: 0 },
       )
     }
-    navigator.serviceWorker.addEventListener('controllerchange', handler)
-    return () => navigator.serviceWorker.removeEventListener('controllerchange', handler)
+    // Handle case where onNeedRefresh fired before this effect mounted (race condition)
+    const pending = (window as unknown as Record<string, unknown>).__swPendingUpdate as (() => void) | null
+    if (pending) showUpdateToast(pending)
+
+    const handler = (e: Event) => {
+      const { update } = (e as CustomEvent<{ update: () => void }>).detail
+      showUpdateToast(update)
+    }
+    window.addEventListener('pwa-update-available', handler)
+    return () => window.removeEventListener('pwa-update-available', handler)
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Surface hook errors as toasts — use a ref so the same error string re-triggers when it resets to null then back
@@ -207,7 +212,7 @@ export default function App() {
   return (
     <div
       dir={dir(lang)}
-      style={{ minHeight: '100vh', background: 'var(--bg)' }}
+      style={{ minHeight: '100dvh', background: 'var(--bg)' }}
     >
 
       {/* ── Sticky app header ─────────────────────────────────────── */}
@@ -289,7 +294,7 @@ export default function App() {
                   transition: 'color 0.2s, border-color 0.2s',
                 }}
               >
-                {t(lang, tabKey as any)}
+                {t(lang, tabKey as TranslationKey)}
               </button>
             ))}
           </div>
@@ -311,7 +316,7 @@ export default function App() {
                 onClick={() => setTab(tabKey)}
                 className={`tab-btn ${tab === tabKey ? 'active' : ''}`}
               >
-                {t(lang, tabKey as any)}
+                {t(lang, tabKey as TranslationKey)}
               </button>
             ))}
           </div>

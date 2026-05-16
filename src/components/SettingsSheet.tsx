@@ -10,7 +10,7 @@ import type { Toast } from '../hooks/useToast'
 import type { Goal, FoodHistory, ComposedGroup, Meal } from '../types'
 import type { UserProfile } from '../hooks/useProfile'
 import { useFoodLibrary } from '../hooks/useFoodLibrary'
-import { UNITS, toBase, mlToGrams } from '../lib/units'
+import { UNITS, toBase, fromBase, mlToGrams } from '../lib/units'
 import type { UnitId } from '../lib/units'
 import { MealCard } from './MealCard'
 import { fuzzyScore } from '../lib/fuzzyMatch'
@@ -233,20 +233,10 @@ function MainScreen({ lang, connected, theme, styleMode, onProfile, onGoals, onF
 
   return (
     <>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '8px 0 18px' }}>
+      <div style={{ margin: '8px 0 18px' }}>
         <h2 style={{ fontSize: 17, fontWeight: 800, color: 'var(--text)', margin: 0 }}>
           {t(lang, 'settings')}
         </h2>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-          <div style={{
-            width: 6, height: 6, borderRadius: '50%',
-            background: connected ? 'var(--status-ok)' : 'var(--text-3)',
-            boxShadow: connected ? '0 0 5px var(--status-ok)' : 'none',
-          }} />
-          <span style={{ fontSize: 11, color: 'var(--text-3)' }}>
-            {t(lang, connected ? 'connected' : 'disconnected')}
-          </span>
-        </div>
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: minimal ? 0 : 10 }}>
@@ -459,6 +449,16 @@ function MainScreen({ lang, connected, theme, styleMode, onProfile, onGoals, onF
             <p style={{ fontSize: minimal ? 13 : 14, fontWeight: 600, color: 'var(--danger)', margin: 0, flex: 1, textAlign: 'start' }}>
               {t(lang, 'signOut')}
             </p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0 }}>
+              <div style={{
+                width: 6, height: 6, borderRadius: '50%',
+                background: connected ? 'var(--status-ok)' : 'var(--text-3)',
+                boxShadow: connected ? '0 0 5px var(--status-ok)' : 'none',
+              }} />
+              <span style={{ fontSize: 11, color: 'var(--text-3)' }}>
+                {t(lang, connected ? 'connected' : 'disconnected')}
+              </span>
+            </div>
           </button>
         </div>
       </div>
@@ -1093,7 +1093,7 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
   composedGroups: ComposedGroup[]
   meals:          Meal[]
   onDelete:       (id: string) => void
-  onUpdate:       (id: string, updates: Partial<Pick<FoodHistory, 'name' | 'grams' | 'calories' | 'protein'>>) => void
+  onUpdate:       (id: string, updates: Partial<Pick<FoodHistory, 'name' | 'grams' | 'calories' | 'protein' | 'fluid_ml'>>) => void
   onUpdateMeal:   (id: string, updates: Partial<Meal>) => void
   onRemoveGroup:  (id: string) => void
   showToast:      (msg: string, type: 'success' | 'error' | 'info') => void
@@ -1103,9 +1103,10 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
   const [search, setSearch]       = useState('')
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editDraft, setEditDraft] = useState<{ name: string; grams: string; calories: string; protein: string }>({ name: '', grams: '', calories: '', protein: '' })
+  const [editUnit,  setEditUnit]  = useState<UnitId | 'pcs'>('g')
   const [filter, setFilter]       = useState<'all' | 'foods' | 'beverage' | 'composed'>('all')
-  // Per-gram ratios of the item being edited — used for proportional scaling when grams changes
-  const editRatios = useRef({ calPerGram: 0, protPerGram: 0 })
+  // Ratios per base unit (grams or ml) — used for proportional scaling when amount changes
+  const editRatios = useRef({ calPerBase: 0, protPerBase: 0 })
   const [expandedGroupId, setExpandedGroupId]           = useState<string | null>(null)
   const [expandedHistoryGroup, setExpandedHistoryGroup] = useState<string | null>(null)
 
@@ -1142,26 +1143,57 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
     : composedGroups
 
   const startEdit = (item: FoodHistory) => {
-    const absGrams = Math.abs(item.grams) || 1
-    editRatios.current = { calPerGram: item.calories / absGrams, protPerGram: item.protein / absGrams }
+    let initialUnit: UnitId | 'pcs' = 'g'
+    let displayAmt: number
+    let base: number
+    if (item.grams < 0) {
+      initialUnit = 'pcs'; displayAmt = Math.abs(item.grams); base = displayAmt
+    } else if (item.fluid_ml != null && item.fluid_ml > 0) {
+      initialUnit = 'ml'; displayAmt = Math.round(item.fluid_ml); base = item.fluid_ml
+    } else {
+      initialUnit = 'g'; displayAmt = item.grams; base = item.grams
+    }
+    editRatios.current = { calPerBase: item.calories / (base || 1), protPerBase: item.protein / (base || 1) }
+    setEditUnit(initialUnit)
     setEditingId(item.id)
-    setEditDraft({ name: item.name, grams: String(item.grams), calories: String(Math.round(item.calories)), protein: String(Math.round(item.protein * 10) / 10) })
+    setEditDraft({ name: item.name, grams: String(displayAmt), calories: String(Math.round(item.calories)), protein: String(Math.round(item.protein * 10) / 10) })
   }
 
-  const handleGramsChange = (val: string) => {
-    const g = Math.abs(Number(val)) || 0
-    const { calPerGram, protPerGram } = editRatios.current
+  const handleAmountChange = (val: string) => {
+    const displayAmt = Math.abs(Number(val)) || 0
+    const base = editUnit === 'pcs' ? displayAmt : toBase(displayAmt, editUnit as UnitId)
+    const { calPerBase, protPerBase } = editRatios.current
     setEditDraft(d => ({
       ...d,
       grams:    val,
-      calories: g > 0 ? String(Math.round(calPerGram  * g))           : d.calories,
-      protein:  g > 0 ? String(Math.round(protPerGram * g * 10) / 10) : d.protein,
+      calories: base > 0 ? String(Math.round(calPerBase  * base))           : d.calories,
+      protein:  base > 0 ? String(Math.round(protPerBase * base * 10) / 10) : d.protein,
     }))
+  }
+
+  const handleUnitChange = (newUnit: UnitId | 'pcs') => {
+    if (editUnit !== 'pcs' && newUnit !== 'pcs' && editUnit !== newUnit) {
+      const displayAmt = Math.abs(Number(editDraft.grams)) || 0
+      const base = toBase(displayAmt, editUnit as UnitId)
+      const newDisplay = fromBase(base, newUnit as UnitId)
+      setEditDraft(d => ({ ...d, grams: String(Math.round(newDisplay * 100) / 100) }))
+    }
+    setEditUnit(newUnit)
   }
 
   const saveEdit = () => {
     if (!editingId) return
-    onUpdate(editingId, { name: editDraft.name, grams: Number(editDraft.grams), calories: Number(editDraft.calories), protein: Number(editDraft.protein) })
+    const displayAmt = Math.abs(Number(editDraft.grams))
+    const isVol = editUnit !== 'pcs' && UNITS[editUnit as UnitId]?.type === 'volume'
+    const isPcs = editUnit === 'pcs'
+    const base  = isPcs ? displayAmt : toBase(displayAmt, editUnit as UnitId)
+    onUpdate(editingId, {
+      name:     editDraft.name,
+      grams:    isPcs ? -displayAmt : Math.round(base),
+      calories: Number(editDraft.calories),
+      protein:  Number(editDraft.protein),
+      fluid_ml: isVol ? base : null,
+    })
     setEditingId(null)
     showToast(t(lang, 'saved'), 'success')
   }
@@ -1203,6 +1235,9 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
         </div>
 
         {/* Filter chips */}
+        <div style={{ position: 'relative' }}>
+          <div style={{ position: 'absolute', left: 0, top: 0, bottom: 10, width: 24, background: 'linear-gradient(to right, var(--bg), transparent)', zIndex: 1, pointerEvents: 'none' }} />
+          <div style={{ position: 'absolute', right: 0, top: 0, bottom: 10, width: 24, background: 'linear-gradient(to left, var(--bg), transparent)', zIndex: 1, pointerEvents: 'none' }} />
         <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 10, scrollbarWidth: 'none' }}>
           {([
             { key: 'all',      labelHe: `הכל (${history.length + composedGroups.length})`,   labelEn: `All (${history.length + composedGroups.length})` },
@@ -1223,6 +1258,7 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
               {lang === 'he' ? labelHe : labelEn}
             </button>
           ))}
+        </div>
         </div>
       </div>
 
@@ -1285,21 +1321,18 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
                         minimal ? (
                           <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 0' }}>
                             <div style={{ flex: 1, minWidth: 0 }}>
-                              {(!inGroup) && (
-                                <div style={{ display: 'flex', alignItems: 'baseline', gap: 5, overflow: 'hidden' }}>
+                              <div style={{ display: 'flex', alignItems: 'baseline', gap: 5, overflow: 'hidden' }}>
+                                {!inGroup && (
                                   <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>
                                     {item.name}
                                     {isFluid && <span className="icon" style={{ fontSize: 12, color: 'var(--cyan-hi)', opacity: 0.8, verticalAlign: 'middle', margin: '0 4px' }}>water_drop</span>}
                                   </span>
-                                  <span style={{ fontSize: 11, color: 'var(--text-3)', whiteSpace: 'nowrap', flexShrink: 0 }}>{amtNum} {amtUnit}</span>
-                                </div>
-                              )}
-                              {inGroup && (
-                                <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, marginBottom: 2 }}>
-                                  <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>{amtNum} {amtUnit}</span>
-                                  <span style={{ fontSize: 10, color: 'var(--text-3)' }}>| {item.use_count} {usesLabel}</span>
-                                </div>
-                              )}
+                                )}
+                                <span style={{ fontSize: inGroup ? 12 : 11, fontWeight: inGroup ? 600 : 400, color: inGroup ? 'var(--text)' : 'var(--text-3)', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                                  {amtNum} {amtUnit}
+                                </span>
+                                <span style={{ fontSize: 10, color: 'var(--text-3)', whiteSpace: 'nowrap', flexShrink: 0 }}>| {item.use_count} {usesLabel}</span>
+                              </div>
                               <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginTop: inGroup ? 0 : 2 }}>
                                 <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--accent-hi)', display: 'inline-flex', alignItems: 'baseline', gap: 2 }}>
                                   {Math.round(item.calories)}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.8 }}>{t(lang, 'caloriesUnit')}</span>
@@ -1307,7 +1340,6 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
                                 <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--positive-hi)', display: 'inline-flex', alignItems: 'baseline', gap: 2 }}>
                                   {Math.round(item.protein * 10) / 10}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.8 }}>{lang === 'he' ? 'ג׳ חלבון' : 'g protein'}</span>
                                 </span>
-                                {!inGroup && <span style={{ fontSize: 10, color: 'var(--text-3)', marginInlineStart: 'auto' }}>{item.use_count} {usesLabel}</span>}
                               </div>
                             </div>
                             <button onClick={() => startEdit(item)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 4, display: 'flex', borderRadius: 6, flexShrink: 0 }}>
@@ -1361,17 +1393,15 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
                               </button>
                             )}
                           </div>
-                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6 }}>
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 6 }}>
                             <div>
                               <label style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-3)', display: 'block', marginBottom: 3 }}>
-                                {Number(editDraft.grams) < 0
-                                  ? (lang === 'he' ? 'מנה' : 'serving')
-                                  : (lang === 'he' ? 'גרם (g)' : 'Weight (g)')}
+                                {lang === 'he' ? 'כמות' : 'Amount'}
                               </label>
                               <div style={{ position: 'relative' }}>
                                 <input className="inp" type="number" inputMode="decimal" value={editDraft.grams}
                                   onFocus={e => e.target.select()}
-                                  onChange={e => handleGramsChange(e.target.value)}
+                                  onChange={e => handleAmountChange(e.target.value)}
                                   style={{ ...inputSm, borderColor: 'var(--accent-border)', paddingInlineEnd: editDraft.grams ? 28 : 8 }} />
                                 {editDraft.grams && (
                                   <button onMouseDown={e => { e.preventDefault(); setEditDraft(d => ({ ...d, grams: '' })) }} tabIndex={-1}
@@ -1380,6 +1410,22 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
                                   </button>
                                 )}
                               </div>
+                            </div>
+                            <div>
+                              <label style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-3)', display: 'block', marginBottom: 3 }}>
+                                {lang === 'he' ? 'יחידה' : 'Unit'}
+                              </label>
+                              <select className="inp" value={editUnit} onChange={e => handleUnitChange(e.target.value as UnitId | 'pcs')}
+                                style={{ ...inputSm, width: '100%' }}>
+                                <option value="g">g</option>
+                                <option value="oz">{lang === 'he' ? UNITS.oz.abbr_he : 'oz'}</option>
+                                <option value="ml">ml</option>
+                                <option value="cup">{lang === 'he' ? UNITS.cup.abbr_he : 'cup'}</option>
+                                <option value="tbsp">{lang === 'he' ? UNITS.tbsp.abbr_he : 'tbsp'}</option>
+                                <option value="tsp">{lang === 'he' ? UNITS.tsp.abbr_he : 'tsp'}</option>
+                                <option value="fl_oz">{lang === 'he' ? UNITS.fl_oz.abbr_he : 'fl oz'}</option>
+                                <option value="pcs">{lang === 'he' ? 'מנה' : 'serving'}</option>
+                              </select>
                             </div>
                             <div>
                               <label style={{ fontSize: 10, fontWeight: 600, color: 'var(--accent-hi)', display: 'flex', alignItems: 'center', gap: 3, marginBottom: 3 }}>
@@ -1699,23 +1745,27 @@ function LibraryScreen({ lang }: { lang: Lang }) {
         </div>
 
         {/* Category chips */}
-        <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 10, scrollbarWidth: 'none' }}>
-          {[{ cat: null, label: lang === 'he' ? `הכל (${library.length})` : `All (${library.length})` },
-            ...categories.filter(c => categoryCounts[c]).map(c => ({ cat: c, label: `${catLabels[c] ?? c} (${categoryCounts[c]})` }))
-          ].map(({ cat, label }) => (
-            <button
-              key={cat ?? '__all'}
-              onClick={() => setActiveCategory(cat)}
-              style={{
-                padding: '5px 12px', borderRadius: 999, border: 'none', cursor: 'pointer', fontFamily: 'inherit',
-                fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap', transition: 'background .12s, color .12s',
-                background: activeCategory === cat ? 'var(--accent)' : 'var(--surface-2)',
-                color: activeCategory === cat ? 'var(--on-color)' : 'var(--text-2)',
-              }}
-            >
-              {label}
-            </button>
-          ))}
+        <div style={{ position: 'relative' }}>
+          <div style={{ position: 'absolute', left: 0, top: 0, bottom: 10, width: 24, background: 'linear-gradient(to right, var(--bg), transparent)', zIndex: 1, pointerEvents: 'none' }} />
+          <div style={{ position: 'absolute', right: 0, top: 0, bottom: 10, width: 24, background: 'linear-gradient(to left, var(--bg), transparent)', zIndex: 1, pointerEvents: 'none' }} />
+          <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 10, scrollbarWidth: 'none' }}>
+            {[{ cat: null, label: lang === 'he' ? `הכל (${library.length})` : `All (${library.length})` },
+              ...categories.filter(c => categoryCounts[c]).map(c => ({ cat: c, label: `${catLabels[c] ?? c} (${categoryCounts[c]})` }))
+            ].map(({ cat, label }) => (
+              <button
+                key={cat ?? '__all'}
+                onClick={() => setActiveCategory(cat)}
+                style={{
+                  padding: '5px 12px', borderRadius: 999, border: 'none', cursor: 'pointer', fontFamily: 'inherit',
+                  fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap', transition: 'background .12s, color .12s',
+                  background: activeCategory === cat ? 'var(--accent)' : 'var(--surface-2)',
+                  color: activeCategory === cat ? 'var(--on-color)' : 'var(--text-2)',
+                }}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -1974,7 +2024,7 @@ interface SettingsSheetProps {
   showToast:       (message: string, type: Toast['type']) => void
   history:         FoodHistory[]
   onDeleteHistory: (id: string) => void
-  onUpdateHistory: (id: string, updates: Partial<Pick<FoodHistory, 'name' | 'grams' | 'calories' | 'protein'>>) => void
+  onUpdateHistory: (id: string, updates: Partial<Pick<FoodHistory, 'name' | 'grams' | 'calories' | 'protein' | 'fluid_ml'>>) => void
   composedGroups:  ComposedGroup[]
   onRemoveGroup:   (id: string) => void
   meals:           Meal[]

@@ -13,7 +13,7 @@ import type { ComposedEntry } from './FoodEntryForm'
 
 // ── Types ────────────────────────────────────────────────────────────
 
-type StatusFilter = 'all' | 'success' | 'over' | 'under'
+type StatusFilter = 'all' | 'success' | 'over_cal' | 'under_prot'
 
 interface DayData {
   meals:          Meal[]
@@ -24,7 +24,7 @@ interface DayData {
   calOk:          boolean   // calories did not exceed goal
   protOk:         boolean   // protein reached goal
   fluidOk:        boolean   // fluid goal reached
-  status:         'success' | 'over' | 'under'
+  status:         'success' | 'over_cal' | 'under_prot' | 'both'
 }
 
 interface HistoryTabProps {
@@ -45,17 +45,19 @@ function toDateKey(y: number, m: number, d: number): string {
 }
 
 function dayStatus(calOk: boolean, protOk: boolean): DayData['status'] {
-  if (!calOk)  return 'over'
-  if (!protOk) return 'under'
+  if (!calOk && !protOk) return 'both'
+  if (!calOk)            return 'over_cal'
+  if (!protOk)           return 'under_prot'
   return 'success'
 }
 
 // ── Status colours (all from design tokens) ──────────────────────────
 
-const STATUS_COLOR: Record<DayData['status'], { border: string; badge: string; text: string; icon: string }> = {
-  success: { border: 'var(--positive)',     badge: 'var(--positive-tint)',  text: 'var(--positive-hi)',  icon: 'check_circle'  },
-  over:    { border: 'var(--warning)',     badge: 'var(--warning-tint)',  text: 'var(--warning)',     icon: 'trending_up'   },
-  under:   { border: 'var(--library)',    badge: 'var(--library-tint)', text: 'var(--library-hi)', icon: 'trending_down' },
+const STATUS_COLOR: Record<DayData['status'], { badge: string; text: string; icon: string }> = {
+  success:    { badge: 'var(--positive-tint)',  text: 'var(--positive-hi)',  icon: 'check_circle'  },
+  over_cal:   { badge: 'var(--warning-tint)',   text: 'var(--warning)',      icon: 'trending_up'   },
+  under_prot: { badge: 'var(--library-tint)',   text: 'var(--library-hi)',   icon: 'trending_down' },
+  both:       { badge: 'var(--danger-tint)',    text: 'var(--danger-hi)',    icon: 'warning'       },
 }
 
 // ── Component ────────────────────────────────────────────────────────
@@ -69,9 +71,13 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
   )
   const [calYear,      setCalYear]      = useState(() => new Date().getFullYear())
   const [calMonth,     setCalMonth]     = useState(() => new Date().getMonth())
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>(
-    () => (localStorage.getItem('history-filter') as StatusFilter) ?? 'all'
-  )
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>(() => {
+    const saved = localStorage.getItem('history-filter')
+    // Migrate old values from previous 3-state schema
+    if (saved === 'over')  return 'over_cal'
+    if (saved === 'under') return 'under_prot'
+    return (saved as StatusFilter) ?? 'all'
+  })
   const [sortAsc, setSortAsc] = useState(false)
   const [chartMetric7,  setChartMetric7]  = useState<'cal' | 'prot' | 'fluid'>('cal')
   const [chartMetric30, setChartMetric30] = useState<'cal' | 'prot' | 'fluid'>('cal')
@@ -230,22 +236,30 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
 
   // ── Status filter bar (shared) ─────────────────────────────────────
   const filterChips: Array<{ key: StatusFilter; icon: string }> = [
-    { key: 'all',     icon: 'filter_list'  },
-    { key: 'success', icon: 'check_circle' },
-    { key: 'over',    icon: 'trending_up'  },
-    { key: 'under',   icon: 'trending_down'},
+    { key: 'all',        icon: 'filter_list'  },
+    { key: 'success',    icon: 'check_circle' },
+    { key: 'over_cal',   icon: 'trending_up'  },
+    { key: 'under_prot', icon: 'trending_down'},
   ]
+  // Labels for filter chips
   const filterLabel: Record<StatusFilter, string> = {
-    all:     t(lang, 'allDays'),
-    success: t(lang, 'metGoal'),
-    over:    t(lang, 'overGoal'),
-    under:   t(lang, 'underGoal'),
+    all:        t(lang, 'allDays'),
+    success:    t(lang, 'metGoal'),
+    over_cal:   t(lang, 'overCal'),
+    under_prot: t(lang, 'underProt'),
+  }
+  // Labels for the per-day badge (includes 'both' which has no filter chip)
+  const statusLabel: Record<DayData['status'], string> = {
+    success:    t(lang, 'metGoal'),
+    over_cal:   t(lang, 'overCal'),
+    under_prot: t(lang, 'underProt'),
+    both:       t(lang, 'overBoth'),
   }
   const filterActive: Record<StatusFilter, { bg: string; border: string; color: string }> = {
-    all:     { bg: 'var(--accent-tint)',   border: 'var(--accent-border)',   color: 'var(--accent-hi)' },
-    success: { bg: 'var(--positive-tint)',  border: 'var(--positive-border)',  color: 'var(--positive-hi)' },
-    over:    { bg: 'var(--warning-tint)',  border: 'var(--warning-border)',  color: 'var(--warning)' },
-    under:   { bg: 'var(--library-tint)', border: 'var(--library-border)', color: 'var(--library-hi)' },
+    all:        { bg: 'var(--accent-tint)',   border: 'var(--accent-border)',   color: 'var(--accent-hi)'   },
+    success:    { bg: 'var(--positive-tint)', border: 'var(--positive-border)', color: 'var(--positive-hi)' },
+    over_cal:   { bg: 'var(--warning-tint)',  border: 'var(--warning-border)',  color: 'var(--warning)'     },
+    under_prot: { bg: 'var(--library-tint)',  border: 'var(--library-border)',  color: 'var(--library-hi)'  },
   }
 
   const StatusFilterBar = () => (
@@ -296,20 +310,26 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
       const protPct = data.goal.protein  > 0 ? Math.min(1, data.totalProtein  / data.goal.protein)  : 0
       return (
         <>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 10 }}>
-            <p style={{ fontSize: 13, fontWeight: 400, color: 'var(--text)', margin: 0 }}>
-              {formatDate(date, lang)}
-            </p>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <p style={{ fontSize: 13, fontWeight: 400, color: 'var(--text)', margin: 0 }}>
+                {formatDate(date, lang)}
+              </p>
               <span style={{ fontSize: 11, color: 'var(--text-3)' }}>
                 {data.meals.length} {t(lang, data.meals.length === 1 ? 'item' : 'items')}
               </span>
-              {chevron && (
-                <span className="chevron-badge">
-                  <span className="icon icon-sm" style={{ color: 'var(--text-3)' }}>expand_more</span>
-                </span>
-              )}
+              <span style={{
+                display: 'flex', alignItems: 'center', gap: 3,
+                fontSize: 10, fontWeight: 600, padding: '2px 6px', borderRadius: 20,
+                background: sc.badge, color: sc.text,
+              }}>
+                <span className="icon icon-sm">{sc.icon}</span>
+                {statusLabel[data.status]}
+              </span>
             </div>
+            {chevron && (
+              <span className="icon icon-sm chevron-rotate" style={{ color: 'var(--text-3)', transition: 'transform 0.2s', flexShrink: 0 }}>expand_more</span>
+            )}
           </div>
           {/* Calories row */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
@@ -366,10 +386,11 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
       <>
         {/* Summary row */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-          <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', margin: 0 }}>
-            {formatDate(date, lang)}
-          </p>
+          {/* date + count + badge — grouped at the start (right in RTL) */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', margin: 0 }}>
+              {formatDate(date, lang)}
+            </p>
             <span style={{ fontSize: 11, color: 'var(--text-3)' }}>
               {data.meals.length} {t(lang, data.meals.length === 1 ? 'item' : 'items')}
             </span>
@@ -379,14 +400,13 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
               background: sc.badge, color: sc.text,
             }}>
               <span className="icon icon-sm">{sc.icon}</span>
-              {filterLabel[data.status]}
+              {statusLabel[data.status]}
             </span>
-            {chevron && (
-              <span className="chevron-badge">
-                <span className="icon icon-sm" style={{ color: 'var(--text-3)' }}>expand_more</span>
-              </span>
-            )}
           </div>
+          {/* chevron at the end (left in RTL) */}
+          {chevron && (
+            <span className="icon icon-sm chevron-rotate" style={{ color: 'var(--text-3)', transition: 'transform 0.2s', flexShrink: 0 }}>expand_more</span>
+          )}
         </div>
 
         {/* Totals with inline donuts */}
@@ -623,7 +643,12 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
   // ── List view pre-compute (needed before single return) ───────────
   const filteredDates = sortedDates.filter(date => {
     const data = grouped.get(date)!
-    if (statusFilter !== 'all' && data.status !== statusFilter) return false
+    if (statusFilter !== 'all') {
+      const s = data.status
+      if (statusFilter === 'success'    && s !== 'success')                              return false
+      if (statusFilter === 'over_cal'   && s !== 'over_cal'   && s !== 'both')          return false
+      if (statusFilter === 'under_prot' && s !== 'under_prot' && s !== 'both')          return false
+    }
     if (debouncedSearch) {
       const q = debouncedSearch.toLowerCase()
       return data.meals.some(m => m.name.toLowerCase().includes(q))
@@ -674,7 +699,13 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                 const dateKey = toDateKey(calYear, calMonth, day)
                 const data    = grouped.get(dateKey)
                 const isToday = dateKey === todayKey
-                const dimmed  = !!data && statusFilter !== 'all' && data.status !== statusFilter
+                const dimmed  = !!data && statusFilter !== 'all' && (() => {
+                  const s = data.status
+                  if (statusFilter === 'success')    return s !== 'success'
+                  if (statusFilter === 'over_cal')   return s !== 'over_cal'   && s !== 'both'
+                  if (statusFilter === 'under_prot') return s !== 'under_prot' && s !== 'both'
+                  return false
+                })()
                 return (
                   <div
                     key={dateKey}
@@ -801,9 +832,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                     if (!searchDropdownRef.current?.contains(document.activeElement)) setDropdownOpen(false)
                   }, 150)}
                   placeholder={t(lang, 'searchFood')}
-                  style={isRTL
-                    ? { paddingRight: 36, paddingLeft: search ? 78 : 46 }
-                    : { paddingLeft: 78, paddingRight: search ? 78 : 46 }}
+                  style={{ paddingInlineStart: 36, paddingInlineEnd: search ? 78 : 46 }}
                 />
                 {search && (
                   <button
@@ -911,7 +940,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                 const data = grouped.get(date)!
                 return (
                   <details key={date} className="card fade-up"
-                    style={{ animationDelay: `${i * 0.04}s`, borderInlineStart: `3px solid ${STATUS_COLOR[data.status].border}`, overflow: 'hidden' }}
+                    style={{ animationDelay: `${i * 0.04}s`, overflow: 'hidden' }}
                   >
                     <summary style={{ padding: '14px 14px 12px' }}>
                       <DayCardContent date={date} data={data} chevron />
