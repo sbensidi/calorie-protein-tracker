@@ -572,8 +572,8 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
             <p style={{ fontSize: 20, fontWeight: 800, color: 'var(--text)', margin: 0, lineHeight: 1 }}>{pendingComposed.calories}</p>
             <p style={{ fontSize: 10, color: 'var(--text-3)', margin: '2px 0 0' }}>{t(lang, 'caloriesUnit')}</p>
           </div>
-          <div style={{ flex: 1, background: 'var(--positive-fill)', border: '1px solid color-mix(in srgb, var(--positive) 14%, transparent)', borderRadius: 10, padding: '10px 12px' }}>
-            <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--positive-hi)', letterSpacing: '0.04em', margin: '0 0 3px' }}>{t(lang, 'protein').toUpperCase()}</p>
+          <div style={{ flex: 1, background: minimal ? 'var(--accent-fill)' : 'var(--positive-fill)', border: `1px solid color-mix(in srgb, ${minimal ? 'var(--accent)' : 'var(--positive)'} 14%, transparent)`, borderRadius: 10, padding: '10px 12px' }}>
+            <p style={{ fontSize: 10, fontWeight: 700, color: minimal ? 'var(--accent-hi)' : 'var(--positive-hi)', letterSpacing: '0.04em', margin: '0 0 3px' }}>{t(lang, 'protein').toUpperCase()}</p>
             <p style={{ fontSize: 20, fontWeight: 800, color: 'var(--text)', margin: 0, lineHeight: 1 }}>{pendingComposed.protein}</p>
             <p style={{ fontSize: 10, color: 'var(--text-3)', margin: '2px 0 0' }}>{t(lang, 'proteinUnit')}</p>
           </div>
@@ -667,12 +667,12 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
           {/* Product found badge */}
           <div style={{
             display: 'flex', alignItems: 'center', gap: 7,
-            background: 'var(--positive-fill)',
-            border: '1px solid var(--positive-select)',
+            background: minimal ? 'var(--accent-fill)' : 'var(--positive-fill)',
+            border: `1px solid ${minimal ? 'var(--accent-select)' : 'var(--positive-select)'}`,
             borderRadius: 10, padding: '8px 11px',
           }}>
-            <span className="icon icon-sm" style={{ color: 'var(--positive-hi)' }}>check_circle</span>
-            <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--positive-hi)', flex: 1 }}>
+            <span className="icon icon-sm" style={{ color: minimal ? 'var(--accent-hi)' : 'var(--positive-hi)' }}>check_circle</span>
+            <span style={{ fontSize: 12, fontWeight: 700, color: minimal ? 'var(--accent-hi)' : 'var(--positive-hi)', flex: 1 }}>
               {t(lang, 'productFound')}
             </span>
             <span style={{ fontSize: 10, color: 'var(--text-3)', fontWeight: 500 }}>
@@ -704,8 +704,8 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
                 <p style={{ fontSize: 20, fontWeight: 800, color: 'var(--text)', margin: 0, lineHeight: 1 }}>{scanProduct.caloriesPer100g}</p>
                 <p style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 2 }}>{t(lang, 'caloriesUnit')}</p>
               </div>
-              <div style={{ flex: 1, background: 'var(--positive-fill)', border: '1px solid color-mix(in srgb, var(--positive) 14%, transparent)', borderRadius: 10, padding: '10px 12px' }}>
-                <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--positive-hi)', letterSpacing: '0.04em', marginBottom: 3 }}>{t(lang, 'protein').toUpperCase()}</p>
+              <div style={{ flex: 1, background: minimal ? 'var(--accent-fill)' : 'var(--positive-fill)', border: `1px solid color-mix(in srgb, ${minimal ? 'var(--accent)' : 'var(--positive)'} 14%, transparent)`, borderRadius: 10, padding: '10px 12px' }}>
+                <p style={{ fontSize: 10, fontWeight: 700, color: minimal ? 'var(--accent-hi)' : 'var(--positive-hi)', letterSpacing: '0.04em', marginBottom: 3 }}>{t(lang, 'protein').toUpperCase()}</p>
                 <p style={{ fontSize: 20, fontWeight: 800, color: 'var(--text)', margin: 0, lineHeight: 1 }}>{scanProduct.proteinPer100g}</p>
                 <p style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 2 }}>{t(lang, 'proteinUnit')}</p>
               </div>
