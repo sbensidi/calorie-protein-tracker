@@ -839,8 +839,8 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
           )}
         </div>
 
-        {/* Row 2 — amount | unit | meal type | calculate */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr auto', gap: 8 }}>
+        {/* Row 2 — amount | unit | meal type */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
 
           {/* Col 1 — numeric amount */}
           <input
@@ -904,20 +904,20 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
             ))}
           </select>
 
-          {/* Col 4 — calculate button */}
-          <button
-            className="btn-ghost"
-            onClick={handleCalculate}
-            disabled={!foodName.trim() || calculating}
-            style={{ whiteSpace: 'nowrap', paddingInline: 16, display: 'flex', alignItems: 'center', gap: 6, opacity: calculating ? 0.7 : 1 }}
-          >
-            {calculating && (
-              <span className="icon icon-sm" style={{ animation: 'spin 0.7s linear infinite', display: 'inline-block' }}>progress_activity</span>
-            )}
-            {calculating ? (lang === 'he' ? 'מחשב...' : 'Calculating...') : t(lang, 'calculate')}
-          </button>
-
         </div>
+
+        {/* Row 3 — calculate (full width, primary) */}
+        <button
+          className="btn-primary"
+          onClick={handleCalculate}
+          disabled={!foodName.trim() || calculating}
+          style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, opacity: calculating ? 0.8 : 1 }}
+        >
+          {calculating && (
+            <span className="icon icon-sm" style={{ animation: 'spin 0.7s linear infinite', display: 'inline-block' }}>progress_activity</span>
+          )}
+          {calculating ? (lang === 'he' ? 'מחשב...' : 'Calculating...') : t(lang, 'calculate')}
+        </button>
 
       </div>
 
