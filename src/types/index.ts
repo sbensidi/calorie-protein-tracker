@@ -9,6 +9,9 @@ export interface Meal {
   grams: number
   calories: number
   protein: number
+  fat:      number | null
+  carbs:    number | null
+  notes:    string | null
   time_logged: string
   created_at: string
   fluid_ml:       number | null
@@ -46,6 +49,8 @@ export interface DayTotals {
 export interface NutritionResult {
   calories: number
   protein: number
+  fat?:   number
+  carbs?: number
 }
 
 export interface FoodLibraryItem {
@@ -62,6 +67,14 @@ export interface FoodLibraryItem {
   serving_unit: string
   density: number | null
   countable: boolean
+}
+
+export interface WeightLog {
+  id:         string
+  user_id:    string
+  date:       string   // YYYY-MM-DD
+  weight_kg:  number
+  created_at: string
 }
 
 /** Client-side only — persisted in localStorage, not Supabase */

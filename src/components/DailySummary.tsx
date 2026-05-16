@@ -12,9 +12,10 @@ interface DailySummaryProps {
   lang:          Lang
   fluidGoalMl?:  number
   fluidTodayMl?: number
+  streak?:       number
 }
 
-export function DailySummary({ meals, date, goalCalories, goalProtein, lang, fluidGoalMl = 0, fluidTodayMl = 0 }: DailySummaryProps) {
+export function DailySummary({ meals, date, goalCalories, goalProtein, lang, fluidGoalMl = 0, fluidTodayMl = 0, streak = 0 }: DailySummaryProps) {
   const { styleMode } = useAppContext()
   const totalCalories = Math.round(meals.reduce((s, m) => s + m.calories, 0))
   const totalProtein  = Math.round(meals.reduce((s, m) => s + m.protein, 0) * 10) / 10
@@ -85,10 +86,17 @@ export function DailySummary({ meals, date, goalCalories, goalProtein, lang, flu
 
     return (
       <div className="fade-up" style={{ padding: '8px 0 28px' }}>
-        {/* Date */}
-        <p style={{ fontSize: 11, fontWeight: 300, color: 'var(--text-3)', letterSpacing: '0.06em', padding: '0 4px', marginBottom: 0 }}>
-          {formatDate(date, lang)}
-        </p>
+        {/* Date + streak */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 4px', marginBottom: 0 }}>
+          <p style={{ fontSize: 11, fontWeight: 300, color: 'var(--text-3)', letterSpacing: '0.06em', margin: 0 }}>
+            {formatDate(date, lang)}
+          </p>
+          {streak >= 2 && (
+            <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--warning)', background: 'var(--warning-tint)', borderRadius: 20, padding: '2px 8px' }}>
+              🔥 {streak} {lang === 'he' ? 'ימים ברצף' : 'day streak'}
+            </span>
+          )}
+        </div>
 
         {/* Hero percentage — always right-aligned regardless of text direction */}
         <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: lang === 'he' ? 'flex-start' : 'flex-end', padding: '16px 4px 0', gap: 4 }}>
@@ -169,9 +177,16 @@ export function DailySummary({ meals, date, goalCalories, goalProtein, lang, flu
       className="fade-up"
       style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, padding: 16, marginTop: 8 }}
     >
-      <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-2)', marginBottom: 14 }}>
-        {formatDate(date, lang)}
-      </p>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+        <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-2)', margin: 0 }}>
+          {formatDate(date, lang)}
+        </p>
+        {streak >= 2 && (
+          <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--warning)', background: 'var(--warning-tint)', borderRadius: 20, padding: '2px 8px' }}>
+            🔥 {streak} {lang === 'he' ? 'ימים ברצף' : 'day streak'}
+          </span>
+        )}
+      </div>
 
       {/* ── Active: Option B — responsive rich-donut row ── */}
       <div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'flex-start', gap: 4 }}>

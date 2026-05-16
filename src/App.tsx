@@ -13,6 +13,7 @@ import { useToast } from './hooks/useToast'
 import { TodayTab } from './components/TodayTab'
 import { ToastContainer } from './components/ToastContainer'
 import { useProfile } from './hooks/useProfile'
+import { useWeightLog } from './hooks/useWeightLog'
 import { ErrorBoundary } from './components/ErrorBoundary'
 
 const HistoryTab   = lazy(() => import('./components/HistoryTab').then(m => ({ default: m.HistoryTab })))
@@ -124,6 +125,7 @@ export default function App() {
   const { goals, error: goalsError, saveGoals, getGoalForDate } = useGoals(userId)
   const { history, error: historyError, upsertHistory, touchHistory, getSuggestions, deleteHistory, updateHistory } = useFoodHistory(userId)
   const { groups: composedGroups, error: groupsError, upsert: upsertGroup, remove: removeGroup, pruneMealId } = useComposedGroups(userId)
+  const { entries: weightLogEntries, logWeight, deleteEntry: deleteWeightEntry } = useWeightLog(userId)
 
   // I9: show toast when session expired unexpectedly
   useEffect(() => {
@@ -137,6 +139,41 @@ export default function App() {
     await deleteMeal(id)
     await pruneMealId(id)
   }, [deleteMeal, pruneMealId])
+
+  // CSV export: build and trigger download of all meals
+  const handleExportCsv = useCallback(() => {
+    const header = 'date,meal_type,name,grams,calories,protein,fat,carbs,notes,time_logged'
+    const rows = meals.map(m => [
+      m.date, m.meal_type,
+      `"${(m.name ?? '').replace(/"/g, '""')}"`,
+      m.grams, m.calories, m.protein,
+      m.fat ?? '', m.carbs ?? '',
+      `"${(m.notes ?? '').replace(/"/g, '""')}"`,
+      m.time_logged,
+    ].join(','))
+    const csv = [header, ...rows].join('\n')
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }))
+    const a   = document.createElement('a')
+    a.href = url; a.download = `meals-${new Date().toISOString().slice(0, 10)}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }, [meals])
+
+  // Goal streak: count consecutive days back from yesterday where calories > 0 and <= goal
+  const goalStreak = useMemo(() => {
+    const byDate = new Map<string, number>()
+    meals.forEach(m => { byDate.set(m.date, (byDate.get(m.date) ?? 0) + m.calories) })
+    let streak = 0
+    const d = new Date()
+    d.setDate(d.getDate() - 1)
+    for (let i = 0; i < 90; i++) {
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+      const cal  = byDate.get(key) ?? 0
+      const goal = getGoalForDate(key).calories
+      if (cal > 0 && cal <= goal) { streak++; d.setDate(d.getDate() - 1) } else break
+    }
+    return streak
+  }, [meals, getGoalForDate])
 
   // C5: show a persistent toast when a new SW is waiting — user must click to reload
   useEffect(() => {
@@ -352,6 +389,7 @@ export default function App() {
               onUpsertGroup={upsertGroup}
               onRemoveGroup={removeGroup}
               showToast={showToast}
+              goalStreak={goalStreak}
             />
           </ErrorBoundary>
         )}
@@ -400,6 +438,10 @@ export default function App() {
           onRemoveGroup={removeGroup}
           meals={meals}
           onUpdateMeal={updateMeal}
+          weightLogEntries={weightLogEntries}
+          onLogWeight={logWeight}
+          onDeleteWeightEntry={deleteWeightEntry}
+          onExportCsv={handleExportCsv}
         />
         </Suspense>
       </ErrorBoundary>

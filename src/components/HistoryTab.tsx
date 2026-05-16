@@ -1186,6 +1186,11 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
 
         const avg7Cal   = avg(last7,  'totalCalories')
         const avg7Prot  = avg(last7,  'totalProtein')
+
+        // ── Weekly calorie balance ─────────────────────────────────
+        const weeklyTotalCal  = barDays.filter(b => b.hasData).reduce((s, b) => s + b.cal,     0)
+        const weeklyGoalCal   = barDays.filter(b => b.hasData).reduce((s, b) => s + b.goalCal, 0)
+        const weeklyBalanceCal = weeklyTotalCal - weeklyGoalCal
         const avg30Cal  = avg(last30, 'totalCalories')
         const avg30Prot = avg(last30, 'totalProtein')
 
@@ -1428,6 +1433,35 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                       />
                     )}
                   </div>
+                  {/* Weekly calorie balance chip */}
+                  {last7.length > 0 && (() => {
+                    const isDeficit = weeklyBalanceCal < 0
+                    const isSurplus = weeklyBalanceCal > 0
+                    const chipBg    = isDeficit ? 'var(--positive-tint)' : isSurplus ? 'var(--warning-tint)' : 'var(--surface-3)'
+                    const chipBorder = isDeficit ? 'var(--positive-border)' : isSurplus ? 'var(--warning-border)' : 'var(--border)'
+                    const chipColor  = isDeficit ? 'var(--positive-hi)' : isSurplus ? 'var(--warning)' : 'var(--text-3)'
+                    const chipIcon   = isDeficit ? 'trending_down' : isSurplus ? 'trending_up' : 'check_circle'
+                    const absBalance = Math.abs(weeklyBalanceCal)
+                    const label = isDeficit
+                      ? (lang === 'he' ? `גירעון שבועי: ${absBalance.toLocaleString()} קק״ל` : `Weekly deficit: ${absBalance.toLocaleString()} kcal`)
+                      : isSurplus
+                      ? (lang === 'he' ? `עודף שבועי: ${absBalance.toLocaleString()} קק״ל` : `Weekly surplus: ${absBalance.toLocaleString()} kcal`)
+                      : (lang === 'he' ? 'בדיוק ביעד השבועי!' : 'Right on weekly target!')
+                    return (
+                      <div style={{
+                        display: 'flex', alignItems: 'center', gap: 8,
+                        background: chipBg, border: `1px solid ${chipBorder}`,
+                        borderRadius: 10, padding: '8px 12px',
+                      }}>
+                        <span className="icon" style={{ fontSize: 16, color: chipColor, flexShrink: 0 }}>{chipIcon}</span>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: chipColor, flex: 1 }}>{label}</span>
+                        <span style={{ fontSize: 10, color: 'var(--text-3)', flexShrink: 0 }}>
+                          {Math.round(weeklyTotalCal).toLocaleString()} / {Math.round(weeklyGoalCal).toLocaleString()} {t(lang, 'caloriesUnit')}
+                        </span>
+                      </div>
+                    )
+                  })()}
+
                   {/* Bar chart */}
                   <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: '14px 12px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
@@ -1891,6 +1925,74 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                 </>
               )}
             </div>}
+
+            {/* ── Meal timing insights ──────────────────────────────────────── */}
+            {(() => {
+              const periodDates = statsPeriod === 'week' ? last7 : last30
+              if (periodDates.length === 0) return null
+
+              const periodMeals = periodDates.flatMap(d => grouped.get(d)?.meals ?? [])
+                .filter(m => m.time_logged)
+
+              if (periodMeals.length === 0) return null
+
+              // Convert "HH:MM:SS" to minutes since midnight
+              const toMins = (t: string) => {
+                const [h, m] = t.split(':').map(Number)
+                return h * 60 + (m || 0)
+              }
+              const fmtTime = (mins: number) => {
+                const h = Math.floor(mins / 60) % 24
+                const m = Math.round(mins % 60)
+                return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+              }
+
+              const byType: Record<string, number[]> = {}
+              for (const m of periodMeals) {
+                if (!byType[m.meal_type]) byType[m.meal_type] = []
+                byType[m.meal_type].push(toMins(m.time_logged))
+              }
+
+              const typeOrder = ['breakfast', 'lunch', 'dinner', 'snack', 'beverage']
+              const typeLabels: Record<string, string> = {
+                breakfast: lang === 'he' ? 'ארוחת בוקר' : 'Breakfast',
+                lunch:     lang === 'he' ? 'ארוחת צהריים' : 'Lunch',
+                dinner:    lang === 'he' ? 'ארוחת ערב' : 'Dinner',
+                snack:     lang === 'he' ? 'חטיף' : 'Snack',
+                beverage:  lang === 'he' ? 'שתייה' : 'Beverage',
+              }
+              const typeColors: Record<string, string> = {
+                breakfast: 'var(--warning)', lunch: 'var(--accent-hi)',
+                dinner: 'var(--positive-hi)', snack: 'var(--text-2)', beverage: 'var(--cyan-hi)',
+              }
+
+              const avgMins = (arr: number[]) => Math.round(arr.reduce((s, v) => s + v, 0) / arr.length)
+
+              const rows = typeOrder.filter(t => byType[t]?.length).map(type => ({
+                type, label: typeLabels[type], color: typeColors[type],
+                avg: fmtTime(avgMins(byType[type])),
+                count: byType[type].length,
+              }))
+
+              if (rows.length === 0) return null
+
+              return (
+                <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: '12px 14px' }}>
+                  <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.07em', margin: '0 0 10px' }}>
+                    {t(lang, 'mealTiming')}
+                  </p>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    {rows.map(r => (
+                      <div key={r.type} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <span style={{ fontSize: 11, fontWeight: 600, color: r.color, flex: 1 }}>{r.label}</span>
+                        <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>{r.avg}</span>
+                        <span style={{ fontSize: 10, color: 'var(--text-3)', minWidth: 30, textAlign: 'end' }}>×{r.count}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )
+            })()}
           </div>
         )
       })()}

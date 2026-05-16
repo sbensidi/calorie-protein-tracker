@@ -90,6 +90,7 @@ interface TodayTabProps {
   fluidGoalMl?: number
   fluidThresholdMl?: number
   fluidZeroCalOnly?: boolean
+  goalStreak?: number
 }
 
 export function TodayTab({
@@ -97,7 +98,7 @@ export function TodayTab({
   getSuggestions, searchLibrary, library = [], defaultServingGrams = 150, defaultWeightUnit = 'g', defaultVolumeUnit = 'ml',
   onAddMeal, onAddMealWithId, onEditMeal, onDeleteMeal, onDuplicateMeal, onUpsertHistory, onTouchHistory,
   composedEntries, composedGroups, onUpsertGroup, onRemoveGroup, showToast,
-  fluidGoalMl = 2500, fluidThresholdMl = 100, fluidZeroCalOnly = true,
+  fluidGoalMl = 2500, fluidThresholdMl = 100, fluidZeroCalOnly = true, goalStreak = 0,
 }: TodayTabProps) {
   const todayMeals    = useMemo(() => meals.filter(m => m.date === today()), [meals])
   const fluidTodayMl  = useMemo(() => todayMeals.reduce((s, m) => s + (m.fluid_ml ?? 0), 0), [todayMeals])
@@ -241,6 +242,9 @@ export function TodayTab({
         grams:          src.grams,
         calories:       src.calories,
         protein:        src.protein,
+        fat:            src.fat,
+        carbs:          src.carbs,
+        notes:          src.notes,
         time_logged:    currentTime(),
         fluid_ml:       src.fluid_ml,
         fluid_excluded: src.fluid_excluded,
@@ -388,6 +392,7 @@ export function TodayTab({
         lang={lang}
         fluidGoalMl={fluidGoalMl}
         fluidTodayMl={fluidTodayMl}
+        streak={goalStreak}
       />
     </div>
   )

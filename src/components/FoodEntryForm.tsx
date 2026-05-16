@@ -106,6 +106,9 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
   const [nutrition, setNutrition]     = useState<NutritionResult | null>(null)
   const [editCalories, setEditCalories] = useState<number | ''>('')
   const [editProtein,  setEditProtein]  = useState<number | ''>('')
+  const [editFat,      setEditFat]      = useState<number | null>(null)
+  const [editCarbs,    setEditCarbs]    = useState<number | null>(null)
+  const [mealNotes,    setMealNotes]    = useState('')
   const [aiError, setAiError]         = useState<'network' | 'notFound' | 'rateLimit' | 'parseError' | null>(null)
   const libraryDensityRef             = useRef<number | null>(null) // density from library selection
   const matchedLibraryItemRef         = useRef<LibraryMatch | null>(null)
@@ -335,9 +338,26 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
         libraryDensityRef.current = exact.density ?? null
         matchedLibraryItemRef.current = { item: exact, confidence: 'exact' }
         setMatchedLib({ item: exact, confidence: 'exact' })
-        setNutrition({ calories: cal, protein: prot })
+        // Compute fat/carbs using same gram basis as cal/prot
+        const libGrams = (() => {
+          if (isPcs) {
+            const servUnit = (exact.serving_unit as UnitId) in UNITS ? (exact.serving_unit as UnitId) : 'g'
+            const gpServing = exact.density
+              ? mlToGrams(toBase(Number(exact.serving_size ?? servingGramsRef.current), servUnit), exact.density)
+              : toBase(Number(exact.serving_size ?? servingGramsRef.current), servUnit)
+            return numericAmount * gpServing
+          }
+          const uid = entryUnit in UNITS ? entryUnit as UnitId : null
+          const baseAmt = uid ? toBase(numericAmount, uid) : numericAmount
+          return uid && UNITS[uid].type === 'volume' ? mlToGrams(baseAmt, exact.density ?? 1) : baseAmt
+        })()
+        const fatVal  = exact.fat_per_100g   != null ? Math.round(exact.fat_per_100g   * libGrams / 100 * 10) / 10 : null
+        const carbVal = exact.carbs_per_100g != null ? Math.round(exact.carbs_per_100g * libGrams / 100 * 10) / 10 : null
+        setNutrition({ calories: cal, protein: prot, fat: fatVal ?? undefined, carbs: carbVal ?? undefined })
         setEditCalories(cal)
         setEditProtein(prot)
+        setEditFat(fatVal)
+        setEditCarbs(carbVal)
         setCalculating(false)
         return
       }
@@ -358,6 +378,8 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
         setNutrition({ calories: 0, protein: 0 })
         setEditCalories('')
         setEditProtein('')
+        setEditFat(null)
+        setEditCarbs(null)
       } else {
         historyRatios.current = {
           calPerUnit:  amountForAI > 0 ? result.calories / amountForAI : 0,
@@ -367,6 +389,8 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
         setNutrition(result)
         setEditCalories(result.calories)
         setEditProtein(result.protein)
+        setEditFat(result.fat   != null ? result.fat   : null)
+        setEditCarbs(result.carbs != null ? result.carbs : null)
         // Auto-switch to ml when AI identifies a zero-cal zero-prot fluid (e.g. water)
         if (result.calories === 0 && result.protein === 0) {
           const currentUnitIsWeight = entryUnit === 'g' || entryUnit === 'oz'
@@ -378,6 +402,8 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
       setNutrition({ calories: 0, protein: 0 })
       setEditCalories('')
       setEditProtein('')
+      setEditFat(null)
+      setEditCarbs(null)
     }
     setCalculating(false)
   }, [foodName, numericAmount, history, amountMode, entryUnit, isPcs, searchLibrary])
@@ -388,6 +414,9 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
     setNutrition(null)
     setEditCalories('')
     setEditProtein('')
+    setEditFat(null)
+    setEditCarbs(null)
+    setMealNotes('')
     setAiError(null)
 
     setDropdownOpen(false)
@@ -423,6 +452,9 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
       grams,
       calories,
       protein,
+      fat:            scanProduct.fatPer100g    != null ? Math.round(scanProduct.fatPer100g    * grams / 100 * 10) / 10 : null,
+      carbs:          scanProduct.carbsPer100g  != null ? Math.round(scanProduct.carbsPer100g  * grams / 100 * 10) / 10 : null,
+      notes:          null,
       time_logged:    currentTime(),
       fluid_ml:       null,
       fluid_excluded: false,
@@ -481,6 +513,9 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
       grams:          storedGrams,
       calories:       numCalories,
       protein:        numProtein,
+      fat:            editFat,
+      carbs:          editCarbs,
+      notes:          mealNotes.trim() || null,
       time_logged:    currentTime(),
       fluid_ml:       isFluid && !fluidExcluded ? detectedFluidMl : null,
       fluid_excluded: false,
@@ -504,6 +539,9 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
     setAiError(null)
     setEditCalories('')
     setEditProtein('')
+    setEditFat(null)
+    setEditCarbs(null)
+    setMealNotes('')
     setEntryUnit(defaultWeightUnit)
     setFluidExcluded(false)
     setSelectedHistoryId(null)
@@ -1359,6 +1397,41 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
               </select>
             </div>
           </div>
+
+          {/* Fat / Carbs chips — shown when AI returned them */}
+          {(editFat != null || editCarbs != null) && (
+            <div style={{ display: 'flex', gap: 6, marginBottom: 10, flexWrap: 'wrap' }}>
+              {editFat != null && (
+                <span style={{
+                  fontSize: 11, fontWeight: 600, color: 'var(--warning-hi)',
+                  background: 'var(--warning-tint)', border: '1px solid var(--warning-border)',
+                  borderRadius: 8, padding: '3px 8px',
+                }}>
+                  {t(lang, 'fat')} {editFat}{t(lang, 'fatUnit')}
+                </span>
+              )}
+              {editCarbs != null && (
+                <span style={{
+                  fontSize: 11, fontWeight: 600, color: 'var(--library-hi)',
+                  background: 'var(--library-tint)', border: '1px solid var(--library-border)',
+                  borderRadius: 8, padding: '3px 8px',
+                }}>
+                  {t(lang, 'carbs')} {editCarbs}{t(lang, 'carbsUnit')}
+                </span>
+              )}
+            </div>
+          )}
+
+          {/* Notes input */}
+          <input
+            type="text"
+            className="inp"
+            style={{ fontSize: 16, marginBottom: 10 }}
+            placeholder={t(lang, 'notesPlaceholder')}
+            value={mealNotes}
+            onChange={e => setMealNotes(e.target.value)}
+            maxLength={200}
+          />
 
           {/* Fluid notice — shown when auto-detected */}
           {isFluid && (
