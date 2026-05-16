@@ -89,14 +89,14 @@ export default function App() {
   useEffect(() => {
     if (!userId) { setAvatarUrl(null); setHasGoogleLinked(false); return }
     refreshUserMeta()
-  }, [userId]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [userId])
 
   const handleLinkGoogle = async () => {
     const { error } = await supabase.auth.linkIdentity({
       provider: 'google',
       options: { redirectTo: window.location.origin },
     })
-    if (error) { import.meta.env.DEV && console.error('[linkGoogle]', error.message, error) }
+    if (error && import.meta.env.DEV) console.error('[linkGoogle]', error.message, error)
   }
 
   // Sync theme/lang from Supabase on login; save back on change

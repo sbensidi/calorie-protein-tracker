@@ -159,6 +159,7 @@ const DICT: [string, string][] = [
  * Returns null if not found (caller should then try Google Translate, then AI translation as fallback).
  */
 export function lookupHebrew(foodName: string): string | null {
+  // eslint-disable-next-line no-control-regex
   if (!/[^\x00-\x7F]/.test(foodName)) return null  // no non-ASCII → skip
   const lower = foodName.trim()
   const match = DICT.find(([key]) =>

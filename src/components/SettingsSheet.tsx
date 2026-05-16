@@ -556,12 +556,12 @@ function ProfileScreen({ lang, profile, onSave, showToast }: {
                 value={draft[key] === 0 ? '' : draft[key]}
                 placeholder="0"
                 onFocus={e => e.target.select()}
-                onChange={e => set(key, Number(e.target.value) as any)}
+                onChange={e => set(key, Number(e.target.value) as UserProfile[typeof key])}
                 style={{ textAlign: lang === 'he' ? 'right' : 'left', paddingInlineStart: 12, paddingInlineEnd: 28 }}
               />
               {(draft[key] as number) > 0 && (
                 <button
-                  onMouseDown={e => { e.preventDefault(); set(key, 0 as any) }}
+                  onMouseDown={e => { e.preventDefault(); set(key, 0 as UserProfile[typeof key]) }}
                   tabIndex={-1}
                   style={{ position: 'absolute', insetInlineEnd: 0, top: 0, bottom: 0, width: 28, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                 >

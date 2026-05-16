@@ -147,7 +147,7 @@ export function useProfile(userId: string | null) {
       .from('profiles')
       .upsert(profileToDb(next, userId), { onConflict: 'id' })
     if (err) {
-      import.meta.env.DEV && console.error('Save profile error:', err)
+      if (import.meta.env.DEV) console.error('Save profile error:', err)
       setError(err.message)
       setProfile(prev)
       lsSave(prev)

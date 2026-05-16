@@ -33,7 +33,7 @@ export function useComposedGroups(userId: string | null) {
       .from('composed_groups')
       .select('id, name, meal_ids')
       .eq('user_id', userId)
-    if (err) { import.meta.env.DEV && console.error('fetch composed_groups:', err); setError(err.message); return }
+    if (err) { if (import.meta.env.DEV) console.error('fetch composed_groups:', err); setError(err.message); return }
     const loaded = ((data ?? []) as DbRow[]).map(rowToGroup)
     groupsRef.current = loaded
     setGroups(loaded)
@@ -70,7 +70,7 @@ export function useComposedGroups(userId: string | null) {
       meal_ids: group.mealIds,
       updated_at: new Date().toISOString(),
     })
-    if (err) { import.meta.env.DEV && console.error('upsert composed_group:', err); setError(err.message) }
+    if (err) { if (import.meta.env.DEV) console.error('upsert composed_group:', err); setError(err.message) }
     else fetch()
   }, [userId, fetch])
 
@@ -83,7 +83,7 @@ export function useComposedGroups(userId: string | null) {
       return next
     })
     const { error: err } = await supabase.from('composed_groups').delete().eq('id', id).eq('user_id', userId)
-    if (err) { import.meta.env.DEV && console.error('delete composed_group:', err); setError(err.message) }
+    if (err) { if (import.meta.env.DEV) console.error('delete composed_group:', err); setError(err.message) }
     else fetch()
   }, [userId, fetch])
 
