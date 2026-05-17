@@ -574,6 +574,9 @@ function NotificationsSection({ lang, showToast }: { lang: Lang; showToast: (msg
           </span>
         )}
       </div>
+      <p style={{ fontSize: 11, color: 'var(--text-3)', margin: '8px 4px 0', lineHeight: 1.6 }}>
+        {t(lang, 'notifExplain')}
+      </p>
     </div>
   )
 }
