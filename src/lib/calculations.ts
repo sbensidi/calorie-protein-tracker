@@ -219,7 +219,7 @@ export function getGreeting(ctx: GreetingContext): Greeting {
 
   // joke fires every 4 days, skipped at night
   if (dayOfYear % 1 === 0 && hour < 21) {
-    return { line1, line2: `😄 ${pick(JOKES, Math.floor(dayOfYear / 4))}`, isJoke: true }
+    return { line1, line2: `${pick(JOKES, Math.floor(dayOfYear / 4))} 😄`, isJoke: true }
   }
 
   let line2: string
