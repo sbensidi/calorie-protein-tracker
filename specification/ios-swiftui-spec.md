@@ -1343,15 +1343,29 @@ func calcGoalStreak(meals: [Meal], goalForDate: (String) -> Int) -> Int {
 
 ### 19.5 Weekly Calorie Balance
 
-In the History tab stats (week view), compute:
-- `weeklyTotal` = sum of calories for days that have data in the current week
-- `weeklyGoal`  = sum of daily calorie goals for those same days
-- `balance = weeklyTotal − weeklyGoal`
+In the History tab stats (week view), the balance card shows **two rows**:
 
-**UI**: a chip between the stat cards and the bar chart:
-- Negative balance → green chip with "trending_down" icon: "Weekly deficit: Xkcal"
-- Positive balance → amber chip with "trending_up" icon: "Weekly surplus: Xkcal"
-- Zero → neutral chip: "Right on target!"
+**Row 1 — Plan adherence** (consumed vs. user's calorie goal):
+```swift
+let weeklyTotal = meals.filter { isInWeek($0.date) }.reduce(0) { $0 + $1.calories }
+let weeklyGoal  = daysInWeek.reduce(0) { $0 + goalForDate($1).calories }
+let planDiff    = weeklyTotal - weeklyGoal   // positive = over goal
+```
+- Display: `"+1,200 kcal vs. plan"` / `"+1,200 קק״ל מהיעד"` (amber if over, green if under)
+- Exact: show "✓" instead of a number when `planDiff == 0`
+
+**Row 2 — Actual weight impact** (consumed vs. calculated TDEE):
+```swift
+let weeklyTdee   = calcWeeklyTdee(profile)          // formula-based (or HealthKit — see §20)
+let tdeeBalance  = weeklyTotal - weeklyTdee          // negative = deficit
+let weightGrams  = Int(abs(Double(tdeeBalance)) / 7.7) // 7700 kcal/kg ÷ 1000 = grams
+```
+- Deficit (`tdeeBalance < 0`) → green: `"~150g loss"` / `"ירידה של ~150 גרם"`
+- Surplus (`tdeeBalance > 0`) → amber: `"~80g gain"` / `"עלייה של ~80 גרם"`
+- Zero → neutral: `"No weight change"` / `"ללא שינוי במשקל"`
+- Footer note: `"* estimate based on calculated TDEE"` (or `"* from Apple Health"` when HealthKit active — see §20)
+
+**UI**: a card in the History stats section with two labelled rows and a footer note.
 
 ---
 
@@ -1365,9 +1379,11 @@ In the History tab stats (week view), compute:
 ```swift
 func projectedDate(profile: UserProfile, tdee: Int, dailyCalGoal: Int) -> Date? {
     guard let target = profile.targetWeightKg else { return nil }
-    let dailyDeficit = tdee - dailyCalGoal
-    let kgDiff = target - profile.weight
-    guard abs(dailyDeficit) >= 50 && dailyDeficit.signum() == kgDiff.signum() else { return nil }
+    let dailyDeficit = tdee - dailyCalGoal   // positive = eating under TDEE (deficit)
+    let kgDiff = target - profile.weight     // negative = wanting to lose
+    // Valid only when directions align: deficit + loss goal (signs differ), or surplus + gain goal (signs differ).
+    // Same sign = wrong direction (e.g. eating at deficit but targeting weight gain).
+    guard abs(dailyDeficit) >= 50 && dailyDeficit.signum() != kgDiff.signum() else { return nil }
     let days = Int(abs(kgDiff) * 7700 / Double(abs(dailyDeficit)))
     return Calendar.current.date(byAdding: .day, value: days, to: Date())
 }
@@ -1499,3 +1515,211 @@ CREATE INDEX IF NOT EXISTS weight_log_user_date
 ```
 
 > **Important**: The migration file is at `specification/migration_new_features.sql` in the web repo.
+
+---
+
+## 20. HealthKit Integration — Apple Health & Apple Fitness Calorie Burn
+
+### 20.1 Overview & Motivation
+
+The app currently estimates TDEE (Total Daily Energy Expenditure) using the Mifflin-St Jeor formula × an activity multiplier. This is a static estimate that doesn't reflect the user's actual activity on a given day.
+
+Apple Health aggregates real calorie burn from:
+- **Apple Watch** — continuous heart rate + movement tracking (most accurate)
+- **Apple Fitness+** — workout sessions
+- **iPhone** — step count + movement estimation
+- **Third-party apps** — Garmin, Strava, Nike Run Club, etc.
+
+By reading this data via **HealthKit**, the app can show the user their **actual measured deficit or surplus** for the day and week — far more meaningful than a formula-based estimate.
+
+---
+
+### 20.2 What to Read from HealthKit
+
+| HealthKit type | Identifier | What it represents |
+|---|---|---|
+| Active Energy Burned | `activeEnergyBurned` | Calories from exercise + movement above resting |
+| Basal Energy Burned | `basalEnergyBurned` | Resting metabolic rate (estimated by device) |
+| **Total = Active + Basal** | — | The actual TDEE for the day |
+
+> **Note**: On iPhone without Apple Watch, only basal + step-based active energy is available. With Apple Watch, the data is much more complete and updates throughout the day.
+
+---
+
+### 20.3 Setup
+
+#### Info.plist
+```xml
+<key>NSHealthShareUsageDescription</key>
+<string>Used to show your actual calorie burn and calculate a more accurate daily deficit.</string>
+```
+
+#### Entitlements
+In Xcode → Target → Signing & Capabilities → add **HealthKit**.
+
+#### Stack entry (add to §1)
+| Layer | Choice | Rationale |
+|---|---|---|
+| Activity data | **HealthKit** (`HKHealthStore`) | Read-only: active + basal energy burned |
+
+---
+
+### 20.4 HealthKitManager
+
+```swift
+import HealthKit
+
+@Observable
+final class HealthKitManager {
+    private let store = HKHealthStore()
+    var isAuthorized = false
+    var authorizationStatus: HKAuthorizationStatus = .notDetermined
+
+    private let readTypes: Set<HKObjectType> = [
+        HKQuantityType(.activeEnergyBurned),
+        HKQuantityType(.basalEnergyBurned),
+    ]
+
+    // Call once — ideally from ProfileView when user first sets up their profile.
+    func requestAuthorization() async {
+        guard HKHealthStore.isHealthDataAvailable() else { return }
+        do {
+            try await store.requestAuthorization(toShare: [], read: readTypes)
+            isAuthorized = true
+        } catch {
+            isAuthorized = false
+        }
+    }
+
+    // Returns total kcal burned (active + basal) for a given calendar date.
+    func totalBurnedKcal(for date: Date) async -> Double? {
+        guard HKHealthStore.isHealthDataAvailable() else { return nil }
+        async let active = fetchSum(type: .activeEnergyBurned, date: date)
+        async let basal  = fetchSum(type: .basalEnergyBurned,  date: date)
+        guard let a = await active, let b = await basal else { return nil }
+        return a + b
+    }
+
+    // Aggregate over a date range (e.g. current week).
+    func totalBurnedKcal(from start: Date, to end: Date) async -> Double? {
+        guard HKHealthStore.isHealthDataAvailable() else { return nil }
+        async let active = fetchSum(type: .activeEnergyBurned, from: start, to: end)
+        async let basal  = fetchSum(type: .basalEnergyBurned,  from: start, to: end)
+        guard let a = await active, let b = await basal else { return nil }
+        return a + b
+    }
+
+    // MARK: — Private helpers
+
+    private func fetchSum(type identifier: HKQuantityTypeIdentifier, date: Date) async -> Double? {
+        let cal = Calendar.current
+        let start = cal.startOfDay(for: date)
+        let end   = cal.date(byAdding: .day, value: 1, to: start)!
+        return await fetchSum(type: identifier, from: start, to: end)
+    }
+
+    private func fetchSum(type identifier: HKQuantityTypeIdentifier,
+                          from start: Date, to end: Date) async -> Double? {
+        let quantityType = HKQuantityType(identifier)
+        let predicate    = HKQuery.predicateForSamples(withStart: start, end: end)
+
+        return await withCheckedContinuation { continuation in
+            let query = HKStatisticsQuery(
+                quantityType: quantityType,
+                quantitySamplePredicate: predicate,
+                options: .cumulativeSum
+            ) { _, result, _ in
+                let value = result?.sumQuantity()?.doubleValue(for: .kilocalorie())
+                continuation.resume(returning: value)
+            }
+            store.execute(query)
+        }
+    }
+}
+```
+
+---
+
+### 20.5 Integration into Calorie Deficit Calculation
+
+The HealthKit burn replaces (or supplements) the formula-based TDEE wherever deficit is shown. Priority order:
+
+```
+1. HealthKit data available AND authorized → use actual burn
+2. Otherwise → fall back to Mifflin-St Jeor × activity multiplier
+```
+
+```swift
+// In your main ViewModel / environment object:
+func effectiveTdee(for date: Date, profile: UserProfile, healthKit: HealthKitManager) async -> (kcal: Int, source: TdeeSource) {
+    if healthKit.isAuthorized,
+       let burned = await healthKit.totalBurnedKcal(for: date) {
+        return (Int(burned), .healthKit)
+    }
+    return (calcDailyTdee(profile), .formula)
+}
+
+enum TdeeSource { case healthKit, formula }
+```
+
+---
+
+### 20.6 UI Integration Points
+
+#### DailySummaryView
+Show a deficit/surplus row beneath the calorie ring:
+```
+Burned today: 2,340 kcal  (from Apple Health)
+Consumed:     1,800 kcal
+Deficit:        540 kcal → ~70g loss on pace
+```
+- Source badge: `"from Apple Health"` (SF Symbol: `heart.fill`, color: `.red`) or `"estimated"` (SF Symbol: `function`, color: `.secondary`)
+- If HealthKit not authorized: show a soft prompt — `"Connect Apple Health for accurate deficit tracking"` with a button that triggers `requestAuthorization()`
+
+#### WeeklyBalance card (§19.5 Row 2)
+Replace formula-based `weeklyTdee` with the HealthKit weekly total when available:
+```swift
+let weeklyBurn: Double
+if healthKit.isAuthorized,
+   let hkBurn = await healthKit.totalBurnedKcal(from: weekStart, to: weekEnd) {
+    weeklyBurn = hkBurn
+    tdeeSource = .healthKit
+} else {
+    weeklyBurn = Double(calcWeeklyTdee(profile))
+    tdeeSource = .formula
+}
+```
+Footer note updates accordingly: `"* from Apple Health"` vs `"* estimate based on TDEE formula"`.
+
+#### Target Date Projection (§19.6)
+Use the **7-day rolling average** of HealthKit daily burn as the TDEE input for projection — more accurate than the static formula:
+```swift
+func rollingAvgBurn(healthKit: HealthKitManager) async -> Double? {
+    let end   = Date()
+    let start = Calendar.current.date(byAdding: .day, value: -7, to: end)!
+    guard let total = await healthKit.totalBurnedKcal(from: start, to: end) else { return nil }
+    return total / 7.0
+}
+```
+
+#### ProfileView — HealthKit section
+Add a dedicated row in Settings/Profile:
+
+```
+⬤ Apple Health
+  [Connect]                    ← if not authorized
+  ✓ Connected — reads calorie burn  ← if authorized
+```
+
+- `HKHealthStore.isHealthDataAvailable()` → if false (iPad without iPhone), hide the section entirely
+- If denied: show `"Access denied — change in Health app → Sharing → Apps"` with a deep-link button to `UIApplication.openURL(URL(string: "x-apple-health://")!)`
+
+---
+
+### 20.7 Privacy & Graceful Degradation
+
+- **Never request write permissions** — read-only. The `toShare` set must always be empty.
+- **Offline / no Watch**: still works — iPhone estimates active energy from steps; basal from biometrics.
+- **Permission denied**: all TDEE-dependent features fall back to formula. No feature is broken without HealthKit.
+- **Data not yet available** (e.g. early morning before Watch syncs): show formula estimate with a `"Syncing…"` indicator and refresh when app foregrounds (`scenePhase == .active`).
+- **Never store HealthKit data in Supabase** — only read locally and display in-session. HealthKit data belongs to the user's Health app and must not be uploaded to third-party servers without explicit additional consent.
