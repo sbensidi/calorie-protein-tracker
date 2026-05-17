@@ -519,71 +519,11 @@ function MainScreen({ lang, connected, theme, styleMode, showGreeting, onProfile
   )
 }
 
-// ── Notifications Section (extracted to avoid hooks-in-IIFE) ──────────────────
-
-function NotificationsSection({ lang, showToast }: { lang: Lang; showToast: (msg: string, type: 'success' | 'error' | 'info') => void }) {
-  const supported = 'Notification' in window
-  const [notifStatus, setNotifStatus] = useState<NotificationPermission>(
-    supported ? Notification.permission : 'default'
-  )
-  if (!supported) return null
-
-  const requestPermission = async () => {
-    const result = await Notification.requestPermission()
-    setNotifStatus(result)
-    if (result === 'granted') showToast(t(lang, 'notificationsOn'), 'success')
-    else showToast(t(lang, 'notifPermissionDenied'), 'error')
-  }
-  const granted = notifStatus === 'granted'
-  const denied  = notifStatus === 'denied'
-
-  return (
-    <div style={{ marginBottom: 20 }}>
-      <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.07em', margin: '0 0 12px' }}>
-        {t(lang, 'notifications')}
-      </p>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: '12px 14px' }}>
-        <div>
-          <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', margin: '0 0 2px' }}>
-            {granted ? t(lang, 'notificationsOn') : t(lang, 'notificationsOff')}
-          </p>
-          <p style={{ fontSize: 11, color: 'var(--text-3)', margin: 0 }}>
-            {denied
-              ? t(lang, 'notifPermissionDenied')
-              : t(lang, 'mealRemindersDesc')}
-          </p>
-        </div>
-        {!denied && (
-          <button
-            onClick={requestPermission}
-            disabled={granted}
-            style={{
-              background: granted ? 'var(--positive-tint)' : 'var(--accent)',
-              color: granted ? 'var(--positive-hi)' : 'var(--on-color)',
-              border: granted ? '1px solid var(--positive-border)' : 'none',
-              borderRadius: 10, padding: '6px 14px', fontSize: 12, fontWeight: 700,
-              cursor: granted ? 'default' : 'pointer', fontFamily: 'inherit',
-            }}
-          >
-            {granted ? t(lang, 'notificationsEnabled') : t(lang, 'allowNotifications')}
-          </button>
-        )}
-        {denied && (
-          <span style={{ fontSize: 11, color: 'var(--danger)', fontWeight: 600 }}>
-            {t(lang, 'notifBlocked')}
-          </span>
-        )}
-      </div>
-      <p style={{ fontSize: 11, color: 'var(--text-3)', margin: '8px 4px 0', lineHeight: 1.6 }}>
-        {t(lang, 'notifExplain')}
-      </p>
-    </div>
-  )
-}
+// NotificationsSection — suspended on web, implemented in iOS native only
 
 // ── Profile Screen ────────────────────────────────────────────────────────────
 
-function ProfileScreen({ lang, profile, onSave, showToast, weightLogEntries = [], onLogWeight, onDeleteWeightEntry, dailyCalGoal }: {
+function ProfileScreen({ lang, profile, onSave, showToast, weightLogEntries = [], onLogWeight, onDeleteWeightEntry, dailyCalGoal, saveRef, onSaveDone }: {
   lang:      Lang
   profile:   UserProfile
   onSave:    (updates: Partial<UserProfile>) => void
@@ -592,14 +532,25 @@ function ProfileScreen({ lang, profile, onSave, showToast, weightLogEntries = []
   onLogWeight?:      (weight_kg: number, date?: string) => Promise<void>
   onDeleteWeightEntry?: (id: string) => Promise<void>
   dailyCalGoal?: number
+  saveRef:     React.MutableRefObject<(() => void) | null>
+  onSaveDone:  () => void
 }) {
   const [draft, setDraft] = useState<UserProfile>({ ...profile })
-  const [saved, setSaved] = useState(false)
   const [weightInput, setWeightInput] = useState('')
   const [loggingWeight, setLoggingWeight] = useState(false)
 
-  const set = <K extends keyof UserProfile>(key: K, val: UserProfile[K]) =>
+  // draft is initialised from the localStorage snapshot (before fetchProfile resolves).
+  // Once the server profile arrives, sync the whole draft — but stop once the user
+  // starts editing so we never overwrite in-progress changes.
+  const dirtyRef = useRef(false)
+  useEffect(() => {
+    if (!dirtyRef.current) setDraft({ ...profile })
+  }, [profile])
+
+  const set = <K extends keyof UserProfile>(key: K, val: UserProfile[K]) => {
+    dirtyRef.current = true
     setDraft(p => ({ ...p, [key]: val }))
+  }
 
   const { bmr, tdeeAtLevel, suggestedFluidMl, bmi, bmiCategory, projectedDate } = useMemo(() => {
     const bmr             = calcBMR(draft)
@@ -621,16 +572,18 @@ function ProfileScreen({ lang, profile, onSave, showToast, weightLogEntries = []
 
   const handleSave = () => {
     onSave(draft)
-    setSaved(true)
-    setTimeout(() => setSaved(false), 2000)
+    onSaveDone()
     showToast(t(lang, 'profileSaved'), 'success')
   }
+  saveRef.current = handleSave
 
   const handleLogWeight = async () => {
     const kg = parseFloat(weightInput.replace(',', '.'))
     if (!kg || kg < 20 || kg > 300 || !onLogWeight) return
     setLoggingWeight(true)
     await onLogWeight(kg)
+    set('weight', kg)      // reflect in draft → metrics update instantly
+    onSave({ weight: kg }) // persist → GoalsScreen recommendations update
     setWeightInput('')
     setLoggingWeight(false)
     showToast(t(lang, 'weightLoggedBang'), 'success')
@@ -639,6 +592,8 @@ function ProfileScreen({ lang, profile, onSave, showToast, weightLogEntries = []
   const bmiColor = bmiCategory === 'normal' ? 'var(--positive-hi)' : bmiCategory === 'obese' ? 'var(--danger)' : 'var(--warning)'
   const bmiKeyMap = { underweight: 'bmiUnderweight', normal: 'bmiNormal', overweight: 'bmiOverweight', obese: 'bmiObese' } as const
   const bmiLabel = t(lang, bmiKeyMap[bmiCategory as keyof typeof bmiKeyMap])
+  // key changes when metrics change → CSS remount triggers pulse animation
+  const metricsKey = `${bmr}-${bmi}`
 
   const labelStyle: React.CSSProperties = {
     fontSize: 11, fontWeight: 600, color: 'var(--text-2)', display: 'block', marginBottom: 5,
@@ -653,6 +608,22 @@ function ProfileScreen({ lang, profile, onSave, showToast, weightLogEntries = []
       <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.07em', margin: '0 0 12px' }}>
         {t(lang, 'personalDetails')}
       </p>
+
+      {/* Display name */}
+      <div style={{ marginBottom: 16 }}>
+        <label style={labelStyle}>{t(lang, 'displayNameLabel')}</label>
+        <input
+          type="text"
+          className="inp"
+          value={draft.displayName ?? ''}
+          placeholder={t(lang, 'displayNamePlaceholder')}
+          onChange={e => set('displayName', e.target.value || null)}
+          style={{ fontSize: 16, width: '100%', boxSizing: 'border-box' }}
+        />
+        <p style={{ fontSize: 11, color: 'var(--text-3)', margin: '5px 0 0' }}>
+          {t(lang, 'displayNameHint')}
+        </p>
+      </div>
 
       {/* Sex */}
       <div style={{ marginBottom: 14 }}>
@@ -680,17 +651,17 @@ function ProfileScreen({ lang, profile, onSave, showToast, weightLogEntries = []
       {/* Age / Height / Weight */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 20 }}>
         {([
-          { key: 'age' as const,    label: t(lang, 'ageLabel'),  min: 10,  max: 100 },
-          { key: 'height' as const, label: t(lang, 'heightCm'),  min: 100, max: 250 },
-          { key: 'weight' as const, label: t(lang, 'weightKg'),  min: 30,  max: 300 },
-        ]).map(({ key, label, min, max }) => (
+          { key: 'age' as const,    label: t(lang, 'ageLabel'),  min: 10,  max: 100,  mode: 'numeric'  as const },
+          { key: 'height' as const, label: t(lang, 'heightCm'),  min: 100, max: 250,  mode: 'decimal'  as const },
+          { key: 'weight' as const, label: t(lang, 'weightKg'),  min: 30,  max: 300,  mode: 'decimal'  as const },
+        ]).map(({ key, label, min, max, mode }) => (
           <div key={key}>
             <label htmlFor={`profile-${key}`} style={labelStyle}>{label}</label>
             <div style={{ position: 'relative' }}>
               <input
                 id={`profile-${key}`}
                 type="number"
-                inputMode="numeric"
+                inputMode={mode}
                 className="inp"
                 min={min} max={max}
                 value={draft[key] === 0 ? '' : draft[key]}
@@ -726,14 +697,21 @@ function ProfileScreen({ lang, profile, onSave, showToast, weightLogEntries = []
             <p style={{ fontSize: 10, color: 'var(--text-3)', margin: 0, lineHeight: 1.4 }}>
               {lang === 'he' ? 'חילוף חומרים בסיסי — ללא פעילות' : 'Basal Metabolic Rate — at rest'}
             </p>
-            <p style={{ fontSize: 10, color: 'var(--accent-hi)', margin: '3px 0 0', lineHeight: 1.4 }}>
-              {lang === 'he'
-                ? `TDEE: ${tdeeAtLevel.toLocaleString('he-IL')} קק״ל עם רמת הפעילות שלך`
-                : `TDEE: ${tdeeAtLevel.toLocaleString()} kcal with your activity`}
+          </div>
+          <span key={metricsKey} className="metric-pulse" style={{ fontSize: 18, fontWeight: 800, color: 'var(--text)', flexShrink: 0, marginInlineStart: 10 }}>
+            {bmr.toLocaleString(lang === 'he' ? 'he-IL' : 'en-US')} <span style={{ fontSize: 10, fontWeight: 400 }}>{t(lang, 'caloriesUnit')}</span>
+          </span>
+        </div>
+        <div style={{ height: 1, background: 'var(--border)' }} />
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '11px 14px' }}>
+          <div style={{ minWidth: 0 }}>
+            <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-2)', margin: '0 0 2px' }}>TDEE</p>
+            <p style={{ fontSize: 10, color: 'var(--text-3)', margin: 0, lineHeight: 1.4 }}>
+              {lang === 'he' ? 'סה״כ הוצאה קלורית יומית עם רמת הפעילות שלך' : 'Total Daily Energy Expenditure with your activity level'}
             </p>
           </div>
-          <span style={{ fontSize: 18, fontWeight: 800, color: 'var(--text)', flexShrink: 0, marginInlineStart: 10 }}>
-            {bmr.toLocaleString(lang === 'he' ? 'he-IL' : 'en-US')} <span style={{ fontSize: 10, fontWeight: 400 }}>{t(lang, 'caloriesUnit')}</span>
+          <span key={`tdee-${metricsKey}`} className="metric-pulse" style={{ fontSize: 18, fontWeight: 800, color: 'var(--accent-hi)', flexShrink: 0, marginInlineStart: 10 }}>
+            {tdeeAtLevel.toLocaleString(lang === 'he' ? 'he-IL' : 'en-US')} <span style={{ fontSize: 10, fontWeight: 400 }}>{t(lang, 'caloriesUnit')}</span>
           </span>
         </div>
         <div style={{ height: 1, background: 'var(--border)' }} />
@@ -744,7 +722,7 @@ function ProfileScreen({ lang, profile, onSave, showToast, weightLogEntries = []
               {lang === 'he' ? 'תת משקל < 18.5 | תקין 18.5–24.9 | עודף 25–29.9 | השמנה ≥ 30' : 'Under < 18.5 | Normal 18.5–24.9 | Over 25–29.9 | Obese ≥ 30'}
             </p>
           </div>
-          <span style={{ fontSize: 18, fontWeight: 800, color: bmiColor, flexShrink: 0, marginInlineStart: 10 }}>
+          <span key={metricsKey} className="metric-pulse" style={{ fontSize: 18, fontWeight: 800, color: bmiColor, flexShrink: 0, marginInlineStart: 10 }}>
             {bmi} <span style={{ fontSize: 12, fontWeight: 600 }}>— {bmiLabel}</span>
           </span>
         </div>
@@ -758,7 +736,7 @@ function ProfileScreen({ lang, profile, onSave, showToast, weightLogEntries = []
               {lang === 'he' ? `35מ״ל × ${draft.weight}ק״ג` : `35 ml × ${draft.weight} kg`}
             </p>
           </div>
-          <span style={{ fontSize: 18, fontWeight: 800, color: 'var(--text)', flexShrink: 0, marginInlineStart: 10 }}>
+          <span key={metricsKey} className="metric-pulse" style={{ fontSize: 18, fontWeight: 800, color: 'var(--text)', flexShrink: 0, marginInlineStart: 10 }}>
             {suggestedFluidMl >= 1000 ? (suggestedFluidMl / 1000).toFixed(1) : suggestedFluidMl}{' '}
             <span style={{ fontSize: 10, fontWeight: 400 }}>
               {suggestedFluidMl >= 1000 ? (lang === 'he' ? 'ל׳' : 'L') : 'ml'}
@@ -770,29 +748,45 @@ function ProfileScreen({ lang, profile, onSave, showToast, weightLogEntries = []
       {/* Target weight (for projection) */}
       <div style={{ marginBottom: projectedDate ? 8 : 20 }}>
         <label style={labelStyle}>{t(lang, 'targetWeightKg')}</label>
-        <input
-          type="number"
-          inputMode="decimal"
-          className="inp"
-          style={{ fontSize: 16 }}
-          placeholder={draft.weight > 0 ? String(draft.weight) : '—'}
-          value={draft.targetWeightKg ?? ''}
-          onFocus={e => e.target.select()}
-          onChange={e => set('targetWeightKg', e.target.value ? parseFloat(e.target.value) : null)}
-        />
+        <div style={{ position: 'relative' }}>
+          <input
+            type="number"
+            inputMode="decimal"
+            className="inp"
+            style={{ fontSize: 16, paddingInlineEnd: draft.targetWeightKg !== null ? 28 : undefined }}
+            placeholder={t(lang, 'targetWeightPlaceholder')}
+            value={draft.targetWeightKg ?? ''}
+            onFocus={e => e.target.select()}
+            onChange={e => set('targetWeightKg', e.target.value ? parseFloat(e.target.value) : null)}
+          />
+          {draft.targetWeightKg !== null && (
+            <button
+              onMouseDown={e => { e.preventDefault(); set('targetWeightKg', null) }}
+              tabIndex={-1}
+              style={{ position: 'absolute', insetInlineEnd: 0, top: 0, bottom: 0, width: 28, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            >
+              <span className="icon icon-sm">close</span>
+            </button>
+          )}
+        </div>
       </div>
       {projectedDate && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--accent-fill)', border: '1px solid var(--blue-border)', borderRadius: 10, padding: '8px 12px', marginBottom: 20 }}>
-          <span style={{ fontSize: 16 }}>🎯</span>
-          <div>
-            <p style={{ fontSize: 11, fontWeight: 600, color: 'var(--accent-hi)', margin: '0 0 1px' }}>
-              {t(lang, 'projectedDateLabel')}
-            </p>
-            <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', margin: 0 }}>
-              {projectedDate}
-            </p>
+        <>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--accent-fill)', border: '1px solid var(--blue-border)', borderRadius: 10, padding: '8px 12px', marginBottom: 6 }}>
+            <span style={{ fontSize: 16 }}>🎯</span>
+            <div>
+              <p style={{ fontSize: 11, fontWeight: 600, color: 'var(--accent-hi)', margin: '0 0 1px' }}>
+                {t(lang, 'projectedDateLabel')}
+              </p>
+              <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', margin: 0 }}>
+                {projectedDate}
+              </p>
+            </div>
           </div>
-        </div>
+          <p style={{ fontSize: 10, color: 'var(--text-3)', margin: '0 0 20px', lineHeight: 1.5 }}>
+            {t(lang, 'projectedDateHint')}
+          </p>
+        </>
       )}
 
       {/* ── Weight Log section ─────────────────────────────────── */}
@@ -800,19 +794,30 @@ function ProfileScreen({ lang, profile, onSave, showToast, weightLogEntries = []
         {t(lang, 'weightLog')}
       </p>
       <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-        <input
-          type="number"
-          inputMode="decimal"
-          className="inp"
-          style={{ flex: 1, fontSize: 16 }}
-          placeholder={t(lang, 'weightKgPlaceholder')}
-          value={weightInput}
-          onChange={e => setWeightInput(e.target.value)}
-          onKeyDown={e => { if (e.key === 'Enter') handleLogWeight() }}
-        />
+        <div style={{ position: 'relative', flex: 1 }}>
+          <input
+            type="number"
+            inputMode="decimal"
+            className="inp"
+            style={{ width: '100%', fontSize: 16, boxSizing: 'border-box', paddingInlineEnd: weightInput ? 28 : undefined }}
+            placeholder={t(lang, 'weightKgPlaceholder')}
+            value={weightInput}
+            onChange={e => setWeightInput(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') handleLogWeight() }}
+          />
+          {weightInput && (
+            <button
+              onMouseDown={e => { e.preventDefault(); setWeightInput('') }}
+              tabIndex={-1}
+              style={{ position: 'absolute', insetInlineEnd: 0, top: 0, bottom: 0, width: 28, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            >
+              <span className="icon icon-sm">close</span>
+            </button>
+          )}
+        </div>
         <button
-          className="btn-primary"
-          style={{ flexShrink: 0, paddingInline: 16, opacity: loggingWeight ? 0.7 : 1 }}
+          className="btn-ghost"
+          style={{ flexShrink: 0, paddingInline: 16, opacity: loggingWeight ? 0.7 : 1, border: '1.5px solid var(--accent)', color: 'var(--accent-hi)' }}
           onClick={handleLogWeight}
           disabled={loggingWeight || !weightInput}
         >
@@ -858,7 +863,10 @@ function ProfileScreen({ lang, profile, onSave, showToast, weightLogEntries = []
                 <div key={entry.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <span style={{ fontSize: 12, color: 'var(--text-3)', flex: 1 }}>{entry.date}</span>
                   <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>
-                    {entry.weight_kg} <span style={{ fontSize: 10, fontWeight: 400, color: 'var(--text-3)' }}>kg</span>
+                    {lang === 'he'
+                    ? <><span style={{ fontSize: 10, fontWeight: 400, color: 'var(--text-3)' }}>ק״ג</span> {entry.weight_kg}</>
+                    : <>{entry.weight_kg} <span style={{ fontSize: 10, fontWeight: 400, color: 'var(--text-3)' }}>kg</span></>
+                  }
                   </span>
                   {onDeleteWeightEntry && (
                     <button
@@ -876,26 +884,13 @@ function ProfileScreen({ lang, profile, onSave, showToast, weightLogEntries = []
         )
       })()}
 
-      {/* ── Push Notifications section ─────────────────────────────── */}
-      <NotificationsSection lang={lang} showToast={showToast} />
-
-      <button
-        onClick={handleSave}
-        className={saved ? 'btn-confirm' : 'btn-ghost'}
-        style={{ width: '100%', height: 48, borderRadius: 12, fontSize: 14 }}
-      >
-        {saved
-          ? <><span className="icon icon-sm" style={{ verticalAlign: 'middle', marginInlineEnd: 4 }}>check</span>{t(lang, 'profileSaved')}</>
-          : t(lang, 'saveProfile')
-        }
-      </button>
     </>
   )
 }
 
 // ── Goals Screen ──────────────────────────────────────────────────────────────
 
-function GoalsScreen({ lang, profile, goals, onSave, onSaveProfile, onSaveFluidGoal, fluidGoalMl = 2500, showToast }: {
+function GoalsScreen({ lang, profile, goals, onSave, onSaveProfile, onSaveFluidGoal, fluidGoalMl = 2500, showToast, saveRef, onSaveDone }: {
   lang:              Lang
   profile:           UserProfile
   goals:             Goal | null
@@ -904,12 +899,13 @@ function GoalsScreen({ lang, profile, goals, onSave, onSaveProfile, onSaveFluidG
   onSaveFluidGoal?:  (ml: number) => void
   fluidGoalMl?:      number
   showToast:         (msg: string, type: 'success' | 'error' | 'info') => void
+  saveRef:     React.MutableRefObject<(() => void) | null>
+  onSaveDone:  () => void
 }) {
   const [defCal,       setDefCal]       = useState(goals?.default_calories ?? 1700)
   const [defProt,      setDefProt]      = useState(goals?.default_protein  ?? 160)
   const [defFluidGoal, setDefFluidGoal] = useState(fluidGoalMl)
   const [overrides, setOverrides] = useState<Record<string, { calories: number; protein: number; fluid_ml?: number }>>(goals?.weekly_overrides ?? {})
-  const [saved, setSaved] = useState(false)
   const [draftActivityLevel, setDraftActivityLevel] = useState<number>(profile.activityLevel ?? 1)
   const [draftGoalType, setDraftGoalType] = useState<'lose' | 'maintain' | 'gain'>(profile.goalType ?? 'maintain')
   const [weeklyOpen, setWeeklyOpen] = useState(false)
@@ -999,10 +995,10 @@ function GoalsScreen({ lang, profile, goals, onSave, onSaveProfile, onSaveFluidG
     onSave({ default_calories: defCal, default_protein: defProt, weekly_overrides: overrides })
     onSaveProfile({ activityLevel: draftActivityLevel as 0|1|2|3|4, goalType: draftGoalType })
     onSaveFluidGoal?.(defFluidGoal)
-    setSaved(true)
-    setTimeout(() => setSaved(false), 2000)
+    onSaveDone()
     showToast(t(lang, 'goalsSaved'), 'success')
   }
+  saveRef.current = handleSave
 
   const labelStyle: React.CSSProperties = {
     fontSize: 11, fontWeight: 600, display: 'block', marginBottom: 6,
@@ -1327,19 +1323,6 @@ function GoalsScreen({ lang, profile, goals, onSave, onSaveProfile, onSaveFluidG
         )}
       </div>
 
-      {/* Save */}
-      <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
-        <button
-          className={saved ? 'btn-confirm' : 'btn-primary'}
-          onClick={handleSave}
-          style={{ height: 48, fontSize: 14, borderRadius: 12, flex: 1 }}
-        >
-          {saved
-            ? <><span className="icon icon-sm" style={{ verticalAlign: 'middle', marginInlineEnd: 4 }}>check</span>{t(lang, 'savedBang')}</>
-            : t(lang, 'saveGoals')
-          }
-        </button>
-      </div>
     </>
   )
 }
@@ -1364,6 +1347,17 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
   const [editDraft, setEditDraft] = useState<{ name: string; grams: string; calories: string; protein: string }>({ name: '', grams: '', calories: '', protein: '' })
   const [editUnit,  setEditUnit]  = useState<UnitId | 'pcs'>('g')
   const [filter, setFilter]       = useState<'all' | 'foods' | 'beverage' | 'composed'>('all')
+  const chipScrollRef = useRef<HTMLDivElement>(null)
+  const [chipCanScrollLeft,  setChipCanScrollLeft]  = useState(false)
+  const [chipCanScrollRight, setChipCanScrollRight] = useState(false)
+  const updateChipScroll = (el: HTMLElement) => {
+    setChipCanScrollLeft(el.scrollLeft > 2)
+    setChipCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 2)
+  }
+  useEffect(() => {
+    const el = chipScrollRef.current
+    if (el) updateChipScroll(el)
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
   // Ratios per base unit (grams or ml) — used for proportional scaling when amount changes
   const editRatios = useRef({ calPerBase: 0, protPerBase: 0 })
   const [expandedGroupId, setExpandedGroupId]           = useState<string | null>(null)
@@ -1495,29 +1489,33 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
 
         {/* Filter chips */}
         <div style={{ position: 'relative' }}>
-          <div style={{ position: 'absolute', left: 0, top: 0, bottom: 10, width: 24, background: 'linear-gradient(to right, var(--bg), transparent)', zIndex: 1, pointerEvents: 'none' }} />
-          <div style={{ position: 'absolute', right: 0, top: 0, bottom: 10, width: 24, background: 'linear-gradient(to left, var(--bg), transparent)', zIndex: 1, pointerEvents: 'none' }} />
-        <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 10, scrollbarWidth: 'none' }}>
-          {([
-            { key: 'all',      labelHe: `הכל (${history.length + composedGroups.length})`,   labelEn: `All (${history.length + composedGroups.length})` },
-            { key: 'foods',    labelHe: `מזונות (${history.length})`,                         labelEn: `Foods (${history.length})` },
-            { key: 'beverage', labelHe: `שתייה (${beverageHistory.length})`,                  labelEn: `Drinks (${beverageHistory.length})` },
-            { key: 'composed', labelHe: `מנות (${composedGroups.length})`,                    labelEn: `Dishes (${composedGroups.length})` },
-          ] as const).map(({ key, labelHe, labelEn }) => (
-            <button
-              key={key}
-              onClick={() => setFilter(key)}
-              style={{
-                padding: '5px 12px', borderRadius: 999, border: 'none', cursor: 'pointer', fontFamily: 'inherit',
-                fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap', transition: 'background .12s, color .12s',
-                background: filter === key ? 'var(--accent)' : 'var(--surface-2)',
-                color: filter === key ? 'var(--on-color)' : 'var(--text-2)',
-              }}
-            >
-              {lang === 'he' ? labelHe : labelEn}
-            </button>
-          ))}
-        </div>
+          {chipCanScrollLeft  && <div style={{ position: 'absolute', left: 0, top: 0, bottom: 10, width: 24, background: 'linear-gradient(to right, var(--bg), transparent)', zIndex: 1, pointerEvents: 'none' }} />}
+          {chipCanScrollRight && <div style={{ position: 'absolute', right: 0, top: 0, bottom: 10, width: 24, background: 'linear-gradient(to left, var(--bg), transparent)', zIndex: 1, pointerEvents: 'none' }} />}
+          <div
+            ref={chipScrollRef}
+            onScroll={e => updateChipScroll(e.currentTarget)}
+            style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 10, scrollbarWidth: 'none' }}
+          >
+            {([
+              { key: 'all',      labelHe: `הכל (${history.length + composedGroups.length})`,   labelEn: `All (${history.length + composedGroups.length})` },
+              { key: 'foods',    labelHe: `מזונות (${history.length})`,                         labelEn: `Foods (${history.length})` },
+              { key: 'beverage', labelHe: `שתייה (${beverageHistory.length})`,                  labelEn: `Drinks (${beverageHistory.length})` },
+              { key: 'composed', labelHe: `מנות (${composedGroups.length})`,                    labelEn: `Dishes (${composedGroups.length})` },
+            ] as const).map(({ key, labelHe, labelEn }) => (
+              <button
+                key={key}
+                onClick={() => setFilter(key)}
+                style={{
+                  padding: '5px 12px', borderRadius: 999, border: 'none', cursor: 'pointer', fontFamily: 'inherit',
+                  fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap', transition: 'background .12s, color .12s',
+                  background: filter === key ? 'var(--accent)' : 'var(--surface-2)',
+                  color: filter === key ? 'var(--on-color)' : 'var(--text-2)',
+                }}
+              >
+                {lang === 'he' ? labelHe : labelEn}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -1943,6 +1941,17 @@ function LibraryScreen({ lang }: { lang: Lang }) {
   const { library, loading } = useFoodLibrary()
   const [search, setSearch] = useState('')
   const [activeCategory, setActiveCategory] = useState<string | null>(null)
+  const chipScrollRef = useRef<HTMLDivElement>(null)
+  const [chipCanScrollLeft,  setChipCanScrollLeft]  = useState(false)
+  const [chipCanScrollRight, setChipCanScrollRight] = useState(false)
+  const updateChipScroll = (el: HTMLElement) => {
+    setChipCanScrollLeft(el.scrollLeft > 2)
+    setChipCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 2)
+  }
+  useEffect(() => {
+    const el = chipScrollRef.current
+    if (el) updateChipScroll(el)
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const categories = useCallback(() => CATEGORY_ORDER, [])()
   const catLabels = lang === 'he' ? LIBRARY_CATEGORIES_HE : LIBRARY_CATEGORIES_EN
@@ -2005,9 +2014,13 @@ function LibraryScreen({ lang }: { lang: Lang }) {
 
         {/* Category chips */}
         <div style={{ position: 'relative' }}>
-          <div style={{ position: 'absolute', left: 0, top: 0, bottom: 10, width: 24, background: 'linear-gradient(to right, var(--bg), transparent)', zIndex: 1, pointerEvents: 'none' }} />
-          <div style={{ position: 'absolute', right: 0, top: 0, bottom: 10, width: 24, background: 'linear-gradient(to left, var(--bg), transparent)', zIndex: 1, pointerEvents: 'none' }} />
-          <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 10, scrollbarWidth: 'none' }}>
+          {chipCanScrollLeft  && <div style={{ position: 'absolute', left: 0, top: 0, bottom: 10, width: 24, background: 'linear-gradient(to right, var(--bg), transparent)', zIndex: 1, pointerEvents: 'none' }} />}
+          {chipCanScrollRight && <div style={{ position: 'absolute', right: 0, top: 0, bottom: 10, width: 24, background: 'linear-gradient(to left, var(--bg), transparent)', zIndex: 1, pointerEvents: 'none' }} />}
+          <div
+            ref={chipScrollRef}
+            onScroll={e => updateChipScroll(e.currentTarget)}
+            style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 10, scrollbarWidth: 'none' }}
+          >
             {[{ cat: null, label: lang === 'he' ? `הכל (${library.length})` : `All (${library.length})` },
               ...categories.filter(c => categoryCounts[c]).map(c => ({ cat: c, label: `${catLabels[c] ?? c} (${categoryCounts[c]})` }))
             ].map(({ cat, label }) => (
@@ -2106,11 +2119,13 @@ function LibraryScreen({ lang }: { lang: Lang }) {
 
 // ── Preferences Screen ────────────────────────────────────────────────────────
 
-function PreferencesScreen({ lang, profile, onSave, showToast }: {
+function PreferencesScreen({ lang, profile, onSave, showToast, saveRef, onSaveDone }: {
   lang:      Lang
   profile:   UserProfile
   onSave:    (updates: Partial<UserProfile>) => void
   showToast: (msg: string, type: 'success' | 'error' | 'info') => void
+  saveRef:    React.MutableRefObject<(() => void) | null>
+  onSaveDone: () => void
 }) {
   const [draft, setDraft] = useState({
     weightUnit:          profile.weightUnit,
@@ -2119,17 +2134,16 @@ function PreferencesScreen({ lang, profile, onSave, showToast }: {
     fluidZeroCalOnly:    profile.fluidZeroCalOnly,
     defaultServingGrams: profile.defaultServingGrams,
   })
-  const [saved, setSaved] = useState(false)
 
   const set = <K extends keyof typeof draft>(key: K, val: typeof draft[K]) =>
     setDraft(p => ({ ...p, [key]: val }))
 
   const handleSave = () => {
     onSave(draft)
-    setSaved(true)
-    setTimeout(() => setSaved(false), 2000)
+    onSaveDone()
     showToast(lang === 'he' ? 'ההעדפות נשמרו' : 'Preferences saved', 'success')
   }
+  saveRef.current = handleSave
 
   const labelStyle: React.CSSProperties = {
     fontSize: 11, fontWeight: 600, color: 'var(--text-2)', display: 'block', marginBottom: 5,
@@ -2247,16 +2261,6 @@ function PreferencesScreen({ lang, profile, onSave, showToast }: {
           : 'The gram amount used as "1 serving" when no specific library data is available.'}
       </p>
 
-      <button
-        onClick={handleSave}
-        className={saved ? 'btn-confirm' : 'btn-ghost'}
-        style={{ width: '100%', height: 48, borderRadius: 12, fontSize: 14 }}
-      >
-        {saved
-          ? <><span className="icon icon-sm" style={{ verticalAlign: 'middle', marginInlineEnd: 4 }}>check</span>{lang === 'he' ? 'נשמר!' : 'Saved!'}</>
-          : lang === 'he' ? 'שמור העדפות' : 'Save Preferences'
-        }
-      </button>
     </>
   )
 }
@@ -2303,6 +2307,28 @@ export function SettingsSheet({
   useLockBodyScroll(isOpen)
   const { scrollRef, scrolledDown, onScroll } = useSheetScroll()
   const sheetRef = useRef<HTMLDivElement>(null)
+
+  // Shared save-button state for profile / goals / preferences screens
+  const [screenSaved, setScreenSaved] = useState(false)
+  const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const profileSaveRef = useRef<(() => void) | null>(null)
+  const goalsSaveRef   = useRef<(() => void) | null>(null)
+  const prefsSaveRef   = useRef<(() => void) | null>(null)
+
+  const handleSaveDone = () => {
+    if (savedTimerRef.current) clearTimeout(savedTimerRef.current)
+    setScreenSaved(true)
+    savedTimerRef.current = setTimeout(() => setScreenSaved(false), 2000)
+  }
+
+  const triggerScreenSave = () => {
+    if (screen === 'profile')     profileSaveRef.current?.()
+    else if (screen === 'goals') goalsSaveRef.current?.()
+    else if (screen === 'preferences') prefsSaveRef.current?.()
+  }
+
+  // Reset saved state when navigating between screens
+  useEffect(() => { setScreenSaved(false) }, [screen])
 
   const handleClose = () => {
     setScreen('main')
@@ -2409,6 +2435,8 @@ export function SettingsSheet({
                 onLogWeight={onLogWeight}
                 onDeleteWeightEntry={onDeleteWeightEntry}
                 dailyCalGoal={goals?.default_calories}
+                saveRef={profileSaveRef}
+                onSaveDone={handleSaveDone}
               />
             )}
             {screen === 'goals' && (
@@ -2421,6 +2449,8 @@ export function SettingsSheet({
                 onSaveFluidGoal={ml => onSaveProfile({ fluidGoalMl: ml })}
                 fluidGoalMl={profile.fluidGoalMl}
                 showToast={showToast}
+                saveRef={goalsSaveRef}
+                onSaveDone={handleSaveDone}
               />
             )}
             {screen === 'preferences' && (
@@ -2429,8 +2459,40 @@ export function SettingsSheet({
                 profile={profile}
                 onSave={onSaveProfile}
                 showToast={showToast}
+                saveRef={prefsSaveRef}
+                onSaveDone={handleSaveDone}
               />
             )}
+          </div>
+        )}
+
+        {/* Footer save button — outside scroll container, always visible */}
+        {(screen === 'profile' || screen === 'goals' || screen === 'preferences') && (
+          <div style={{
+            flexShrink: 0,
+            position: 'relative',
+            zIndex: 1,
+            marginTop: -52,
+            paddingInline: 16,
+            paddingTop: 28,
+            paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 8px)',
+            background: 'linear-gradient(to bottom, transparent 0%, var(--bg) 40%)',
+            pointerEvents: 'none',
+          }}>
+            <button
+              onClick={triggerScreenSave}
+              className={screenSaved ? 'btn-confirm' : 'btn-primary'}
+              style={{ width: '100%', height: 48, borderRadius: 12, fontSize: 14, pointerEvents: 'auto' }}
+            >
+              {screenSaved
+                ? <><span className="icon icon-sm" style={{ verticalAlign: 'middle', marginInlineEnd: 4 }}>check</span>
+                    {screen === 'profile' ? t(lang, 'profileSaved') : t(lang, 'savedBang')}
+                  </>
+                : screen === 'profile' ? t(lang, 'saveProfile')
+                : screen === 'goals'  ? t(lang, 'saveGoals')
+                : lang === 'he' ? 'שמור העדפות' : 'Save Preferences'
+              }
+            </button>
           </div>
         )}
 
