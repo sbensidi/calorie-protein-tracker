@@ -1420,33 +1420,103 @@ Present with `ShareLink` (iOS 16+) or `UIActivityViewController` so user can sav
 
 ---
 
-### 19.8 Meal Timing Insights
+### 19.8 Calorie Distribution by Meal Type
+
+> **Note**: Meal timing insights (average `timeLogged` per type) were removed — `timeLogged` reflects data-entry time, not eating time, making it unreliable for insights.
 
 **Where**: History tab stats view (both week and month periods).
 
-**Logic**: for meals in the selected period, group by `mealType`. Compute average `timeLogged` (as minutes since midnight) per type. Display formatted as `HH:mm`.
+**Logic**: group meals in the selected period by `mealType`, sum calories per type, compute each type's share of the grand total (rounded to nearest integer %).  
+Skip types with 0 calories. Sort descending by calorie share.  
+If grand total is 0, hide the card.
 
-**UI**: a card at the bottom of the stats section:
-- Section header "Meal Timing" / "תזמון ארוחות"
-- One row per meal type that has data: colored label | avg time | count (×N)
-- Colors match meal type: breakfast=amber, lunch=blue, dinner=green, snack=text-2, beverage=cyan
+**UI**: a card in the stats section:
+- Section header "Calories by meal type" / "התפלגות קלוריות לפי ארוחה"
+- One row per type (in descending calorie order):
+  - Type label in type color | pct label right-aligned
+  - Thin horizontal progress bar (height 5 pt, corner radius 3) filled to `pct%`
+- Type colors: breakfast=amber, lunch=blue, dinner=green, snack=text-secondary, beverage=cyan
 
 ```swift
-func avgTimeLogged(meals: [Meal]) -> [MealType: String] {
-    let grouped = Dictionary(grouping: meals, by: \.mealType)
-    return grouped.mapValues { ms in
-        let avgMins = ms.map { m -> Int in
-            let parts = m.timeLogged.split(separator: ":").compactMap { Int($0) }
-            return (parts.first ?? 0) * 60 + (parts.dropFirst().first ?? 0)
-        }.reduce(0, +) / ms.count
-        return String(format: "%02d:%02d", avgMins / 60, avgMins % 60)
-    }
+struct MealTypeSlice {
+    let type: MealType
+    let kcal: Int
+    let pct: Int
+}
+
+func calcMealTypeDistribution(meals: [Meal]) -> [MealTypeSlice] {
+    let totals = Dictionary(grouping: meals, by: \.mealType)
+        .mapValues { $0.reduce(0) { $0 + $1.calories } }
+    let grand = totals.values.reduce(0, +)
+    guard grand > 0 else { return [] }
+    return totals
+        .filter { $0.value > 0 }
+        .map { MealTypeSlice(type: $0.key, kcal: $0.value, pct: Int(($0.value * 100 / grand).rounded())) }
+        .sorted { $0.kcal > $1.kcal }
 }
 ```
 
 ---
 
-### 19.9 Push Notifications
+### 19.9 Macro Breakdown (אבות המזון)
+
+**Where**: History tab stats view (both week and month periods), below the calorie distribution card.
+
+**Logic**:
+1. Count how many meals in the period have both `fat ≠ nil` and `carbs ≠ nil` → `coverage = count / total`.
+2. If `coverage ≥ 0.5` (`hasFatCarbs = true`): compute macro kcal using only those meals. Protein 4 kcal/g · fat 9 kcal/g · carbs 4 kcal/g.
+3. If `coverage < 0.5` (`hasFatCarbs = false`): use all meals, compute protein kcal only.
+4. Each macro's `%` = its kcal / total macro kcal (rounded).
+5. If total macro kcal is 0, hide the card.
+
+**UI**: a card in the stats section:
+- Section header "Macronutrients" / "אבות המזון"
+- Protein row always shown (color = accent/blue)
+- Fat (amber) and carbs (green) rows shown only when `hasFatCarbs = true`
+- Each row: macro label | pct right-aligned | thin progress bar (same style as §19.8)
+- Footer note (small, text-tertiary):
+  - `hasFatCarbs = false`: "Fat & carbs missing in over half of entries" / "שומן ופחמימות: חסרים בפחות ממחצית הרשומות"
+  - `hasFatCarbs = true && coverage < 1.0`: "Based on {pct}% of entries with fat & carb data" / "מבוסס על {pct}% מהרשומות שכוללות שומן ופחמימות"
+
+```swift
+struct MacroBreakdown {
+    let proteinPct: Int
+    let fatPct: Int
+    let carbsPct: Int
+    let totalKcal: Double
+    let hasFatCarbs: Bool
+    let coverage: Double
+}
+
+func calcMacroBreakdown(meals: [Meal]) -> MacroBreakdown {
+    guard !meals.isEmpty else {
+        return MacroBreakdown(proteinPct: 0, fatPct: 0, carbsPct: 0, totalKcal: 0, hasFatCarbs: false, coverage: 0)
+    }
+    let withFatCarbs = meals.filter { $0.fat != nil && $0.carbs != nil }
+    let coverage = Double(withFatCarbs.count) / Double(meals.count)
+    let hasFatCarbs = coverage >= 0.5
+    let source = hasFatCarbs ? withFatCarbs : meals
+    let protKcal  = source.reduce(0.0) { $0 + Double($1.protein) * 4 }
+    let fatKcal   = hasFatCarbs ? source.reduce(0.0) { $0 + Double($1.fat ?? 0) * 9 } : 0
+    let carbKcal  = hasFatCarbs ? source.reduce(0.0) { $0 + Double($1.carbs ?? 0) * 4 } : 0
+    let total = protKcal + fatKcal + carbKcal
+    guard total > 0 else {
+        return MacroBreakdown(proteinPct: 0, fatPct: 0, carbsPct: 0, totalKcal: 0, hasFatCarbs: hasFatCarbs, coverage: coverage)
+    }
+    return MacroBreakdown(
+        proteinPct: Int((protKcal / total * 100).rounded()),
+        fatPct:     Int((fatKcal  / total * 100).rounded()),
+        carbsPct:   Int((carbKcal / total * 100).rounded()),
+        totalKcal:  total,
+        hasFatCarbs: hasFatCarbs,
+        coverage:    coverage
+    )
+}
+```
+
+---
+
+### 19.10 Push Notifications
 
 **Where**: ProfileView → "Reminders" / "תזכורות" section.
 
@@ -1478,7 +1548,7 @@ Provide toggles for breakfast (e.g. 08:00), lunch (13:00), dinner (19:00) remind
 
 ---
 
-### 19.10 DB Migration
+### 19.11 DB Migration
 
 Run this SQL in the Supabase console before deploying the iOS update:
 
