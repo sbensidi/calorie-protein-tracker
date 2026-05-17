@@ -454,7 +454,7 @@ function MainScreen({ lang, connected, theme, styleMode, onProfile, onGoals, onF
                   </p>
                   {!minimal && (
                     <p style={{ fontSize: 11, color: 'var(--text-3)', margin: '2px 0 0' }}>
-                      {lang === 'he' ? 'ייצוא כל הארוחות לקובץ CSV' : 'Export all meals to CSV file'}
+                      {t(lang, 'exportCsvDesc')}
                     </p>
                   )}
                 </div>
@@ -520,7 +520,7 @@ function NotificationsSection({ lang, showToast }: { lang: Lang; showToast: (msg
           <p style={{ fontSize: 11, color: 'var(--text-3)', margin: 0 }}>
             {denied
               ? t(lang, 'notifPermissionDenied')
-              : lang === 'he' ? 'קבל תזכורות לארוחות' : 'Get meal reminders'}
+              : t(lang, 'mealRemindersDesc')}
           </p>
         </div>
         {!denied && (
@@ -535,12 +535,12 @@ function NotificationsSection({ lang, showToast }: { lang: Lang; showToast: (msg
               cursor: granted ? 'default' : 'pointer', fontFamily: 'inherit',
             }}
           >
-            {granted ? (lang === 'he' ? 'פעיל ✓' : 'Enabled ✓') : t(lang, 'allowNotifications')}
+            {granted ? t(lang, 'notificationsEnabled') : t(lang, 'allowNotifications')}
           </button>
         )}
         {denied && (
           <span style={{ fontSize: 11, color: 'var(--danger)', fontWeight: 600 }}>
-            {lang === 'he' ? 'חסום' : 'Blocked'}
+            {t(lang, 'notifBlocked')}
           </span>
         )}
       </div>
@@ -773,7 +773,7 @@ function ProfileScreen({ lang, profile, onSave, showToast, weightLogEntries = []
           inputMode="decimal"
           className="inp"
           style={{ flex: 1, fontSize: 16 }}
-          placeholder={lang === 'he' ? 'משקל (ק"ג)' : 'Weight (kg)'}
+          placeholder={t(lang, 'weightKgPlaceholder')}
           value={weightInput}
           onChange={e => setWeightInput(e.target.value)}
           onKeyDown={e => { if (e.key === 'Enter') handleLogWeight() }}
@@ -832,7 +832,7 @@ function ProfileScreen({ lang, profile, onSave, showToast, weightLogEntries = []
                     <button
                       onClick={() => onDeleteWeightEntry(entry.id)}
                       style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 2, display: 'flex' }}
-                      aria-label={lang === 'he' ? 'מחק' : 'Delete'}
+                      aria-label={t(lang, 'delete')}
                     >
                       <span className="icon icon-sm">delete</span>
                     </button>

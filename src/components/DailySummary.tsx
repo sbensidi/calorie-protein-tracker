@@ -93,7 +93,7 @@ export function DailySummary({ meals, date, goalCalories, goalProtein, lang, flu
           </p>
           {streak >= 2 && (
             <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--warning)', background: 'var(--warning-tint)', borderRadius: 20, padding: '2px 8px' }}>
-              🔥 {streak} {lang === 'he' ? 'ימים ברצף' : 'day streak'}
+              🔥 {streak} {t(lang, 'streakDays')}
             </span>
           )}
         </div>
@@ -183,7 +183,7 @@ export function DailySummary({ meals, date, goalCalories, goalProtein, lang, flu
         </p>
         {streak >= 2 && (
           <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--warning)', background: 'var(--warning-tint)', borderRadius: 20, padding: '2px 8px' }}>
-            🔥 {streak} {lang === 'he' ? 'ימים ברצף' : 'day streak'}
+            🔥 {streak} {t(lang, 'streakDays')}
           </span>
         )}
       </div>

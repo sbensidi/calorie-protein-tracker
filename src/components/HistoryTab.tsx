@@ -1457,7 +1457,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                       ? (lang === 'he' ? `ירידה של ~${weightGrams} גרם` : `~${weightGrams}g loss`)
                       : isWeightGain
                       ? (lang === 'he' ? `עלייה של ~${weightGrams} גרם` : `~${weightGrams}g gain`)
-                      : (lang === 'he' ? 'ללא שינוי במשקל' : 'no weight change')
+                      : t(lang, 'noWeightChange')
 
                     return (
                       <div style={{
@@ -1467,13 +1467,13 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                       }}>
                         {/* Header */}
                         <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.07em', margin: 0 }}>
-                          {lang === 'he' ? 'מאזן שבועי' : 'Weekly balance'}
+                          {t(lang, 'weeklyBalance')}
                         </p>
 
                         {/* Plan row */}
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                           <span style={{ fontSize: 12, color: 'var(--text-2)' }}>
-                            {lang === 'he' ? 'יעד שבועי' : 'Weekly plan'}
+                            {t(lang, 'weeklyPlan')}
                           </span>
                           <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
                             <span style={{ fontSize: 11, color: 'var(--text-3)', fontVariantNumeric: 'tabular-nums' }}>
@@ -1491,7 +1491,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                         {hasWeightCalc && (
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid var(--border)', paddingTop: 8 }}>
                             <span style={{ fontSize: 12, color: 'var(--text-2)' }}>
-                              {lang === 'he' ? 'השפעה על משקל' : 'Weight impact'}
+                              {t(lang, 'weightImpact')}
                             </span>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                               <span style={{ fontSize: 12, fontWeight: 700, color: weightColor }}>
@@ -1504,7 +1504,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
 
                         {hasWeightCalc && (
                           <p style={{ fontSize: 10, color: 'var(--text-3)', margin: 0 }}>
-                            {lang === 'he' ? '* הערכה לפי TDEE מחושב' : '* estimate based on calculated TDEE'}
+                            {t(lang, 'tdeeNote')}
                           </p>
                         )}
                       </div>
@@ -2004,11 +2004,11 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
 
               const typeOrder = ['breakfast', 'lunch', 'dinner', 'snack', 'beverage']
               const typeLabels: Record<string, string> = {
-                breakfast: lang === 'he' ? 'ארוחת בוקר' : 'Breakfast',
-                lunch:     lang === 'he' ? 'ארוחת צהריים' : 'Lunch',
-                dinner:    lang === 'he' ? 'ארוחת ערב' : 'Dinner',
-                snack:     lang === 'he' ? 'חטיף' : 'Snack',
-                beverage:  lang === 'he' ? 'שתייה' : 'Beverage',
+                breakfast: t(lang, 'breakfast'),
+                lunch:     t(lang, 'lunch'),
+                dinner:    t(lang, 'dinner'),
+                snack:     t(lang, 'snack'),
+                beverage:  t(lang, 'beverage'),
               }
               const typeColors: Record<string, string> = {
                 breakfast: 'var(--warning)', lunch: 'var(--accent-hi)',
