@@ -194,7 +194,7 @@ export function getGreeting(ctx: GreetingContext): Greeting {
   const protRemaining  = Math.round(protGoal - protConsumed)
 
   let line2: string
-  if (dayOfYear % 4 === 0 && hour < 21) {
+  if (dayOfYear % 1 === 0 && hour < 21) {
     line2 = `😄 ${pick(JOKES, Math.floor(dayOfYear / 4))}`
   } else if (hour >= 21) {
     line2 = pick(p.nightLine2, dayOfYear + 7)
