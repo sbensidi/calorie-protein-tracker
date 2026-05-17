@@ -91,6 +91,7 @@ interface TodayTabProps {
   fluidThresholdMl?: number
   fluidZeroCalOnly?: boolean
   goalStreak?: number
+  displayName?: string | null
 }
 
 export function TodayTab({
@@ -98,7 +99,7 @@ export function TodayTab({
   getSuggestions, searchLibrary, library = [], defaultServingGrams = 150, defaultWeightUnit = 'g', defaultVolumeUnit = 'ml',
   onAddMeal, onAddMealWithId, onEditMeal, onDeleteMeal, onDuplicateMeal, onUpsertHistory, onTouchHistory,
   composedEntries, composedGroups, onUpsertGroup, onRemoveGroup, showToast,
-  fluidGoalMl = 2500, fluidThresholdMl = 100, fluidZeroCalOnly = true, goalStreak = 0,
+  fluidGoalMl = 2500, fluidThresholdMl = 100, fluidZeroCalOnly = true, goalStreak = 0, displayName = null,
 }: TodayTabProps) {
   const todayMeals    = useMemo(() => meals.filter(m => m.date === today()), [meals])
   const fluidTodayMl  = useMemo(() => todayMeals.reduce((s, m) => s + (m.fluid_ml ?? 0), 0), [todayMeals])
@@ -802,8 +803,24 @@ export function TodayTab({
     )
   })()
 
+  const firstName = displayName?.split(' ')[0] ?? null
+  const hour = new Date().getHours()
+  const timeGreeting = hour < 11
+    ? (lang === 'he' ? 'בוקר טוב' : 'Good morning')
+    : hour < 17
+    ? (lang === 'he' ? 'צהריים טובים' : 'Good afternoon')
+    : (lang === 'he' ? 'ערב טוב' : 'Good evening')
+
   return (
     <div>
+      {firstName && (
+        <div style={{ marginBottom: 12, padding: '10px 14px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontSize: 18 }}>👋</span>
+          <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>
+            {timeGreeting}, {firstName}
+          </span>
+        </div>
+      )}
       {summaryCard}
 
       {loading && todayMeals.length === 0 && (

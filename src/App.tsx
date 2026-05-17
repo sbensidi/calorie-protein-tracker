@@ -70,6 +70,7 @@ export default function App() {
 
   const userId = session?.user?.id || null
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
+  const [displayName, setDisplayName] = useState<string | null>(null)
   const [hasGoogleLinked, setHasGoogleLinked] = useState(false)
 
   const refreshUserMeta = () => {
@@ -83,7 +84,14 @@ export default function App() {
         (identityData?.avatar_url as string | undefined) ||
         (identityData?.picture    as string | undefined) ||
         null
+      const name: string | null =
+        (meta.full_name  as string | undefined) ||
+        (meta.name       as string | undefined) ||
+        (identityData?.full_name as string | undefined) ||
+        (identityData?.name      as string | undefined) ||
+        null
       setAvatarUrl(url)
+      setDisplayName(name)
       setHasGoogleLinked(!!googleIdentity)
     })
   }
@@ -381,6 +389,7 @@ export default function App() {
               onRemoveGroup={removeGroup}
               showToast={showToast}
               goalStreak={goalStreak}
+              displayName={displayName}
             />
           </ErrorBoundary>
         )}
