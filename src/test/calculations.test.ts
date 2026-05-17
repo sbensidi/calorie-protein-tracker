@@ -14,6 +14,7 @@ function makeProfile(overrides: Partial<UserProfile> = {}): UserProfile {
     weightUnit: 'g', volumeUnit: 'ml',
     fluidGoalMl: 2000, fluidThresholdMl: 200,
     fluidZeroCalOnly: false, defaultServingGrams: 100,
+    showGreeting: true,
     ...overrides,
   }
 }

@@ -255,6 +255,12 @@ export const translations = {
     weightLossOf:        'ירידה של ~',
     weightGainOf:        'עלייה של ~',
     gramsSuffix:         'גרם',
+    showDailyGreeting:      'הצג ברכה יומית',
+    showDailyGreetingDesc:  'ברכה מותאמת אישית מעל סיכום היום',
+    greetingDismissTitle:   'להסיר את הברכה?',
+    greetingDismissBody:    'הברכה תוסר לצמיתות. אפשר להחזיר אותה בכל עת מההגדרות.',
+    greetingDismissConfirm: 'הסר לצמיתות',
+    greetingDismissCancel:  'ביטול',
   },
   en: {
     appTitle: 'Calorie Tracker',
@@ -509,6 +515,12 @@ export const translations = {
     weightLossOf:        '~',
     weightGainOf:        '~',
     gramsSuffix:         'g',
+    showDailyGreeting:      'Show daily greeting',
+    showDailyGreetingDesc:  'Personalized greeting above today\'s summary',
+    greetingDismissTitle:   'Remove greeting?',
+    greetingDismissBody:    'The greeting will be permanently removed. You can re-enable it anytime from Settings.',
+    greetingDismissConfirm: 'Remove permanently',
+    greetingDismissCancel:  'Cancel',
   },
 } as const
 

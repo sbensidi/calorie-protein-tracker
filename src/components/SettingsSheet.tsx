@@ -178,11 +178,12 @@ function DayPanel({
 
 // ── Main Screen ───────────────────────────────────────────────────────────────
 
-function MainScreen({ lang, connected, theme, styleMode, onProfile, onGoals, onFoodHistory, onLibrary, onPreferences, onToggleLang, onToggleTheme, onSelectStyleMode, onSignOut, onLinkGoogle, hasGoogleLinked, onExportCsv }: {
+function MainScreen({ lang, connected, theme, styleMode, showGreeting, onProfile, onGoals, onFoodHistory, onLibrary, onPreferences, onToggleLang, onToggleTheme, onSelectStyleMode, onToggleGreeting, onSignOut, onLinkGoogle, hasGoogleLinked, onExportCsv }: {
   lang:                Lang
   connected:           boolean
   theme:               'dark' | 'light'
   styleMode:           'classic' | 'minimal'
+  showGreeting:        boolean
   onProfile:           () => void
   onGoals:             () => void
   onFoodHistory:       () => void
@@ -191,6 +192,7 @@ function MainScreen({ lang, connected, theme, styleMode, onProfile, onGoals, onF
   onToggleLang:        () => void
   onToggleTheme:       () => void
   onSelectStyleMode:   (m: 'classic' | 'minimal') => void
+  onToggleGreeting:    () => void
   onSignOut:           () => void
   onLinkGoogle?:       () => void
   hasGoogleLinked?:    boolean
@@ -406,6 +408,39 @@ function MainScreen({ lang, connected, theme, styleMode, onProfile, onGoals, onF
                 </button>
               ))}
             </div>
+          </div>
+          {!minimal && <div style={divider} />}
+          <div style={{ ...rowBase, ...rowSep, cursor: 'default' }}>
+            {!minimal && <span className="icon" style={{ fontSize: 22, color: 'var(--accent)', flexShrink: 0 }}>waving_hand</span>}
+            <div style={{ flex: 1, textAlign: 'start' }}>
+              <p style={{ fontSize: minimal ? 13 : 14, fontWeight: 600, color: 'var(--text)', margin: 0 }}>
+                {t(lang, 'showDailyGreeting')}
+              </p>
+              {!minimal && (
+                <p style={{ fontSize: 12, color: 'var(--text-3)', margin: '2px 0 0' }}>
+                  {t(lang, 'showDailyGreetingDesc')}
+                </p>
+              )}
+            </div>
+            <button
+              onClick={onToggleGreeting}
+              aria-label="toggle greeting"
+              style={{
+                position: 'relative', width: 50, height: 28, borderRadius: 999,
+                border: 'none', cursor: 'pointer', padding: 0, flexShrink: 0,
+                background: showGreeting ? 'var(--accent-glow)' : 'var(--qty-bg)',
+                transition: 'background 0.25s',
+              }}
+            >
+              <span style={{
+                position: 'absolute', top: 3,
+                insetInlineStart: showGreeting ? 23 : 3,
+                width: 22, height: 22, borderRadius: '50%',
+                background: showGreeting ? 'var(--accent)' : 'var(--text-3)',
+                transition: 'inset-inline-start 0.25s cubic-bezier(.34,1.56,.64,1), background 0.25s',
+                boxShadow: 'var(--shadow-sm)',
+              }} />
+            </button>
           </div>
         </div>
 
@@ -2345,6 +2380,7 @@ export function SettingsSheet({
                 connected={connected}
                 theme={theme}
                 styleMode={styleMode}
+                showGreeting={profile.showGreeting}
                 onProfile={() => setScreen('profile')}
                 onGoals={() => setScreen('goals')}
                 onFoodHistory={() => setScreen('foodHistory')}
@@ -2353,6 +2389,7 @@ export function SettingsSheet({
                 onToggleLang={onToggleLang}
                 onToggleTheme={onToggleTheme}
                 onSelectStyleMode={onSelectStyleMode}
+                onToggleGreeting={() => onSaveProfile({ showGreeting: !profile.showGreeting })}
                 onSignOut={() => { handleClose(); onSignOut() }}
                 onLinkGoogle={onLinkGoogle}
                 hasGoogleLinked={hasGoogleLinked}

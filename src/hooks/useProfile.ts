@@ -16,6 +16,7 @@ export interface UserProfile {
   fluidThresholdMl:   number
   fluidZeroCalOnly:   boolean
   defaultServingGrams: number
+  showGreeting:       boolean
 }
 
 // Only non-sensitive preferences are cached locally — biometrics stay DB-only
@@ -51,6 +52,7 @@ const DEFAULT: UserProfile = {
   fluidThresholdMl:   100,
   fluidZeroCalOnly:   false,
   defaultServingGrams: 150,
+  showGreeting:       true,
 }
 
 
@@ -80,6 +82,7 @@ function dbToProfile(row: Record<string, unknown>): UserProfile {
     fluidThresholdMl:    (row.fluid_threshold_ml as number)    ?? DEFAULT.fluidThresholdMl,
     fluidZeroCalOnly:    (row.fluid_zero_cal_only as boolean)  ?? DEFAULT.fluidZeroCalOnly,
     defaultServingGrams: (row.default_serving_grams as number) ?? DEFAULT.defaultServingGrams,
+    showGreeting:        (row.show_greeting as boolean)         ?? DEFAULT.showGreeting,
   }
 }
 
@@ -99,7 +102,8 @@ function profileToDb(p: UserProfile, userId: string) {
     fluid_threshold_ml:   p.fluidThresholdMl,
     fluid_zero_cal_only:  p.fluidZeroCalOnly,
     default_serving_grams: p.defaultServingGrams,
-    updated_at:           new Date().toISOString(),
+    show_greeting:         p.showGreeting,
+    updated_at:            new Date().toISOString(),
   }
 }
 

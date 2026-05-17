@@ -390,6 +390,8 @@ export default function App() {
               showToast={showToast}
               goalStreak={goalStreak}
               displayName={displayName}
+              showGreeting={profile.showGreeting}
+              onDismissGreeting={() => saveProfile({ showGreeting: false })}
             />
           </ErrorBoundary>
         )}

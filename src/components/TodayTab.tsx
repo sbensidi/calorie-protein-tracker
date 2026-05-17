@@ -12,6 +12,7 @@ import { MealCard } from './MealCard'
 import { ComposedMealCard } from './ComposedMealCard'
 import { DailySummary } from './DailySummary'
 import { useAppContext } from '../context/AppContext'
+import { getGreeting } from '../lib/calculations'
 
 type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'beverage'
 
@@ -61,6 +62,71 @@ function saveCollapsed(s: Set<MealType>) {
 }
 
 
+// ── GreetingPanel ─────────────────────────────────────────────────
+function GreetingPanel({ greeting, lang, onDismiss }: {
+  greeting: { line1: string; line2: string }
+  lang: Lang
+  onDismiss: () => void
+}) {
+  const [step, setStep] = useState<'idle' | 'confirming'>('idle')
+
+  if (step === 'confirming') {
+    return (
+      <div style={{
+        marginBottom: 12, padding: '12px 14px',
+        background: 'var(--bg-card)', border: '1px solid var(--amber-border)',
+        borderRadius: 12,
+      }}>
+        <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', margin: '0 0 4px' }}>
+          {t(lang, 'greetingDismissTitle')}
+        </p>
+        <p style={{ fontSize: 12, color: 'var(--text-2)', margin: '0 0 12px', lineHeight: 1.5 }}>
+          {t(lang, 'greetingDismissBody')}
+        </p>
+        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+          <button
+            onClick={() => setStep('idle')}
+            style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-2)', background: 'none', border: '1px solid var(--border)', borderRadius: 8, padding: '6px 14px', cursor: 'pointer', fontFamily: 'inherit' }}
+          >
+            {t(lang, 'greetingDismissCancel')}
+          </button>
+          <button
+            onClick={onDismiss}
+            style={{ fontSize: 13, fontWeight: 700, color: 'var(--on-color)', background: 'var(--amber)', border: 'none', borderRadius: 8, padding: '6px 14px', cursor: 'pointer', fontFamily: 'inherit' }}
+          >
+            {t(lang, 'greetingDismissConfirm')}
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div style={{
+      marginBottom: 12, padding: '12px 14px',
+      background: 'var(--bg-card)', border: '1px solid var(--border)',
+      borderRadius: 12, display: 'flex', alignItems: 'flex-start', gap: 10,
+    }}>
+      <span style={{ fontSize: 20, lineHeight: 1.3, flexShrink: 0 }}>👋</span>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <p style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', margin: '0 0 2px' }}>
+          {greeting.line1}
+        </p>
+        <p style={{ fontSize: 13, color: 'var(--text-2)', margin: 0, lineHeight: 1.45 }}>
+          {greeting.line2}
+        </p>
+      </div>
+      <button
+        onClick={() => setStep('confirming')}
+        aria-label="dismiss greeting"
+        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, color: 'var(--text-3)', flexShrink: 0, marginTop: -2 }}
+      >
+        <span className="icon" style={{ fontSize: 16 }}>close</span>
+      </button>
+    </div>
+  )
+}
+
 // ── Props ────────────────────────────────────────────────────────
 interface TodayTabProps {
   lang: Lang
@@ -92,6 +158,8 @@ interface TodayTabProps {
   fluidZeroCalOnly?: boolean
   goalStreak?: number
   displayName?: string | null
+  showGreeting?: boolean
+  onDismissGreeting?: () => void
 }
 
 export function TodayTab({
@@ -99,7 +167,8 @@ export function TodayTab({
   getSuggestions, searchLibrary, library = [], defaultServingGrams = 150, defaultWeightUnit = 'g', defaultVolumeUnit = 'ml',
   onAddMeal, onAddMealWithId, onEditMeal, onDeleteMeal, onDuplicateMeal, onUpsertHistory, onTouchHistory,
   composedEntries, composedGroups, onUpsertGroup, onRemoveGroup, showToast,
-  fluidGoalMl = 2500, fluidThresholdMl = 100, fluidZeroCalOnly = true, goalStreak = 0, displayName = null,
+  fluidGoalMl = 2500, fluidThresholdMl = 100, fluidZeroCalOnly = true, goalStreak = 0,
+  displayName = null, showGreeting = true, onDismissGreeting,
 }: TodayTabProps) {
   const todayMeals    = useMemo(() => meals.filter(m => m.date === today()), [meals])
   const fluidTodayMl  = useMemo(() => todayMeals.reduce((s, m) => s + (m.fluid_ml ?? 0), 0), [todayMeals])
@@ -803,23 +872,24 @@ export function TodayTab({
     )
   })()
 
-  const firstName = displayName?.split(' ')[0] ?? null
-  const hour = new Date().getHours()
-  const timeGreeting = hour < 11
-    ? (lang === 'he' ? 'בוקר טוב' : 'Good morning')
-    : hour < 17
-    ? (lang === 'he' ? 'צהריים טובים' : 'Good afternoon')
-    : (lang === 'he' ? 'ערב טוב' : 'Good evening')
+  const now          = new Date()
+  const hour         = now.getHours()
+  const dayOfYear    = Math.floor((now.getTime() - new Date(now.getFullYear(), 0, 0).getTime()) / 86_400_000)
+  const firstName    = displayName?.split(' ')[0] ?? null
+  const calsConsumed = useMemo(() => todayMeals.reduce((s, m) => s + m.calories, 0), [todayMeals])
+  const protConsumed = useMemo(() => todayMeals.reduce((s, m) => s + m.protein, 0), [todayMeals])
+
+  const greeting = useMemo(() => getGreeting({
+    hour, firstName, streak: goalStreak,
+    calsConsumed, calsGoal: goalCalories,
+    protConsumed, protGoal: goalProtein,
+    dayOfYear, lang,
+  }), [hour, firstName, goalStreak, calsConsumed, goalCalories, protConsumed, goalProtein, dayOfYear, lang])
 
   return (
     <div>
-      {firstName && (
-        <div style={{ marginBottom: 12, padding: '10px 14px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ fontSize: 18 }}>👋</span>
-          <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>
-            {timeGreeting}, {firstName}
-          </span>
-        </div>
+      {showGreeting && onDismissGreeting && (
+        <GreetingPanel greeting={greeting} lang={lang} onDismiss={onDismissGreeting} />
       )}
       {summaryCard}
 

@@ -18,6 +18,168 @@ export interface MacroBreakdown {
   coverage: number
 }
 
+// ── getGreeting ───────────────────────────────────────────────────────────────
+
+export interface GreetingContext {
+  hour:         number
+  firstName:    string | null
+  streak:       number
+  calsConsumed: number
+  calsGoal:     number
+  protConsumed: number
+  protGoal:     number
+  dayOfYear:    number
+  lang:         'he' | 'en'
+}
+
+export interface Greeting {
+  line1: string
+  line2: string
+}
+
+function pick<T>(arr: readonly T[], day: number): T { return arr[day % arr.length] }
+
+const PHRASES = {
+  he: {
+    morning:   ['בוקר טוב', 'בוקר מצוין', 'בוקר אחלה', 'בוקר טוב'],
+    afternoon: ['צהריים טובים', 'צהריים טובים'],
+    evening:   ['ערב טוב', 'ערב טוב'],
+    nightWord: ['לילה טוב', 'לילה טוב'],
+    noMealsMorning: [
+      'כל היום עוד לפניך — תתחיל בארוחת בוקר טובה',
+      'כוס מים ראשונה וכבר התחלת טוב',
+      'שלוש ארוחות טובות ואתה מנצח את היום',
+      'הגוף שלך מחכה להזנה — תתחיל בקטן',
+    ],
+    noMealsLate: [
+      'עוד לא רשמת ארוחות היום — זה הזמן להתעדכן',
+      'אל תשכח לתעד את מה שאכלת — הנתונים עוזרים',
+      'תעדכן את הרשומות שלך — כל ארוחה שנרשמת מקרבת אותך ליעד',
+    ],
+    overGoal: [
+      'יום לא מושלם — וזה בסדר גמור. מחר מתחילים מחדש',
+      'יום אחד לא שובר שום דבר — הרצף חשוב יותר מהשלמות',
+      'כולם חורגים לפעמים. מה שחשוב זה מה שעושים מחר בבוקר',
+      'חריגה קורית — אל תיקח את זה קשה, פשוט ממשיכים',
+    ],
+    goalMet: [
+      'עמדת ביעד היום — תן לגוף שלך לנוח',
+      'עוד יום שבו בחרת בעצמך — מגיע לך',
+      'יום מוצלח! עקביות היא הסוד האמיתי',
+      'כל הכבוד — זה לא מובן מאליו',
+    ],
+    streak: [
+      '{N} ימים ברצף — זה לא מקרה, זו הרגל',
+      '{N} ימים שאתה שומר על עצמך — כל הכבוד',
+      'רצף של {N} ימים — שמור על זה היום',
+      '{N} ימים ברצף. אתה בונה משהו אמיתי',
+    ],
+    underProt: [
+      'עוד {prot} גרם חלבון ואתה מושלם להיום',
+      'קרוב מאוד ליעד החלבון — עוד {prot} גרם',
+    ],
+    onTrack: [
+      'אתה בשליטה — המשך ככה',
+      'נשארו לך {cal} קק״ל — עוד יש לאן ללכת',
+      'הולך טוב — תמשיך בקצב הזה',
+      'על המסלול הנכון — תשמור על זה',
+    ],
+    nightLine2: [
+      'היום מאחורינו — מחר הזדמנות חדשה',
+      'תישן טוב — השינה חלק מהתהליך',
+      'מה שנעשה נעשה. מחר מתחילים רענן',
+    ],
+  },
+  en: {
+    morning:   ['Good morning', 'Morning', 'Good morning', 'Morning'],
+    afternoon: ['Good afternoon', 'Good afternoon'],
+    evening:   ['Good evening', 'Good evening'],
+    nightWord: ['Good night', 'Good night'],
+    noMealsMorning: [
+      'The whole day is ahead of you — start with a solid breakfast',
+      'A glass of water first, and you\'re already off to a great start',
+      'Three good meals and you\'ll own the day',
+      'Your body is waiting to be fueled — start small',
+    ],
+    noMealsLate: [
+      'You haven\'t logged any meals today — time to catch up',
+      'Don\'t forget to log what you ate — the data helps',
+      'Update your log — every meal recorded brings you closer to your goal',
+    ],
+    overGoal: [
+      'Not a perfect day — and that\'s completely fine. Fresh start tomorrow',
+      'One day doesn\'t break anything — consistency matters more than perfection',
+      'Everyone slips sometimes. What matters is tomorrow morning',
+      'It happens — don\'t be hard on yourself, just keep going',
+    ],
+    goalMet: [
+      'You hit your goal today — let your body rest',
+      'Another day where you chose yourself — well done',
+      'Successful day! Consistency is the real secret',
+      'Well done — this doesn\'t happen by accident',
+    ],
+    streak: [
+      '{N} days in a row — that\'s not luck, that\'s a habit',
+      '{N} days of taking care of yourself — keep it up',
+      '{N}-day streak — protect it today',
+      '{N} days in a row. You\'re building something real',
+    ],
+    underProt: [
+      'Just {prot}g of protein away from your goal today',
+      'Almost at your protein goal — {prot}g to go',
+    ],
+    onTrack: [
+      'You\'re in control — keep it up',
+      '{cal} kcal left for today — plenty of room',
+      'Looking good — keep the pace',
+      'On track — stay the course',
+    ],
+    nightLine2: [
+      'The day is behind us — tomorrow is a fresh opportunity',
+      'Sleep well — rest is part of the process',
+      'What\'s done is done. Tomorrow starts fresh',
+    ],
+  },
+} as const
+
+export function getGreeting(ctx: GreetingContext): Greeting {
+  const { hour, firstName, streak, calsConsumed, calsGoal, protConsumed, protGoal, dayOfYear, lang } = ctx
+  const p = PHRASES[lang]
+
+  const timeWord =
+    hour < 11 ? pick(p.morning, dayOfYear)
+    : hour < 17 ? pick(p.afternoon, dayOfYear)
+    : hour < 21 ? pick(p.evening, dayOfYear)
+    : pick(p.nightWord, dayOfYear)
+
+  const namePart = firstName ? `, ${firstName}` : ''
+  const line1 = `${timeWord}${namePart}!`
+
+  const calsRemaining  = calsGoal - calsConsumed
+  const protRemaining  = Math.round(protGoal - protConsumed)
+
+  let line2: string
+  if (hour >= 21) {
+    line2 = pick(p.nightLine2, dayOfYear + 7)
+  } else if (calsConsumed === 0) {
+    const pool = hour < 12 ? p.noMealsMorning : p.noMealsLate
+    line2 = pick(pool, dayOfYear)
+  } else if (calsConsumed > calsGoal) {
+    line2 = pick(p.overGoal, dayOfYear)
+  } else if (calsRemaining <= calsGoal * 0.1) {
+    line2 = pick(p.goalMet, dayOfYear)
+  } else if (streak >= 2) {
+    line2 = pick(p.streak, dayOfYear).replace('{N}', String(streak))
+  } else if (protRemaining > 0 && protRemaining <= 25 && hour >= 17) {
+    line2 = pick(p.underProt, dayOfYear).replace('{prot}', String(protRemaining))
+  } else {
+    line2 = pick(p.onTrack, dayOfYear)
+      .replace('{cal}', String(Math.max(0, Math.round(calsRemaining))))
+  }
+
+  return { line1, line2 }
+}
+
 const ACTIVITY_MULTIPLIERS = [1.2, 1.375, 1.55, 1.725, 1.9]
 
 export function calcBMR(p: UserProfile): number {
