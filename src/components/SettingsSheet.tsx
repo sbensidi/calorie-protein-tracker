@@ -841,32 +841,34 @@ function ProfileScreen({ lang, profile, onSave, showToast, weightLogEntries = []
 
         return (
           <div style={{ marginBottom: 16 }}>
-            {/* Sparkline */}
-            <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} style={{ display: 'block', marginBottom: 8 }}>
-              <polyline
-                points={pts}
-                fill="none"
-                stroke="var(--accent)"
-                strokeWidth="2"
-                strokeLinejoin="round"
-                strokeLinecap="round"
-              />
-              {weights.map((w, i) => {
-                const x = (i / Math.max(weights.length - 1, 1)) * W
-                const y = H - ((w - minW) / range) * (H - 8) - 4
-                return <circle key={i} cx={x} cy={y} r={3} fill="var(--accent)" />
-              })}
-            </svg>
+            {/* Sparkline — only when ≥ 2 points */}
+            {weights.length >= 2 && (
+              <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} style={{ display: 'block', marginBottom: 8 }}>
+                <polyline
+                  points={pts}
+                  fill="none"
+                  stroke="var(--accent)"
+                  strokeWidth="2"
+                  strokeLinejoin="round"
+                  strokeLinecap="round"
+                />
+                {weights.map((w, i) => {
+                  const x = (i / Math.max(weights.length - 1, 1)) * W
+                  const y = H - ((w - minW) / range) * (H - 8) - 4
+                  return <circle key={i} cx={x} cy={y} r={3} fill="var(--accent)" />
+                })}
+              </svg>
+            )}
             {/* Last 4 entries */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
               {weightLogEntries.slice(0, 4).map(entry => (
                 <div key={entry.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <span style={{ fontSize: 12, color: 'var(--text-3)', flex: 1 }}>{entry.date}</span>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', display: 'inline-flex', alignItems: 'baseline', gap: 3, direction: 'ltr' }}>
                     {lang === 'he'
-                    ? <><span style={{ fontSize: 10, fontWeight: 400, color: 'var(--text-3)' }}>ק״ג</span> {entry.weight_kg}</>
-                    : <>{entry.weight_kg} <span style={{ fontSize: 10, fontWeight: 400, color: 'var(--text-3)' }}>kg</span></>
-                  }
+                      ? <><span style={{ fontSize: 10, fontWeight: 400, color: 'var(--text-3)' }}>ק״ג</span>{entry.weight_kg}</>
+                      : <>{entry.weight_kg}<span style={{ fontSize: 10, fontWeight: 400, color: 'var(--text-3)' }}>kg</span></>
+                    }
                   </span>
                   {onDeleteWeightEntry && (
                     <button
@@ -1487,10 +1489,10 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
           )}
         </div>
 
-        {/* Filter chips */}
+        {/* Filter chips — fade sides swapped for RTL */}
         <div style={{ position: 'relative' }}>
-          {chipCanScrollLeft  && <div style={{ position: 'absolute', left: 0, top: 0, bottom: 10, width: 24, background: 'linear-gradient(to right, var(--bg), transparent)', zIndex: 1, pointerEvents: 'none' }} />}
-          {chipCanScrollRight && <div style={{ position: 'absolute', right: 0, top: 0, bottom: 10, width: 24, background: 'linear-gradient(to left, var(--bg), transparent)', zIndex: 1, pointerEvents: 'none' }} />}
+          {(lang === 'he' ? chipCanScrollRight : chipCanScrollLeft)  && <div style={{ position: 'absolute', left: 0, top: 0, bottom: 10, width: 24, background: 'linear-gradient(to right, var(--bg), transparent)', zIndex: 1, pointerEvents: 'none' }} />}
+          {(lang === 'he' ? chipCanScrollLeft  : chipCanScrollRight) && <div style={{ position: 'absolute', right: 0, top: 0, bottom: 10, width: 24, background: 'linear-gradient(to left, var(--bg), transparent)', zIndex: 1, pointerEvents: 'none' }} />}
           <div
             ref={chipScrollRef}
             onScroll={e => updateChipScroll(e.currentTarget)}
@@ -2012,10 +2014,10 @@ function LibraryScreen({ lang }: { lang: Lang }) {
           )}
         </div>
 
-        {/* Category chips */}
+        {/* Category chips — fade sides swapped for RTL */}
         <div style={{ position: 'relative' }}>
-          {chipCanScrollLeft  && <div style={{ position: 'absolute', left: 0, top: 0, bottom: 10, width: 24, background: 'linear-gradient(to right, var(--bg), transparent)', zIndex: 1, pointerEvents: 'none' }} />}
-          {chipCanScrollRight && <div style={{ position: 'absolute', right: 0, top: 0, bottom: 10, width: 24, background: 'linear-gradient(to left, var(--bg), transparent)', zIndex: 1, pointerEvents: 'none' }} />}
+          {(lang === 'he' ? chipCanScrollRight : chipCanScrollLeft)  && <div style={{ position: 'absolute', left: 0, top: 0, bottom: 10, width: 24, background: 'linear-gradient(to right, var(--bg), transparent)', zIndex: 1, pointerEvents: 'none' }} />}
+          {(lang === 'he' ? chipCanScrollLeft  : chipCanScrollRight) && <div style={{ position: 'absolute', right: 0, top: 0, bottom: 10, width: 24, background: 'linear-gradient(to left, var(--bg), transparent)', zIndex: 1, pointerEvents: 'none' }} />}
           <div
             ref={chipScrollRef}
             onScroll={e => updateChipScroll(e.currentTarget)}
