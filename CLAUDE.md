@@ -1,6 +1,27 @@
 # הנחיות פיתוח — Calorie & Protein Tracker
 
-> נוצר על בסיס תיקונים שנדרשו בפועל. כל סעיף מייצג באג שנפל ותוקן.
+---
+
+## 0. צ׳קליסט — לפני כל כתיבת קוד ולפני כל commit
+
+### לפני שמתחילים לכתוב פיצ'ר חדש
+
+- [ ] האם יש לוגיקה חישובית? → פונקציה טהורה ב-`src/lib/calculations.ts`, לא inline ב-useMemo
+- [ ] האם יש string בממשק? → מפתח ב-`i18n.ts` (he + en ביחד), לא ternary inline
+- [ ] האם יש צבע? → token מ-`index.css`, לא rgba/hex ישיר
+- [ ] האם יש `<input>` או `<select>`? → `fontSize: 16` מינימום (iOS auto-zoom)
+- [ ] האם יש hook חדש? → עוקב אחרי pattern הקיים (useState, fetch, realtime, upsert, delete)
+- [ ] האם יש קומפוננטה חדשה עם state? → function מוכרזת ב-module level, לא IIFE בתוך JSX
+
+### לפני כל commit
+
+- [ ] `npx tsc -b` — נקי (לא `--noEmit`)
+- [ ] `npx vitest run` — כל הטסטים עוברים
+- [ ] אין imports שאינם בשימוש
+- [ ] אין ternary עם עברית/אנגלית inline — הכל דרך `t(lang, key)`
+- [ ] אין rgba() ישיר בקומפוננט — הכל דרך CSS tokens
+- [ ] לוגיקה חישובית חדשה — יש לה טסטים ב-`src/test/`
+- [ ] כל i18n key קיים גם בעברית גם באנגלית
 
 ---
 
@@ -25,7 +46,7 @@ if (typeof data.calories === 'number') // עובד
 
 ### 1.3 הסר imports שאינם בשימוש — Vercel מחמיר על TS6133
 ```ts
-// ❌ שובר בילד אם AiNetworkError לא משמש בקוד
+// ❌ שובר בילד
 import { calculateNutrition, AiNetworkError, AiRateLimitError } from '../lib/ai'
 
 // ✅ רק מה שבאמת משמש
@@ -33,295 +54,269 @@ import { calculateNutrition, AiRateLimitError, AiParseError } from '../lib/ai'
 ```
 
 ### 1.4 הפרד בין Vitest config לבין Vite config
-Vite לא מכיר את `test` property. אם שמים את הכל בvite.config.ts — Vercel נופל.
 - `vite.config.ts` — ללא שום אזכור ל-Vitest
 - `vitest.config.ts` — עם `/// <reference types="vitest" />` ו-`import { defineConfig } from 'vitest/config'`
 
 ---
 
-## 2. בדיקות (Vitest)
+## 2. i18n — כללי חובה
 
-### 2.1 הגדר `include` ב-vitest.config.ts — אחרת Vitest מרים קבצי Playwright
+### 2.1 כל string בממשק עובר דרך `t(lang, key)` — ללא יוצא מן הכלל
+
 ```ts
-test: {
-  include: ['src/test/**/*.test.{ts,tsx}'],  // חובה! בלי זה e2e/*.spec.ts נכלל
-}
+// ❌ ternary inline — גם אם נראה נוח
+showToast(lang === 'he' ? 'הפרופיל נשמר' : 'Profile saved', 'success')
+const label = lang === 'he' ? 'ירידה של ~' : '~'
+
+// ✅ תמיד דרך t()
+showToast(t(lang, 'profileSaved'), 'success')
+const label = t(lang, 'weightLossOf')
 ```
 
-### 2.2 localStorage.clear() לא עובד בסביבת jsdom — הוסף mock ב-setup.ts
+**לסטרינגים דינמיים** (עם ערכים מוטמעים): חלק את הstring לחלקים סטטיים בi18n + הרכב בקומפוננט:
 ```ts
-// src/test/setup.ts — חובה להוסיף
-const _store: Record<string, string> = {}
-const localStorageMock: Storage = {
-  getItem:    key       => _store[key] ?? null,
-  setItem:    (key, v)  => { _store[key] = String(v) },
-  removeItem: key       => { delete _store[key] },
-  clear:      ()        => { Object.keys(_store).forEach(k => delete _store[k]) },
-  key:        i         => Object.keys(_store)[i] ?? null,
-  get length()          { return Object.keys(_store).length },
-}
-Object.defineProperty(window, 'localStorage', { value: localStorageMock })
+// ✅ הרכבה נכונה של string דינמי
+`${t(lang, 'weightLossOf')}${weightGrams}${t(lang, 'gramsSuffix')}`
+// → עברית: "ירידה של ~150גרם" | אנגלית: "~150g"
 ```
 
-### 2.3 Supabase mock — pattern לbuildablechain
-כל שאילתת Supabase היא chain שניתן לawait. המock צריך להיות thenable:
+### 2.2 כל key חייב להופיע בשתי השפות — תמיד בו-זמנית
 ```ts
-function makeChain(res: { data?: unknown; error?: unknown } = {}) {
-  const resolved = { data: res.data ?? null, error: res.error ?? null }
-  const chain = {
-    select: vi.fn().mockReturnThis(),
-    insert: vi.fn().mockReturnThis(),
-    update: vi.fn().mockReturnThis(),
-    delete: vi.fn().mockReturnThis(),
-    upsert: vi.fn().mockReturnThis(),
-    eq:     vi.fn().mockReturnThis(),
-    is:     vi.fn().mockReturnThis(),
-    order:  vi.fn().mockReturnThis(),
-    single: vi.fn(() => Promise.resolve(resolved)),
-    then(onFulfilled: (v: unknown) => unknown, onRejected?: (e: unknown) => unknown) {
-      return Promise.resolve(resolved).then(onFulfilled, onRejected)
-    },
-  }
-  return chain
-}
-```
-השתמש ב-`vi.resetAllMocks()` בין בדיקות (לא `vi.clearAllMocks`) — reset מנקה גם implementations.
-
-### 2.4 factory functions לסוגי נתונים — כולל כל השדות הנדרשים
-```ts
-// ❌ Meal factory חסר שדות → TS error בבילד
-function fakeMeal(): Meal { return { id: '1', name: 'Chicken', calories: 165 } }
-
-// ✅ כל שדה של הtype חייב להיות נוכח
-function fakeMeal(overrides: Partial<Meal> = {}): Meal {
-  return {
-    id: 'meal-1', user_id: 'user-1', date: '2026-04-26',
-    name: 'Chicken', calories: 165, protein: 31, grams: 100,
-    meal_type: 'lunch', time_logged: '12:00:00',
-    created_at: new Date().toISOString(),
-    fluid_ml: null, fluid_excluded: false,
-    ...overrides,
-  }
-}
-```
-
-### 2.5 כשיש מספר elements עם אותו טקסט — השתמש ב-getAllBy
-```ts
-// ❌ נופל כשגם calories וגם protein מציגים "0"
-expect(screen.getByText('0')).toBeInTheDocument()
-
-// ✅
-expect(screen.getAllByText('0').length).toBeGreaterThanOrEqual(2)
-```
-
----
-
-## 3. i18n — כללי חובה
-
-### 3.1 כל key חייב להופיע בשתי השפות (he + en) — תמיד בו-זמנית
-```ts
-// ❌ הוספת key רק בעברית → test symmetry נופל
-he: { aiErrorRateLimit: 'יותר מדי בקשות' }
+// ❌ key רק בעברית → test symmetry נופל
+he: { newKey: 'ערך' }
 en: { /* חסר! */ }
 
 // ✅ תמיד שתיהן יחד
-he: { aiErrorRateLimit: 'יותר מדי בקשות — נסה שוב בעוד כמה שניות' }
-en: { aiErrorRateLimit: 'Too many requests — try again in a few seconds' }
+he: { newKey: 'ערך' }
+en: { newKey: 'value' }
 ```
 
-### 3.2 אסור להשתמש ב-apostrophe (') בתוך string עם single quotes
+### 2.3 אסור להשתמש ב-apostrophe בתוך single quotes
 ```ts
-// ❌ Parse error! ה-' של "today's" סוגר את ה-string
-it('duplicateMeal calls insert with today's date', ...)
+// ❌ Parse error
+it('calls insert with today's date', ...)
 
-// ✅ שנה ל-double quotes כשיש apostrophe
-it("duplicateMeal calls insert with today's date", ...)
+// ✅
+it("calls insert with today's date", ...)
 ```
 
 ---
 
-## 4. Error Handling — פטרן נכון
+## 3. Design System — CSS Tokens
 
-### 4.1 typed errors — לא swallowing גנרי
+### 3.1 אין rgba() ישיר בקומפוננט — תמיד token מ-index.css
+
 ```ts
-// ❌ כל שגיאה הופכת ל-'network' — מאבדים מידע
-} catch {
-  setAiError('network')
-}
+// ❌ hardcoded — לא משתנה עם theme
+border: 'rgba(59,130,246,0.35)'
+color: '#fff'
+background: 'rgba(0,0,0,0.5)'
 
-// ✅ typed error classes שמתפשטות מעלה
+// ✅ tokens — theme-aware
+border: 'var(--blue-border)'
+color: 'var(--on-color)'       // לבן על רקע צבעוני (כפתורים, badges)
+background: 'var(--backdrop)'
+```
+
+אם token מתאים לא קיים — מוסיפים ל-`index.css` ולא כותבים inline.
+
+### 3.2 Scale צבעים קיים — השתמש לפי עוצמה
+| token | שימוש |
+|---|---|
+| `--*-fill` | רקע כרטיס עדין מאוד |
+| `--*-tint` | רקע chip/badge |
+| `--*-select` | רקע selected state |
+| `--*-glow` | box-shadow glow |
+| `--*-border` | border רגיל |
+| `--*-border-hi` | border active/focus |
+| `--*-hi` | טקסט/אייקון צבעוני |
+
+קיים ל: `--blue-*`, `--green-*`, `--red-*`, `--amber-*`, `--cyan-*`, `--indigo-*`
+
+### 3.3 Z-index — scale קבוע
+```
+--z-sticky: 10   --z-fab: 40   --z-dropdown: 50
+--z-backdrop: 99  --z-sheet: 100  --z-toast: 300
+```
+בinline styles של React — השתמש במספר (`zIndex: 100`) עם comment.
+
+### 3.4 היררכיית ניווט — שלוש רמות
+| רמה | שימוש | עיצוב |
+|---|---|---|
+| ראשי (Tab bar) | היום / היסטוריה | `var(--blue)` מלא, טקסט לבן |
+| משני (Toggle) | שבוע / חודש | blue tint pill, עדין |
+| שלישוני (In-card) | cal/prot/fluid בגרף | צבע ראשי — שולט על הגרף |
+
+---
+
+## 4. לוגיקה וחישובים — כללי ארכיטקטורה
+
+### 4.1 לוגיקה חישובית = פונקציה טהורה ב-`src/lib/calculations.ts`
+
+```ts
+// ❌ לוגיקה inline בתוך useMemo — לא ניתנת לבדיקה, לא ניתנת לשיתוף
+const goalStreak = useMemo(() => {
+  const byDate = new Map<string, number>()
+  meals.forEach(m => { ... })
+  // 15 שורות קוד...
+}, [meals, getGoalForDate])
+
+// ✅ פונקציה טהורה + useMemo קצר
+const goalStreak = useMemo(() => calcGoalStreak(meals, getGoalForDate), [meals, getGoalForDate])
+```
+
+כל פונקציה ב-`calculations.ts` חייבת טסט ב-`src/test/calculations.test.ts`.
+
+### 4.2 אל תשכפל לוגיקה — בדוק ב-`calculations.ts` לפני שכותבים מחדש
+
+### 4.3 בדיקת סימן בחישובי גירעון/עודף — שים לב לכיוון
+
+```ts
+// dailyDiff = tdee - goal
+// positive dailyDiff = גירעון (אוכל פחות מ-TDEE) → ירידה במשקל
+// negative dailyDiff = עודף (אוכל יותר מ-TDEE) → עלייה במשקל
+// kgDiff = target - current
+// negative kgDiff = רוצה לרדת | positive kgDiff = רוצה לעלות
+
+// ✅ תנאי תקינות: כיוונים הפוכים = תקין (גירעון + ירידה, עודף + עלייה)
+if (Math.sign(dailyDiff) === Math.sign(kgDiff)) return null // כיוון שגוי
+```
+
+---
+
+## 5. קומפוננטות — כללי מבנה
+
+### 5.1 קומפוננטה עם hooks = function מוכרזת ב-module level
+
+```tsx
+// ❌ IIFE עם hooks בתוך JSX — שובר את חוקי React Hooks
+{(() => {
+  const [val, setVal] = React.useState(false)
+  return <div>...</div>
+})()}
+
+// ✅ קומפוננטה רגילה
+function MySection({ lang }: { lang: Lang }) {
+  const [val, setVal] = useState(false)
+  return <div>...</div>
+}
+// ואז בJSX: <MySection lang={lang} />
+```
+
+### 5.2 State שניתן לגזור — אל תשמור כstate
+
+```ts
+// ❌ state כפול
+const [totalCal, setTotalCal] = useState(0)
+useEffect(() => setTotalCal(meals.reduce(...)), [meals])
+
+// ✅ נגזר ישירות
+const totalCal = meals.reduce((s, m) => s + m.calories, 0)
+```
+
+---
+
+## 6. אבטחה
+
+### 6.1 CSV export — עטוף כל שדה string במרכאות
+
+```ts
+// ❌ שדות string ללא עטיפה — פגיע ל-formula injection
+m.date, m.meal_type, m.time_logged
+
+// ✅ כל string עטוף
+`"${m.date}"`, `"${m.meal_type}"`, `"${m.time_logged}"`
+// שדות חופשיים (name, notes) — גם escape של מרכאות פנימיות:
+`"${(m.name ?? '').replace(/"/g, '""')}"`
+```
+
+### 6.2 שאילתות Supabase — תמיד דרך query builder (לא raw SQL עם string interpolation)
+
+---
+
+## 7. בדיקות (Vitest)
+
+### 7.1 כל לוגיקה חישובית חדשה — טסטים לפני deploy
+
+מינימום לכל פונקציה חישובית:
+- מקרה בסיסי תקין
+- קלט ריק / אפס
+- ערך גבולי (boundary)
+- מקרה שגוי שצריך להחזיר null/0
+
+### 7.2 הגדר `include` ב-vitest.config.ts
+```ts
+test: { include: ['src/test/**/*.test.{ts,tsx}'] }
+```
+
+### 7.3 localStorage mock ב-setup.ts — חובה לסביבת jsdom
+(ראה setup.ts הקיים — אין לשנות)
+
+### 7.4 Supabase mock — chain thenable
+(ראה pattern הקיים ב-`src/test/hooks/`)
+
+### 7.5 factory functions לכל type — כולל כל השדות
+```ts
+function fakeMeal(overrides: Partial<Meal> = {}): Meal {
+  return { id: 'meal-1', user_id: 'u-1', date: '2026-05-10',
+    meal_type: 'lunch', name: 'Chicken', grams: 100,
+    calories: 300, protein: 30, fat: null, carbs: null, notes: null,
+    time_logged: '12:00:00', created_at: new Date().toISOString(),
+    fluid_ml: null, fluid_excluded: false, ...overrides }
+}
+```
+
+---
+
+## 8. Error Handling
+
+### 8.1 Typed errors — לא swallowing גנרי
+```ts
+// ✅ pattern
 export class AiNetworkError   extends Error {}
 export class AiRateLimitError extends Error {}
 export class AiParseError     extends Error {}
 
-// בcalculator — רק typed errors מתפשטות, שאר נבלעות
-} catch (err) {
-  if (err instanceof AiNetworkError || err instanceof AiRateLimitError || err instanceof AiParseError) throw err
-}
-
 // בcomponent — map לstate
-} catch (err) {
-  setAiError(err instanceof AiRateLimitError ? 'rateLimit' : err instanceof AiParseError ? 'parseError' : 'network')
-}
+setAiError(
+  err instanceof AiRateLimitError ? 'rateLimit'
+  : err instanceof AiParseError  ? 'parseError'
+  : 'network'
+)
 ```
 
-### 4.2 HTTP status codes — בדוק לפני json()
+### 8.2 HTTP — בדוק status לפני json()
 ```ts
-// ❌ json() יכול לזרוק אם body לא valid JSON
-const data = await res.json()
-
-// ✅
 let data: Record<string, unknown>
 try { data = await res.json() } catch { throw new AiParseError() }
 ```
 
 ---
 
-## 5. Playwright E2E
+## 9. ארכיטקטורה — מה לשמור
 
-### 5.1 strict mode — locator חד-משמעי
-```ts
-// ❌ נופל אם יש 2 כפתורים עם שם דומה
-await page.getByRole('button', { name: /Sign In/i }).click()
-
-// ✅ השתמש ב-first() או exact: true
-await page.getByRole('button', { name: 'Sign In' }).first().click()
-await page.getByRole('button', { name: 'Sign In', exact: true }).click()
-// או
-await page.locator('button[aria-label="הוסף ארוחה"]').click()
-```
-
-### 5.2 mock Supabase session — pattern לbehavior אמיתי בלי credentials
-```ts
-// 1. Inject session לפני טעינת דף (addInitScript רץ לפני scripts)
-await page.addInitScript(({ key, session }) => {
-  localStorage.setItem(key, JSON.stringify(session))
-}, { key: 'sb-{PROJECT_REF}-auth-token', session: MOCK_SESSION })
-
-// 2. Mock REST API
-await page.route('https://{PROJECT}.supabase.co/rest/v1/**', async route => {
-  await route.fulfill({ status: 200, contentType: 'application/json', body: '[]' })
-})
-
-// 3. Mock auth token refresh
-await page.route('https://{PROJECT}.supabase.co/auth/v1/**', async route => {
-  await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(MOCK_SESSION) })
-})
-```
-
-### 5.3 MOCK_SESSION.expires_at — חייב להיות בעתיד
-```ts
-const MOCK_SESSION = {
-  expires_at: Math.floor(Date.now() / 1000) + 3600, // שעה קדימה — SDK לא ינסה refresh
-  // ...
-}
-```
-
-### 5.4 Hebrew text בselector — exact string, לא regex עם אסטריסק
-```ts
-// ❌ עלול להכשל בגלל encoding
-page.getByText(/עדיין לא הוספת|no meals/i)
-
-// ✅ exact string מהi18n
-page.getByText('לא נוספו ארוחות היום')
-```
-
----
-
-## 6. Vercel Deploy
-
-### 6.1 Vercel לא מחובר ל-GitHub — deploy ידני חובה אחרי כל push
-```bash
-npx vercel --prod
-```
-זה הפקודה היחידה שמעדכנת production. `git push` לבד לא מספיק.
-
-### 6.2 בדוק `tsc -b` מקומית לפני vercel --prod
-```bash
-npx tsc -b && echo "✅ ready to deploy"
-```
-Vercel נופל על TS errors שlocal editor לפעמים מסתיר.
-
----
-
-## 7. ארכיטקטורה — מה לשמור
-
-- **hook structure**: useMeals, useProfile, useGoals, useFoodHistory, useComposedGroups — לא לשנות את המבנה, רק להרחיב
-- **i18n pattern**: `t(lang, key)` + `dir(lang)` — לא להוסיף ternaries חדשים בלי להוסיף key ל-i18n.ts
-- **Supabase Realtime**: כל hook מנהל channel משלו על טבלה שלו — זה נכון, לא לאחד
+- **hooks**: `useMeals`, `useProfile`, `useGoals`, `useFoodHistory`, `useComposedGroups`, `useWeightLog` — לא לשנות את המבנה, רק להרחיב. hook חדש = אותו pattern.
+- **i18n**: `t(lang, key)` + `dir(lang)` — לא ternaries חדשים
+- **Supabase Realtime**: כל hook מנהל channel משלו — לא לאחד
 - **Error Boundaries**: כל tab עטוף ב-boundary עם `label` + `lang` props
-- **React.lazy**: HistoryTab ו-SettingsSheet בלבד — כבדים מספיק להצדיק
-- **AppContext**: `lang`, `theme`, `toggleLang`, `toggleTheme` — להעביר כאן, לא כprops
+- **React.lazy**: HistoryTab ו-SettingsSheet בלבד
+- **AppContext**: `lang`, `theme`, `styleMode` — להעביר כאן, לא כprops
+- **calculations.ts**: כל לוגיקה חישובית טהורה כאן
 
 ---
 
-## 8. Design System — CSS Tokens
+## 10. Mobile / iOS
 
-### 8.1 אל תכתוב rgba() ישירות בקומפוננט — תמיד הוסף token ל-index.css
-```ts
-// ❌ hardcoded — לא ניתן לשנות בצורה מרוכזת
-border: 'rgba(59,130,246,0.35)'
-
-// ✅ CSS token — משתנה עם הtheme, ניתן לשינוי ממקום אחד
-border: 'var(--blue-border)'
-```
-
-### 8.2 Scale קיים — השתמש לפי עוצמה
-| אופציות blue | ערך | שימוש |
-|---|---|---|
-| `--blue-fill` | 0.07 | רקע כרטיס עדין מאוד |
-| `--blue-tint` | 0.10 | רקע chip/badge |
-| `--blue-chip` | 0.12 | רקע chip בינוני |
-| `--blue-select` | 0.18 | רקע selected state |
-| `--blue-glow` | 0.25 | border עדין / box-shadow glow |
-| `--blue-border` | 0.35 | border רגיל |
-| `--blue-border-hi` | 0.40 | border active/focus |
-
-אותו pattern קיים ל-`--green-*`, `--red-*`, `--amber-*`, `--indigo-*`.
-
-### 8.3 תמיד השתמש ב-token לאלמנטים על רקע צבעוני
-```ts
-// ❌ לא ברור אם זה נכון ב-light mode
-color: '#fff'
-
-// ✅ תמיד לבן על רקע צבעוני (כפתורי brand, badges)
-color: 'var(--on-color)'
-
-// ✅ עיגול toggle switch (תמיד לבן)
-background: 'var(--toggle-knob)'
-```
-
-### 8.4 Z-index — השתמש ב-scale במקום מספרים קסומים
-```css
-/* ב-CSS */
-z-index: var(--z-sheet);   /* 100 */
-z-index: var(--z-toast);   /* 300 */
-
-/* הscale המלא (מוגדר ב-:root ב-index.css) */
---z-sticky:   10;  /* sticky header */
---z-fab:      40;  /* floating action button */
---z-dropdown: 50;  /* dropdown/tooltip */
---z-backdrop: 99;  /* modal backdrop */
---z-sheet:   100;  /* bottom sheet */
---z-toast:   300;  /* toast notification */
-```
-בinline styles של React, השתמש במספר הישיר (`zIndex: 100`) — CSS vars לא עובדים ב-JS inline styles. תיעד את הscale בcomment.
+### 10.1 כל `<input>` ו-`<select>` — `fontSize: 16` מינימום
+iOS Safari מזום אוטומטית כשfont-size < 16px. מחלקת `.inp` כבר מגדירה זאת — אין לדרוס.
 
 ---
 
-## 9. Mobile / iOS — כללים קריטיים
+## 11. Vercel Deploy
 
-### 9.1 כל `<input>` ו-`<select>` חייבים `font-size: 16px` מינימום — מניעת iOS auto-zoom
-iOS Safari מזום אוטומטית כאשר input מקבל focus עם `font-size < 16px`. אין דרך לבטל זאת בCSS — הפתרון היחיד הוא להבטיח ≥16px על כל שדה.
-
-```ts
-// ❌ גורם לזום ב-iOS — כולל בתוך inline style
-<input style={{ fontSize: 14 }} />
-<select style={{ fontSize: 13 }} />
-
-// ✅ תמיד 16px מינימום
-<input style={{ fontSize: 16 }} />
-<select style={{ fontSize: 16 }} />
+```bash
+npx tsc -b && npx vitest run && npx vercel --prod
 ```
 
-**כלל פשוט:** מחלקת `.inp` מוגדרת כברירת מחדל עם `font-size: 16px`. אין לדרוס אותה עם ערך קטן יותר ב-inline style. אם צריך תצוגה קטנה — עשה זאת על ה-wrapper/label, לא על ה-input עצמו.
+- Vercel **לא** מחובר ל-GitHub — deploy ידני חובה
+- `git push` לבד לא מעדכן production
