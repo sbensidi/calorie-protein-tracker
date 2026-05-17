@@ -7,6 +7,7 @@ import type { Lang, MealTypeKey } from '../lib/i18n'
 import { t, dir, formatDate, today, HE_MONTHS, EN_MONTHS } from '../lib/i18n'
 import { DonutProgress } from './DonutProgress'
 import type { ComposedEntry } from './FoodEntryForm'
+import { calcMealTypeDistribution, calcMacroBreakdown } from '../lib/calculations'
 
 // ── Constants ────────────────────────────────────────────────────────
 
@@ -1974,70 +1975,84 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
               )}
             </div>}
 
-            {/* ── Meal timing insights ──────────────────────────────────────── */}
+            {/* ── Calorie distribution by meal type ────────────────────────── */}
             {(() => {
               const periodDates = statsPeriod === 'week' ? last7 : last30
               if (periodDates.length === 0) return null
-
               const periodMeals = periodDates.flatMap(d => grouped.get(d)?.meals ?? [])
-                .filter(m => m.time_logged)
-
-              if (periodMeals.length === 0) return null
-
-              // Convert "HH:MM:SS" to minutes since midnight
-              const toMins = (t: string) => {
-                const [h, m] = t.split(':').map(Number)
-                return h * 60 + (m || 0)
-              }
-              const fmtTime = (mins: number) => {
-                const h = Math.floor(mins / 60) % 24
-                const m = Math.round(mins % 60)
-                return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
-              }
-
-              const byType: Record<string, number[]> = {}
-              for (const m of periodMeals) {
-                if (!byType[m.meal_type]) byType[m.meal_type] = []
-                byType[m.meal_type].push(toMins(m.time_logged))
-              }
-
-              const typeOrder = ['breakfast', 'lunch', 'dinner', 'snack', 'beverage']
-              const typeLabels: Record<string, string> = {
-                breakfast: t(lang, 'breakfast'),
-                lunch:     t(lang, 'lunch'),
-                dinner:    t(lang, 'dinner'),
-                snack:     t(lang, 'snack'),
-                beverage:  t(lang, 'beverage'),
-              }
+              const dist = calcMealTypeDistribution(periodMeals)
+              if (dist.length === 0) return null
               const typeColors: Record<string, string> = {
                 breakfast: 'var(--warning)', lunch: 'var(--accent-hi)',
                 dinner: 'var(--positive-hi)', snack: 'var(--text-2)', beverage: 'var(--cyan-hi)',
               }
-
-              const avgMins = (arr: number[]) => Math.round(arr.reduce((s, v) => s + v, 0) / arr.length)
-
-              const rows = typeOrder.filter(t => byType[t]?.length).map(type => ({
-                type, label: typeLabels[type], color: typeColors[type],
-                avg: fmtTime(avgMins(byType[type])),
-                count: byType[type].length,
-              }))
-
-              if (rows.length === 0) return null
-
               return (
                 <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: '12px 14px' }}>
                   <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.07em', margin: '0 0 10px' }}>
-                    {t(lang, 'mealTiming')}
+                    {t(lang, 'calorieBreakdown')}
                   </p>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                    {rows.map(r => (
-                      <div key={r.type} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <span style={{ fontSize: 11, fontWeight: 600, color: r.color, flex: 1 }}>{r.label}</span>
-                        <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>{r.avg}</span>
-                        <span style={{ fontSize: 10, color: 'var(--text-3)', minWidth: 30, textAlign: 'end' }}>×{r.count}</span>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {dist.map(r => (
+                      <div key={r.type}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
+                          <span style={{ fontSize: 12, fontWeight: 600, color: typeColors[r.type] ?? 'var(--text-2)' }}>
+                            {t(lang, r.type as 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'beverage')}
+                          </span>
+                          <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>
+                            {r.pct}%
+                          </span>
+                        </div>
+                        <div style={{ height: 5, borderRadius: 3, background: 'var(--bg-2)', overflow: 'hidden' }}>
+                          <div style={{ height: '100%', width: `${r.pct}%`, background: typeColors[r.type] ?? 'var(--text-2)', borderRadius: 3 }} />
+                        </div>
                       </div>
                     ))}
                   </div>
+                </div>
+              )
+            })()}
+
+            {/* ── Macro breakdown (אבות המזון) ──────────────────────────────── */}
+            {(() => {
+              const periodDates = statsPeriod === 'week' ? last7 : last30
+              if (periodDates.length === 0) return null
+              const periodMeals = periodDates.flatMap(d => grouped.get(d)?.meals ?? [])
+              const macro = calcMacroBreakdown(periodMeals)
+              if (macro.totalKcal === 0) return null
+              return (
+                <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: '12px 14px' }}>
+                  <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.07em', margin: '0 0 10px' }}>
+                    {t(lang, 'nutritionBreakdown')}
+                  </p>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {[
+                      { key: 'protein' as const, label: t(lang, 'protein'), color: 'var(--accent-hi)', pct: macro.proteinPct },
+                      ...(macro.hasFatCarbs ? [
+                        { key: 'fat' as const, label: t(lang, 'fat'), color: 'var(--amber-hi)', pct: macro.fatPct },
+                        { key: 'carbs' as const, label: t(lang, 'carbs'), color: 'var(--green-hi)', pct: macro.carbsPct },
+                      ] : []),
+                    ].map(row => (
+                      <div key={row.key}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
+                          <span style={{ fontSize: 12, fontWeight: 600, color: row.color }}>{row.label}</span>
+                          <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>{row.pct}%</span>
+                        </div>
+                        <div style={{ height: 5, borderRadius: 3, background: 'var(--bg-2)', overflow: 'hidden' }}>
+                          <div style={{ height: '100%', width: `${row.pct}%`, background: row.color, borderRadius: 3 }} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  {!macro.hasFatCarbs && (
+                    <p style={{ fontSize: 10, color: 'var(--text-3)', margin: '8px 0 0', lineHeight: 1.4 }}>
+                      {t(lang, 'partialMacroData')}
+                    </p>
+                  )}
+                  {macro.hasFatCarbs && macro.coverage < 1 && (
+                    <p style={{ fontSize: 10, color: 'var(--text-3)', margin: '8px 0 0', lineHeight: 1.4 }}>
+                      {t(lang, 'basedOnCoverage').replace('{pct}', Math.round(macro.coverage * 100).toString())}
+                    </p>
+                  )}
                 </div>
               )
             })()}

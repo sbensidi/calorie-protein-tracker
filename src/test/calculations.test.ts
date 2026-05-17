@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { calcBMR, calcDailyTdee, calcWeeklyTdee, calcGoalStreak, calcProjectedDays } from '../lib/calculations'
+import { calcBMR, calcDailyTdee, calcWeeklyTdee, calcGoalStreak, calcProjectedDays, calcMealTypeDistribution, calcMacroBreakdown } from '../lib/calculations'
 import type { UserProfile } from '../hooks/useProfile'
 import type { Meal } from '../types'
 
@@ -212,5 +212,127 @@ describe('calcProjectedDays', () => {
     // kgDiff=0 → sign=0, dailyDiff=500 → sign=1 → 0 !== 1 → proceed → days=0
     // Actually sign(0) = 0, sign(500) = 1 → not equal → don't return null → 0 days
     expect(calcProjectedDays(80, 80, 2000, 1500)).toBe(0)
+  })
+})
+
+// ── calcMealTypeDistribution ──────────────────────────────────────────────────
+
+describe('calcMealTypeDistribution', () => {
+  it('returns empty array when no meals', () => {
+    expect(calcMealTypeDistribution([])).toEqual([])
+  })
+
+  it('returns empty array when all calories are 0', () => {
+    const meals = [makeMeal({ calories: 0 }), makeMeal({ id: '2', calories: 0 })]
+    expect(calcMealTypeDistribution(meals)).toEqual([])
+  })
+
+  it('single meal type: 100%', () => {
+    const meals = [makeMeal({ meal_type: 'lunch', calories: 400 })]
+    const result = calcMealTypeDistribution(meals)
+    expect(result).toHaveLength(1)
+    expect(result[0]).toMatchObject({ type: 'lunch', pct: 100 })
+  })
+
+  it('two meal types: proportional percentages', () => {
+    const meals = [
+      makeMeal({ id: '1', meal_type: 'breakfast', calories: 300 }),
+      makeMeal({ id: '2', meal_type: 'lunch',     calories: 700 }),
+    ]
+    const result = calcMealTypeDistribution(meals)
+    expect(result).toHaveLength(2)
+    const byType = Object.fromEntries(result.map(r => [r.type, r.pct]))
+    expect(byType.breakfast).toBe(30)
+    expect(byType.lunch).toBe(70)
+  })
+
+  it('sorts by descending calorie contribution', () => {
+    const meals = [
+      makeMeal({ id: '1', meal_type: 'breakfast', calories: 200 }),
+      makeMeal({ id: '2', meal_type: 'dinner',    calories: 800 }),
+      makeMeal({ id: '3', meal_type: 'snack',     calories: 100 }),
+    ]
+    const result = calcMealTypeDistribution(meals)
+    expect(result.map(r => r.type)).toEqual(['dinner', 'breakfast', 'snack'])
+  })
+
+  it('accumulates multiple meals of the same type', () => {
+    const meals = [
+      makeMeal({ id: '1', meal_type: 'lunch', calories: 300 }),
+      makeMeal({ id: '2', meal_type: 'lunch', calories: 200 }),
+    ]
+    const result = calcMealTypeDistribution(meals)
+    expect(result).toHaveLength(1)
+    expect(result[0]).toMatchObject({ type: 'lunch', kcal: 500, pct: 100 })
+  })
+
+  it('omits types with 0 calories', () => {
+    const meals = [
+      makeMeal({ id: '1', meal_type: 'breakfast', calories: 0 }),
+      makeMeal({ id: '2', meal_type: 'lunch',     calories: 500 }),
+    ]
+    const result = calcMealTypeDistribution(meals)
+    expect(result).toHaveLength(1)
+    expect(result[0].type).toBe('lunch')
+  })
+})
+
+// ── calcMacroBreakdown ────────────────────────────────────────────────────────
+
+describe('calcMacroBreakdown', () => {
+  it('returns zero breakdown for empty meals', () => {
+    const result = calcMacroBreakdown([])
+    expect(result.totalKcal).toBe(0)
+    expect(result.hasFatCarbs).toBe(false)
+  })
+
+  it('protein-only when fat/carbs missing (coverage=0)', () => {
+    // 30g protein × 4 = 120 kcal → 100%
+    const meals = [makeMeal({ protein: 30, fat: null, carbs: null })]
+    const result = calcMacroBreakdown(meals)
+    expect(result.hasFatCarbs).toBe(false)
+    expect(result.proteinPct).toBe(100)
+    expect(result.fatPct).toBe(0)
+    expect(result.carbsPct).toBe(0)
+  })
+
+  it('includes fat and carbs when coverage ≥ 50%', () => {
+    // 30g prot → 120 kcal, 10g fat → 90 kcal, 25g carbs → 100 kcal = 310 total
+    const meals = [makeMeal({ protein: 30, fat: 10, carbs: 25 })]
+    const result = calcMacroBreakdown(meals)
+    expect(result.hasFatCarbs).toBe(true)
+    expect(result.proteinPct).toBe(Math.round(120 / 310 * 100))
+    expect(result.fatPct).toBe(Math.round(90 / 310 * 100))
+    expect(result.carbsPct).toBe(Math.round(100 / 310 * 100))
+  })
+
+  it('coverage < 50%: hasFatCarbs is false', () => {
+    // 1 out of 3 meals has fat/carbs → 33%
+    const meals = [
+      makeMeal({ id: '1', protein: 20, fat: 10, carbs: 20 }),
+      makeMeal({ id: '2', protein: 20, fat: null, carbs: null }),
+      makeMeal({ id: '3', protein: 20, fat: null, carbs: null }),
+    ]
+    const result = calcMacroBreakdown(meals)
+    expect(result.hasFatCarbs).toBe(false)
+    expect(result.coverage).toBeCloseTo(1 / 3)
+  })
+
+  it('coverage exactly 50%: hasFatCarbs is true', () => {
+    const meals = [
+      makeMeal({ id: '1', protein: 20, fat: 5, carbs: 10 }),
+      makeMeal({ id: '2', protein: 20, fat: null, carbs: null }),
+    ]
+    const result = calcMacroBreakdown(meals)
+    expect(result.hasFatCarbs).toBe(true)
+    expect(result.coverage).toBe(0.5)
+  })
+
+  it('pct values are whole numbers (no fractions)', () => {
+    const meals = [makeMeal({ protein: 25, fat: 8, carbs: 30 })]
+    const result = calcMacroBreakdown(meals)
+    expect(result.proteinPct % 1).toBe(0)
+    expect(result.fatPct % 1).toBe(0)
+    expect(result.carbsPct % 1).toBe(0)
   })
 })
