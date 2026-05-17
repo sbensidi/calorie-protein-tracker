@@ -41,12 +41,16 @@ interface DayPanelProps {
   onChangeProt:   (v: string) => void
   onChangeFluid:  (v: string) => void
   onReset:        () => void
+  onClearCal?:    () => void
+  onClearProt?:   () => void
+  onClearFluid?:  () => void
 }
 
 function DayPanel({
   dayKey, compact = false, lang, todayKey,
   isCustom, calVal, protVal, fluidVal, calDiff, protDiff, fluidDiff,
   onChangeCal, onChangeProt, onChangeFluid, onReset,
+  onClearCal, onClearProt, onClearFluid,
 }: DayPanelProps) {
   const isToday = dayKey === todayKey
 
@@ -91,12 +95,18 @@ function DayPanel({
             </label>
           )}
           <div style={{ position: 'relative' }}>
+            {!compact && calDiff && onClearCal && (
+              <button onMouseDown={e => { e.preventDefault(); onClearCal() }} tabIndex={-1}
+                style={{ position: 'absolute', insetInlineStart: 0, top: 0, bottom: 0, width: 24, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <span className="icon icon-sm">close</span>
+              </button>
+            )}
             <input
               type="number"
               inputMode="numeric"
               className="inp"
               aria-label={t(lang, 'calories')}
-              style={{ height: compact ? 38 : undefined, paddingInlineEnd: calDiff ? 52 : undefined }}
+              style={{ height: compact ? 38 : undefined, paddingInlineStart: (!compact && calDiff && onClearCal) ? 24 : undefined, paddingInlineEnd: calDiff ? 52 : undefined }}
               value={calVal === 0 ? '' : calVal}
               placeholder="0"
               onFocus={e => e.target.select()}
@@ -120,12 +130,18 @@ function DayPanel({
             </label>
           )}
           <div style={{ position: 'relative' }}>
+            {!compact && protDiff && onClearProt && (
+              <button onMouseDown={e => { e.preventDefault(); onClearProt() }} tabIndex={-1}
+                style={{ position: 'absolute', insetInlineStart: 0, top: 0, bottom: 0, width: 24, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <span className="icon icon-sm">close</span>
+              </button>
+            )}
             <input
               type="number"
               inputMode="decimal"
               className="inp inp-green"
               aria-label={t(lang, 'protein')}
-              style={{ height: compact ? 38 : undefined, paddingInlineEnd: protDiff ? 52 : undefined }}
+              style={{ height: compact ? 38 : undefined, paddingInlineStart: (!compact && protDiff && onClearProt) ? 24 : undefined, paddingInlineEnd: protDiff ? 52 : undefined }}
               value={protVal === 0 ? '' : protVal}
               placeholder="0"
               onFocus={e => e.target.select()}
@@ -149,12 +165,18 @@ function DayPanel({
             </label>
           )}
           <div style={{ position: 'relative' }}>
+            {!compact && fluidDiff && onClearFluid && (
+              <button onMouseDown={e => { e.preventDefault(); onClearFluid() }} tabIndex={-1}
+                style={{ position: 'absolute', insetInlineStart: 0, top: 0, bottom: 0, width: 24, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <span className="icon icon-sm">close</span>
+              </button>
+            )}
             <input
               type="number"
               inputMode="numeric"
               className="inp"
               aria-label={t(lang, 'fluid')}
-              style={{ height: compact ? 38 : undefined, paddingInlineEnd: fluidDiff ? 52 : undefined, borderColor: 'var(--accent-border)' }}
+              style={{ height: compact ? 38 : undefined, paddingInlineStart: (!compact && fluidDiff && onClearFluid) ? 24 : undefined, paddingInlineEnd: fluidDiff ? 52 : undefined, borderColor: 'var(--accent-border)' }}
               value={fluidVal === 0 ? '' : fluidVal}
               placeholder="0"
               onFocus={e => e.target.select()}
@@ -986,6 +1008,19 @@ function GoalsScreen({ lang, profile, goals, onSave, onSaveProfile, onSaveFluidG
     })
   }
 
+  const clearDayField = (dayKey: DayKey, field: 'calories' | 'protein' | 'fluid') => {
+    const idx = toWeekIndex(dayKey)
+    setOverrides(prev => {
+      const entry = prev[idx]
+      if (!entry) return prev
+      const next = { ...prev }
+      if (field === 'calories') next[idx] = { ...entry, calories: defCal }
+      else if (field === 'protein') next[idx] = { ...entry, protein: defProt }
+      else next[idx] = { ...entry, fluid_ml: defFluidGoal }
+      return next
+    })
+  }
+
   const resetDay = (dayKey: DayKey) => {
     const idx = toWeekIndex(dayKey)
     setOverrides(prev => { const n = { ...prev }; delete n[idx as keyof typeof n]; return n })
@@ -1320,6 +1355,9 @@ function GoalsScreen({ lang, profile, goals, onSave, onSaveProfile, onSaveFluidG
               onChangeProt={v => setDayOverride(selectedDay, 'protein', v)}
               onChangeFluid={v => setFluidDayOverride(selectedDay, v)}
               onReset={() => resetDay(selectedDay)}
+              onClearCal={() => clearDayField(selectedDay, 'calories')}
+              onClearProt={() => clearDayField(selectedDay, 'protein')}
+              onClearFluid={() => clearDayField(selectedDay, 'fluid')}
             />
           </>
         )}
