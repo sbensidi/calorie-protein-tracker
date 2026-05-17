@@ -64,7 +64,7 @@ function saveCollapsed(s: Set<MealType>) {
 
 // ── GreetingPanel ─────────────────────────────────────────────────
 function GreetingPanel({ greeting, lang, onDismiss }: {
-  greeting: { line1: string; line2: string }
+  greeting: { line1: string; line2: string; isJoke: boolean }
   lang: Lang
   onDismiss: () => void
 }) {
@@ -112,7 +112,7 @@ function GreetingPanel({ greeting, lang, onDismiss }: {
         <p style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', margin: '0 0 2px' }}>
           {greeting.line1}
         </p>
-        <p style={{ fontSize: 13, color: 'var(--text-2)', margin: 0, lineHeight: 1.45 }}>
+        <p style={{ fontSize: 13, color: 'var(--text-2)', margin: 0, lineHeight: 1.45, ...(greeting.isJoke ? { direction: 'ltr', textAlign: 'left' } : {}) }}>
           {greeting.line2}
         </p>
       </div>
@@ -883,8 +883,9 @@ export function TodayTab({
     hour, firstName, streak: goalStreak,
     calsConsumed, calsGoal: goalCalories,
     protConsumed, protGoal: goalProtein,
+    fluidMl: fluidTodayMl, fluidGoalMl,
     dayOfYear, lang,
-  }), [hour, firstName, goalStreak, calsConsumed, goalCalories, protConsumed, goalProtein, dayOfYear, lang])
+  }), [hour, firstName, goalStreak, calsConsumed, goalCalories, protConsumed, goalProtein, fluidTodayMl, fluidGoalMl, dayOfYear, lang])
 
   return (
     <div>

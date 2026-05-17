@@ -21,20 +21,23 @@ export interface MacroBreakdown {
 // ── getGreeting ───────────────────────────────────────────────────────────────
 
 export interface GreetingContext {
-  hour:         number
-  firstName:    string | null
-  streak:       number
-  calsConsumed: number
-  calsGoal:     number
-  protConsumed: number
-  protGoal:     number
-  dayOfYear:    number
-  lang:         'he' | 'en'
+  hour:          number
+  firstName:     string | null
+  streak:        number
+  calsConsumed:  number
+  calsGoal:      number
+  protConsumed:  number
+  protGoal:      number
+  fluidMl:       number
+  fluidGoalMl:   number
+  dayOfYear:     number
+  lang:          'he' | 'en'
 }
 
 export interface Greeting {
-  line1: string
-  line2: string
+  line1:  string
+  line2:  string
+  isJoke: boolean
 }
 
 function pick<T>(arr: readonly T[], day: number): T { return arr[day % arr.length] }
@@ -89,6 +92,16 @@ const PHRASES = {
       'תישן טוב — השינה חלק מהתהליך',
       'מה שנעשה נעשה. מחר מתחילים רענן',
     ],
+    fluidLow: [
+      'עוד לא שתית הרבה — כוס מים עכשיו תשנה את היום',
+      'הגוף שלך 60% מים — תזכיר לו את זה',
+      'מים לפני אכילה עוזרים לאכול פחות — נסה',
+      'כוס מים עכשיו, ואתה כבר על המסלול הנכון',
+    ],
+    fluidMet: [
+      'יעד הנוזלים הושג — הגוף שלך מרוצה',
+      'שתית מספיק היום — זה חלק חשוב מהתמונה',
+    ],
   },
   en: {
     morning:   ['Good morning', 'Morning', 'Good morning', 'Morning'],
@@ -139,6 +152,16 @@ const PHRASES = {
       'Sleep well — rest is part of the process',
       'What\'s done is done. Tomorrow starts fresh',
     ],
+    fluidLow: [
+      'Haven\'t had much water yet — a glass now changes the day',
+      'Your body is 60% water — remind it of that',
+      'Drinking water before meals can reduce calories by ~13%',
+      'A glass of water now and you\'re already on track',
+    ],
+    fluidMet: [
+      'Fluid goal reached — your body thanks you',
+      'Well hydrated today — that\'s part of the full picture',
+    ],
   },
 } as const
 
@@ -178,7 +201,7 @@ const JOKES = [
 ] as const
 
 export function getGreeting(ctx: GreetingContext): Greeting {
-  const { hour, firstName, streak, calsConsumed, calsGoal, protConsumed, protGoal, dayOfYear, lang } = ctx
+  const { hour, firstName, streak, calsConsumed, calsGoal, protConsumed, protGoal, fluidMl, fluidGoalMl, dayOfYear, lang } = ctx
   const p = PHRASES[lang]
 
   const timeWord =
@@ -190,23 +213,30 @@ export function getGreeting(ctx: GreetingContext): Greeting {
   const namePart = firstName ? `, ${firstName}` : ''
   const line1 = `${timeWord}${namePart}!`
 
-  const calsRemaining  = calsGoal - calsConsumed
-  const protRemaining  = Math.round(protGoal - protConsumed)
+  const calsRemaining = calsGoal - calsConsumed
+  const protRemaining = Math.round(protGoal - protConsumed)
+  const fluidPct      = fluidGoalMl > 0 ? fluidMl / fluidGoalMl : 0
+
+  // joke fires every 4 days, skipped at night
+  if (dayOfYear % 4 === 0 && hour < 21) {
+    return { line1, line2: `😄 ${pick(JOKES, Math.floor(dayOfYear / 4))}`, isJoke: true }
+  }
 
   let line2: string
-  if (dayOfYear % 1 === 0 && hour < 21) {
-    line2 = `😄 ${pick(JOKES, Math.floor(dayOfYear / 4))}`
-  } else if (hour >= 21) {
+  if (hour >= 21) {
     line2 = pick(p.nightLine2, dayOfYear + 7)
   } else if (calsConsumed === 0) {
-    const pool = hour < 12 ? p.noMealsMorning : p.noMealsLate
-    line2 = pick(pool, dayOfYear)
+    line2 = pick(hour < 12 ? p.noMealsMorning : p.noMealsLate, dayOfYear)
   } else if (calsConsumed > calsGoal) {
     line2 = pick(p.overGoal, dayOfYear)
   } else if (calsRemaining <= calsGoal * 0.1) {
     line2 = pick(p.goalMet, dayOfYear)
   } else if (streak >= 2) {
     line2 = pick(p.streak, dayOfYear).replace('{N}', String(streak))
+  } else if (fluidGoalMl > 0 && fluidPct >= 1) {
+    line2 = pick(p.fluidMet, dayOfYear)
+  } else if (fluidGoalMl > 0 && fluidPct < 0.4 && hour >= 10) {
+    line2 = pick(p.fluidLow, dayOfYear)
   } else if (protRemaining > 0 && protRemaining <= 25 && hour >= 17) {
     line2 = pick(p.underProt, dayOfYear).replace('{prot}', String(protRemaining))
   } else {
@@ -214,7 +244,7 @@ export function getGreeting(ctx: GreetingContext): Greeting {
       .replace('{cal}', String(Math.max(0, Math.round(calsRemaining))))
   }
 
-  return { line1, line2 }
+  return { line1, line2, isJoke: false }
 }
 
 const ACTIVITY_MULTIPLIERS = [1.2, 1.375, 1.55, 1.725, 1.9]
