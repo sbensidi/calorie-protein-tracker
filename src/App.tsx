@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useRef, useCallback, lazy, Suspense } fro
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from './lib/supabase'
 import { t, dir, today } from './lib/i18n'
+import { calcWeeklyTdee, calcGoalStreak } from './lib/calculations'
 import type { Lang, TranslationKey } from './lib/i18n'
 import { useAppContext } from './context/AppContext'
 import { useMeals } from './hooks/useMeals'
@@ -141,23 +142,18 @@ export default function App() {
   }, [deleteMeal, pruneMealId])
 
   // Weekly TDEE × 7 — for weight-impact row in HistoryTab
-  const weeklyTdee = useMemo(() => {
-    const { sex, age, height, weight, activityLevel } = profile
-    const bmr = 10 * weight + 6.25 * height - 5 * age + (sex === 'm' ? 5 : -161)
-    const multipliers = [1.2, 1.375, 1.55, 1.725, 1.9]
-    return Math.round(bmr * (multipliers[activityLevel] ?? 1.375)) * 7
-  }, [profile])
+  const weeklyTdee = useMemo(() => calcWeeklyTdee(profile), [profile])
 
   // CSV export: build and trigger download of all meals
   const handleExportCsv = useCallback(() => {
     const header = 'date,meal_type,name,grams,calories,protein,fat,carbs,notes,time_logged'
     const rows = meals.map(m => [
-      m.date, m.meal_type,
+      `"${m.date}"`, `"${m.meal_type}"`,
       `"${(m.name ?? '').replace(/"/g, '""')}"`,
       m.grams, m.calories, m.protein,
       m.fat ?? '', m.carbs ?? '',
       `"${(m.notes ?? '').replace(/"/g, '""')}"`,
-      m.time_logged,
+      `"${m.time_logged}"`,
     ].join(','))
     const csv = [header, ...rows].join('\n')
     const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }))
@@ -168,20 +164,7 @@ export default function App() {
   }, [meals])
 
   // Goal streak: count consecutive days back from yesterday where calories > 0 and <= goal
-  const goalStreak = useMemo(() => {
-    const byDate = new Map<string, number>()
-    meals.forEach(m => { byDate.set(m.date, (byDate.get(m.date) ?? 0) + m.calories) })
-    let streak = 0
-    const d = new Date()
-    d.setDate(d.getDate() - 1)
-    for (let i = 0; i < 90; i++) {
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-      const cal  = byDate.get(key) ?? 0
-      const goal = getGoalForDate(key).calories
-      if (cal > 0 && cal <= goal) { streak++; d.setDate(d.getDate() - 1) } else break
-    }
-    return streak
-  }, [meals, getGoalForDate])
+  const goalStreak = useMemo(() => calcGoalStreak(meals, getGoalForDate), [meals, getGoalForDate])
 
   // C5: show a persistent toast when a new SW is waiting — user must click to reload
   useEffect(() => {

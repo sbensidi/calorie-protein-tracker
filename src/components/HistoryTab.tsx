@@ -1442,9 +1442,8 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                     const planExact     = planDiff === 0
                     const planColor     = planExact ? 'var(--text-3)' : planOver ? 'var(--warning)' : 'var(--positive-hi)'
                     const planSign      = planDiff > 0 ? '+' : ''
-                    const planLabel     = lang === 'he'
-                      ? `${planSign}${Math.round(planDiff).toLocaleString('he-IL')} קק״ל מהיעד`
-                      : `${planSign}${Math.round(planDiff).toLocaleString()} kcal vs. plan`
+                    const planLocale    = lang === 'he' ? 'he-IL' : 'en-US'
+                    const planLabel     = `${planSign}${Math.round(planDiff).toLocaleString(planLocale)} ${t(lang, 'caloriesUnit')} ${t(lang, 'calVsPlan')}`
 
                     // Row 2: weight impact (consumed vs. TDEE)
                     const hasWeightCalc = weeklyTdee > 0
@@ -1454,9 +1453,9 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                     const isWeightGain  = tdeeBalance > 0
                     const weightColor   = isWeightLoss ? 'var(--positive-hi)' : isWeightGain ? 'var(--warning)' : 'var(--text-3)'
                     const weightLabel   = isWeightLoss
-                      ? (lang === 'he' ? `ירידה של ~${weightGrams} גרם` : `~${weightGrams}g loss`)
+                      ? `${t(lang, 'weightLossOf')}${weightGrams}${t(lang, 'gramsSuffix')}`
                       : isWeightGain
-                      ? (lang === 'he' ? `עלייה של ~${weightGrams} גרם` : `~${weightGrams}g gain`)
+                      ? `${t(lang, 'weightGainOf')}${weightGrams}${t(lang, 'gramsSuffix')}`
                       : t(lang, 'noWeightChange')
 
                     return (

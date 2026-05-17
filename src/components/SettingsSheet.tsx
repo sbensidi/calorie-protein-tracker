@@ -15,18 +15,13 @@ import type { UnitId } from '../lib/units'
 import { MealCard } from './MealCard'
 import { fuzzyScore } from '../lib/fuzzyMatch'
 import { useAppContext } from '../context/AppContext'
+import { calcBMR, calcDailyTdee, calcProjectedDays } from '../lib/calculations'
 
 const SEARCH_THRESHOLD = 0.45
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 type Screen = 'main' | 'profile' | 'goals' | 'foodHistory' | 'library' | 'preferences'
-
-const ACTIVITY_MULTIPLIERS = [1.2, 1.375, 1.55, 1.725, 1.9]
-
-function calcBMR(p: UserProfile) {
-  return Math.round(10 * p.weight + 6.25 * p.height - 5 * p.age + (p.sex === 'm' ? 5 : -161))
-}
 
 // ── DayPanel (module-level to avoid React re-mounting on every render) ────────
 
@@ -570,16 +565,14 @@ function ProfileScreen({ lang, profile, onSave, showToast, weightLogEntries = []
 
   const { bmr, tdeeAtLevel, suggestedFluidMl, bmi, bmiCategory, projectedDate } = useMemo(() => {
     const bmr             = calcBMR(draft)
-    const tdeeAtLevel     = Math.round(bmr * ACTIVITY_MULTIPLIERS[draft.activityLevel ?? 1])
+    const tdeeAtLevel     = calcDailyTdee(draft)
     const suggestedFluidMl = Math.round(draft.weight * 35 / 100) * 100
     const bmiVal          = Math.round((draft.weight / ((draft.height / 100) ** 2)) * 10) / 10
     const bmiCategory     = bmiVal < 18.5 ? 'underweight' : bmiVal < 25 ? 'normal' : bmiVal < 30 ? 'overweight' : 'obese'
     let projectedDate: string | null = null
     if (draft.targetWeightKg != null && dailyCalGoal && dailyCalGoal > 0) {
-      const dailyDeficit = tdeeAtLevel - dailyCalGoal
-      const kgDiff = draft.targetWeightKg - draft.weight
-      if (Math.abs(dailyDeficit) >= 50 && Math.sign(dailyDeficit) === Math.sign(kgDiff)) {
-        const days = Math.round(Math.abs(kgDiff) * 7700 / Math.abs(dailyDeficit))
+      const days = calcProjectedDays(draft.weight, draft.targetWeightKg, tdeeAtLevel, dailyCalGoal)
+      if (days != null) {
         const d = new Date()
         d.setDate(d.getDate() + days)
         projectedDate = d.toLocaleDateString(lang === 'he' ? 'he-IL' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' })
@@ -592,7 +585,7 @@ function ProfileScreen({ lang, profile, onSave, showToast, weightLogEntries = []
     onSave(draft)
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
-    showToast(lang === 'he' ? 'הפרופיל נשמר' : 'Profile saved', 'success')
+    showToast(t(lang, 'profileSaved'), 'success')
   }
 
   const handleLogWeight = async () => {
@@ -606,7 +599,8 @@ function ProfileScreen({ lang, profile, onSave, showToast, weightLogEntries = []
   }
 
   const bmiColor = bmiCategory === 'normal' ? 'var(--positive-hi)' : bmiCategory === 'obese' ? 'var(--danger)' : 'var(--warning)'
-  const bmiLabel = { underweight: lang === 'he' ? 'תת משקל' : 'Underweight', normal: lang === 'he' ? 'משקל תקין' : 'Normal', overweight: lang === 'he' ? 'עודף משקל' : 'Overweight', obese: lang === 'he' ? 'השמנה' : 'Obese' }[bmiCategory]
+  const bmiKeyMap = { underweight: 'bmiUnderweight', normal: 'bmiNormal', overweight: 'bmiOverweight', obese: 'bmiObese' } as const
+  const bmiLabel = t(lang, bmiKeyMap[bmiCategory as keyof typeof bmiKeyMap])
 
   const labelStyle: React.CSSProperties = {
     fontSize: 11, fontWeight: 600, color: 'var(--text-2)', display: 'block', marginBottom: 5,
@@ -900,7 +894,7 @@ function GoalsScreen({ lang, profile, goals, onSave, onSaveProfile, onSaveFluidG
     setDraftGoalType(profile.goalType ?? 'maintain')
   }, [profile.activityLevel, profile.goalType])
 
-  const tdee = useMemo(() => Math.round(calcBMR(profile) * ACTIVITY_MULTIPLIERS[draftActivityLevel]), [profile, draftActivityLevel])
+  const tdee = useMemo(() => calcDailyTdee({ ...profile, activityLevel: draftActivityLevel as 0|1|2|3|4 }), [profile, draftActivityLevel])
   const suggestedCal     = tdee + (draftGoalType === 'lose' ? -500 : draftGoalType === 'gain' ? 300 : 0)
   const suggestedProtRate = draftGoalType === 'lose' ? 2.0 : draftGoalType === 'gain' ? 2.2 : 1.6
   const suggestedProt    = Math.round(profile.weight * suggestedProtRate)
