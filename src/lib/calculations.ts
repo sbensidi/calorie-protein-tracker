@@ -142,6 +142,41 @@ const PHRASES = {
   },
 } as const
 
+const JOKES = [
+  "I'm on a seafood diet. I see food, I eat it",
+  "Gym update: went twice this month. Once to sign up, once to cancel",
+  "I went on a diet, swore off drinking and heavy eating. In 14 days I lost two weeks",
+  "My body is a temple. Ancient, crumbling, and in need of renovation",
+  "I eat cake because it's somebody's birthday somewhere",
+  "Running from your problems is cardio. It's called multitasking",
+  "I tried eating a clock. Very time-consuming, especially if you go back for seconds",
+  "What do you call a fake noodle? An impasta",
+  "My doctor told me to eat more greens. So I put lettuce on my pizza",
+  "I'm trying to lose weight by watching what I eat. Currently watching a cheesecake",
+  "Diet tip: your pants won't get tight if you don't wear any",
+  "Why did the tomato turn red? It saw the salad dressing",
+  "My fitness journey: started with a granola bar. Fueled entirely by granola bars",
+  "I told my trainer I wanted abs. He said 'start with water, not beer.' Still thinking about it",
+  "I decided to do a juice cleanse. Three hours in I'm a different person. A very hungry person",
+  "Six-pack? I prefer to think of it as a keg. More volume, same dedication",
+  "I don't skip leg day. I skip all days equally. It's called balance",
+  "Why do French fries never get lonely? They come in packs",
+  "Why did the banana go to the doctor? It wasn't peeling well",
+  "I told my scale we needed to see other people. It said 'good luck finding one that lies less'",
+  "Calories don't count on weekends. I didn't make the rules",
+  "My meal prep for the week: ordered enough pizza for five days",
+  "I started counting macros. Turns out my main macro is regret",
+  "Technically, chocolate comes from a bean. So it's basically a salad",
+  "My doctor asked if I exercise regularly. I said yes — I push my luck every day",
+  "I don't stress eat. I strategically consume comfort nutrients",
+  "Why did the cookie go to the doctor? It was feeling crummy",
+  "I joined a gym and haven't lost a pound. But I did lose my parking spot, my free time, and my will to go",
+  "Eating salad for lunch feels great. Until 10am, when your body realizes what happened",
+  "My superpower? I can smell pizza from three floors away",
+  "They say abs are made in the kitchen. Mine are apparently made in the bakery",
+  "I went vegetarian for a week. The hardest part was telling my family. The second hardest was the bacon",
+] as const
+
 export function getGreeting(ctx: GreetingContext): Greeting {
   const { hour, firstName, streak, calsConsumed, calsGoal, protConsumed, protGoal, dayOfYear, lang } = ctx
   const p = PHRASES[lang]
@@ -159,7 +194,9 @@ export function getGreeting(ctx: GreetingContext): Greeting {
   const protRemaining  = Math.round(protGoal - protConsumed)
 
   let line2: string
-  if (hour >= 21) {
+  if (dayOfYear % 4 === 0 && hour < 21) {
+    line2 = `😄 ${pick(JOKES, Math.floor(dayOfYear / 4))}`
+  } else if (hour >= 21) {
     line2 = pick(p.nightLine2, dayOfYear + 7)
   } else if (calsConsumed === 0) {
     const pool = hour < 12 ? p.noMealsMorning : p.noMealsLate
