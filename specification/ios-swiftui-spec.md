@@ -1548,7 +1548,103 @@ Provide toggles for breakfast (e.g. 08:00), lunch (13:00), dinner (19:00) remind
 
 ---
 
-### 19.11 DB Migration
+### 19.11 Daily Greeting Panel
+
+**Where**: Today tab, above the DailySummary card.
+
+**Visibility**: controlled by `profiles.show_greeting` (boolean, default `true`). User can dismiss permanently via X button or toggle in Settings → Appearance.
+
+**Structure**: two lines.
+- **line1** — time-based greeting + first name (from Google OAuth `full_name`, split on space). Fallback: no name.
+- **line2** — context-based phrase, or a joke every 4 days.
+
+#### Time slots for line1
+
+| Hour | Hebrew | English |
+|---|---|---|
+| 06–10 | בוקר טוב / בוקר מצוין / בוקר אחלה | Good morning / Morning |
+| 11–16 | צהריים טובים | Good afternoon |
+| 17–20 | ערב טוב | Good evening |
+| 21+ | לילה טוב | Good night |
+
+Phrase selected deterministically: `phrases[dayOfYear % phrases.count]`
+
+#### line2 priority order
+
+1. **Joke** — fires when `dayOfYear % 4 == 0` and `hour < 21`. English only, LTR-aligned. 32 jokes cycling annually (~2×/week). Emoji 😄 appended at end.
+2. **Night** (`hour >= 21`) — calming close-of-day phrase.
+3. **No meals logged, morning** (`calories == 0`, `hour < 12`) — encouragement to start.
+4. **No meals logged, late** (`calories == 0`, `hour >= 12`) — gentle reminder to log.
+5. **Over goal** (`calories > calorieGoal`) — compassionate, non-judgmental.
+6. **Goal met** (`remaining <= goal × 0.1`) — celebration.
+7. **Streak active** (`streak >= 2`) — streak count substituted for `{N}`.
+8. **Fluid goal met** (`fluidMl >= fluidGoal`) — hydration celebration.
+9. **Fluid low** (`fluidMl < fluidGoal × 0.4`, `hour >= 10`) — hydration nudge.
+10. **Protein close** (`remaining <= 25g`, `hour >= 17`) — protein gap substituted for `{prot}`.
+11. **Default / on track** — calories remaining substituted for `{cal}`.
+
+#### Dismissal flow
+
+First tap of X → panel transforms to a confirmation card:
+- Title: "להסיר את הברכה?" / "Remove greeting?"
+- Body: "הברכה תוסר לצמיתות. אפשר להחזיר אותה בכל עת מההגדרות." / "The greeting will be permanently removed. You can re-enable it anytime from Settings."
+- Buttons: "הסר לצמיתות" / "Remove permanently" (amber) + "ביטול" / "Cancel"
+
+Confirmed → `PATCH profiles SET show_greeting = false`.
+
+#### Settings toggle
+
+Settings → Appearance section: "הצג ברכה יומית" / "Show daily greeting" toggle. Syncs to `profiles.show_greeting`.
+
+#### Swift sketch
+
+```swift
+struct GreetingContext {
+    let hour: Int
+    let firstName: String?
+    let streak: Int
+    let calsConsumed: Int
+    let calsGoal: Int
+    let protConsumed: Double
+    let protGoal: Double
+    let fluidMl: Int
+    let fluidGoalMl: Int
+    let dayOfYear: Int
+    let lang: Lang
+}
+
+struct Greeting {
+    let line1: String
+    let line2: String
+    let isJoke: Bool
+}
+
+func getGreeting(_ ctx: GreetingContext) -> Greeting {
+    let namePart = ctx.firstName.map { ", \($0)" } ?? ""
+    let timeWord = ctx.hour < 11 ? morningWords.pick(ctx.dayOfYear)
+                 : ctx.hour < 17 ? afternoonWord
+                 : ctx.hour < 21 ? eveningWord
+                 : nightWord
+    let line1 = "\(timeWord)\(namePart)!"
+
+    if ctx.dayOfYear % 4 == 0 && ctx.hour < 21 {
+        return Greeting(line1: line1, line2: jokes.pick(ctx.dayOfYear / 4) + " 😄", isJoke: true)
+    }
+    // … priority chain as above
+}
+```
+
+`isJoke == true` → render line2 with `.environment(\.layoutDirection, .leftToRight)` and `.multilineTextAlignment(.leading)`.
+
+#### DB migration
+
+```sql
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS show_greeting boolean NOT NULL DEFAULT true;
+```
+
+---
+
+### 19.12 DB Migration
 
 Run this SQL in the Supabase console before deploying the iOS update:
 
