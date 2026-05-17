@@ -4,6 +4,8 @@ export interface BarcodeProduct {
   barcode: string
   caloriesPer100g: number
   proteinPer100g: number
+  fatPer100g?:   number | null
+  carbsPer100g?: number | null
   source: 'openfoodfacts' | 'usda'
 }
 

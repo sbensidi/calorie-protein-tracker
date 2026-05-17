@@ -37,6 +37,7 @@ export function MealCard({ meal, lang, weightUnit = 'g', showCheckbox, selected,
   const [editWeightUnit, setEditWeightUnit] = useState<UnitId | 'pcs'>(
     isFluidEntry ? 'ml' : isPcsEntry ? 'pcs' : 'g'
   )
+  const [editNotes, setEditNotes] = useState(meal.notes ?? '')
 
   const saveEdit = () => {
     if (!editName.trim()) return
@@ -49,6 +50,7 @@ export function MealCard({ meal, lang, weightUnit = 'g', showCheckbox, selected,
       calories:  Math.max(0, Number(editCalories) || 0),
       protein:   Math.max(0, Number(editProtein)  || 0),
       grams:     editWeightUnit === 'pcs' ? -w : Math.round(base),
+      notes:     editNotes.trim() || null,
       ...(isVol ? { fluid_ml: base } : {}),
     })
     setEditing(false)
@@ -69,6 +71,7 @@ export function MealCard({ meal, lang, weightUnit = 'g', showCheckbox, selected,
     setEditProtein(meal.protein)
     setEditWeight(isFluidEntry ? Math.round(meal.fluid_ml!) : Math.abs(meal.grams))
     setEditWeightUnit(isFluidEntry ? 'ml' : isPcsEntry ? 'pcs' : 'g')
+    setEditNotes(meal.notes ?? '')
     setEditing(false)
   }
 
@@ -233,6 +236,16 @@ export function MealCard({ meal, lang, weightUnit = 'g', showCheckbox, selected,
             </select>
           </div>
         </div>
+        {/* Notes field */}
+        <input
+          type="text"
+          className="inp"
+          style={{ fontSize: 16, marginBottom: 8 }}
+          placeholder={t(lang, 'notesPlaceholder')}
+          value={editNotes}
+          onChange={e => setEditNotes(e.target.value)}
+          maxLength={200}
+        />
         <div style={{ display: 'flex', gap: 8 }}>
           <button onClick={saveEdit} className="btn-confirm" style={{ flex: 1 }}>{t(lang, 'save')}</button>
           <button onClick={cancelEdit} className="btn-ghost" style={{ flex: 1 }}>{t(lang, 'cancel')}</button>
@@ -360,7 +373,7 @@ export function MealCard({ meal, lang, weightUnit = 'g', showCheckbox, selected,
           </span>
         </div>
         {/* Line 2: calories + protein */}
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginTop: 3 }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginTop: 3, flexWrap: 'wrap' }}>
           <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent-hi)', lineHeight: 1 }}>
             {Math.round(meal.calories)}
             <span style={{ fontSize: 11, fontWeight: 500, opacity: 0.65, marginInlineStart: 2 }}>{t(lang, 'caloriesUnit')}</span>
@@ -369,7 +382,22 @@ export function MealCard({ meal, lang, weightUnit = 'g', showCheckbox, selected,
             {Math.round(meal.protein * 10) / 10}
             <span style={{ fontSize: 11, fontWeight: 500, opacity: 0.65, marginInlineStart: 2 }}>{t(lang, 'proteinUnit')}</span>
           </span>
+          {meal.fat != null && (
+            <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--warning-hi)', opacity: 0.85 }}>
+              {t(lang, 'fat')} {meal.fat}{t(lang, 'fatUnit')}
+            </span>
+          )}
+          {meal.carbs != null && (
+            <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--library-hi)', opacity: 0.85 }}>
+              {t(lang, 'carbs')} {meal.carbs}{t(lang, 'carbsUnit')}
+            </span>
+          )}
         </div>
+        {meal.notes && (
+          <p style={{ fontSize: 11, color: 'var(--text-3)', margin: '3px 0 0', lineHeight: 1.4 }}>
+            {meal.notes}
+          </p>
+        )}
       </div>
 
       {/* Edit button — always visible */}

@@ -94,7 +94,12 @@ async function callGroqProxy(
   let data: Record<string, unknown>
   try { data = await res.json() } catch { throw new AiParseError() }
   if (typeof data.calories === 'number' && typeof data.protein === 'number') {
-    return { calories: data.calories, protein: data.protein }
+    return {
+      calories: data.calories,
+      protein:  data.protein,
+      fat:   typeof data.fat   === 'number' ? data.fat   : undefined,
+      carbs: typeof data.carbs === 'number' ? data.carbs : undefined,
+    }
   }
   return null
 }
@@ -137,24 +142,26 @@ async function callGroqDirect(
 
   // Step 2 — nutrition lookup with English name
   const userMsg = amountType === 'unit'
-    ? `Per 1 piece of ${queryName}? JSON only: {"calories": number, "protein": number}`
-    : `Per 100g of ${queryName}? JSON only: {"calories": number, "protein": number}`
+    ? `Per 1 piece of ${queryName}? JSON only: {"calories": number, "protein": number, "fat": number, "carbs": number}`
+    : `Per 100g of ${queryName}? JSON only: {"calories": number, "protein": number, "fat": number, "carbs": number}`
 
   const text = await groqCall([
-    { role: 'system', content: 'You are a nutrition database. Return USDA values as JSON only: {"calories": number, "protein": number}. No other text.' },
+    { role: 'system', content: 'You are a nutrition database. Return USDA values as JSON only: {"calories": number, "protein": number, "fat": number, "carbs": number}. No other text.' },
     { role: 'user', content: userMsg },
   ])
 
   if (!text) return null
-  const match = text.match(/\{[^{}]*"calories"[^{}]*"protein"[^{}]*\}|\{[^{}]*"protein"[^{}]*"calories"[^{}]*\}/)
+  const match = text.match(/\{[^{}]+\}/)
   if (!match) return null
-  let parsed: { calories?: unknown; protein?: unknown }
+  let parsed: { calories?: unknown; protein?: unknown; fat?: unknown; carbs?: unknown }
   try { parsed = JSON.parse(match[0]) } catch { throw new AiParseError() }
   if (typeof parsed.calories === 'number' && typeof parsed.protein === 'number') {
     const scale = amountType === 'unit' ? amount : amount / 100
     return {
       calories: Math.round(parsed.calories * scale),
       protein:  Math.round(parsed.protein  * scale * 10) / 10,
+      fat:   typeof parsed.fat   === 'number' ? Math.round(parsed.fat   * scale * 10) / 10 : undefined,
+      carbs: typeof parsed.carbs === 'number' ? Math.round(parsed.carbs * scale * 10) / 10 : undefined,
     }
   }
   return null

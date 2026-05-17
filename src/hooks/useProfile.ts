@@ -7,6 +7,7 @@ export interface UserProfile {
   age:                number
   height:             number   // cm
   weight:             number   // kg
+  targetWeightKg:     number | null
   activityLevel:      0 | 1 | 2 | 3 | 4
   goalType:           'lose' | 'maintain' | 'gain'
   weightUnit:         WeightUnit
@@ -41,6 +42,7 @@ const DEFAULT: UserProfile = {
   age:                30,
   height:             170,
   weight:             70,
+  targetWeightKg:     null,
   activityLevel:      1,
   goalType:           'maintain',
   weightUnit:         'g',
@@ -69,6 +71,7 @@ function dbToProfile(row: Record<string, unknown>): UserProfile {
     age:              (row.age as number)    ?? DEFAULT.age,
     height:           (row.height as number) ?? DEFAULT.height,
     weight:           (row.weight as number) ?? DEFAULT.weight,
+    targetWeightKg:   typeof row.target_weight_kg === 'number' ? row.target_weight_kg : null,
     activityLevel:    (row.activity_level as 0|1|2|3|4) ?? DEFAULT.activityLevel,
     goalType:         (row.goal_type as 'lose'|'maintain'|'gain') ?? DEFAULT.goalType,
     weightUnit:       (row.weight_unit as WeightUnit) ?? DEFAULT.weightUnit,
@@ -87,6 +90,7 @@ function profileToDb(p: UserProfile, userId: string) {
     age:                 p.age,
     height:              p.height,
     weight:              p.weight,
+    target_weight_kg:    p.targetWeightKg,
     activity_level:      p.activityLevel,
     goal_type:           p.goalType,
     weight_unit:         p.weightUnit,

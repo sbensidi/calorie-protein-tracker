@@ -36,6 +36,7 @@ interface HistoryTabProps {
   composedGroups?:  ComposedGroup[]
   fluidGoalMl?:     number
   loading?:         boolean
+  weeklyTdee?:      number  // 7 × daily TDEE, for weight-impact calculation
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────
@@ -62,7 +63,7 @@ const STATUS_COLOR: Record<DayData['status'], { badge: string; text: string; ico
 
 // ── Component ────────────────────────────────────────────────────────
 
-export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntries = [], composedGroups = [], fluidGoalMl = 2500, loading = false }: HistoryTabProps) {
+export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntries = [], composedGroups = [], fluidGoalMl = 2500, loading = false, weeklyTdee = 0 }: HistoryTabProps) {
   const { styleMode } = useAppContext()
   const todayKey = today()
 
@@ -1186,6 +1187,11 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
 
         const avg7Cal   = avg(last7,  'totalCalories')
         const avg7Prot  = avg(last7,  'totalProtein')
+
+        // ── Weekly calorie balance ─────────────────────────────────
+        const weeklyTotalCal  = barDays.filter(b => b.hasData).reduce((s, b) => s + b.cal,     0)
+        const weeklyGoalCal   = barDays.filter(b => b.hasData).reduce((s, b) => s + b.goalCal, 0)
+        const weeklyBalanceCal = weeklyTotalCal - weeklyGoalCal
         const avg30Cal  = avg(last30, 'totalCalories')
         const avg30Prot = avg(last30, 'totalProtein')
 
@@ -1428,6 +1434,82 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                       />
                     )}
                   </div>
+                  {/* Weekly calorie balance card */}
+                  {last7.length > 0 && (() => {
+                    // Row 1: plan adherence (consumed vs. user goal)
+                    const planDiff      = weeklyBalanceCal  // positive = over goal
+                    const planOver      = planDiff > 0
+                    const planExact     = planDiff === 0
+                    const planColor     = planExact ? 'var(--text-3)' : planOver ? 'var(--warning)' : 'var(--positive-hi)'
+                    const planSign      = planDiff > 0 ? '+' : ''
+                    const planLocale    = lang === 'he' ? 'he-IL' : 'en-US'
+                    const planLabel     = `${planSign}${Math.round(planDiff).toLocaleString(planLocale)} ${t(lang, 'caloriesUnit')} ${t(lang, 'calVsPlan')}`
+
+                    // Row 2: weight impact (consumed vs. TDEE)
+                    const hasWeightCalc = weeklyTdee > 0
+                    const tdeeBalance   = weeklyTotalCal - weeklyTdee          // negative = deficit
+                    const weightGrams   = Math.round(Math.abs(tdeeBalance) / 7.7)  // 7700 kcal/kg → /7.7 = grams
+                    const isWeightLoss  = tdeeBalance < 0
+                    const isWeightGain  = tdeeBalance > 0
+                    const weightColor   = isWeightLoss ? 'var(--positive-hi)' : isWeightGain ? 'var(--warning)' : 'var(--text-3)'
+                    const weightLabel   = isWeightLoss
+                      ? `${t(lang, 'weightLossOf')}${weightGrams}${t(lang, 'gramsSuffix')}`
+                      : isWeightGain
+                      ? `${t(lang, 'weightGainOf')}${weightGrams}${t(lang, 'gramsSuffix')}`
+                      : t(lang, 'noWeightChange')
+
+                    return (
+                      <div style={{
+                        background: 'var(--bg-card)', border: '1px solid var(--border)',
+                        borderRadius: 12, padding: '10px 14px',
+                        display: 'flex', flexDirection: 'column', gap: 8,
+                      }}>
+                        {/* Header */}
+                        <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.07em', margin: 0 }}>
+                          {t(lang, 'weeklyBalance')}
+                        </p>
+
+                        {/* Plan row */}
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <span style={{ fontSize: 12, color: 'var(--text-2)' }}>
+                            {t(lang, 'weeklyPlan')}
+                          </span>
+                          <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+                            <span style={{ fontSize: 11, color: 'var(--text-3)', fontVariantNumeric: 'tabular-nums' }}>
+                              {Math.round(weeklyTotalCal).toLocaleString(lang === 'he' ? 'he-IL' : 'en-US')}
+                              {' / '}
+                              {Math.round(weeklyGoalCal).toLocaleString(lang === 'he' ? 'he-IL' : 'en-US')}
+                            </span>
+                            <span style={{ fontSize: 12, fontWeight: 700, color: planColor, fontVariantNumeric: 'tabular-nums' }}>
+                              {planExact ? '✓' : planLabel}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Weight impact row */}
+                        {hasWeightCalc && (
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid var(--border)', paddingTop: 8 }}>
+                            <span style={{ fontSize: 12, color: 'var(--text-2)' }}>
+                              {t(lang, 'weightImpact')}
+                            </span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                              <span style={{ fontSize: 12, fontWeight: 700, color: weightColor }}>
+                                {weightLabel}
+                              </span>
+                              <span style={{ fontSize: 10, color: 'var(--text-3)' }}>*</span>
+                            </div>
+                          </div>
+                        )}
+
+                        {hasWeightCalc && (
+                          <p style={{ fontSize: 10, color: 'var(--text-3)', margin: 0 }}>
+                            {t(lang, 'tdeeNote')}
+                          </p>
+                        )}
+                      </div>
+                    )
+                  })()}
+
                   {/* Bar chart */}
                   <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: '14px 12px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
@@ -1891,6 +1973,74 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                 </>
               )}
             </div>}
+
+            {/* ── Meal timing insights ──────────────────────────────────────── */}
+            {(() => {
+              const periodDates = statsPeriod === 'week' ? last7 : last30
+              if (periodDates.length === 0) return null
+
+              const periodMeals = periodDates.flatMap(d => grouped.get(d)?.meals ?? [])
+                .filter(m => m.time_logged)
+
+              if (periodMeals.length === 0) return null
+
+              // Convert "HH:MM:SS" to minutes since midnight
+              const toMins = (t: string) => {
+                const [h, m] = t.split(':').map(Number)
+                return h * 60 + (m || 0)
+              }
+              const fmtTime = (mins: number) => {
+                const h = Math.floor(mins / 60) % 24
+                const m = Math.round(mins % 60)
+                return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+              }
+
+              const byType: Record<string, number[]> = {}
+              for (const m of periodMeals) {
+                if (!byType[m.meal_type]) byType[m.meal_type] = []
+                byType[m.meal_type].push(toMins(m.time_logged))
+              }
+
+              const typeOrder = ['breakfast', 'lunch', 'dinner', 'snack', 'beverage']
+              const typeLabels: Record<string, string> = {
+                breakfast: t(lang, 'breakfast'),
+                lunch:     t(lang, 'lunch'),
+                dinner:    t(lang, 'dinner'),
+                snack:     t(lang, 'snack'),
+                beverage:  t(lang, 'beverage'),
+              }
+              const typeColors: Record<string, string> = {
+                breakfast: 'var(--warning)', lunch: 'var(--accent-hi)',
+                dinner: 'var(--positive-hi)', snack: 'var(--text-2)', beverage: 'var(--cyan-hi)',
+              }
+
+              const avgMins = (arr: number[]) => Math.round(arr.reduce((s, v) => s + v, 0) / arr.length)
+
+              const rows = typeOrder.filter(t => byType[t]?.length).map(type => ({
+                type, label: typeLabels[type], color: typeColors[type],
+                avg: fmtTime(avgMins(byType[type])),
+                count: byType[type].length,
+              }))
+
+              if (rows.length === 0) return null
+
+              return (
+                <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: '12px 14px' }}>
+                  <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.07em', margin: '0 0 10px' }}>
+                    {t(lang, 'mealTiming')}
+                  </p>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    {rows.map(r => (
+                      <div key={r.type} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <span style={{ fontSize: 11, fontWeight: 600, color: r.color, flex: 1 }}>{r.label}</span>
+                        <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>{r.avg}</span>
+                        <span style={{ fontSize: 10, color: 'var(--text-3)', minWidth: 30, textAlign: 'end' }}>×{r.count}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )
+            })()}
           </div>
         )
       })()}

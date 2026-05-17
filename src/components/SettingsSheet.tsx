@@ -15,18 +15,13 @@ import type { UnitId } from '../lib/units'
 import { MealCard } from './MealCard'
 import { fuzzyScore } from '../lib/fuzzyMatch'
 import { useAppContext } from '../context/AppContext'
+import { calcBMR, calcDailyTdee, calcProjectedDays } from '../lib/calculations'
 
 const SEARCH_THRESHOLD = 0.45
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 type Screen = 'main' | 'profile' | 'goals' | 'foodHistory' | 'library' | 'preferences'
-
-const ACTIVITY_MULTIPLIERS = [1.2, 1.375, 1.55, 1.725, 1.9]
-
-function calcBMR(p: UserProfile) {
-  return Math.round(10 * p.weight + 6.25 * p.height - 5 * p.age + (p.sex === 'm' ? 5 : -161))
-}
 
 // ── DayPanel (module-level to avoid React re-mounting on every render) ────────
 
@@ -183,7 +178,7 @@ function DayPanel({
 
 // ── Main Screen ───────────────────────────────────────────────────────────────
 
-function MainScreen({ lang, connected, theme, styleMode, onProfile, onGoals, onFoodHistory, onLibrary, onPreferences, onToggleLang, onToggleTheme, onSelectStyleMode, onSignOut, onLinkGoogle, hasGoogleLinked }: {
+function MainScreen({ lang, connected, theme, styleMode, onProfile, onGoals, onFoodHistory, onLibrary, onPreferences, onToggleLang, onToggleTheme, onSelectStyleMode, onSignOut, onLinkGoogle, hasGoogleLinked, onExportCsv }: {
   lang:                Lang
   connected:           boolean
   theme:               'dark' | 'light'
@@ -199,6 +194,7 @@ function MainScreen({ lang, connected, theme, styleMode, onProfile, onGoals, onF
   onSignOut:           () => void
   onLinkGoogle?:       () => void
   hasGoogleLinked?:    boolean
+  onExportCsv?:        () => void
 }) {
   const chevron = lang === 'he' ? 'chevron_left' : 'chevron_right'
   const minimal = styleMode === 'minimal'
@@ -443,6 +439,26 @@ function MainScreen({ lang, connected, theme, styleMode, onProfile, onGoals, onF
             {!minimal && <div style={divider} />}
           </>)}
 
+          {onExportCsv && (
+            <>
+              <button onClick={onExportCsv} style={{ ...rowBase, ...rowSep }}>
+                {!minimal && <span className="icon" style={{ fontSize: 22, color: 'var(--text-2)', flexShrink: 0 }}>download</span>}
+                <div style={{ flex: 1, textAlign: 'start' }}>
+                  <p style={{ fontSize: minimal ? 13 : 14, fontWeight: 600, color: 'var(--text)', margin: 0 }}>
+                    {t(lang, 'exportCsv')}
+                  </p>
+                  {!minimal && (
+                    <p style={{ fontSize: 11, color: 'var(--text-3)', margin: '2px 0 0' }}>
+                      {t(lang, 'exportCsvDesc')}
+                    </p>
+                  )}
+                </div>
+                {!minimal && <span className="icon icon-sm" style={{ color: 'var(--text-3)', flexShrink: 0 }}>{chevron}</span>}
+              </button>
+              {!minimal && <div style={divider} />}
+            </>
+          )}
+
           <button
             onClick={onSignOut}
             style={{ ...rowBase, ...(minimal ? { paddingTop: 14 } : {}) }}
@@ -468,38 +484,123 @@ function MainScreen({ lang, connected, theme, styleMode, onProfile, onGoals, onF
   )
 }
 
+// ── Notifications Section (extracted to avoid hooks-in-IIFE) ──────────────────
+
+function NotificationsSection({ lang, showToast }: { lang: Lang; showToast: (msg: string, type: 'success' | 'error' | 'info') => void }) {
+  const supported = 'Notification' in window
+  const [notifStatus, setNotifStatus] = useState<NotificationPermission>(
+    supported ? Notification.permission : 'default'
+  )
+  if (!supported) return null
+
+  const requestPermission = async () => {
+    const result = await Notification.requestPermission()
+    setNotifStatus(result)
+    if (result === 'granted') showToast(t(lang, 'notificationsOn'), 'success')
+    else showToast(t(lang, 'notifPermissionDenied'), 'error')
+  }
+  const granted = notifStatus === 'granted'
+  const denied  = notifStatus === 'denied'
+
+  return (
+    <div style={{ marginBottom: 20 }}>
+      <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.07em', margin: '0 0 12px' }}>
+        {t(lang, 'notifications')}
+      </p>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: '12px 14px' }}>
+        <div>
+          <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', margin: '0 0 2px' }}>
+            {granted ? t(lang, 'notificationsOn') : t(lang, 'notificationsOff')}
+          </p>
+          <p style={{ fontSize: 11, color: 'var(--text-3)', margin: 0 }}>
+            {denied
+              ? t(lang, 'notifPermissionDenied')
+              : t(lang, 'mealRemindersDesc')}
+          </p>
+        </div>
+        {!denied && (
+          <button
+            onClick={requestPermission}
+            disabled={granted}
+            style={{
+              background: granted ? 'var(--positive-tint)' : 'var(--accent)',
+              color: granted ? 'var(--positive-hi)' : 'var(--on-color)',
+              border: granted ? '1px solid var(--positive-border)' : 'none',
+              borderRadius: 10, padding: '6px 14px', fontSize: 12, fontWeight: 700,
+              cursor: granted ? 'default' : 'pointer', fontFamily: 'inherit',
+            }}
+          >
+            {granted ? t(lang, 'notificationsEnabled') : t(lang, 'allowNotifications')}
+          </button>
+        )}
+        {denied && (
+          <span style={{ fontSize: 11, color: 'var(--danger)', fontWeight: 600 }}>
+            {t(lang, 'notifBlocked')}
+          </span>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ── Profile Screen ────────────────────────────────────────────────────────────
 
-function ProfileScreen({ lang, profile, onSave, showToast }: {
+function ProfileScreen({ lang, profile, onSave, showToast, weightLogEntries = [], onLogWeight, onDeleteWeightEntry, dailyCalGoal }: {
   lang:      Lang
   profile:   UserProfile
   onSave:    (updates: Partial<UserProfile>) => void
   showToast: (msg: string, type: 'success' | 'error' | 'info') => void
+  weightLogEntries?: import('../types').WeightLog[]
+  onLogWeight?:      (weight_kg: number, date?: string) => Promise<void>
+  onDeleteWeightEntry?: (id: string) => Promise<void>
+  dailyCalGoal?: number
 }) {
   const [draft, setDraft] = useState<UserProfile>({ ...profile })
   const [saved, setSaved] = useState(false)
+  const [weightInput, setWeightInput] = useState('')
+  const [loggingWeight, setLoggingWeight] = useState(false)
 
   const set = <K extends keyof UserProfile>(key: K, val: UserProfile[K]) =>
     setDraft(p => ({ ...p, [key]: val }))
 
-  const { bmr, tdeeAtLevel, suggestedFluidMl, bmi, bmiCategory } = useMemo(() => {
+  const { bmr, tdeeAtLevel, suggestedFluidMl, bmi, bmiCategory, projectedDate } = useMemo(() => {
     const bmr             = calcBMR(draft)
-    const tdeeAtLevel     = Math.round(bmr * ACTIVITY_MULTIPLIERS[draft.activityLevel ?? 1])
+    const tdeeAtLevel     = calcDailyTdee(draft)
     const suggestedFluidMl = Math.round(draft.weight * 35 / 100) * 100
     const bmiVal          = Math.round((draft.weight / ((draft.height / 100) ** 2)) * 10) / 10
     const bmiCategory     = bmiVal < 18.5 ? 'underweight' : bmiVal < 25 ? 'normal' : bmiVal < 30 ? 'overweight' : 'obese'
-    return { bmr, tdeeAtLevel, suggestedFluidMl, bmi: bmiVal, bmiCategory }
-  }, [draft])
+    let projectedDate: string | null = null
+    if (draft.targetWeightKg != null && dailyCalGoal && dailyCalGoal > 0) {
+      const days = calcProjectedDays(draft.weight, draft.targetWeightKg, tdeeAtLevel, dailyCalGoal)
+      if (days != null) {
+        const d = new Date()
+        d.setDate(d.getDate() + days)
+        projectedDate = d.toLocaleDateString(lang === 'he' ? 'he-IL' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+      }
+    }
+    return { bmr, tdeeAtLevel, suggestedFluidMl, bmi: bmiVal, bmiCategory, projectedDate }
+  }, [draft, dailyCalGoal, lang])
 
   const handleSave = () => {
     onSave(draft)
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
-    showToast(lang === 'he' ? 'הפרופיל נשמר' : 'Profile saved', 'success')
+    showToast(t(lang, 'profileSaved'), 'success')
+  }
+
+  const handleLogWeight = async () => {
+    const kg = parseFloat(weightInput.replace(',', '.'))
+    if (!kg || kg < 20 || kg > 300 || !onLogWeight) return
+    setLoggingWeight(true)
+    await onLogWeight(kg)
+    setWeightInput('')
+    setLoggingWeight(false)
+    showToast(t(lang, 'weightLoggedBang'), 'success')
   }
 
   const bmiColor = bmiCategory === 'normal' ? 'var(--positive-hi)' : bmiCategory === 'obese' ? 'var(--danger)' : 'var(--warning)'
-  const bmiLabel = { underweight: lang === 'he' ? 'תת משקל' : 'Underweight', normal: lang === 'he' ? 'משקל תקין' : 'Normal', overweight: lang === 'he' ? 'עודף משקל' : 'Overweight', obese: lang === 'he' ? 'השמנה' : 'Obese' }[bmiCategory]
+  const bmiKeyMap = { underweight: 'bmiUnderweight', normal: 'bmiNormal', overweight: 'bmiOverweight', obese: 'bmiObese' } as const
+  const bmiLabel = t(lang, bmiKeyMap[bmiCategory as keyof typeof bmiKeyMap])
 
   const labelStyle: React.CSSProperties = {
     fontSize: 11, fontWeight: 600, color: 'var(--text-2)', display: 'block', marginBottom: 5,
@@ -628,6 +729,118 @@ function ProfileScreen({ lang, profile, onSave, showToast }: {
         </div>
       </div>
 
+      {/* Target weight (for projection) */}
+      <div style={{ marginBottom: projectedDate ? 8 : 20 }}>
+        <label style={labelStyle}>{t(lang, 'targetWeightKg')}</label>
+        <input
+          type="number"
+          inputMode="decimal"
+          className="inp"
+          style={{ fontSize: 16 }}
+          placeholder={draft.weight > 0 ? String(draft.weight) : '—'}
+          value={draft.targetWeightKg ?? ''}
+          onFocus={e => e.target.select()}
+          onChange={e => set('targetWeightKg', e.target.value ? parseFloat(e.target.value) : null)}
+        />
+      </div>
+      {projectedDate && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--accent-fill)', border: '1px solid var(--blue-border)', borderRadius: 10, padding: '8px 12px', marginBottom: 20 }}>
+          <span style={{ fontSize: 16 }}>🎯</span>
+          <div>
+            <p style={{ fontSize: 11, fontWeight: 600, color: 'var(--accent-hi)', margin: '0 0 1px' }}>
+              {t(lang, 'projectedDateLabel')}
+            </p>
+            <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', margin: 0 }}>
+              {projectedDate}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* ── Weight Log section ─────────────────────────────────── */}
+      <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.07em', margin: '0 0 12px' }}>
+        {t(lang, 'weightLog')}
+      </p>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+        <input
+          type="number"
+          inputMode="decimal"
+          className="inp"
+          style={{ flex: 1, fontSize: 16 }}
+          placeholder={t(lang, 'weightKgPlaceholder')}
+          value={weightInput}
+          onChange={e => setWeightInput(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter') handleLogWeight() }}
+        />
+        <button
+          className="btn-primary"
+          style={{ flexShrink: 0, paddingInline: 16, opacity: loggingWeight ? 0.7 : 1 }}
+          onClick={handleLogWeight}
+          disabled={loggingWeight || !weightInput}
+        >
+          {t(lang, 'logWeight')}
+        </button>
+      </div>
+
+      {/* Mini weight trend sparkline + list */}
+      {weightLogEntries.length > 0 && (() => {
+        const recent = weightLogEntries.slice(0, 8).reverse()
+        const weights = recent.map(e => e.weight_kg)
+        const minW = Math.min(...weights)
+        const maxW = Math.max(...weights)
+        const range = maxW - minW || 1
+        const W = 220, H = 40
+        const pts = weights.map((w, i) => {
+          const x = (i / Math.max(weights.length - 1, 1)) * W
+          const y = H - ((w - minW) / range) * (H - 8) - 4
+          return `${x},${y}`
+        }).join(' ')
+
+        return (
+          <div style={{ marginBottom: 16 }}>
+            {/* Sparkline */}
+            <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} style={{ display: 'block', marginBottom: 8 }}>
+              <polyline
+                points={pts}
+                fill="none"
+                stroke="var(--accent)"
+                strokeWidth="2"
+                strokeLinejoin="round"
+                strokeLinecap="round"
+              />
+              {weights.map((w, i) => {
+                const x = (i / Math.max(weights.length - 1, 1)) * W
+                const y = H - ((w - minW) / range) * (H - 8) - 4
+                return <circle key={i} cx={x} cy={y} r={3} fill="var(--accent)" />
+              })}
+            </svg>
+            {/* Last 4 entries */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              {weightLogEntries.slice(0, 4).map(entry => (
+                <div key={entry.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontSize: 12, color: 'var(--text-3)', flex: 1 }}>{entry.date}</span>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>
+                    {entry.weight_kg} <span style={{ fontSize: 10, fontWeight: 400, color: 'var(--text-3)' }}>kg</span>
+                  </span>
+                  {onDeleteWeightEntry && (
+                    <button
+                      onClick={() => onDeleteWeightEntry(entry.id)}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 2, display: 'flex' }}
+                      aria-label={t(lang, 'delete')}
+                    >
+                      <span className="icon icon-sm">delete</span>
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )
+      })()}
+
+      {/* ── Push Notifications section ─────────────────────────────── */}
+      <NotificationsSection lang={lang} showToast={showToast} />
+
       <button
         onClick={handleSave}
         className={saved ? 'btn-confirm' : 'btn-ghost'}
@@ -681,7 +894,7 @@ function GoalsScreen({ lang, profile, goals, onSave, onSaveProfile, onSaveFluidG
     setDraftGoalType(profile.goalType ?? 'maintain')
   }, [profile.activityLevel, profile.goalType])
 
-  const tdee = useMemo(() => Math.round(calcBMR(profile) * ACTIVITY_MULTIPLIERS[draftActivityLevel]), [profile, draftActivityLevel])
+  const tdee = useMemo(() => calcDailyTdee({ ...profile, activityLevel: draftActivityLevel as 0|1|2|3|4 }), [profile, draftActivityLevel])
   const suggestedCal     = tdee + (draftGoalType === 'lose' ? -500 : draftGoalType === 'gain' ? 300 : 0)
   const suggestedProtRate = draftGoalType === 'lose' ? 2.0 : draftGoalType === 'gain' ? 2.2 : 1.6
   const suggestedProt    = Math.round(profile.weight * suggestedProtRate)
@@ -2037,11 +2250,16 @@ interface SettingsSheetProps {
   onRemoveGroup:   (id: string) => void
   meals:           Meal[]
   onUpdateMeal:    (id: string, updates: Partial<Meal>) => void
+  weightLogEntries?: import('../types').WeightLog[]
+  onLogWeight?:      (weight_kg: number, date?: string) => Promise<void>
+  onDeleteWeightEntry?: (id: string) => Promise<void>
+  onExportCsv?:      () => void
 }
 
 export function SettingsSheet({
   isOpen, onClose, lang, connected, profile, onSaveProfile, goals, onSaveGoals, onToggleLang, onSignOut, onLinkGoogle, hasGoogleLinked, theme, styleMode, onToggleTheme, onSelectStyleMode, showToast,
   history, onDeleteHistory, onUpdateHistory, composedGroups, onRemoveGroup, meals, onUpdateMeal,
+  weightLogEntries = [], onLogWeight, onDeleteWeightEntry, onExportCsv,
 }: SettingsSheetProps) {
   const [screen, setScreen] = useState<Screen>('main')
   useLockBodyScroll(isOpen)
@@ -2138,6 +2356,7 @@ export function SettingsSheet({
                 onSignOut={() => { handleClose(); onSignOut() }}
                 onLinkGoogle={onLinkGoogle}
                 hasGoogleLinked={hasGoogleLinked}
+                onExportCsv={onExportCsv}
               />
             )}
             {screen === 'profile' && (
@@ -2146,6 +2365,10 @@ export function SettingsSheet({
                 profile={profile}
                 onSave={onSaveProfile}
                 showToast={showToast}
+                weightLogEntries={weightLogEntries}
+                onLogWeight={onLogWeight}
+                onDeleteWeightEntry={onDeleteWeightEntry}
+                dailyCalGoal={goals?.default_calories}
               />
             )}
             {screen === 'goals' && (

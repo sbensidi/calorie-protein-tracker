@@ -48,6 +48,9 @@ const fakeMealRow: Meal = {
   name: 'Chicken Breast',
   calories: 165,
   protein: 31,
+  fat: null,
+  carbs: null,
+  notes: null,
   grams: 100,
   date: '2026-04-26',
   meal_type: 'lunch',
@@ -58,8 +61,8 @@ const fakeMealRow: Meal = {
 }
 
 const newMealPayload = {
-  name: 'Egg', calories: 78, protein: 6, grams: 50,
-  date: '2026-04-26', meal_type: 'breakfast' as const,
+  name: 'Egg', calories: 78, protein: 6, fat: null, carbs: null, notes: null,
+  grams: 50, date: '2026-04-26', meal_type: 'breakfast' as const,
   time_logged: '08:00:00', fluid_ml: null, fluid_excluded: false,
 }
 

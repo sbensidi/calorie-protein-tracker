@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useRef, useCallback, lazy, Suspense } fro
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from './lib/supabase'
 import { t, dir, today } from './lib/i18n'
+import { calcWeeklyTdee, calcGoalStreak } from './lib/calculations'
 import type { Lang, TranslationKey } from './lib/i18n'
 import { useAppContext } from './context/AppContext'
 import { useMeals } from './hooks/useMeals'
@@ -13,6 +14,7 @@ import { useToast } from './hooks/useToast'
 import { TodayTab } from './components/TodayTab'
 import { ToastContainer } from './components/ToastContainer'
 import { useProfile } from './hooks/useProfile'
+import { useWeightLog } from './hooks/useWeightLog'
 import { ErrorBoundary } from './components/ErrorBoundary'
 
 const HistoryTab   = lazy(() => import('./components/HistoryTab').then(m => ({ default: m.HistoryTab })))
@@ -124,6 +126,7 @@ export default function App() {
   const { goals, error: goalsError, saveGoals, getGoalForDate } = useGoals(userId)
   const { history, error: historyError, upsertHistory, touchHistory, getSuggestions, deleteHistory, updateHistory } = useFoodHistory(userId)
   const { groups: composedGroups, error: groupsError, upsert: upsertGroup, remove: removeGroup, pruneMealId } = useComposedGroups(userId)
+  const { entries: weightLogEntries, logWeight, deleteEntry: deleteWeightEntry } = useWeightLog(userId)
 
   // I9: show toast when session expired unexpectedly
   useEffect(() => {
@@ -137,6 +140,31 @@ export default function App() {
     await deleteMeal(id)
     await pruneMealId(id)
   }, [deleteMeal, pruneMealId])
+
+  // Weekly TDEE × 7 — for weight-impact row in HistoryTab
+  const weeklyTdee = useMemo(() => calcWeeklyTdee(profile), [profile])
+
+  // CSV export: build and trigger download of all meals
+  const handleExportCsv = useCallback(() => {
+    const header = 'date,meal_type,name,grams,calories,protein,fat,carbs,notes,time_logged'
+    const rows = meals.map(m => [
+      `"${m.date}"`, `"${m.meal_type}"`,
+      `"${(m.name ?? '').replace(/"/g, '""')}"`,
+      m.grams, m.calories, m.protein,
+      m.fat ?? '', m.carbs ?? '',
+      `"${(m.notes ?? '').replace(/"/g, '""')}"`,
+      `"${m.time_logged}"`,
+    ].join(','))
+    const csv = [header, ...rows].join('\n')
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }))
+    const a   = document.createElement('a')
+    a.href = url; a.download = `meals-${new Date().toISOString().slice(0, 10)}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }, [meals])
+
+  // Goal streak: count consecutive days back from yesterday where calories > 0 and <= goal
+  const goalStreak = useMemo(() => calcGoalStreak(meals, getGoalForDate), [meals, getGoalForDate])
 
   // C5: show a persistent toast when a new SW is waiting — user must click to reload
   useEffect(() => {
@@ -352,6 +380,7 @@ export default function App() {
               onUpsertGroup={upsertGroup}
               onRemoveGroup={removeGroup}
               showToast={showToast}
+              goalStreak={goalStreak}
             />
           </ErrorBoundary>
         )}
@@ -367,6 +396,7 @@ export default function App() {
                 composedGroups={composedGroups}
                 fluidGoalMl={profile.fluidGoalMl}
                 loading={mealsLoading}
+                weeklyTdee={weeklyTdee}
               />
             </Suspense>
           </ErrorBoundary>
@@ -400,6 +430,10 @@ export default function App() {
           onRemoveGroup={removeGroup}
           meals={meals}
           onUpdateMeal={updateMeal}
+          weightLogEntries={weightLogEntries}
+          onLogWeight={logWeight}
+          onDeleteWeightEntry={deleteWeightEntry}
+          onExportCsv={handleExportCsv}
         />
         </Suspense>
       </ErrorBoundary>
