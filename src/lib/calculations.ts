@@ -218,7 +218,7 @@ export function getGreeting(ctx: GreetingContext): Greeting {
   const fluidPct      = fluidGoalMl > 0 ? fluidMl / fluidGoalMl : 0
 
   // joke fires every 4 days, skipped at night
-  if (dayOfYear % 4 === 0 && hour < 21) {
+  if (dayOfYear % 1 === 0 && hour < 21) {
     return { line1, line2: `😄 ${pick(JOKES, Math.floor(dayOfYear / 4))}`, isJoke: true }
   }
 
