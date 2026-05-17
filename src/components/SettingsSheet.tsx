@@ -434,7 +434,7 @@ function MainScreen({ lang, connected, theme, styleMode, showGreeting, onProfile
             >
               <span style={{
                 position: 'absolute', top: 3,
-                insetInlineStart: showGreeting ? 23 : 3,
+                insetInlineStart: showGreeting ? 3 : 23,
                 width: 22, height: 22, borderRadius: '50%',
                 background: showGreeting ? 'var(--accent)' : 'var(--text-3)',
                 transition: 'inset-inline-start 0.25s cubic-bezier(.34,1.56,.64,1), background 0.25s',
