@@ -214,6 +214,7 @@ export default function App() {
         name: g.name,
         calories: Math.round(gMeals.reduce((s, m) => s + m.calories, 0)),
         protein: Math.round(gMeals.reduce((s, m) => s + m.protein, 0) * 10) / 10,
+        batchWeightG: g.batchWeightG ?? null,
       }
     }).filter(e => e.name),
   [composedGroups, meals])
@@ -260,7 +261,10 @@ export default function App() {
       }}>
         <div style={{ maxWidth: 560, margin: '0 auto', padding: '0 16px' }}>
           <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', height: 56 }}>
-            <h1 style={{ fontSize: 18, fontWeight: 800, margin: 0, color: 'var(--text)' }}>
+            <h1
+              style={{ fontSize: 18, fontWeight: 800, margin: 0, color: 'var(--text)', cursor: 'pointer' }}
+              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            >
               {t(lang, 'appTitle')}
             </h1>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -293,6 +297,50 @@ export default function App() {
               })()}
             </div>
           </header>
+
+          {/* Tab bar — minimal: plain underline / classic: pill */}
+          {styleMode === 'minimal' ? (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', paddingBottom: 2 }}>
+              {(['today', 'history'] as Tab[]).map(tabKey => (
+                <button
+                  key={tabKey}
+                  onClick={() => setTab(tabKey)}
+                  style={{
+                    background: 'none', border: 'none', fontFamily: 'inherit',
+                    fontSize: 13, fontWeight: tab === tabKey ? 600 : 300,
+                    color: tab === tabKey ? 'var(--text)' : 'var(--text-2)',
+                    padding: '8px 0 10px', cursor: 'pointer',
+                    borderBottom: tab === tabKey ? '2px solid var(--accent)' : '2px solid transparent',
+                    marginBottom: -1, letterSpacing: '-0.01em',
+                    transition: 'color 0.2s, border-color 0.2s',
+                  }}
+                >
+                  {t(lang, tabKey as TranslationKey)}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className="tab-bar" style={{ marginBottom: 10, gridTemplateColumns: 'repeat(2, 1fr)' }}>
+              <div className="tab-indicator" style={{
+                left: (() => {
+                  const isRTL = lang === 'he'
+                  const todayActive = tab === 'today'
+                  if (isRTL) return todayActive ? 'calc(50% + 1.5px)' : '3px'
+                  else       return todayActive ? '3px' : 'calc(50% + 1.5px)'
+                })(),
+                width: 'calc(50% - 4.5px)',
+              }} />
+              {(['today', 'history'] as Tab[]).map(tabKey => (
+                <button
+                  key={tabKey}
+                  onClick={() => setTab(tabKey)}
+                  className={`tab-btn ${tab === tabKey ? 'active' : ''}`}
+                >
+                  {t(lang, tabKey as TranslationKey)}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
@@ -312,51 +360,6 @@ export default function App() {
 
       {/* ── Scrollable content ────────────────────────────────────── */}
       <div style={{ maxWidth: 560, margin: '0 auto', padding: '16px 16px calc(80px + env(safe-area-inset-bottom, 0px))' }}>
-
-        {/* Tab bar — minimal: plain underline / classic: pill */}
-        {styleMode === 'minimal' ? (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', marginBottom: 20, borderBottom: '1px solid var(--border)' }}>
-            {(['today', 'history'] as Tab[]).map(tabKey => (
-              <button
-                key={tabKey}
-                onClick={() => setTab(tabKey)}
-                style={{
-                  background: 'none', border: 'none', fontFamily: 'inherit',
-                  fontSize: 13, fontWeight: tab === tabKey ? 600 : 300,
-                  color: tab === tabKey ? 'var(--text)' : 'var(--text-2)',
-                  padding: '8px 0 10px', cursor: 'pointer',
-                  borderBottom: tab === tabKey ? '2px solid var(--accent)' : '2px solid transparent',
-                  marginBottom: -1, letterSpacing: '-0.01em',
-                  transition: 'color 0.2s, border-color 0.2s',
-                }}
-              >
-                {t(lang, tabKey as TranslationKey)}
-              </button>
-            ))}
-          </div>
-        ) : (
-          <div className="tab-bar" style={{ marginBottom: 20, gridTemplateColumns: 'repeat(2, 1fr)' }}>
-            {/* Sliding active indicator — left computed based on active tab + direction */}
-            <div className="tab-indicator" style={{
-              left: (() => {
-                const isRTL = lang === 'he'
-                const todayActive = tab === 'today'
-                if (isRTL) return todayActive ? 'calc(50% + 1.5px)' : '3px'
-                else       return todayActive ? '3px' : 'calc(50% + 1.5px)'
-              })(),
-              width: 'calc(50% - 4.5px)',
-            }} />
-            {(['today', 'history'] as Tab[]).map(tabKey => (
-              <button
-                key={tabKey}
-                onClick={() => setTab(tabKey)}
-                className={`tab-btn ${tab === tabKey ? 'active' : ''}`}
-              >
-                {t(lang, tabKey as TranslationKey)}
-              </button>
-            ))}
-          </div>
-        )}
 
         {tab === 'today' && (
           <ErrorBoundary label={lang === 'he' ? 'היום' : 'Today'} lang={lang}>
@@ -389,7 +392,7 @@ export default function App() {
               onRemoveGroup={removeGroup}
               showToast={showToast}
               goalStreak={goalStreak}
-              displayName={displayName}
+              displayName={profile.displayName || displayName}
               showGreeting={profile.showGreeting}
               onDismissGreeting={() => saveProfile({ showGreeting: false })}
             />

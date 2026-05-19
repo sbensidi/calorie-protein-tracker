@@ -2,7 +2,7 @@
  * SheetHandle — the sticky top bar for every bottom sheet.
  *
  * Contains:
- *  • drag handle pill
+ *  • drag handle pill (touch here to swipe down and close)
  *  • optional close (X) button
  *  • subtle bottom border (matches app header)
  *  • gradient fade that appears when the sheet content is scrolled
@@ -16,16 +16,46 @@
  *   </div>
  */
 
+import { useRef } from 'react'
+
 interface SheetHandleProps {
   scrolledDown: boolean
   onClose?: () => void
   onBack?: () => void
   isRTL?: boolean
+  onDragOffset?: (offset: number) => void
 }
 
-export function SheetHandle({ scrolledDown, onClose, onBack, isRTL }: SheetHandleProps) {
+const CLOSE_THRESHOLD = 64
+
+export function SheetHandle({ scrolledDown, onClose, onBack, isRTL, onDragOffset }: SheetHandleProps) {
+  const touchStartY = useRef<number | null>(null)
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartY.current = e.touches[0].clientY
+  }
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (touchStartY.current === null) return
+    const dy = Math.max(0, e.touches[0].clientY - touchStartY.current)
+    onDragOffset?.(dy)
+  }
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartY.current === null) return
+    const dy = e.changedTouches[0].clientY - touchStartY.current
+    touchStartY.current = null
+    onDragOffset?.(0)
+    if (dy > CLOSE_THRESHOLD) onClose?.()
+  }
+
   return (
-    <div style={{ position: 'relative', flexShrink: 0 }}>
+    <div
+      style={{ position: 'relative', flexShrink: 0, touchAction: 'none', cursor: 'grab' }}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
       {/* Bar itself */}
       <div style={{
         display: 'flex', justifyContent: 'center',

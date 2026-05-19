@@ -12,7 +12,7 @@ import { MealCard } from './MealCard'
 import { ComposedMealCard } from './ComposedMealCard'
 import { DailySummary } from './DailySummary'
 import { useAppContext } from '../context/AppContext'
-import { getGreeting } from '../lib/calculations'
+import { getGreeting, estimateCookedWeight } from '../lib/calculations'
 
 type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'beverage'
 
@@ -334,28 +334,98 @@ export function TodayTab({
   // ── Compose modal ────────────────────────────────────────────
   const [composeModal, setComposeModal] = useState<{ mealType: MealType } | null>(null)
   const [composeName, setComposeName] = useState('')
+  const [composeWeight, setComposeWeight] = useState('')
+  const [composePortion, setComposePortion] = useState('')
+  const [composeBreakdown, setComposeBreakdown] = useState<import('../lib/calculations').CookingBreakdownItem[]>([])
 
   const openComposeModal = (mealType: MealType) => {
     setComposeName('')
+    setComposePortion('')
     setComposeModal({ mealType })
   }
 
-  const handleCompose = () => {
+  // When compose modal opens, compute cooking weight breakdown from selected meals
+  useEffect(() => {
+    if (!composeModal) return
+    const { mealType } = composeModal
+    const sel = selectedIds[mealType] ?? new Set<string>()
+    const selMeals  = mealsByType[mealType].filter(m => sel.has(m.id))
+    const selGroups = composedGroups.filter(g => sel.has(g.id))
+    const groupMeals = todayMeals.filter(m => selGroups.some(g => g.mealIds.includes(m.id)))
+    const { total, breakdown } = estimateCookedWeight([...selMeals, ...groupMeals])
+    setComposeBreakdown(breakdown)
+    setComposeWeight(String(total))
+  }, [composeModal]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleCompose = async () => {
     if (!composeModal) return
     const { mealType } = composeModal
     const sel = selectedIds[mealType]
     if (!sel || sel.size === 0) return
 
-    const name = composeName.trim() || t(lang, 'newDish')
+    const selMeals   = mealsByType[mealType].filter(m => sel.has(m.id))
+    const selGroups  = composedGroups.filter(g => sel.has(g.id))
+    const groupMeals = todayMeals.filter(m => selGroups.some(g => g.mealIds.includes(m.id)))
+    const allSel     = [...selMeals, ...groupMeals]
+
+    const name         = composeName.trim() || t(lang, 'newDish')
+    const batchWeightG = parseFloat(composeWeight)
+    const totalCalories = Math.round(allSel.reduce((s, m) => s + m.calories, 0))
+    const totalProtein  = Math.round(allSel.reduce((s, m) => s + m.protein, 0) * 10) / 10
+
     const newGroup: ComposedGroup = {
       id: crypto.randomUUID(),
       name,
       mealIds: [...sel],
+      batchWeightG:  batchWeightG > 0 ? batchWeightG : null,
+      totalCalories,
+      totalProtein,
     }
     onUpsertGroup(newGroup)
+
+    // If a portion was specified, log it immediately using the just-computed totals
+    const portionG = parseFloat(composePortion)
+    if (portionG > 0 && batchWeightG > 0 && totalCalories > 0) {
+      const ratio = portionG / batchWeightG
+      await onAddMealWithId({
+        date:           today(),
+        meal_type:      mealType,
+        name,
+        grams:          Math.round(portionG),
+        calories:       Math.round(totalCalories * ratio),
+        protein:        Math.round(totalProtein  * ratio * 10) / 10,
+        fat:            null,
+        carbs:          null,
+        notes:          null,
+        time_logged:    currentTime(),
+        fluid_ml:       null,
+        fluid_excluded: false,
+      })
+    }
+
     clearSelection(mealType)
     setComposeModal(null)
   }
+
+  const handleAddRecipePortion = useCallback(async (composedId: string, mealType: MealType, portionG: number) => {
+    const group = composedGroups.find(g => g.id === composedId)
+    if (!group?.batchWeightG || !group.totalCalories || !group.totalProtein) return
+    const ratio = portionG / group.batchWeightG
+    await onAddMealWithId({
+      date:           today(),
+      meal_type:      mealType,
+      name:           group.name,
+      grams:          Math.round(portionG),
+      calories:       Math.round(group.totalCalories * ratio),
+      protein:        Math.round(group.totalProtein  * ratio * 10) / 10,
+      fat:            null,
+      carbs:          null,
+      notes:          null,
+      time_logged:    currentTime(),
+      fluid_ml:       null,
+      fluid_excluded: false,
+    })
+  }, [composedGroups, onAddMealWithId])
 
   // ── Action bar helpers ───────────────────────────────────────
   const handleDuplicateSelected = (type: MealType) => {
@@ -675,21 +745,28 @@ export function TodayTab({
             })}
 
             {/* Standalone meals */}
-            {standalones.map((meal) => (
-              <div key={meal.id} style={styleMode === 'minimal' ? { borderBottom: '1px dashed var(--border)' } : {}}>
-                <MealCard
-                  meal={meal}
-                  lang={lang}
-                  weightUnit={defaultWeightUnit}
-                  showCheckbox
-                  selected={selSet.has(meal.id)}
-                  onToggleSelect={() => toggleSelect(type, meal.id)}
-                  onEdit={onEditMeal}
-                  enableWeightScaling
-                  listStyle={styleMode === 'minimal'}
-                />
-              </div>
-            ))}
+            {standalones.map((meal) => {
+              const isPcsMeal = meal.grams < 0
+              const libServingG = isPcsMeal
+                ? library.find(item => item.name_he === meal.name || item.name_en.toLowerCase() === meal.name.toLowerCase())?.serving_size ?? undefined
+                : undefined
+              return (
+                <div key={meal.id} style={styleMode === 'minimal' ? { borderBottom: '1px dashed var(--border)' } : {}}>
+                  <MealCard
+                    meal={meal}
+                    lang={lang}
+                    weightUnit={defaultWeightUnit}
+                    showCheckbox
+                    selected={selSet.has(meal.id)}
+                    onToggleSelect={() => toggleSelect(type, meal.id)}
+                    onEdit={onEditMeal}
+                    enableWeightScaling
+                    servingG={libServingG != null ? Number(libServingG) : undefined}
+                    listStyle={styleMode === 'minimal'}
+                  />
+                </div>
+              )
+            })}
 
             {/* Quick-add to this section */}
             {selCount === 0 && (styleMode === 'minimal' ? (
@@ -833,6 +910,88 @@ export function TodayTab({
               </div>
             ))}
           </div>
+
+          {/* Cooking weight breakdown */}
+          <div style={{ background: 'var(--surface-2)', borderRadius: 10, padding: '8px 10px', fontSize: 11 }}>
+            <p style={{ margin: '0 0 6px', fontWeight: 700, color: 'var(--text-2)' }}>
+              {t(lang, 'recipeBatchWeight')}
+            </p>
+            {composeBreakdown.map((b, i) => (
+              <div key={i} style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 3 }}>
+                <span style={{ flex: 1, color: b.skipped ? 'var(--text-3)' : 'var(--text-2)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {b.name}
+                </span>
+                {b.skipped ? (
+                  <span style={{ color: 'var(--text-3)', fontSize: 10 }}>{t(lang, 'recipeSkipped')}</span>
+                ) : (
+                  <>
+                    <span style={{ color: 'var(--text-3)', fontVariantNumeric: 'tabular-nums' }}>{b.rawG}g</span>
+                    <span style={{ color: 'var(--text-3)' }}>×{b.factor}</span>
+                    <span style={{ fontWeight: 700, color: b.matched ? 'var(--text)' : 'var(--text-3)', fontVariantNumeric: 'tabular-nums', minWidth: 36, textAlign: 'end' }}>
+                      {b.cookedG}g{!b.matched && <span style={{ fontSize: 9, marginInlineStart: 2, opacity: 0.7 }}>*</span>}
+                    </span>
+                  </>
+                )}
+              </div>
+            ))}
+            <div style={{ height: 1, background: 'var(--border)', margin: '6px 0' }} />
+            {/* Editable total */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ flex: 1, fontWeight: 700, color: 'var(--text-2)' }}>{lang === 'he' ? 'סה"כ' : 'Total'}</span>
+              <div style={{ position: 'relative' }}>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  className="inp"
+                  style={{ height: 32, fontSize: 13, width: 80, textAlign: 'end', paddingInlineEnd: 20 }}
+                  value={composeWeight}
+                  onChange={e => setComposeWeight(e.target.value)}
+                />
+                <span style={{ position: 'absolute', insetInlineEnd: 6, top: '50%', transform: 'translateY(-50%)', fontSize: 11, color: 'var(--text-3)', pointerEvents: 'none' }}>g</span>
+              </div>
+            </div>
+            {composeBreakdown.some(b => !b.matched && !b.skipped) && (
+              <p style={{ margin: '4px 0 0', fontSize: 10, color: 'var(--text-3)' }}>
+                * {t(lang, 'recipeDefaultFactor')}
+              </p>
+            )}
+            <p style={{ margin: '4px 0 0', fontSize: 10, color: 'var(--text-3)' }}>
+              {t(lang, 'recipeWeightHint')}
+            </p>
+          </div>
+
+          {/* Optional: log a portion today */}
+          {parseFloat(composeWeight) > 0 && (
+            <div style={{ background: 'var(--blue-fill)', border: '1px solid var(--blue-border)', borderRadius: 10, padding: '10px 12px' }}>
+              <p style={{ margin: '0 0 8px', fontSize: 12, fontWeight: 700, color: 'var(--blue-hi)' }}>
+                {lang === 'he' ? 'הוסף מנה לרשמת היום (אופציונלי)' : 'Log a portion today (optional)'}
+              </p>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <div style={{ position: 'relative', flex: 1 }}>
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    className="inp"
+                    style={{ fontSize: 14, height: 36, paddingInlineEnd: 24 }}
+                    placeholder={lang === 'he' ? 'משקל מנה' : 'portion g'}
+                    value={composePortion}
+                    onChange={e => setComposePortion(e.target.value)}
+                  />
+                  <span style={{ position: 'absolute', insetInlineEnd: 8, top: '50%', transform: 'translateY(-50%)', fontSize: 11, color: 'var(--text-3)', pointerEvents: 'none' }}>g</span>
+                </div>
+                {parseFloat(composePortion) > 0 && (() => {
+                  const ratio = parseFloat(composePortion) / parseFloat(composeWeight)
+                  const pCal  = Math.round(totalCal  * ratio)
+                  const pProt = Math.round(totalProt  * ratio * 10) / 10
+                  return (
+                    <span style={{ fontSize: 12, color: 'var(--text-2)', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                      {pCal} {t(lang, 'caloriesUnit')} · {pProt} {t(lang, 'proteinUnit')}
+                    </span>
+                  )
+                })()}
+              </div>
+            </div>
+          )}
 
           {/* Name input */}
           <div style={{ position: 'relative' }}>
@@ -1028,6 +1187,7 @@ export function TodayTab({
               onTouchHistory={onTouchHistory}
               composedEntries={composedEntries}
               onAddComposed={(id, mealType) => { handleAddComposed(id, mealType); setEntryOpen(false) }}
+              onAddRecipePortion={(id, mealType, portionG) => { handleAddRecipePortion(id, mealType, portionG); setEntryOpen(false) }}
               fluidThresholdMl={fluidThresholdMl}
               fluidZeroCalOnly={fluidZeroCalOnly}
               isOpen={entryOpen}

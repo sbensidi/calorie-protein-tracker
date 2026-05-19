@@ -2,7 +2,7 @@ import { useState, useRef } from 'react'
 import type { Meal } from '../types'
 import type { Lang } from '../lib/i18n'
 import { t, dir } from '../lib/i18n'
-import { formatWeight, UNITS, toBase } from '../lib/units'
+import { formatWeight, UNITS, toBase, fromBase } from '../lib/units'
 import type { WeightUnit, UnitId } from '../lib/units'
 
 interface MealCardProps {
@@ -14,6 +14,7 @@ interface MealCardProps {
   onToggleSelect: () => void
   onEdit: (id: string, updates: Partial<Meal>) => void
   enableWeightScaling?: boolean
+  servingG?: number
   onDelete?: (id: string) => void
   onDuplicate?: () => void
   listStyle?: boolean
@@ -21,7 +22,7 @@ interface MealCardProps {
 
 type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'beverage'
 
-export function MealCard({ meal, lang, weightUnit = 'g', showCheckbox, selected, onToggleSelect, onEdit, enableWeightScaling = false, onDelete, onDuplicate, listStyle = false }: MealCardProps) {
+export function MealCard({ meal, lang, weightUnit = 'g', showCheckbox, selected, onToggleSelect, onEdit, enableWeightScaling = false, servingG, onDelete, onDuplicate, listStyle = false }: MealCardProps) {
   const [editing, setEditing] = useState(false)
   const scalingRatios = useRef<{ calPerGram: number; protPerGram: number; perServing: boolean } | null>(null)
   const [editName,     setEditName]     = useState(meal.name)
@@ -177,13 +178,21 @@ export function MealCard({ meal, lang, weightUnit = 'g', showCheckbox, selected,
                 onChange={e => {
                   const w = e.target.value === '' ? '' : Number(e.target.value)
                   setEditWeight(w)
-                  if (enableWeightScaling && scalingRatios.current && typeof w === 'number' && w > 0) {
-                    // Only scale if still in same unit family (pcs vs gram/volume)
-                    const isPcs = editWeightUnit === 'pcs'
-                    if (isPcs === scalingRatios.current.perServing) {
-                      const base = isPcs ? w : toBase(w, editWeightUnit as UnitId)
+                  if (!enableWeightScaling || typeof w !== 'number' || w <= 0 || editWeightUnit === 'pcs') return
+                  if (scalingRatios.current) {
+                    if (!scalingRatios.current.perServing) {
+                      const base = toBase(w, editWeightUnit as UnitId)
                       setEditCalories(Math.round(base * scalingRatios.current.calPerGram))
                       setEditProtein(Math.round(base * scalingRatios.current.protPerGram * 10) / 10)
+                    }
+                  } else {
+                    // pcs→gram crossing nulled the ref; rebuild from current state so
+                    // subsequent g→oz switches can still scale correctly.
+                    const base = toBase(w, editWeightUnit as UnitId)
+                    if (base > 0) {
+                      const cal  = typeof editCalories === 'number' ? editCalories : Number(editCalories) || 0
+                      const prot = typeof editProtein  === 'number' ? editProtein  : Number(editProtein)  || 0
+                      scalingRatios.current = { calPerGram: cal / base, protPerGram: prot / base, perServing: false }
                     }
                   }
                 }}
@@ -208,20 +217,21 @@ export function MealCard({ meal, lang, weightUnit = 'g', showCheckbox, selected,
               onChange={e => {
                 const newUnit = e.target.value as UnitId | 'pcs'
                 setEditWeightUnit(newUnit)
+                const crossingBoundary = (editWeightUnit === 'pcs') !== (newUnit === 'pcs')
+                if (crossingBoundary) {
+                  if (scalingRatios.current) scalingRatios.current = null
+                  return
+                }
+                if (editWeightUnit === 'pcs' || newUnit === 'pcs') return
+                const w = typeof editWeight === 'number' ? editWeight : Number(editWeight) || 0
+                if (w <= 0) return
+                const base = toBase(w, editWeightUnit as UnitId)  // use OLD unit
+                // Amount conversion is always unconditional — pure unit arithmetic
+                setEditWeight(Math.round(fromBase(base, newUnit as UnitId) * 100) / 100)
+                // Nutrition scaling only when ratios are available
                 if (enableWeightScaling && scalingRatios.current) {
-                  const crossingBoundary = (editWeightUnit === 'pcs') !== (newUnit === 'pcs')
-                  if (crossingBoundary) {
-                    // Can't convert pcs↔gram without servingGrams — disable scaling
-                    scalingRatios.current = null
-                  } else if (editWeightUnit !== 'pcs' && newUnit !== 'pcs') {
-                    // Weight/volume switch: recalculate nutrition for current amount in new unit
-                    const w = typeof editWeight === 'number' ? editWeight : Number(editWeight) || 0
-                    if (w > 0) {
-                      const base = toBase(w, newUnit as UnitId)
-                      setEditCalories(Math.round(base * scalingRatios.current.calPerGram))
-                      setEditProtein(Math.round(base * scalingRatios.current.protPerGram * 10) / 10)
-                    }
-                  }
+                  setEditCalories(Math.round(base * scalingRatios.current.calPerGram))
+                  setEditProtein(Math.round(base * scalingRatios.current.protPerGram * 10) / 10)
                 }
               }}
             >
@@ -236,6 +246,17 @@ export function MealCard({ meal, lang, weightUnit = 'g', showCheckbox, selected,
             </select>
           </div>
         </div>
+        {editWeightUnit === 'pcs' && servingG && (
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 4 }}>
+            <span style={{
+              fontSize: 10, fontWeight: 600, color: 'var(--text-3)',
+              background: 'var(--bg-card)', border: '1px solid var(--border)',
+              borderRadius: 8, padding: '3px 8px',
+            }}>
+              {lang === 'he' ? `מנה ≈ ${servingG}ג׳` : `serving ≈ ${servingG}g`}
+            </span>
+          </div>
+        )}
         {/* Notes field */}
         <input
           type="text"

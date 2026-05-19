@@ -347,6 +347,24 @@ input[type="number"] { -moz-appearance: textfield; }
 }
 .expand-down { animation: expandDown 0.2s cubic-bezier(.22,.9,.36,1) both; }
 
+@keyframes metric-pulse {
+  0%   { opacity: 0.5; transform: scale(0.92); }
+  55%  { opacity: 1;   transform: scale(1.06); }
+  100% { opacity: 1;   transform: scale(1);    }
+}
+.metric-pulse { animation: metric-pulse 0.38s cubic-bezier(.22,.9,.36,1) both; }
+
+@keyframes slideInFromRight {
+  from { opacity: 0; transform: translateX(48px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes slideInFromLeft {
+  from { opacity: 0; transform: translateX(-48px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+.slide-in-right { animation: slideInFromRight 0.22s cubic-bezier(.22,.9,.36,1) both; }
+.slide-in-left  { animation: slideInFromLeft  0.22s cubic-bezier(.22,.9,.36,1) both; }
+
 .fade-up   { animation: fadeUp 0.3s cubic-bezier(.22,.9,.36,1) both; }
 .skeleton-card {
   background: var(--surface-2);

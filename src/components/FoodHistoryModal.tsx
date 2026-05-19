@@ -183,7 +183,11 @@ export function FoodHistoryModal({
 
           {filtered.length === 0 && matchedComposed.length === 0 ? (
             <div style={{ padding: '32px 0', textAlign: 'center', color: 'var(--text-3)', fontSize: 13 }}>
-              {t(lang, 'noResultsFound')}
+              <p style={{ margin: 0 }}>{t(lang, 'noRecentFood')}</p>
+              <p style={{ fontSize: 11, margin: '4px 0 0', opacity: 0.7, display: 'flex', alignItems: 'center', gap: 4, justifyContent: 'center' }}>
+                <span className="icon" style={{ fontSize: 14 }}>add_circle</span>
+                {t(lang, 'addManually')}
+              </p>
             </div>
           ) : filtered.map((item, i) => {
             const itemIsUnit  = item.grams < 0

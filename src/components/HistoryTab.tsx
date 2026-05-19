@@ -62,6 +62,98 @@ const STATUS_COLOR: Record<DayData['status'], { badge: string; text: string; ico
   both:       { badge: 'var(--danger-tint)',    text: 'var(--danger-hi)',    icon: 'warning'       },
 }
 
+// ── PeriodBalanceCard ─────────────────────────────────────────────────
+function PeriodBalanceCard({ lang, totalDays, daysElapsed, consumed, target, showDots, headerKey, progressKey }: {
+  lang:        Lang
+  totalDays:   number
+  daysElapsed: number
+  consumed:    number
+  target:      number
+  showDots:    boolean
+  headerKey:   'weeklyBalance' | 'monthlyBalance'
+  progressKey: 'weeklyProgressLabel' | 'monthlyProgressLabel'
+}) {
+  const balance    = target - consumed           // positive = under = good
+  const isGood     = balance >= 0
+  const daysRemain = totalDays - daysElapsed
+  const projection = daysElapsed >= 2 ? Math.round((balance / daysElapsed) * totalDays) : null
+  const locale     = lang === 'he' ? 'he-IL' : 'en-US'
+  const color      = isGood ? 'var(--positive-hi)' : 'var(--warning)'
+  const fmt        = (n: number) => Math.round(Math.abs(n)).toLocaleString(locale)
+
+  const tiles = [
+    { key: 'consumedSoFar' as const, value: consumed,          tileColor: 'var(--text)',   prefix: '' },
+    { key: 'periodTarget'  as const, value: target,            tileColor: 'var(--text-2)', prefix: '' },
+    { key: 'balanceTile'   as const, value: Math.abs(balance), tileColor: color,            prefix: isGood ? '−' : '+' },
+  ]
+
+  const projText = projection !== null
+    ? lang === 'he'
+      ? `${t(lang, isGood ? 'deficit' : 'surplus')} של ~${fmt(projection)} ${t(lang, 'caloriesUnit')}`
+      : `~${fmt(projection)} ${t(lang, 'caloriesUnit')} ${t(lang, isGood ? 'deficit' : 'surplus').toLowerCase()}`
+    : null
+
+  return (
+    <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+      {/* Header + badge */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.07em', margin: 0 }}>
+          {t(lang, headerKey)}
+        </p>
+        <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--accent-hi)', background: 'var(--accent-tint)', borderRadius: 20, padding: '2px 8px' }}>
+          {t(lang, 'dayLabel')} {daysElapsed} {t(lang, 'ofLabel')} {totalDays}
+        </span>
+      </div>
+
+      {/* Three stat tiles */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6 }}>
+        {tiles.map(({ key, value, tileColor, prefix }) => (
+          <div key={key} style={{ background: 'var(--bg)', borderRadius: 10, padding: '7px 10px', display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <span style={{ fontSize: 9, fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              {t(lang, key)}
+            </span>
+            <span style={{ fontSize: 14, fontWeight: 800, color: tileColor, fontVariantNumeric: 'tabular-nums', direction: 'ltr', unicodeBidi: 'embed' }}>
+              {prefix}{Math.round(value).toLocaleString(locale)}
+            </span>
+          </div>
+        ))}
+      </div>
+
+      {/* Progress — dots for week, bar for month */}
+      <div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
+          <span style={{ fontSize: 10, color: 'var(--text-3)' }}>{t(lang, progressKey)}</span>
+          <span style={{ fontSize: 10, color: 'var(--text-3)' }}>{daysRemain} {t(lang, 'daysRemainingLabel')}</span>
+        </div>
+        {showDots ? (
+          <div style={{ display: 'flex', gap: 3 }}>
+            {Array.from({ length: totalDays }, (_, i) => (
+              <div key={i} style={{ flex: 1, height: 5, borderRadius: 3, background: i < daysElapsed ? color : 'var(--border)', transition: 'background 0.2s' }} />
+            ))}
+          </div>
+        ) : (
+          <div style={{ height: 4, background: 'var(--border)', borderRadius: 2, overflow: 'hidden' }}>
+            <div style={{ height: '100%', width: `${Math.min(100, (daysElapsed / totalDays) * 100)}%`, background: color, borderRadius: 2, transition: 'width 0.4s ease' }} />
+          </div>
+        )}
+      </div>
+
+      {/* Projection footer */}
+      {projText !== null && (
+        <>
+          <div style={{ height: 1, background: 'var(--border)' }} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span className="icon" style={{ fontSize: 14, color, flexShrink: 0 }}>{isGood ? 'trending_down' : 'trending_up'}</span>
+            <span style={{ fontSize: 11, color: 'var(--text-3)' }}>
+              {t(lang, 'atThisPace')} — <span style={{ color, fontWeight: 700 }}>{projText}</span>
+            </span>
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
 // ── Component ────────────────────────────────────────────────────────
 
 export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntries = [], composedGroups = [], fluidGoalMl = 2500, loading = false, weeklyTdee = 0 }: HistoryTabProps) {
@@ -84,7 +176,14 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
   const [chartMetric7,  setChartMetric7]  = useState<'cal' | 'prot' | 'fluid'>('cal')
   const [chartMetric30, setChartMetric30] = useState<'cal' | 'prot' | 'fluid'>('cal')
   const [selectedBarDate, setSelectedBarDate] = useState<string | null>(null)
-  const panelTouchStartX = useRef(0)
+  const [slideDir,       setSlideDir]       = useState<'forward' | 'back' | null>(null)
+  const [calSlideDir,    setCalSlideDir]    = useState<'forward' | 'back' | null>(null)
+  const [weekSlideDir,   setWeekSlideDir]   = useState<'forward' | 'back' | null>(null)
+  const [monthSlideDir,  setMonthSlideDir]  = useState<'forward' | 'back' | null>(null)
+  const panelTouchStartX  = useRef(0)
+  const calTouchStartX    = useRef(0)
+  const weekTouchStartX   = useRef(0)
+  const monthTouchStartX  = useRef(0)
   const [statsPeriod, setStatsPeriod] = useState<'week' | 'month'>(
     () => (localStorage.getItem('stats-period') as 'week' | 'month') ?? 'week'
   )
@@ -112,7 +211,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
       if (Math.abs(delta) < 4) return
       // Close search dropdown when user scrolls (fixes touch-scroll on mobile)
       setDropdownOpen(false)
-      if (delta > 0 && y > 80) setScrolledDown(true)
+      if (delta > 0 && y > 80) { setScrolledDown(true); setDropdownOpen(false) }
       else if (delta < 0)      setScrolledDown(false)
       lastScrollY.current = y
     }
@@ -206,15 +305,28 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
       <div style={{ textAlign: 'center', padding: '40px 16px', color: 'var(--text-3)' }}>
         <span className="icon" style={{ fontSize: 32, display: 'block', marginBottom: 8 }}>history</span>
         <p style={{ fontSize: 14, margin: 0 }}>{t(lang, 'noHistory')}</p>
-        <p style={{ fontSize: 12, margin: '6px 0 0', color: 'var(--text-3)' }}>
+        <p style={{ fontSize: 12, margin: '6px 0 0', color: 'var(--text-3)', display: 'flex', alignItems: 'center', gap: 4, justifyContent: 'center' }}>
+          <span className="icon" style={{ fontSize: 14 }}>rocket_launch</span>
           {t(lang, 'noHistoryHint')}
         </p>
       </div>
     )
   }
 
+  // ── Swipe direction helper ────────────────────────────────────────
+  const swipeDir = (delta: number): 'forward' | 'back' =>
+    (lang === 'he' ? delta > 0 : delta < 0) ? 'forward' : 'back'
+
+  const slideClass = (dir: 'forward' | 'back' | null): string => {
+    if (!dir) return ''
+    return dir === 'forward'
+      ? (lang === 'he' ? 'slide-in-left' : 'slide-in-right')
+      : (lang === 'he' ? 'slide-in-right' : 'slide-in-left')
+  }
+
   // ── Calendar helpers ───────────────────────────────────────────────
   const changeMonth = (dir: 1 | -1) => {
+    setCalSlideDir(dir === 1 ? 'forward' : 'back')
     setCalMonth(prev => {
       const next = prev + dir
       if (next > 11) { setCalYear(y => y + 1); return 0 }
@@ -662,7 +774,8 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
     }
     return true
   })
-  const TOPBAR_H = 57  // 56px header + 1px border
+  // 56px title row + tab bar (classic ~48px, minimal ~38px) + 1px border
+  const TOPBAR_H = styleMode === 'minimal' ? 95 : 105
 
   // Group filteredDates by month for month separators
   const monthGroups = (() => {
@@ -686,7 +799,16 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
       {view === 'cal' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           <StatusFilterBar />
-          <div className="card" style={{ padding: 14 }}>
+          <div
+            className="card"
+            style={{ padding: 14 }}
+            onTouchStart={e => { calTouchStartX.current = e.touches[0].clientX }}
+            onTouchEnd={e => {
+              const delta = e.changedTouches[0].clientX - calTouchStartX.current
+              if (Math.abs(delta) < 44) return
+              changeMonth(swipeDir(delta) === 'forward' ? 1 : -1)
+            }}
+          >
             {/* Month header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
               <div style={{ display: 'flex', gap: 2 }}>
@@ -706,7 +828,8 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
               </div>
               <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>{monthLabel}</span>
             </div>
-            {/* Weekday labels */}
+            {/* Weekday labels + day cells — animated on month change */}
+            <div key={`${calYear}-${calMonth}`} className={slideClass(calSlideDir)}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', marginBottom: 4 }}>
               {weekDayLabels.map(d => (
                 <div key={d} style={{ textAlign: 'center', fontSize: 10, fontWeight: 600, color: 'var(--text-3)', padding: '3px 0' }}>
@@ -765,6 +888,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                 )
               })}
             </div>
+            </div> {/* end animated calendar content */}
             {/* Legend */}
             <div style={{ display: 'flex', gap: 14, marginTop: 10, paddingTop: 10, borderTop: '1px solid var(--border)', flexWrap: 'wrap' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, color: 'var(--text-3)' }}>
@@ -788,14 +912,21 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
       {view === 'list' && (
         <>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10, paddingBottom: 80 }}>
-            {/* Sticky bar: filters + search */}
+            {/* Sticky bar: search (always) + filters (hide on scroll-down) */}
             <div style={{
               position: 'sticky', top: TOPBAR_H, zIndex: 10,
               background: 'var(--bg)', paddingTop: 10, paddingBottom: 6,
-              display: 'flex', flexDirection: 'column', gap: 10,
               touchAction: 'pan-y',
             }}>
-              <div style={{ display: 'flex', gap: 6, alignItems: 'stretch' }}>
+              {/* Rows 1+2 — grid-row animation avoids explicit pixel heights and layout thrash */}
+              <div style={{
+                display: 'grid',
+                gridTemplateRows: scrolledDown ? '0fr' : '1fr',
+                opacity: scrolledDown ? 0 : 1,
+                transition: 'grid-template-rows 0.22s cubic-bezier(0.4,0,0.2,1), opacity 0.15s ease',
+              }}>
+              <div style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <div style={{ display: 'flex', gap: 6, alignItems: 'stretch', flexShrink: 0 }}>
                 <button
                   onClick={() => setSortAsc(v => !v)}
                   aria-label={sortAsc ? t(lang, 'sortOldFirst') : t(lang, 'sortNewFirst')}
@@ -809,11 +940,8 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                 >
                   <span className="icon icon-sm">{sortAsc ? 'arrow_upward' : 'arrow_downward'}</span>
                 </button>
-                <div style={{ flex: 1 }}><StatusFilterBar /></div>
-              </div>
-
-              {/* Search */}
-              <div style={{ position: 'relative' }}>
+                {/* Search — moved to row 1 */}
+                <div style={{ position: 'relative', flex: 1 }}>
                 <button
                   onMouseDown={e => {
                     e.preventDefault()
@@ -913,6 +1041,10 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                   )
                 })()}
               </div>
+              </div>
+              <StatusFilterBar />
+              </div>{/* end inner overflow wrapper */}
+              </div>{/* end rows 1+2 grid wrapper */}
 
               {/* Top gradient fade */}
               <div style={{ position: 'relative', height: 0, overflow: 'visible', zIndex: 9, pointerEvents: 'none' }}>
@@ -928,10 +1060,11 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
               <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-3)' }}>
                 {debouncedSearch ? (
                   <>
-                    <span className="icon" style={{ fontSize: 28, display: 'block', marginBottom: 8 }}>search_off</span>
+                    <span className="icon" style={{ fontSize: 28, display: 'block', marginBottom: 8 }}>manage_search</span>
                     <p style={{ fontSize: 13, margin: 0 }}>
-                      {lang === 'he' ? `לא נמצאו תוצאות עבור "${debouncedSearch}"` : `No results for "${debouncedSearch}"`}
+                      {lang === 'he' ? `לא מצאנו "${debouncedSearch}"` : `Nothing for "${debouncedSearch}"`}
                     </p>
+                    <p style={{ fontSize: 12, margin: '4px 0 0', color: 'var(--text-3)', opacity: 0.7 }}>{t(lang, 'tryOtherWord')}</p>
                     <button
                       onClick={() => setSearch('')}
                       style={{ marginTop: 10, fontSize: 12, color: 'var(--accent-hi)', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px', borderRadius: 6 }}
@@ -1085,7 +1218,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                     )}
                     {filtered.length === 0 && composedEntries.filter(e => !q || e.name.toLowerCase().includes(q)).length === 0 ? (
                       <div style={{ padding: '32px 0', textAlign: 'center', color: 'var(--text-3)', fontSize: 13 }}>
-                        {t(lang, 'noResultsFound')}
+                        {t(lang, 'noDataOnDate')}
                       </div>
                     ) : filtered.map((item, i) => {
                       const amtDisplay = item.grams < 0
@@ -1190,9 +1323,15 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
         const avg7Prot  = avg(last7,  'totalProtein')
 
         // ── Weekly calorie balance ─────────────────────────────────
-        const weeklyTotalCal  = barDays.filter(b => b.hasData).reduce((s, b) => s + b.cal,     0)
-        const weeklyGoalCal   = barDays.filter(b => b.hasData).reduce((s, b) => s + b.goalCal, 0)
-        const weeklyBalanceCal = weeklyTotalCal - weeklyGoalCal
+        // grouped skips today (intentionally — shown in Today tab), so add today separately
+        const todayCalories    = meals.filter(m => m.date === nowKey).reduce((s, m) => s + m.calories, 0)
+        const weeklyTotalCal   = barDays.filter(b => b.hasData).reduce((s, b) => s + b.cal, 0) + (offset7  === 0 ? todayCalories : 0)
+        // Days elapsed in current calendar week (or full 7 for past weeks)
+        const weekDaysElapsed  = offset7 === 0 ? barDays.filter(b => b.dateKey <= nowKey).length : 7
+        // Sum of per-day goals for elapsed days (respects weekly overrides)
+        const weekTargetSoFar  = barDays
+          .filter(b => offset7 === 0 ? b.dateKey <= nowKey : true)
+          .reduce((s, b) => s + b.goalCal, 0)
         const avg30Cal  = avg(last30, 'totalCalories')
         const avg30Prot = avg(last30, 'totalProtein')
 
@@ -1256,6 +1395,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
             <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-3)' }}>
               <span className="icon" style={{ fontSize: 32, display: 'block', marginBottom: 8 }}>bar_chart</span>
               <p style={{ fontSize: 14, margin: 0 }}>{t(lang, 'noEnoughData')}</p>
+              <p style={{ fontSize: 12, margin: '6px 0 0', opacity: 0.7 }}>{t(lang, 'noEnoughDataSub')}</p>
             </div>
           )
         }
@@ -1298,6 +1438,12 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
         }
 
         const lineGoal30 = isCal30 ? getGoalForDate(nowKey).calories : isProt30 ? getGoalForDate(nowKey).protein : fluidGoalMl
+        // Monthly balance card data
+        const monthDaysElapsed  = offset30 === 0 ? lineDays30.filter(b => b.dateKey <= nowKey).length : daysInMonth30
+        const monthTargetSoFar  = lineDays30
+          .filter(b => offset30 === 0 ? b.dateKey <= nowKey : true)
+          .reduce((s, b) => s + getGoalForDate(b.dateKey).calories, 0)
+        const monthConsumed     = lineDays30.reduce((s, b) => s + b.cal, 0) + (offset30 === 0 ? todayCalories : 0)
         const lineVals30 = lineDays30.map(d => isCal30 ? d.cal : isProt30 ? d.prot : d.fluid)
         const lineMax30  = Math.max(...lineVals30, lineGoal30, 1)
         const lineColorRaw30  = isCal30 ? 'var(--accent)' : isProt30 ? 'var(--positive)' : 'var(--accent)'
@@ -1371,7 +1517,17 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
             )}
 
             {/* 7-day section */}
-            {statsPeriod === 'week' && <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {statsPeriod === 'week' && <div
+              style={{ display: 'flex', flexDirection: 'column', gap: 10 }}
+              onTouchStart={e => { weekTouchStartX.current = e.touches[0].clientX }}
+              onTouchEnd={e => {
+                const delta = e.changedTouches[0].clientX - weekTouchStartX.current
+                if (Math.abs(delta) < 44) return
+                const dir = swipeDir(delta)
+                setWeekSlideDir(dir)
+                setOffset7(o => dir === 'back' ? o + 1 : Math.max(0, o - 1))
+              }}
+            >
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                   <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.01em' }}>
@@ -1387,14 +1543,14 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                 <div style={{ display: 'flex', gap: 4 }}>
                   <button
                     className="icon-btn"
-                    onClick={() => setOffset7(o => o + 1)}
+                    onClick={() => { setWeekSlideDir('back'); setOffset7(o => o + 1) }}
                     aria-label={t(lang, 'prevWeek')}
                   >
                     <span className="icon icon-sm">{lang === 'he' ? 'chevron_right' : 'chevron_left'}</span>
                   </button>
                   <button
                     className="icon-btn"
-                    onClick={() => setOffset7(o => o - 1)}
+                    onClick={() => { setWeekSlideDir('forward'); setOffset7(o => o - 1) }}
                     disabled={offset7 === 0}
                     aria-label={t(lang, 'nextWeek')}
                   >
@@ -1402,9 +1558,12 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                   </button>
                 </div>
               </div>
+              {/* Week data — animated on offset change */}
+              <div key={offset7} className={slideClass(weekSlideDir)} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {last7.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '20px 0', color: 'var(--text-3)' }}>
-                  <p style={{ fontSize: 13, margin: 0 }}>{t(lang, 'noDataInRange')}</p>
+                  <p style={{ fontSize: 13, margin: 0 }}>{t(lang, 'weekEmpty')}</p>
+                  <p style={{ fontSize: 11, margin: '4px 0 0', opacity: 0.7 }}>{t(lang, 'rangeEmptySub')}</p>
                 </div>
               ) : (
                 <>
@@ -1436,77 +1595,43 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                     )}
                   </div>
                   {/* Weekly calorie balance card */}
-                  {last7.length > 0 && (() => {
-                    // Row 1: plan adherence (consumed vs. user goal)
-                    const planDiff      = weeklyBalanceCal  // positive = over goal
-                    const planOver      = planDiff > 0
-                    const planExact     = planDiff === 0
-                    const planColor     = planExact ? 'var(--text-3)' : planOver ? 'var(--warning)' : 'var(--positive-hi)'
-                    const planSign      = planDiff > 0 ? '+' : ''
-                    const planLocale    = lang === 'he' ? 'he-IL' : 'en-US'
-                    const planLabel     = `${planSign}${Math.round(planDiff).toLocaleString(planLocale)} ${t(lang, 'caloriesUnit')} ${t(lang, 'calVsPlan')}`
+                  {last7.length > 0 && (
+                    <PeriodBalanceCard
+                      lang={lang}
+                      totalDays={7}
+                      daysElapsed={weekDaysElapsed}
+                      consumed={weeklyTotalCal}
+                      target={weekTargetSoFar}
+                      showDots={true}
+                      headerKey="weeklyBalance"
+                      progressKey="weeklyProgressLabel"
+                    />
+                  )}
 
-                    // Row 2: weight impact (consumed vs. TDEE)
-                    const hasWeightCalc = weeklyTdee > 0
-                    const tdeeBalance   = weeklyTotalCal - weeklyTdee          // negative = deficit
-                    const weightGrams   = Math.round(Math.abs(tdeeBalance) / 7.7)  // 7700 kcal/kg → /7.7 = grams
-                    const isWeightLoss  = tdeeBalance < 0
-                    const isWeightGain  = tdeeBalance > 0
-                    const weightColor   = isWeightLoss ? 'var(--positive-hi)' : isWeightGain ? 'var(--warning)' : 'var(--text-3)'
-                    const weightLabel   = isWeightLoss
+                  {/* Weight impact */}
+                  {last7.length > 0 && weeklyTdee > 0 && (() => {
+                    const loggedDaysCount   = last7.length + (offset7 === 0 && todayCalories > 0 ? 1 : 0)
+                    const tdeeForLoggedDays = (weeklyTdee / 7) * loggedDaysCount
+                    const tdeeBalance = weeklyTotalCal - tdeeForLoggedDays
+                    const weightGrams = Math.round(Math.abs(tdeeBalance) / 7.7)
+                    const isWeightLoss = tdeeBalance < 0
+                    const isWeightGain = tdeeBalance > 0
+                    const weightColor = isWeightLoss ? 'var(--positive-hi)' : isWeightGain ? 'var(--warning)' : 'var(--text-3)'
+                    const weightLabel = isWeightLoss
                       ? `${t(lang, 'weightLossOf')}${weightGrams}${t(lang, 'gramsSuffix')}`
                       : isWeightGain
                       ? `${t(lang, 'weightGainOf')}${weightGrams}${t(lang, 'gramsSuffix')}`
                       : t(lang, 'noWeightChange')
-
                     return (
-                      <div style={{
-                        background: 'var(--bg-card)', border: '1px solid var(--border)',
-                        borderRadius: 12, padding: '10px 14px',
-                        display: 'flex', flexDirection: 'column', gap: 8,
-                      }}>
-                        {/* Header */}
-                        <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.07em', margin: 0 }}>
-                          {t(lang, 'weeklyBalance')}
-                        </p>
-
-                        {/* Plan row */}
+                      <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: 6 }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                          <span style={{ fontSize: 12, color: 'var(--text-2)' }}>
-                            {t(lang, 'weeklyPlan')}
-                          </span>
-                          <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
-                            <span style={{ fontSize: 11, color: 'var(--text-3)', fontVariantNumeric: 'tabular-nums' }}>
-                              {Math.round(weeklyTotalCal).toLocaleString(lang === 'he' ? 'he-IL' : 'en-US')}
-                              {' / '}
-                              {Math.round(weeklyGoalCal).toLocaleString(lang === 'he' ? 'he-IL' : 'en-US')}
-                            </span>
-                            <span style={{ fontSize: 12, fontWeight: 700, color: planColor, fontVariantNumeric: 'tabular-nums' }}>
-                              {planExact ? '✓' : planLabel}
-                            </span>
+                          <span style={{ fontSize: 12, color: 'var(--text-2)' }}>{t(lang, 'weightImpact')}</span>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <span style={{ fontSize: 12, fontWeight: 700, color: weightColor }}>{weightLabel}</span>
+                            <span style={{ fontSize: 10, color: 'var(--text-3)' }}>*</span>
                           </div>
                         </div>
-
-                        {/* Weight impact row */}
-                        {hasWeightCalc && (
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid var(--border)', paddingTop: 8 }}>
-                            <span style={{ fontSize: 12, color: 'var(--text-2)' }}>
-                              {t(lang, 'weightImpact')}
-                            </span>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                              <span style={{ fontSize: 12, fontWeight: 700, color: weightColor }}>
-                                {weightLabel}
-                              </span>
-                              <span style={{ fontSize: 10, color: 'var(--text-3)' }}>*</span>
-                            </div>
-                          </div>
-                        )}
-
-                        {hasWeightCalc && (
-                          <p style={{ fontSize: 10, color: 'var(--text-3)', margin: 0 }}>
-                            {t(lang, 'tdeeNote')}
-                          </p>
-                        )}
+                        <p style={{ fontSize: 10, color: 'var(--text-3)', margin: 0 }}>{t(lang, 'tdeeNote')}</p>
                       </div>
                     )
                   })()}
@@ -1677,10 +1802,21 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                   )}
                 </>
               )}
+            </div>
             </div>}
 
             {/* 30-day section */}
-            {statsPeriod === 'month' && <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {statsPeriod === 'month' && <div
+              style={{ display: 'flex', flexDirection: 'column', gap: 10 }}
+              onTouchStart={e => { monthTouchStartX.current = e.touches[0].clientX }}
+              onTouchEnd={e => {
+                const delta = e.changedTouches[0].clientX - monthTouchStartX.current
+                if (Math.abs(delta) < 44) return
+                const dir = swipeDir(delta)
+                setMonthSlideDir(dir)
+                setOffset30(o => dir === 'back' ? o + 1 : Math.max(0, o - 1))
+              }}
+            >
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                   <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.01em' }}>
@@ -1694,14 +1830,14 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                 <div style={{ display: 'flex', gap: 4 }}>
                   <button
                     className="icon-btn"
-                    onClick={() => setOffset30(o => o + 1)}
+                    onClick={() => { setMonthSlideDir('back'); setOffset30(o => o + 1) }}
                     aria-label={t(lang, 'prevMonth')}
                   >
                     <span className="icon icon-sm">{lang === 'he' ? 'chevron_right' : 'chevron_left'}</span>
                   </button>
                   <button
                     className="icon-btn"
-                    onClick={() => setOffset30(o => o - 1)}
+                    onClick={() => { setMonthSlideDir('forward'); setOffset30(o => o - 1) }}
                     disabled={offset30 === 0}
                     aria-label={t(lang, 'nextMonth')}
                   >
@@ -1709,12 +1845,26 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                   </button>
                 </div>
               </div>
+              <div key={offset30} className={slideClass(monthSlideDir)} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {last30.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '20px 0', color: 'var(--text-3)' }}>
-                  <p style={{ fontSize: 13, margin: 0 }}>{t(lang, 'noDataInRange')}</p>
+                  <p style={{ fontSize: 13, margin: 0 }}>{t(lang, 'monthEmpty')}</p>
+                  <p style={{ fontSize: 11, margin: '4px 0 0', opacity: 0.7 }}>{t(lang, 'rangeEmptySub')}</p>
                 </div>
               ) : (
                 <>
+                  {last30.length > 0 && (
+                    <PeriodBalanceCard
+                      lang={lang}
+                      totalDays={daysInMonth30}
+                      daysElapsed={monthDaysElapsed}
+                      consumed={monthConsumed}
+                      target={monthTargetSoFar}
+                      showDots={false}
+                      headerKey="monthlyBalance"
+                      progressKey="monthlyProgressLabel"
+                    />
+                  )}
                   <div style={{ display: 'flex', gap: 6 }}>
                     <StatCard
                       label={t(lang, 'avgCal')}
@@ -1973,6 +2123,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                   )}
                 </>
               )}
+              </div>
             </div>}
 
             {/* ── Calorie distribution by meal type ────────────────────────── */}
@@ -2068,7 +2219,11 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
         const idx = chronoDates.indexOf(selectedBarDate)
         const prevDate = idx > 0 ? chronoDates[idx - 1] : null
         const nextDate = idx < chronoDates.length - 1 ? chronoDates[idx + 1] : null
-        const goTo = (dateKey: string) => setSelectedBarDate(dateKey)
+        const goTo = (dateKey: string) => {
+          const isForward = chronoDates.indexOf(dateKey) > chronoDates.indexOf(selectedBarDate ?? '')
+          setSlideDir(isForward ? 'forward' : 'back')
+          setSelectedBarDate(dateKey)
+        }
         return (
           <div className="compose-modal-backdrop" onClick={() => setSelectedBarDate(null)}>
             <div
@@ -2110,13 +2265,22 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                   <span className="icon icon-sm">close</span>
                 </button>
               </div>
-              {/* Day summary */}
-              <div style={{ padding: '0 14px 12px' }}>
-                <DayCardContent date={selectedBarDate} data={data} />
-              </div>
-              {/* Scrollable meals */}
-              <div style={{ overflowY: 'auto', flex: 1 }}>
-                <MealsList data={data} />
+              {/* Day summary + meals — animated on date change */}
+              <div
+                key={selectedBarDate}
+                className={slideDir === 'forward'
+                  ? (lang === 'he' ? 'slide-in-left' : 'slide-in-right')
+                  : slideDir === 'back'
+                  ? (lang === 'he' ? 'slide-in-right' : 'slide-in-left')
+                  : ''}
+                style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}
+              >
+                <div style={{ padding: '0 14px 12px' }}>
+                  <DayCardContent date={selectedBarDate} data={data} />
+                </div>
+                <div style={{ overflowY: 'auto', flex: 1 }}>
+                  <MealsList data={data} />
+                </div>
               </div>
             </div>
           </div>

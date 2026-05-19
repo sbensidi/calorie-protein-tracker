@@ -50,12 +50,12 @@ export function useWeightLog(userId: string | null) {
   const logWeight = useCallback(async (weight_kg: number, date?: string) => {
     if (!userId) return
     setError(null)
-    const { error: err } = await supabase.from('weight_log').upsert({
+    const { error: err } = await supabase.from('weight_log').insert({
       user_id: userId,
       date: date ?? today(),
       weight_kg,
       created_at: new Date().toISOString(),
-    }, { onConflict: 'user_id,date' })
+    })
     if (err) { if (import.meta.env.DEV) console.error('Log weight error:', err); setError(err.message) }
     else fetchEntries()
   }, [userId, fetchEntries])

@@ -81,5 +81,8 @@ export interface WeightLog {
 export interface ComposedGroup {
   id: string
   name: string
-  mealIds: string[]  // ordered list of Meal.id values that belong to this group
+  mealIds: string[]       // ordered list of Meal.id values that belong to this group
+  batchWeightG?: number | null   // estimated cooked weight (g); set → scalable recipe
+  totalCalories?: number | null  // cached at save time
+  totalProtein?: number | null   // cached at save time
 }

@@ -17,6 +17,7 @@ export interface UserProfile {
   fluidZeroCalOnly:   boolean
   defaultServingGrams: number
   showGreeting:       boolean
+  displayName:        string | null
 }
 
 // Only non-sensitive preferences are cached locally — biometrics stay DB-only
@@ -53,6 +54,7 @@ const DEFAULT: UserProfile = {
   fluidZeroCalOnly:   false,
   defaultServingGrams: 150,
   showGreeting:       true,
+  displayName:        null,
 }
 
 
@@ -83,6 +85,7 @@ function dbToProfile(row: Record<string, unknown>): UserProfile {
     fluidZeroCalOnly:    (row.fluid_zero_cal_only as boolean)  ?? DEFAULT.fluidZeroCalOnly,
     defaultServingGrams: (row.default_serving_grams as number) ?? DEFAULT.defaultServingGrams,
     showGreeting:        (row.show_greeting as boolean)         ?? DEFAULT.showGreeting,
+    displayName:         (row.display_name as string | null)   ?? null,
   }
 }
 
@@ -103,6 +106,7 @@ function profileToDb(p: UserProfile, userId: string) {
     fluid_zero_cal_only:  p.fluidZeroCalOnly,
     default_serving_grams: p.defaultServingGrams,
     show_greeting:         p.showGreeting,
+    display_name:          p.displayName,
     updated_at:            new Date().toISOString(),
   }
 }
@@ -117,7 +121,7 @@ export function useProfile(userId: string | null) {
     setLoading(true)
     const { data, error: err } = await supabase
       .from('profiles')
-      .select('id,sex,age,height,weight,activity_level,goal_type,weight_unit,volume_unit,fluid_goal_ml,fluid_threshold_ml,fluid_zero_cal_only,default_serving_grams,updated_at')
+      .select('id,sex,age,height,weight,target_weight_kg,activity_level,goal_type,weight_unit,volume_unit,fluid_goal_ml,fluid_threshold_ml,fluid_zero_cal_only,default_serving_grams,show_greeting,display_name,updated_at')
       .eq('id', userId)
       .single()
     if (!err && data) {

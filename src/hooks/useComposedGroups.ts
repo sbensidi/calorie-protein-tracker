@@ -16,10 +16,20 @@ interface DbRow {
   id: string
   name: string
   meal_ids: string[]
+  batch_weight_g: number | null
+  total_calories: number | null
+  total_protein:  number | null
 }
 
 function rowToGroup(row: DbRow): ComposedGroup {
-  return { id: row.id, name: row.name, mealIds: row.meal_ids }
+  return {
+    id: row.id,
+    name: row.name,
+    mealIds: row.meal_ids,
+    batchWeightG:  row.batch_weight_g  ?? null,
+    totalCalories: row.total_calories  ?? null,
+    totalProtein:  row.total_protein   ?? null,
+  }
 }
 
 export function useComposedGroups(userId: string | null) {
@@ -31,7 +41,7 @@ export function useComposedGroups(userId: string | null) {
     if (!userId) return
     const { data, error: err } = await supabase
       .from('composed_groups')
-      .select('id, name, meal_ids')
+      .select('id, name, meal_ids, batch_weight_g, total_calories, total_protein')
       .eq('user_id', userId)
     if (err) { if (import.meta.env.DEV) console.error('fetch composed_groups:', err); setError(err.message); return }
     const loaded = ((data ?? []) as DbRow[]).map(rowToGroup)
@@ -64,11 +74,14 @@ export function useComposedGroups(userId: string | null) {
     })
     if (!userId) return
     const { error: err } = await supabase.from('composed_groups').upsert({
-      id:       group.id,
-      user_id:  userId,
-      name:     group.name,
-      meal_ids: group.mealIds,
-      updated_at: new Date().toISOString(),
+      id:             group.id,
+      user_id:        userId,
+      name:           group.name,
+      meal_ids:       group.mealIds,
+      batch_weight_g: group.batchWeightG  ?? null,
+      total_calories: group.totalCalories ?? null,
+      total_protein:  group.totalProtein  ?? null,
+      updated_at:     new Date().toISOString(),
     })
     if (err) { if (import.meta.env.DEV) console.error('upsert composed_group:', err); setError(err.message) }
     else fetch()

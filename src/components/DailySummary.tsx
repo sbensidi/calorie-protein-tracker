@@ -58,7 +58,7 @@ export function DailySummary({ meals, date, goalCalories, goalProtein, lang, flu
       centerVal:   String(totalProtein),
       centerGoal:  `${goalProtein}${t(lang, 'proteinUnit')} /`,
       remaining:   remStr(remProt, t(lang, 'proteinUnit')),
-      over:        remProt < 0,
+      over:        false,
     },
     ...(fluidGoalMl > 0 ? [{
       type:        'fluid' as const,
@@ -69,7 +69,7 @@ export function DailySummary({ meals, date, goalCalories, goalProtein, lang, flu
       centerVal:   fmtMl(fluidTodayMl),
       centerGoal:  `${fmtMl(fluidGoalMl)} /`,
       remaining:   remStr(remFluid, 'ml'),
-      over:        remFluid < 0,
+      over:        false,
     }] : []),
   ]
 
@@ -78,10 +78,8 @@ export function DailySummary({ meals, date, goalCalories, goalProtein, lang, flu
     const calPct   = goalCalories > 0 ? Math.round(totalCalories / goalCalories * 100) : 0
     const protRatio = goalProtein  > 0 ? totalProtein / goalProtein : 0
     const protPct  = Math.min(1, protRatio)
-    const protOver = protRatio > 1
     const fluidRatio = fluidGoalMl > 0 ? fluidTodayMl / fluidGoalMl : 0
     const fluidPct = Math.min(1, fluidRatio)
-    const fluidOver = fluidRatio > 1
     const isOver  = totalCalories > goalCalories && goalCalories > 0
 
     return (
@@ -128,7 +126,7 @@ export function DailySummary({ meals, date, goalCalories, goalProtein, lang, flu
 
         {/* Protein bar */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '20px 4px 0' }}>
-          <span style={{ fontSize: 11, fontWeight: 300, color: protOver ? 'var(--warning)' : 'var(--positive-hi)', whiteSpace: 'nowrap', flexShrink: 0 }}>
+          <span style={{ fontSize: 11, fontWeight: 300, color: 'var(--positive-hi)', whiteSpace: 'nowrap', flexShrink: 0 }}>
             {lang === 'he'
               ? `חלבון ${Math.round(totalProtein)} / ${goalProtein}g`
               : `protein ${Math.round(totalProtein)} / ${goalProtein}g`}
@@ -137,11 +135,11 @@ export function DailySummary({ meals, date, goalCalories, goalProtein, lang, flu
             <div style={{
               position: 'absolute', top: 0, insetInlineStart: 0, bottom: 0,
               width: `${protPct * 100}%`, borderRadius: 2,
-              background: protOver ? 'var(--warning)' : 'var(--positive-hi)',
+              background: 'var(--positive-hi)',
               transition: 'width 0.6s ease',
             }} />
           </div>
-          <span style={{ fontSize: 10, fontWeight: 300, color: protOver ? 'var(--warning)' : 'var(--positive-hi)', whiteSpace: 'nowrap', flexShrink: 0, minWidth: 26, textAlign: 'end' }}>
+          <span style={{ fontSize: 10, fontWeight: 300, color: 'var(--positive-hi)', whiteSpace: 'nowrap', flexShrink: 0, minWidth: 26, textAlign: 'end' }}>
             {Math.round(protRatio * 100)}%
           </span>
         </div>
@@ -149,7 +147,7 @@ export function DailySummary({ meals, date, goalCalories, goalProtein, lang, flu
         {/* Fluid bar — only if goal is set */}
         {fluidGoalMl > 0 && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 4px 0' }}>
-            <span style={{ fontSize: 11, fontWeight: 300, color: fluidOver ? 'var(--warning)' : 'var(--cyan-hi)', whiteSpace: 'nowrap', flexShrink: 0 }}>
+            <span style={{ fontSize: 11, fontWeight: 300, color: 'var(--cyan-hi)', whiteSpace: 'nowrap', flexShrink: 0 }}>
               {lang === 'he'
                 ? `נוזלים ${fluidTodayMl >= 1000 ? `${(fluidTodayMl / 1000).toFixed(1)}ל׳` : `${Math.round(fluidTodayMl)}ml`}`
                 : `fluid ${fluidTodayMl >= 1000 ? `${(fluidTodayMl / 1000).toFixed(1)}L` : `${Math.round(fluidTodayMl)}ml`}`}
@@ -158,11 +156,11 @@ export function DailySummary({ meals, date, goalCalories, goalProtein, lang, flu
               <div style={{
                 position: 'absolute', top: 0, insetInlineStart: 0, bottom: 0,
                 width: `${fluidPct * 100}%`, borderRadius: 2,
-                background: fluidOver ? 'var(--warning)' : 'var(--cyan-hi)',
+                background: 'var(--cyan-hi)',
                 transition: 'width 0.6s ease',
               }} />
             </div>
-            <span style={{ fontSize: 10, fontWeight: 300, color: fluidOver ? 'var(--warning)' : 'var(--cyan-hi)', whiteSpace: 'nowrap', flexShrink: 0, minWidth: 26, textAlign: 'end' }}>
+            <span style={{ fontSize: 10, fontWeight: 300, color: 'var(--cyan-hi)', whiteSpace: 'nowrap', flexShrink: 0, minWidth: 26, textAlign: 'end' }}>
               {Math.round(fluidRatio * 100)}%
             </span>
           </div>

@@ -10,7 +10,7 @@ import type { BarcodeProduct } from '../lib/barcodeApi'
 
 const BarcodeScanner = lazy(() => import('./BarcodeScanner').then(m => ({ default: m.BarcodeScanner })))
 import { FoodHistoryModal } from './FoodHistoryModal'
-import { UNITS, toBase, mlToGrams } from '../lib/units'
+import { UNITS, toBase, fromBase, mlToGrams } from '../lib/units'
 import type { UnitId } from '../lib/units'
 import { fuzzyMatchLibrary } from '../lib/fuzzyMatch'
 import type { LibraryMatch } from '../lib/fuzzyMatch'
@@ -35,6 +35,7 @@ export interface ComposedEntry {
   name: string
   calories: number
   protein: number
+  batchWeightG?: number | null
 }
 
 type CombinedSuggestion =
@@ -55,6 +56,7 @@ interface FoodEntryFormProps {
   defaultMealType?: MealType
   composedEntries?: ComposedEntry[]
   onAddComposed?: (composedId: string, mealType: MealType) => void
+  onAddRecipePortion?: (composedId: string, mealType: MealType, portionG: number) => void
   fluidGoalMl?: number
   fluidThresholdMl?: number
   fluidZeroCalOnly?: boolean
@@ -63,7 +65,7 @@ interface FoodEntryFormProps {
   library?: FoodLibraryItem[]
 }
 
-export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, defaultWeightUnit = 'g', onAdd, onUpsertHistory, onTouchHistory, defaultMealType, composedEntries, onAddComposed, fluidThresholdMl = 100, fluidZeroCalOnly = true, isOpen, defaultServingGrams = 150, library = [] }: FoodEntryFormProps) {
+export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, defaultWeightUnit = 'g', onAdd, onUpsertHistory, onTouchHistory, defaultMealType, composedEntries, onAddComposed, onAddRecipePortion, fluidThresholdMl = 100, fluidZeroCalOnly = true, isOpen, defaultServingGrams = 150, library = [] }: FoodEntryFormProps) {
   const [mode, setMode]               = useState<EntryMode>(
     () => (localStorage.getItem('entry-mode') as EntryMode) ?? 'scan'
   )
@@ -125,6 +127,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
   // Composed entry pending confirmation
   const [pendingComposed, setPendingComposed]       = useState<ComposedEntry | null>(null)
   const [composedMealType, setComposedMealType]     = useState<MealType>(() => defaultMealType ?? mealTypeByTime())
+  const [portionStr, setPortionStr]                 = useState('')
 
   // History modal
   const [historyModalOpen, setHistoryModalOpen] = useState(false)
@@ -256,15 +259,23 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
     setDropdownOpen(false)
     setHistoryModalOpen(false)
     setHistorySearch('')
+    setPortionStr('')
     setPendingComposed(entry)
   }
 
   const handleSuggestionSelect = (item: FoodHistory) => {
     const isFluidItem = item.fluid_ml != null && item.fluid_ml > 0
     const unitAmount = isFluidItem ? Math.round(item.fluid_ml!) : Math.abs(item.grams)
+    const rawCal  = item.calories / (unitAmount || 1)
+    const rawProt = item.protein  / (unitAmount || 1)
+    // Guard: >12 cal/gram is physically impossible for food (max is ~9 for pure fat).
+    // This catches old history entries that stored display-unit amount instead of actual grams.
+    // Reset to 0 so live scaling is disabled rather than producing absurd numbers.
+    const calPerUnit  = (!isFluidItem && item.grams > 0 && rawCal  > 12) ? 0 : rawCal
+    const protPerUnit = (!isFluidItem && item.grams > 0 && rawCal  > 12) ? 0 : rawProt
     historyRatios.current = {
-      calPerUnit:  item.calories / (unitAmount || 1),
-      protPerUnit: item.protein  / (unitAmount || 1),
+      calPerUnit,
+      protPerUnit,
       perServing:  item.grams < 0 && !isFluidItem,  // pcs items: ratio is cal/serving
     }
     matchedLibraryItemRef.current = null
@@ -525,7 +536,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
     if (selectedHistoryId && onTouchHistory) {
       onTouchHistory(selectedHistoryId)
     } else {
-      const historyGrams = isPcs ? -numericAmount : numericAmount
+      const historyGrams = storedGrams
       if (historyGrams !== 0) {
         onUpsertHistory({ name: foodName, grams: historyGrams, calories: numCalories, protein: numProtein, fluid_ml: isFluid && !fluidExcluded ? detectedFluidMl : null })
       }
@@ -590,57 +601,106 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
     <>
 
     {/* ── Composed entry confirmation ───────────────────────── */}
-    {pendingComposed && (
-      <div className="card" style={{ padding: 16, marginBottom: 20 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-          <span className="icon icon-sm" style={{ color: 'var(--composed)' }}>restaurant</span>
-          <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', flex: 1 }}>
-            {pendingComposed.name}
-          </span>
-          <button
-            onMouseDown={e => { e.preventDefault(); setPendingComposed(null) }}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 2, display: 'flex' }}
-          >
-            <span className="icon icon-sm">close</span>
-          </button>
-        </div>
-        <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-          <div style={{ flex: 1, background: 'var(--accent-fill)', border: '1px solid color-mix(in srgb, var(--accent) 14%, transparent)', borderRadius: 10, padding: '10px 12px' }}>
-            <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--accent-hi)', letterSpacing: '0.04em', margin: '0 0 3px' }}>{t(lang, 'calories').toUpperCase()}</p>
-            <p style={{ fontSize: 20, fontWeight: 800, color: 'var(--text)', margin: 0, lineHeight: 1 }}>{pendingComposed.calories}</p>
-            <p style={{ fontSize: 10, color: 'var(--text-3)', margin: '2px 0 0' }}>{t(lang, 'caloriesUnit')}</p>
+    {pendingComposed && (() => {
+      const isRecipe = !!pendingComposed.batchWeightG
+      const portionG = parseFloat(portionStr)
+      const ratio    = isRecipe && portionG > 0 ? portionG / pendingComposed.batchWeightG! : 1
+      const dispCal  = isRecipe ? (portionG > 0 ? Math.round(pendingComposed.calories * ratio) : '—') : pendingComposed.calories
+      const dispProt = isRecipe ? (portionG > 0 ? Math.round(pendingComposed.protein  * ratio * 10) / 10 : '—') : pendingComposed.protein
+      const per100Cal  = isRecipe ? Math.round(pendingComposed.calories / pendingComposed.batchWeightG! * 100) : null
+      const per100Prot = isRecipe ? Math.round(pendingComposed.protein  / pendingComposed.batchWeightG! * 100 * 10) / 10 : null
+
+      const handleAdd = () => {
+        if (isRecipe) {
+          if (!portionG || portionG <= 0) return
+          onAddRecipePortion?.(pendingComposed.id, composedMealType, portionG)
+        } else {
+          onAddComposed?.(pendingComposed.id, composedMealType)
+        }
+        setPendingComposed(null)
+      }
+
+      return (
+        <div className="card" style={{ padding: 16, marginBottom: 20 }}>
+          {/* Header */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+            <span className="icon icon-sm" style={{ color: 'var(--composed)' }}>restaurant</span>
+            <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', flex: 1 }}>{pendingComposed.name}</span>
+            {isRecipe && (
+              <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--composed)', background: 'var(--composed-tint)', border: '1px solid var(--composed-border)', borderRadius: 6, padding: '2px 6px' }}>
+                {t(lang, 'recipeLabel')}
+              </span>
+            )}
+            <button onMouseDown={e => { e.preventDefault(); setPendingComposed(null) }}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 2, display: 'flex' }}>
+              <span className="icon icon-sm">close</span>
+            </button>
           </div>
-          <div style={{ flex: 1, background: minimal ? 'var(--accent-fill)' : 'var(--positive-fill)', border: `1px solid color-mix(in srgb, ${minimal ? 'var(--accent)' : 'var(--positive)'} 14%, transparent)`, borderRadius: 10, padding: '10px 12px' }}>
-            <p style={{ fontSize: 10, fontWeight: 700, color: minimal ? 'var(--accent-hi)' : 'var(--positive-hi)', letterSpacing: '0.04em', margin: '0 0 3px' }}>{t(lang, 'protein').toUpperCase()}</p>
-            <p style={{ fontSize: 20, fontWeight: 800, color: 'var(--text)', margin: 0, lineHeight: 1 }}>{pendingComposed.protein}</p>
-            <p style={{ fontSize: 10, color: 'var(--text-3)', margin: '2px 0 0' }}>{t(lang, 'proteinUnit')}</p>
+
+          {/* Recipe: per-100g strip + gram input */}
+          {isRecipe && (
+            <>
+              <div style={{ display: 'flex', gap: 12, marginBottom: 10, padding: '6px 10px', background: 'var(--surface-2)', borderRadius: 8 }}>
+                <span style={{ fontSize: 11, color: 'var(--text-3)', flex: 1 }}>per 100g</span>
+                <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent-hi)' }}>{per100Cal} {t(lang, 'caloriesUnit')}</span>
+                <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--positive-hi)', marginInlineStart: 8 }}>{per100Prot} {t(lang, 'proteinUnit')}</span>
+              </div>
+              <div style={{ position: 'relative', marginBottom: 10 }}>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  className="inp"
+                  style={{ fontSize: 16, paddingInlineEnd: portionStr ? 28 : undefined }}
+                  placeholder={t(lang, 'recipePortionQ')}
+                  value={portionStr}
+                  autoFocus
+                  onFocus={e => e.target.select()}
+                  onChange={e => setPortionStr(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') handleAdd() }}
+                />
+                {portionStr && (
+                  <button onMouseDown={e => { e.preventDefault(); setPortionStr('') }} tabIndex={-1}
+                    style={{ position: 'absolute', insetInlineEnd: 0, top: 0, bottom: 0, width: 28, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <span className="icon icon-sm">close</span>
+                  </button>
+                )}
+              </div>
+            </>
+          )}
+
+          {/* Cal / Prot tiles */}
+          <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+            <div style={{ flex: 1, background: 'var(--accent-fill)', border: '1px solid color-mix(in srgb, var(--accent) 14%, transparent)', borderRadius: 10, padding: '10px 12px' }}>
+              <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--accent-hi)', letterSpacing: '0.04em', margin: '0 0 3px' }}>{t(lang, 'calories').toUpperCase()}</p>
+              <p style={{ fontSize: 20, fontWeight: 800, color: 'var(--text)', margin: 0, lineHeight: 1 }}>{dispCal}</p>
+              <p style={{ fontSize: 10, color: 'var(--text-3)', margin: '2px 0 0' }}>{t(lang, 'caloriesUnit')}</p>
+            </div>
+            <div style={{ flex: 1, background: minimal ? 'var(--accent-fill)' : 'var(--positive-fill)', border: `1px solid color-mix(in srgb, ${minimal ? 'var(--accent)' : 'var(--positive)'} 14%, transparent)`, borderRadius: 10, padding: '10px 12px' }}>
+              <p style={{ fontSize: 10, fontWeight: 700, color: minimal ? 'var(--accent-hi)' : 'var(--positive-hi)', letterSpacing: '0.04em', margin: '0 0 3px' }}>{t(lang, 'protein').toUpperCase()}</p>
+              <p style={{ fontSize: 20, fontWeight: 800, color: 'var(--text)', margin: 0, lineHeight: 1 }}>{dispProt}</p>
+              <p style={{ fontSize: 10, color: 'var(--text-3)', margin: '2px 0 0' }}>{t(lang, 'proteinUnit')}</p>
+            </div>
+          </div>
+
+          {/* Meal type selector */}
+          <select className="inp" style={{ width: '100%', fontSize: 16, marginBottom: 14 }}
+            value={composedMealType} onChange={e => setComposedMealType(e.target.value as MealType)}>
+            {mealTypeOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+          </select>
+
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button className="btn-confirm" style={{ flex: 1 }}
+              disabled={isRecipe && (!portionG || portionG <= 0)}
+              onClick={handleAdd}>
+              {t(lang, 'add')}
+            </button>
+            <button className="btn-ghost" style={{ flex: 1 }} onClick={() => setPendingComposed(null)}>
+              {t(lang, 'cancel')}
+            </button>
           </div>
         </div>
-        {/* Meal type selector */}
-        <select
-          className="inp"
-          style={{ width: '100%', fontSize: 16, marginBottom: 14 }}
-          value={composedMealType}
-          onChange={e => setComposedMealType(e.target.value as MealType)}
-        >
-          {mealTypeOptions.map(o => (
-            <option key={o.value} value={o.value}>{o.label}</option>
-          ))}
-        </select>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button
-            className="btn-confirm"
-            style={{ flex: 1 }}
-            onClick={() => { onAddComposed?.(pendingComposed.id, composedMealType); setPendingComposed(null) }}
-          >
-            {t(lang, 'add')}
-          </button>
-          <button className="btn-ghost" style={{ flex: 1 }} onClick={() => setPendingComposed(null)}>
-            {t(lang, 'cancel')}
-          </button>
-        </div>
-      </div>
-    )}
+      )
+    })()}
 
     {!pendingComposed && <div className="card" style={{ padding: 16, marginBottom: 20 }}>
 
@@ -1343,9 +1403,9 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
                   const newIsPcs = newUnit === 'pcs'
                   const sg = servingGrams
                   let n = numericAmount
+                  let standardBase: number | null = null  // base in ml or grams for cal recalc
 
-                  // When crossing pcs↔weight boundary: convert both the stored ratio
-                  // AND the displayed amount so the nutrition stays consistent.
+                  // When crossing pcs↔weight boundary: convert ratio AND amount
                   if (oldIsPcs !== newIsPcs) {
                     if (oldIsPcs) {
                       // pcs → weight: ratio cal/serving → cal/gram; amount: servings → grams
@@ -1356,6 +1416,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
                       }
                       n = Math.round(n * sg)
                       setAmountStr(String(n))
+                      standardBase = n  // n is now grams
                     } else {
                       // weight → pcs: ratio cal/gram → cal/serving; amount: grams → servings
                       historyRatios.current = {
@@ -1366,14 +1427,24 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
                       n = Math.round(n / sg * 10) / 10
                       setAmountStr(String(n))
                     }
+                  } else if (!oldIsPcs && !newIsPcs) {
+                    // Both non-pcs: convert displayed amount from old unit to new unit
+                    const b = toBase(n, entryUnit as UnitId)  // base in ml or grams (old unit)
+                    standardBase = b
+                    const inNew = Math.round(fromBase(b, newUnit as UnitId) * 100) / 100
+                    setAmountStr(String(inNew))
+                    n = inNew
                   }
 
                   // Recalculate nutrition for the (possibly converted) amount in new unit
                   if (n > 0) {
+                    const uid = newUnit as UnitId
                     const base = (() => {
                       if (historyRatios.current.perServing) return n
                       if (newIsPcs) return n * sg
-                      const uid = newUnit as UnitId
+                      if (standardBase != null) {
+                        return UNITS[uid]?.type === 'volume' ? mlToGrams(standardBase, libraryDensityRef.current ?? 1) : standardBase
+                      }
                       const b = toBase(n, uid)
                       return UNITS[uid].type === 'volume' ? mlToGrams(b, libraryDensityRef.current ?? 1) : b
                     })()
@@ -1397,6 +1468,19 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
               </select>
             </div>
           </div>
+
+          {/* Serving hint — shown when pcs unit selected */}
+          {entryUnit === 'pcs' && (
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 6 }}>
+              <span style={{
+                fontSize: 10, fontWeight: 600, color: 'var(--text-3)',
+                background: 'var(--bg-card)', border: '1px solid var(--border)',
+                borderRadius: 8, padding: '3px 8px',
+              }}>
+                {lang === 'he' ? `מנה ≈ ${servingGrams}ג׳` : `serving ≈ ${servingGrams}g`}
+              </span>
+            </div>
+          )}
 
           {/* Fat / Carbs chips — shown when AI returned them */}
           {(editFat != null || editCarbs != null) && (

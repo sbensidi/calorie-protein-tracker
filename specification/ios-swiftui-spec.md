@@ -1889,3 +1889,383 @@ Add a dedicated row in Settings/Profile:
 - **Permission denied**: all TDEE-dependent features fall back to formula. No feature is broken without HealthKit.
 - **Data not yet available** (e.g. early morning before Watch syncs): show formula estimate with a `"Syncing…"` indicator and refresh when app foregrounds (`scenePhase == .active`).
 - **Never store HealthKit data in Supabase** — only read locally and display in-session. HealthKit data belongs to the user's Health app and must not be uploaded to third-party servers without explicit additional consent.
+
+---
+
+## 21. Settings & UX Refinements (May 2026)
+
+Changes shipped in this batch: sticky save button system, RTL-aware filter chip fades, per-field day-override clear buttons, Profile screen enhancements, weekly balance card fixes, and a full empty-state refresh.
+
+---
+
+### 21.1 Sticky Save Button (Profile / Goals / Preferences)
+
+Previously each sub-screen in Settings had its own inline "Save" button at the bottom of its scroll view — easy to miss and inconsistent across screens.
+
+**New pattern**: a single floating footer button is rendered by the parent `SettingsSheet`, always visible at the bottom of the screen, overlaying the scroll content with a gradient fade.
+
+#### Architecture
+
+```
+SettingsSheet
+├── ScrollView  ← contains ProfileScreen / GoalsScreen / PreferencesScreen
+│     (save button no longer lives here)
+└── Footer save button  ← always visible, outside scroll, floats above
+```
+
+Each sub-screen exposes a `saveRef` — a mutable ref that holds its `handleSave()` function. When the user taps the footer button, `SettingsSheet` calls whichever ref is active.
+
+```swift
+// Sub-screen protocol (conceptual)
+protocol SaveableScreen {
+    var onSave: () -> Void { get }   // called when footer button is tapped
+    var onSaveDone: () -> Void { get } // called after save completes (triggers ✓ confirmation)
+}
+```
+
+#### Footer button layout
+
+- Positioned at the bottom of the sheet, below the scroll area.
+- Gradient background (`transparent → bg`) so it "lifts" above the content.
+- Respects `safeAreaInsets.bottom`.
+- Two states:
+  - Default: `btn-primary` → "Save Profile" / "Save Goals" / "Save Preferences" (label matches active screen)
+  - Confirmed (2 s): `btn-confirm` → `check` icon + "Saved!" / "נשמר!"
+- `screenSaved` state resets to `false` whenever the user navigates to a different sub-screen.
+
+#### Swift sketch
+
+```swift
+@State private var screenSaved = false
+
+var body: some View {
+    VStack(spacing: 0) {
+        ScrollView {
+            switch screen {
+            case .profile:     ProfileView(saveRef: $profileSave, onSaveDone: markSaved)
+            case .goals:       GoalsView(saveRef: $goalsSave,   onSaveDone: markSaved)
+            case .preferences: PrefsView(saveRef: $prefsSave,   onSaveDone: markSaved)
+            }
+        }
+        // Footer — always visible
+        footerSaveButton
+    }
+}
+
+private var footerSaveButton: some View {
+    Button(action: triggerSave) {
+        Label(saveLabel, systemImage: screenSaved ? "checkmark" : "")
+    }
+    .buttonStyle(screenSaved ? .confirm : .primary)
+    .padding(.horizontal, 16)
+    .padding(.bottom, max(safeAreaInsets.bottom, 8))
+    .background(
+        LinearGradient(colors: [.clear, Color(.systemBackground)],
+                       startPoint: .top, endPoint: .bottom)
+            .frame(height: 80)
+    )
+}
+
+private func triggerSave() {
+    switch screen {
+    case .profile:     profileSave?()
+    case .goals:       goalsSave?()
+    case .preferences: prefsSave?()
+    }
+}
+
+private func markSaved() {
+    screenSaved = true
+    DispatchQueue.main.asyncAfter(deadline: .now() + 2) { screenSaved = false }
+}
+```
+
+---
+
+### 21.2 Filter Chip Scroll Fades — RTL-Aware
+
+Horizontally-scrollable filter chip rows (FoodHistory screen, Food Library screen) show edge-fade gradients to hint at off-screen content.
+
+**Before**: both left and right fades were always visible, regardless of scroll position or language direction.
+
+**After**: fades appear/disappear dynamically based on actual scroll position, and their sides are swapped for RTL (Hebrew).
+
+#### Logic
+
+```swift
+@State private var chipCanScrollLeft  = false
+@State private var chipCanScrollRight = false
+
+func updateChipScroll(_ scrollView: UIScrollView) {
+    chipCanScrollLeft  = scrollView.contentOffset.x > 2
+    chipCanScrollRight = scrollView.contentOffset.x < scrollView.contentSize.width - scrollView.bounds.width - 2
+}
+```
+
+#### Which side shows the fade
+
+| Scroll state | LTR | RTL (Hebrew) |
+|---|---|---|
+| Can scroll left | Left fade visible | Right fade visible |
+| Can scroll right | Right fade visible | Left fade visible |
+
+In SwiftUI, use `Environment(\.layoutDirection)` to determine which side maps to which visual edge.
+
+---
+
+### 21.3 Day Override Panel — Per-Field Clear (×) Buttons
+
+In Settings → Goals → weekly override panel (expanded day picker), each field (calories / protein / fluid) now has an individual × button that clears only that field back to the weekly default, without resetting the entire day's override.
+
+**Trigger**: button appears only when the field has a custom diff (i.e. the current value differs from the weekly default). Not shown in compact mode.
+
+**Position**: inline-start (left in LTR / right in RTL) inside the input field.
+
+#### clearDayField logic
+
+```swift
+func clearDayField(dayKey: DayKey, field: GoalField) {
+    guard let entry = overrides[toWeekIndex(dayKey)] else { return }
+    var updated = entry
+    switch field {
+    case .calories: updated.calories = defaultCalories
+    case .protein:  updated.protein  = defaultProtein
+    case .fluid:    updated.fluidMl  = defaultFluidMl
+    }
+    overrides[toWeekIndex(dayKey)] = updated
+}
+```
+
+**Existing "Reset day" button** (resets all three fields at once) is unchanged — it's complementary.
+
+---
+
+### 21.4 Profile Screen Enhancements
+
+#### Display Name Field
+
+New optional `displayName` text field in ProfileScreen (top of "Personal Details" section).
+
+- Maps to `profiles.display_name` column (nullable TEXT).
+- When set, overrides the name pulled from Google OAuth in the daily greeting.
+- Placeholder: "Custom name (optional)" / "שם מותאם אישית (אופציונלי)"
+- Hint below the field: "Overrides the name pulled from your Google account in the daily greeting" / "מחליף את השם שנמשך מחשבון Google בברכה היומית"
+
+```sql
+-- DB migration
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS display_name TEXT;
+```
+
+#### TDEE Row in Metrics Preview
+
+TDEE (Total Daily Energy Expenditure) is now shown as its own dedicated row in the metrics summary card (between BMR and BMI), not embedded as sub-text inside the BMR row.
+
+```
+┌────────────────────────────────────────────┐
+│ BMR    Basal Metabolic Rate — at rest      │
+│                                    1,650 kcal │
+├────────────────────────────────────────────┤
+│ TDEE   Total Daily Energy Expenditure…     │
+│                                    2,300 kcal │  ← NEW row (accent color)
+├────────────────────────────────────────────┤
+│ BMI    Under < 18.5 | Normal 18.5–24.9 …   │
+│                                  22.4 — Normal │
+├────────────────────────────────────────────┤
+│ Fluid  35 ml × 75 kg                       │
+│                                      2,625 ml │
+└────────────────────────────────────────────┘
+```
+
+#### Metric Pulse Animation
+
+When any metric value changes (BMR, TDEE, BMI, fluid), the displayed number briefly pulses to signal the update. Implemented by assigning a `key` to the value label that changes with the metric — triggering a CSS remount / SwiftUI identity reset which replays the entrance animation.
+
+```swift
+// SwiftUI: use .id() modifier to trigger re-animation
+Text(formattedBmr)
+    .id("bmr-\(bmr)-\(bmi)")  // key changes → view re-mounts → animation replays
+    .transition(.scale(scale: 0.85).combined(with: .opacity))
+```
+
+#### Draft Protection (`dirtyRef`)
+
+Profile state is initialised from a localStorage/cache snapshot immediately, then updated when the server responds. A `dirtyRef` flag prevents the server response from overwriting in-progress user edits:
+
+```swift
+@State private var draft = UserProfile()
+@State private var userHasEdited = false
+
+// On server update:
+func onProfileReceived(_ p: UserProfile) {
+    if !userHasEdited { draft = p }
+}
+
+// On any field change:
+func set<K>(_ key: K, _ value: ...) {
+    userHasEdited = true
+    draft[key] = value
+}
+```
+
+#### Weight Log Improvements
+
+- **Weight log button**: changed from filled primary style to ghost style with accent border (less visually dominant).
+- **Sparkline guard**: the sparkline chart is only rendered when there are ≥ 2 entries. A single point produces a degenerate line; hide it until there's a real trend.
+- **Weight unit RTL fix**: in Hebrew, the unit label `ק״ג` is displayed *before* the number (matching Hebrew reading conventions); in English, `kg` is displayed *after*. Both use `direction: ltr` to keep the number itself LTR-ordered.
+- **Live profile update on log**: when the user logs a new weight entry, `draft.weight` updates immediately and a `onSave({ weight: kg })` is fired — GoalsScreen recommendations (e.g. suggested calorie/protein goals) update in real-time without requiring a separate "Save" tap.
+
+#### Target Weight Field
+
+- **Clear button**: when `targetWeightKg` is set, an × button appears inside the input on the inline-end side, setting the field back to `null`.
+- **Placeholder**: new i18n key `targetWeightPlaceholder` — "Enter your target weight" / "הזן את משקל היעד הרצוי".
+- **Projection hint**: below the blue projection chip, a small explanatory footnote: "Calculated based on the daily caloric difference between your TDEE and goal, assuming 7,700 kcal per kg of fat." / "מחושב לפי ההפרש הקלורי היומי בין ה-TDEE שלך ליעד, בהנחה של 7,700 קק\"ל לכל ק\"ג שומן."
+
+#### Weight Input Clear Button
+
+When the weight-log text field has any value, an × button appears inline-end to clear it — consistent with other clearable inputs throughout the app.
+
+---
+
+### 21.5 Weekly Balance Card Fixes
+
+#### Dots vs. Bar (Period Toggle)
+
+`PeriodBalanceCard` renders a progress indicator below the progress fraction. The indicator type depends on the period:
+
+| Period | Indicator |
+|--------|-----------|
+| Week   | 7 dots (one per day), filled dots = elapsed days |
+| Month  | Solid horizontal progress bar |
+
+Previously both were rendered simultaneously. Now only one is shown based on the `showDots` prop.
+
+```swift
+if showDots {
+    HStack(spacing: 3) {
+        ForEach(0..<totalDays, id: \.self) { i in
+            RoundedRectangle(cornerRadius: 3)
+                .fill(i < daysElapsed ? color : Color(.systemFill))
+                .frame(maxWidth: .infinity, maxHeight: 5)
+        }
+    }
+} else {
+    GeometryReader { geo in
+        ZStack(alignment: .leading) {
+            RoundedRectangle(cornerRadius: 2).fill(Color(.systemFill))
+            RoundedRectangle(cornerRadius: 2).fill(color)
+                .frame(width: geo.size.width * min(1, CGFloat(daysElapsed) / CGFloat(totalDays)))
+        }
+    }
+    .frame(height: 4)
+}
+```
+
+#### TDEE Day Count Fix
+
+The weekly TDEE denominator now covers exactly the same days as the numerator (`weeklyTotalCal`).
+
+**Problem**: `last7` (grouped history) intentionally excludes today (to avoid showing a partial day in the history list), but `weeklyTotalCal` *does* include `todayCalories`. So the denominator was off by 1 on days when the user had logged anything today.
+
+**Fix**:
+```swift
+let loggedDaysCount   = last7.count + (isCurrentWeek && todayCalories > 0 ? 1 : 0)
+let tdeeForLoggedDays = (weeklyTdee / 7.0) * Double(loggedDaysCount)
+let tdeeBalance       = weeklyTotalCal - Int(tdeeForLoggedDays)
+```
+
+#### RTL Minus Sign Fix
+
+The balance tile number (e.g. `−1,200 kcal`) uses `direction: ltr; unicodeBidi: embed` to keep the minus sign visually on the *left* of the number, regardless of page RTL direction.
+
+```swift
+// SwiftUI: force LTR for the numeric label
+Text(formattedBalance)
+    .environment(\.layoutDirection, .leftToRight)
+```
+
+#### Projection Line — Grams Removed
+
+The plan-adherence projection line (Row 1 of the balance card — consumed vs. calorie goal) no longer shows an estimated weight-change in grams.
+
+**Reason**: Row 1 uses the calorie *goal* as its baseline; Row 2 (weight impact) uses *TDEE* as its baseline. Because these denominators differ, the gram estimates from the two rows will never agree, creating confusion. The gram estimate is shown only in Row 2 (weight impact vs. TDEE), where the formula is `kcal ÷ 7,700`.
+
+---
+
+### 21.6 Empty States Refresh
+
+All 13 empty-state locations across the app were updated with friendlier copy and replaced emoji with Material Symbols Rounded icons (consistent with the rest of the icon language).
+
+#### Icon mapping
+
+| Old emoji | New icon (Material Symbols Rounded) |
+|-----------|--------------------------------------|
+| 🙂 | `mood` |
+| 🚀 | `rocket_launch` |
+| 🤔 | `manage_search` |
+| 📊 | `monitoring` |
+| 🍽️ | `dinner_dining` |
+| 🤷 | `help_outline` |
+| 👇 | `add_circle` |
+
+#### Copy changes and new i18n keys
+
+| Key | Hebrew | English | Used in |
+|-----|--------|---------|---------|
+| `noMealsToday` (updated) | יום חדש, דף חלק | Fresh day, fresh start | Today tab — no meals yet |
+| `noEnoughData` (updated) | הגרפים ממתינים לך | Charts are waiting for you | Stats — not enough data |
+| `noEnoughDataSub` (new) | תעד כמה ימים ונמלא אותם | Log a few days to fill them up | Stats — sub-text |
+| `noHistoryHint` (updated) | תתחיל לתעד ונעשה היסטוריה! | Start logging and let's make history! | History tab — first-use hint |
+| `weekEmpty` (new) | שבוע שקט | Quiet week | History — week range, no data |
+| `monthEmpty` (new) | חודש ריק | Empty month | History — month range, no data |
+| `rangeEmptySub` (new) | לא תיעדת כלום בתקופה הזו | Nothing logged here | Week/month empty sub-text |
+| `noDataOnDate` (new) | לא תיעדת כלום בתאריך הזה | Nothing logged on this date | History — date picker empty |
+| `tryOtherWord` (new) | נסה מילה אחרת? | Try something else? | Search empty sub-text |
+| `noRecentFood` (new) | לא אכלת את זה לאחרונה | Haven't eaten this recently | FoodHistoryModal — no results |
+| `addManually` (new) | הוסף ידנית | Add manually | FoodHistoryModal — CTA hint |
+| `noComposedDishes` (new) | עדיין אין מנות שמורות | No saved dishes yet | Composed dishes — empty |
+| `noComposedDishesSub` (new) | הרכב את הראשונה! | Build your first one! | Composed dishes — sub-text |
+| `unknownFood` (new) | לא מכירים את זה | Don't know that one | Food library — no results |
+| `unknownFoodSub` (new) | נסה שם אחר? | Try a different name? | Food library — sub-text |
+
+#### Empty state structure (all locations)
+
+Each empty state now follows a consistent pattern:
+
+```swift
+VStack(spacing: 4) {
+    Image(systemName: iconName)         // SF Symbol equivalent of Material Symbol
+        .font(.system(size: 24))
+        .opacity(0.4)
+    Text(primaryMessage)
+        .font(.subheadline)
+    Text(secondaryMessage)              // where applicable
+        .font(.caption)
+        .opacity(0.7)
+}
+.padding(.vertical, 32)
+.frame(maxWidth: .infinity)
+.foregroundStyle(.secondary)
+```
+
+**Icon opacity**: 0.4 across all empty states (reduced presence — the icon is decorative, not the primary communication).
+
+---
+
+### 21.7 Push Notifications — Web Suspended, iOS Native Only
+
+The web app's `NotificationsSection` component (which requested browser push permission) has been removed. Web push is unreliable on iOS Safari, and the feature is better served natively.
+
+**iOS**: §19.10 remains the authoritative specification. Implement full `UNUserNotificationCenter` scheduling with per-meal-type toggles (breakfast / lunch / dinner) and time pickers.
+
+**Web**: the Reminders section is hidden. No notification-related UI appears in the web Settings sheet.
+
+---
+
+### 21.8 DB Migration
+
+```sql
+-- Display name override for greeting
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS display_name TEXT;
+```
+
+All other schema changes for this batch were already applied in §19.12.

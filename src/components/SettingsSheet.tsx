@@ -95,9 +95,9 @@ function DayPanel({
             </label>
           )}
           <div style={{ position: 'relative' }}>
-            {!compact && calDiff && onClearCal && (
+            {!compact && onClearCal && (
               <button onMouseDown={e => { e.preventDefault(); onClearCal() }} tabIndex={-1}
-                style={{ position: 'absolute', insetInlineStart: 0, top: 0, bottom: 0, width: 24, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 28, background: 'none', border: 'none', cursor: 'pointer', color: calDiff ? 'var(--accent-hi)' : 'var(--text-4, var(--text-3))', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <span className="icon icon-sm">close</span>
               </button>
             )}
@@ -106,7 +106,7 @@ function DayPanel({
               inputMode="numeric"
               className="inp"
               aria-label={t(lang, 'calories')}
-              style={{ height: compact ? 38 : undefined, paddingInlineStart: (!compact && calDiff && onClearCal) ? 24 : undefined, paddingInlineEnd: calDiff ? 52 : undefined }}
+              style={{ height: compact ? 38 : undefined, paddingLeft: (!compact && onClearCal) ? 28 : undefined, paddingRight: calDiff ? 48 : undefined }}
               value={calVal === 0 ? '' : calVal}
               placeholder="0"
               onFocus={e => e.target.select()}
@@ -114,7 +114,7 @@ function DayPanel({
             />
             {calDiff && (
               <span style={{
-                position: 'absolute', insetInlineEnd: 8, top: '50%', transform: 'translateY(-50%)',
+                position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)',
                 fontSize: 10, fontWeight: 600, pointerEvents: 'none',
                 color: calDiff.startsWith('(+') ? 'var(--positive-hi)' : 'var(--danger)',
               }}>
@@ -130,9 +130,9 @@ function DayPanel({
             </label>
           )}
           <div style={{ position: 'relative' }}>
-            {!compact && protDiff && onClearProt && (
+            {!compact && onClearProt && (
               <button onMouseDown={e => { e.preventDefault(); onClearProt() }} tabIndex={-1}
-                style={{ position: 'absolute', insetInlineStart: 0, top: 0, bottom: 0, width: 24, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 28, background: 'none', border: 'none', cursor: 'pointer', color: protDiff ? 'var(--positive-hi)' : 'var(--text-4, var(--text-3))', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <span className="icon icon-sm">close</span>
               </button>
             )}
@@ -141,7 +141,7 @@ function DayPanel({
               inputMode="decimal"
               className="inp inp-green"
               aria-label={t(lang, 'protein')}
-              style={{ height: compact ? 38 : undefined, paddingInlineStart: (!compact && protDiff && onClearProt) ? 24 : undefined, paddingInlineEnd: protDiff ? 52 : undefined }}
+              style={{ height: compact ? 38 : undefined, paddingLeft: (!compact && onClearProt) ? 28 : undefined, paddingRight: protDiff ? 48 : undefined }}
               value={protVal === 0 ? '' : protVal}
               placeholder="0"
               onFocus={e => e.target.select()}
@@ -149,7 +149,7 @@ function DayPanel({
             />
             {protDiff && (
               <span style={{
-                position: 'absolute', insetInlineEnd: 8, top: '50%', transform: 'translateY(-50%)',
+                position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)',
                 fontSize: 10, fontWeight: 600, pointerEvents: 'none',
                 color: protDiff.startsWith('(+') ? 'var(--positive-hi)' : 'var(--danger)',
               }}>
@@ -165,9 +165,9 @@ function DayPanel({
             </label>
           )}
           <div style={{ position: 'relative' }}>
-            {!compact && fluidDiff && onClearFluid && (
+            {!compact && onClearFluid && (
               <button onMouseDown={e => { e.preventDefault(); onClearFluid() }} tabIndex={-1}
-                style={{ position: 'absolute', insetInlineStart: 0, top: 0, bottom: 0, width: 24, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 28, background: 'none', border: 'none', cursor: 'pointer', color: fluidDiff ? 'var(--accent-hi)' : 'var(--text-4, var(--text-3))', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <span className="icon icon-sm">close</span>
               </button>
             )}
@@ -176,7 +176,7 @@ function DayPanel({
               inputMode="numeric"
               className="inp"
               aria-label={t(lang, 'fluid')}
-              style={{ height: compact ? 38 : undefined, paddingInlineStart: (!compact && fluidDiff && onClearFluid) ? 24 : undefined, paddingInlineEnd: fluidDiff ? 52 : undefined, borderColor: 'var(--accent-border)' }}
+              style={{ height: compact ? 38 : undefined, paddingLeft: (!compact && onClearFluid) ? 28 : undefined, paddingRight: fluidDiff ? 48 : undefined, borderColor: 'var(--accent-border)' }}
               value={fluidVal === 0 ? '' : fluidVal}
               placeholder="0"
               onFocus={e => e.target.select()}
@@ -184,7 +184,7 @@ function DayPanel({
             />
             {fluidDiff && (
               <span style={{
-                position: 'absolute', insetInlineEnd: 8, top: '50%', transform: 'translateY(-50%)',
+                position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)',
                 fontSize: 10, fontWeight: 600, pointerEvents: 'none',
                 color: fluidDiff.startsWith('(+') ? 'var(--positive-hi)' : 'var(--danger)',
               }}>
@@ -545,7 +545,7 @@ function MainScreen({ lang, connected, theme, styleMode, showGreeting, onProfile
 
 // ── Profile Screen ────────────────────────────────────────────────────────────
 
-function ProfileScreen({ lang, profile, onSave, showToast, weightLogEntries = [], onLogWeight, onDeleteWeightEntry, dailyCalGoal, saveRef, onSaveDone }: {
+function ProfileScreen({ lang, profile, onSave, showToast, weightLogEntries = [], onLogWeight, onDeleteWeightEntry, saveRef, onSaveDone }: {
   lang:      Lang
   profile:   UserProfile
   onSave:    (updates: Partial<UserProfile>) => void
@@ -553,13 +553,14 @@ function ProfileScreen({ lang, profile, onSave, showToast, weightLogEntries = []
   weightLogEntries?: import('../types').WeightLog[]
   onLogWeight?:      (weight_kg: number, date?: string) => Promise<void>
   onDeleteWeightEntry?: (id: string) => Promise<void>
-  dailyCalGoal?: number
   saveRef:     React.MutableRefObject<(() => void) | null>
   onSaveDone:  () => void
 }) {
   const [draft, setDraft] = useState<UserProfile>({ ...profile })
   const [weightInput, setWeightInput] = useState('')
   const [loggingWeight, setLoggingWeight] = useState(false)
+  const [, setWeightFromLog] = useState(false)
+  const [logExpanded, setLogExpanded] = useState(false)
 
   // draft is initialised from the localStorage snapshot (before fetchProfile resolves).
   // Once the server profile arrives, sync the whole draft — but stop once the user
@@ -574,28 +575,25 @@ function ProfileScreen({ lang, profile, onSave, showToast, weightLogEntries = []
     setDraft(p => ({ ...p, [key]: val }))
   }
 
-  const { bmr, tdeeAtLevel, suggestedFluidMl, bmi, bmiCategory, projectedDate } = useMemo(() => {
-    const bmr             = calcBMR(draft)
-    const tdeeAtLevel     = calcDailyTdee(draft)
+  const { bmr, suggestedFluidMl, bmi, bmiCategory } = useMemo(() => {
+    const bmr              = calcBMR(draft)
     const suggestedFluidMl = Math.round(draft.weight * 35 / 100) * 100
-    const bmiVal          = Math.round((draft.weight / ((draft.height / 100) ** 2)) * 10) / 10
-    const bmiCategory     = bmiVal < 18.5 ? 'underweight' : bmiVal < 25 ? 'normal' : bmiVal < 30 ? 'overweight' : 'obese'
-    let projectedDate: string | null = null
-    if (draft.targetWeightKg != null && dailyCalGoal && dailyCalGoal > 0) {
-      const days = calcProjectedDays(draft.weight, draft.targetWeightKg, tdeeAtLevel, dailyCalGoal)
-      if (days != null) {
-        const d = new Date()
-        d.setDate(d.getDate() + days)
-        projectedDate = d.toLocaleDateString(lang === 'he' ? 'he-IL' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' })
-      }
-    }
-    return { bmr, tdeeAtLevel, suggestedFluidMl, bmi: bmiVal, bmiCategory, projectedDate }
-  }, [draft, dailyCalGoal, lang])
+    const bmiVal           = Math.round((draft.weight / ((draft.height / 100) ** 2)) * 10) / 10
+    const bmiCategory      = bmiVal < 18.5 ? 'underweight' : bmiVal < 25 ? 'normal' : bmiVal < 30 ? 'overweight' : 'obese'
+    return { bmr, suggestedFluidMl, bmi: bmiVal, bmiCategory }
+  }, [draft])
 
   const handleSave = () => {
     onSave(draft)
     onSaveDone()
-    showToast(t(lang, 'profileSaved'), 'success')
+    // On first-ever save (no log entries yet), record a baseline weight automatically
+    if (weightLogEntries.length === 0 && draft.weight > 0 && onLogWeight) {
+      onLogWeight(draft.weight)
+      setWeightFromLog(true)
+      showToast(t(lang, 'weightBaselineLogged'), 'info')
+    } else {
+      showToast(t(lang, 'profileSaved'), 'success')
+    }
   }
   saveRef.current = handleSave
 
@@ -608,6 +606,7 @@ function ProfileScreen({ lang, profile, onSave, showToast, weightLogEntries = []
     onSave({ weight: kg }) // persist → GoalsScreen recommendations update
     setWeightInput('')
     setLoggingWeight(false)
+    setWeightFromLog(true)
     showToast(t(lang, 'weightLoggedBang'), 'success')
   }
 
@@ -689,7 +688,10 @@ function ProfileScreen({ lang, profile, onSave, showToast, weightLogEntries = []
                 value={draft[key] === 0 ? '' : draft[key]}
                 placeholder="0"
                 onFocus={e => e.target.select()}
-                onChange={e => set(key, Number(e.target.value) as UserProfile[typeof key])}
+                onChange={e => {
+                  if (key === 'weight') setWeightFromLog(false)
+                  set(key, Number(e.target.value) as UserProfile[typeof key])
+                }}
                 style={{ textAlign: lang === 'he' ? 'right' : 'left', paddingInlineStart: 12, paddingInlineEnd: 28 }}
               />
               {(draft[key] as number) > 0 && (
@@ -705,6 +707,11 @@ function ProfileScreen({ lang, profile, onSave, showToast, weightLogEntries = []
           </div>
         ))}
       </div>
+      {weightLogEntries.length > 0 && (
+        <p style={{ fontSize: 10, color: 'var(--text-3)', margin: '-14px 0 18px', textAlign: 'start' }}>
+          {t(lang, 'weightFromLogHint')}
+        </p>
+      )}
 
       <div style={{ height: 1, background: 'var(--border)', margin: '4px 0 18px' }} />
 
@@ -722,18 +729,6 @@ function ProfileScreen({ lang, profile, onSave, showToast, weightLogEntries = []
           </div>
           <span key={metricsKey} className="metric-pulse" style={{ fontSize: 18, fontWeight: 800, color: 'var(--text)', flexShrink: 0, marginInlineStart: 10 }}>
             {bmr.toLocaleString(lang === 'he' ? 'he-IL' : 'en-US')} <span style={{ fontSize: 10, fontWeight: 400 }}>{t(lang, 'caloriesUnit')}</span>
-          </span>
-        </div>
-        <div style={{ height: 1, background: 'var(--border)' }} />
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '11px 14px' }}>
-          <div style={{ minWidth: 0 }}>
-            <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-2)', margin: '0 0 2px' }}>TDEE</p>
-            <p style={{ fontSize: 10, color: 'var(--text-3)', margin: 0, lineHeight: 1.4 }}>
-              {lang === 'he' ? 'סה״כ הוצאה קלורית יומית עם רמת הפעילות שלך' : 'Total Daily Energy Expenditure with your activity level'}
-            </p>
-          </div>
-          <span key={`tdee-${metricsKey}`} className="metric-pulse" style={{ fontSize: 18, fontWeight: 800, color: 'var(--accent-hi)', flexShrink: 0, marginInlineStart: 10 }}>
-            {tdeeAtLevel.toLocaleString(lang === 'he' ? 'he-IL' : 'en-US')} <span style={{ fontSize: 10, fontWeight: 400 }}>{t(lang, 'caloriesUnit')}</span>
           </span>
         </div>
         <div style={{ height: 1, background: 'var(--border)' }} />
@@ -766,50 +761,6 @@ function ProfileScreen({ lang, profile, onSave, showToast, weightLogEntries = []
           </span>
         </div>
       </div>
-
-      {/* Target weight (for projection) */}
-      <div style={{ marginBottom: projectedDate ? 8 : 20 }}>
-        <label style={labelStyle}>{t(lang, 'targetWeightKg')}</label>
-        <div style={{ position: 'relative' }}>
-          <input
-            type="number"
-            inputMode="decimal"
-            className="inp"
-            style={{ fontSize: 16, paddingInlineEnd: draft.targetWeightKg !== null ? 28 : undefined }}
-            placeholder={t(lang, 'targetWeightPlaceholder')}
-            value={draft.targetWeightKg ?? ''}
-            onFocus={e => e.target.select()}
-            onChange={e => set('targetWeightKg', e.target.value ? parseFloat(e.target.value) : null)}
-          />
-          {draft.targetWeightKg !== null && (
-            <button
-              onMouseDown={e => { e.preventDefault(); set('targetWeightKg', null) }}
-              tabIndex={-1}
-              style={{ position: 'absolute', insetInlineEnd: 0, top: 0, bottom: 0, width: 28, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-            >
-              <span className="icon icon-sm">close</span>
-            </button>
-          )}
-        </div>
-      </div>
-      {projectedDate && (
-        <>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--accent-fill)', border: '1px solid var(--blue-border)', borderRadius: 10, padding: '8px 12px', marginBottom: 6 }}>
-            <span style={{ fontSize: 16 }}>🎯</span>
-            <div>
-              <p style={{ fontSize: 11, fontWeight: 600, color: 'var(--accent-hi)', margin: '0 0 1px' }}>
-                {t(lang, 'projectedDateLabel')}
-              </p>
-              <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', margin: 0 }}>
-                {projectedDate}
-              </p>
-            </div>
-          </div>
-          <p style={{ fontSize: 10, color: 'var(--text-3)', margin: '0 0 20px', lineHeight: 1.5 }}>
-            {t(lang, 'projectedDateHint')}
-          </p>
-        </>
-      )}
 
       {/* ── Weight Log section ─────────────────────────────────── */}
       <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.07em', margin: '0 0 12px' }}>
@@ -847,43 +798,13 @@ function ProfileScreen({ lang, profile, onSave, showToast, weightLogEntries = []
         </button>
       </div>
 
-      {/* Mini weight trend sparkline + list */}
+      {/* Entry list — accordion when > 4 entries */}
       {weightLogEntries.length > 0 && (() => {
-        const recent = weightLogEntries.slice(0, 8).reverse()
-        const weights = recent.map(e => e.weight_kg)
-        const minW = Math.min(...weights)
-        const maxW = Math.max(...weights)
-        const range = maxW - minW || 1
-        const W = 220, H = 40
-        const pts = weights.map((w, i) => {
-          const x = (i / Math.max(weights.length - 1, 1)) * W
-          const y = H - ((w - minW) / range) * (H - 8) - 4
-          return `${x},${y}`
-        }).join(' ')
-
+        const visible = logExpanded ? weightLogEntries : weightLogEntries.slice(0, 4)
         return (
           <div style={{ marginBottom: 16 }}>
-            {/* Sparkline — only when ≥ 2 points */}
-            {weights.length >= 2 && (
-              <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} style={{ display: 'block', marginBottom: 8 }}>
-                <polyline
-                  points={pts}
-                  fill="none"
-                  stroke="var(--accent)"
-                  strokeWidth="2"
-                  strokeLinejoin="round"
-                  strokeLinecap="round"
-                />
-                {weights.map((w, i) => {
-                  const x = (i / Math.max(weights.length - 1, 1)) * W
-                  const y = H - ((w - minW) / range) * (H - 8) - 4
-                  return <circle key={i} cx={x} cy={y} r={3} fill="var(--accent)" />
-                })}
-              </svg>
-            )}
-            {/* Last 4 entries */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-              {weightLogEntries.slice(0, 4).map(entry => (
+              {visible.map(entry => (
                 <div key={entry.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <span style={{ fontSize: 12, color: 'var(--text-3)', flex: 1 }}>{entry.date}</span>
                   <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', display: 'inline-flex', alignItems: 'baseline', gap: 3, direction: 'ltr' }}>
@@ -904,6 +825,17 @@ function ProfileScreen({ lang, profile, onSave, showToast, weightLogEntries = []
                 </div>
               ))}
             </div>
+            {weightLogEntries.length > 4 && (
+              <button
+                onClick={() => setLogExpanded(p => !p)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--accent-hi)', fontSize: 11, fontWeight: 600, padding: '6px 0 0', display: 'flex', alignItems: 'center', gap: 4 }}
+              >
+                <span className="icon icon-sm">{logExpanded ? 'expand_less' : 'expand_more'}</span>
+                {logExpanded
+                  ? (lang === 'he' ? 'הצג פחות' : 'Show less')
+                  : (lang === 'he' ? `הצג עוד ${weightLogEntries.length - 4}` : `Show ${weightLogEntries.length - 4} more`)}
+              </button>
+            )}
           </div>
         )
       })()}
@@ -932,6 +864,7 @@ function GoalsScreen({ lang, profile, goals, onSave, onSaveProfile, onSaveFluidG
   const [overrides, setOverrides] = useState<Record<string, { calories: number; protein: number; fluid_ml?: number }>>(goals?.weekly_overrides ?? {})
   const [draftActivityLevel, setDraftActivityLevel] = useState<number>(profile.activityLevel ?? 1)
   const [draftGoalType, setDraftGoalType] = useState<'lose' | 'maintain' | 'gain'>(profile.goalType ?? 'maintain')
+  const [draftTargetWeightKg, setDraftTargetWeightKg] = useState<number | null>(profile.targetWeightKg)
   const [weeklyOpen, setWeeklyOpen] = useState(false)
 
   const todayKey    = DAY_KEYS[new Date().getDay()]
@@ -950,9 +883,19 @@ function GoalsScreen({ lang, profile, goals, onSave, onSaveProfile, onSaveFluidG
   useEffect(() => {
     setDraftActivityLevel(profile.activityLevel ?? 1)
     setDraftGoalType(profile.goalType ?? 'maintain')
-  }, [profile.activityLevel, profile.goalType])
+    setDraftTargetWeightKg(profile.targetWeightKg)
+  }, [profile.activityLevel, profile.goalType, profile.targetWeightKg])
 
   const tdee = useMemo(() => calcDailyTdee({ ...profile, activityLevel: draftActivityLevel as 0|1|2|3|4 }), [profile, draftActivityLevel])
+
+  const projectedDate = useMemo(() => {
+    if (draftTargetWeightKg == null || !defCal || defCal <= 0) return null
+    const days = calcProjectedDays(profile.weight, draftTargetWeightKg, tdee, defCal)
+    if (days == null) return null
+    const d = new Date()
+    d.setDate(d.getDate() + days)
+    return d.toLocaleDateString(lang === 'he' ? 'he-IL' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+  }, [draftTargetWeightKg, defCal, profile.weight, tdee, lang])
   const suggestedCal     = tdee + (draftGoalType === 'lose' ? -500 : draftGoalType === 'gain' ? 300 : 0)
   const suggestedProtRate = draftGoalType === 'lose' ? 2.0 : draftGoalType === 'gain' ? 2.2 : 1.6
   const suggestedProt    = Math.round(profile.weight * suggestedProtRate)
@@ -1030,7 +973,7 @@ function GoalsScreen({ lang, profile, goals, onSave, onSaveProfile, onSaveFluidG
 
   const handleSave = () => {
     onSave({ default_calories: defCal, default_protein: defProt, weekly_overrides: overrides })
-    onSaveProfile({ activityLevel: draftActivityLevel as 0|1|2|3|4, goalType: draftGoalType })
+    onSaveProfile({ activityLevel: draftActivityLevel as 0|1|2|3|4, goalType: draftGoalType, targetWeightKg: draftTargetWeightKg })
     onSaveFluidGoal?.(defFluidGoal)
     onSaveDone()
     showToast(t(lang, 'goalsSaved'), 'success')
@@ -1044,7 +987,7 @@ function GoalsScreen({ lang, profile, goals, onSave, onSaveProfile, onSaveFluidG
   return (
     <>
       <h2 style={{ fontSize: 17, fontWeight: 800, color: 'var(--text)', margin: '0 0 18px' }}>
-        {t(lang, 'nutritionGoals')}
+        {t(lang, 'dailyGoalsLabel')}
       </h2>
 
       {/* Activity level */}
@@ -1086,6 +1029,59 @@ function GoalsScreen({ lang, profile, goals, onSave, onSaveProfile, onSaveFluidG
           ))}
         </div>
       </div>
+
+      {/* Target weight + projection */}
+      <div style={{ marginBottom: 8 }}>
+        <label style={labelStyle}>{t(lang, 'targetWeightKg')}</label>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'stretch' }}>
+          <div style={{ position: 'relative', flex: 1 }}>
+            <input
+              type="number"
+              inputMode="decimal"
+              className="inp"
+              style={{ fontSize: 16, paddingInlineEnd: draftTargetWeightKg !== null ? 28 : undefined }}
+              placeholder={t(lang, 'targetWeightPlaceholder')}
+              value={draftTargetWeightKg ?? ''}
+              onFocus={e => e.target.select()}
+              onChange={e => setDraftTargetWeightKg(e.target.value ? parseFloat(e.target.value) : null)}
+            />
+            {draftTargetWeightKg !== null && (
+              <button
+                onMouseDown={e => { e.preventDefault(); setDraftTargetWeightKg(null) }}
+                tabIndex={-1}
+                style={{ position: 'absolute', insetInlineEnd: 0, top: 0, bottom: 0, width: 28, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              >
+                <span className="icon icon-sm">close</span>
+              </button>
+            )}
+          </div>
+          <button
+            onClick={() => {
+              onSaveProfile({ targetWeightKg: draftTargetWeightKg })
+              showToast(t(lang, 'profileSaved'), 'success')
+            }}
+            style={{
+              flexShrink: 0, padding: '0 14px', borderRadius: 10, fontFamily: 'inherit',
+              fontSize: 13, fontWeight: 700, cursor: 'pointer',
+              background: 'var(--accent-select)', border: '1.5px solid var(--accent)',
+              color: 'var(--accent-hi)', whiteSpace: 'nowrap',
+            }}
+          >
+            {t(lang, 'save')}
+          </button>
+        </div>
+      </div>
+      {projectedDate && (
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, background: 'var(--accent-fill)', border: '1px solid var(--blue-border)', borderRadius: 10, padding: '8px 12px', marginBottom: 14 }}>
+          <span style={{ fontSize: 16, flexShrink: 0 }}>🎯</span>
+          <div>
+            <p style={{ fontSize: 11, fontWeight: 600, color: 'var(--accent-hi)', margin: '0 0 1px' }}>{t(lang, 'projectedDateLabel')}</p>
+            <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', margin: '0 0 6px' }}>{projectedDate}</p>
+            <p style={{ fontSize: 10, color: 'var(--text-3)', margin: 0, lineHeight: 1.5, whiteSpace: 'pre-line' }}>{t(lang, 'projectedDateHint')}</p>
+          </div>
+        </div>
+      )}
+      {!projectedDate && <div style={{ marginBottom: 14 }} />}
 
       {/* TDEE banner */}
       <div style={{ background: 'var(--accent-fill)', border: '1px solid var(--accent-glow)', borderRadius: 10, padding: '10px 14px', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -1391,8 +1387,16 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
   const [chipCanScrollLeft,  setChipCanScrollLeft]  = useState(false)
   const [chipCanScrollRight, setChipCanScrollRight] = useState(false)
   const updateChipScroll = (el: HTMLElement) => {
-    setChipCanScrollLeft(el.scrollLeft > 2)
-    setChipCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 2)
+    if (lang === 'he') {
+      // RTL Chrome/Safari: scrollLeft=0 at right-start, goes negative scrolling left
+      // canScrollLeft: not yet at the leftmost end (content still to the left)
+      setChipCanScrollLeft(el.scrollLeft > -(el.scrollWidth - el.clientWidth - 2))
+      // canScrollRight: scrolled past the start (content hidden to the right)
+      setChipCanScrollRight(el.scrollLeft < -2)
+    } else {
+      setChipCanScrollLeft(el.scrollLeft > 2)
+      setChipCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 2)
+    }
   }
   useEffect(() => {
     const el = chipScrollRef.current
@@ -1527,10 +1531,10 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
           )}
         </div>
 
-        {/* Filter chips — fade sides swapped for RTL */}
+        {/* Filter chips */}
         <div style={{ position: 'relative' }}>
-          {(lang === 'he' ? chipCanScrollRight : chipCanScrollLeft)  && <div style={{ position: 'absolute', left: 0, top: 0, bottom: 10, width: 24, background: 'linear-gradient(to right, var(--bg), transparent)', zIndex: 1, pointerEvents: 'none' }} />}
-          {(lang === 'he' ? chipCanScrollLeft  : chipCanScrollRight) && <div style={{ position: 'absolute', right: 0, top: 0, bottom: 10, width: 24, background: 'linear-gradient(to left, var(--bg), transparent)', zIndex: 1, pointerEvents: 'none' }} />}
+          {chipCanScrollLeft  && <div style={{ position: 'absolute', left: 0, top: 0, bottom: 10, width: 24, background: 'linear-gradient(to right, var(--bg), transparent)', zIndex: 1, pointerEvents: 'none' }} />}
+          {chipCanScrollRight && <div style={{ position: 'absolute', right: 0, top: 0, bottom: 10, width: 24, background: 'linear-gradient(to left, var(--bg), transparent)', zIndex: 1, pointerEvents: 'none' }} />}
           <div
             ref={chipScrollRef}
             onScroll={e => updateChipScroll(e.currentTarget)}
@@ -1581,7 +1585,7 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
           {historyGroups.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '32px 0', color: 'var(--text-3)' }}>
               <span className="icon" style={{ fontSize: 28, display: 'block', marginBottom: 8 }}>search_off</span>
-              <p style={{ fontSize: 13, margin: 0 }}>{lang === 'he' ? 'לא נמצאו תוצאות' : 'No results'}</p>
+              <p style={{ fontSize: 13, margin: 0 }}>{t(lang, 'noRecentFood')}</p>
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: minimal ? 0 : 6 }}>
@@ -1845,8 +1849,9 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
           )}
           {filteredGroups.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '32px 0', color: 'var(--text-3)' }}>
-              <span className="icon" style={{ fontSize: 28, display: 'block', marginBottom: 8 }}>{composedGroups.length === 0 ? 'restaurant' : 'search_off'}</span>
-              <p style={{ fontSize: 13, margin: 0 }}>{composedGroups.length === 0 ? (lang === 'he' ? 'אין מנות מורכבות' : 'No composed dishes') : (lang === 'he' ? 'לא נמצאו תוצאות' : 'No results')}</p>
+              <span className="icon" style={{ fontSize: 28, display: 'block', marginBottom: 8 }}>{composedGroups.length === 0 ? 'dinner_dining' : 'search_off'}</span>
+              <p style={{ fontSize: 13, margin: 0 }}>{composedGroups.length === 0 ? t(lang, 'noComposedDishes') : t(lang, 'noResults')}</p>
+              {composedGroups.length === 0 && <p style={{ fontSize: 12, margin: '4px 0 0', opacity: 0.7 }}>{t(lang, 'noComposedDishesSub')}</p>}
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: minimal ? 0 : 10 }}>
@@ -1985,8 +1990,13 @@ function LibraryScreen({ lang }: { lang: Lang }) {
   const [chipCanScrollLeft,  setChipCanScrollLeft]  = useState(false)
   const [chipCanScrollRight, setChipCanScrollRight] = useState(false)
   const updateChipScroll = (el: HTMLElement) => {
-    setChipCanScrollLeft(el.scrollLeft > 2)
-    setChipCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 2)
+    if (lang === 'he') {
+      setChipCanScrollLeft(el.scrollLeft > -(el.scrollWidth - el.clientWidth - 2))
+      setChipCanScrollRight(el.scrollLeft < -2)
+    } else {
+      setChipCanScrollLeft(el.scrollLeft > 2)
+      setChipCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 2)
+    }
   }
   useEffect(() => {
     const el = chipScrollRef.current
@@ -2052,10 +2062,10 @@ function LibraryScreen({ lang }: { lang: Lang }) {
           )}
         </div>
 
-        {/* Category chips — fade sides swapped for RTL */}
+        {/* Category chips */}
         <div style={{ position: 'relative' }}>
-          {(lang === 'he' ? chipCanScrollRight : chipCanScrollLeft)  && <div style={{ position: 'absolute', left: 0, top: 0, bottom: 10, width: 24, background: 'linear-gradient(to right, var(--bg), transparent)', zIndex: 1, pointerEvents: 'none' }} />}
-          {(lang === 'he' ? chipCanScrollLeft  : chipCanScrollRight) && <div style={{ position: 'absolute', right: 0, top: 0, bottom: 10, width: 24, background: 'linear-gradient(to left, var(--bg), transparent)', zIndex: 1, pointerEvents: 'none' }} />}
+          {chipCanScrollLeft  && <div style={{ position: 'absolute', left: 0, top: 0, bottom: 10, width: 24, background: 'linear-gradient(to right, var(--bg), transparent)', zIndex: 1, pointerEvents: 'none' }} />}
+          {chipCanScrollRight && <div style={{ position: 'absolute', right: 0, top: 0, bottom: 10, width: 24, background: 'linear-gradient(to left, var(--bg), transparent)', zIndex: 1, pointerEvents: 'none' }} />}
           <div
             ref={chipScrollRef}
             onScroll={e => updateChipScroll(e.currentTarget)}
@@ -2093,8 +2103,9 @@ function LibraryScreen({ lang }: { lang: Lang }) {
           </div>
         ) : filtered.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-3)', fontSize: 13 }}>
-            <span className="icon" style={{ fontSize: 24, display: 'block', marginBottom: 8, opacity: 0.4 }}>search_off</span>
-            {t(lang, 'noResultsFound')}
+            <span className="icon" style={{ fontSize: 24, display: 'block', marginBottom: 8, opacity: 0.4 }}>help_outline</span>
+            <p style={{ margin: 0 }}>{t(lang, 'unknownFood')}</p>
+            <p style={{ fontSize: 12, margin: '4px 0 0', opacity: 0.7 }}>{t(lang, 'unknownFoodSub')}</p>
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
@@ -2347,6 +2358,8 @@ export function SettingsSheet({
   useLockBodyScroll(isOpen)
   const { scrollRef, scrolledDown, onScroll } = useSheetScroll()
   const sheetRef = useRef<HTMLDivElement>(null)
+  const [dragOffset, setDragOffset] = useState(0)
+  const isDragging = dragOffset > 0
 
   // Shared save-button state for profile / goals / preferences screens
   const [screenSaved, setScreenSaved] = useState(false)
@@ -2421,8 +2434,9 @@ export function SettingsSheet({
         overflow: 'hidden',
         height: 'min(90dvh, 720px)',
         display: 'flex', flexDirection: 'column',
-        transform: isOpen ? 'translateY(0)' : 'translateY(105%)',
-        transition: 'transform 0.35s cubic-bezier(.22,.9,.36,1)',
+        transform: isOpen ? `translateY(${dragOffset}px)` : 'translateY(105%)',
+        transition: isDragging ? 'none' : 'transform 0.35s cubic-bezier(.22,.9,.36,1)',
+        opacity: isDragging ? Math.max(0.6, 1 - dragOffset / 400) : 1,
       }}>
 
         <SheetHandle
@@ -2430,6 +2444,7 @@ export function SettingsSheet({
           onClose={handleClose}
           onBack={screen !== 'main' ? () => setScreen('main') : undefined}
           isRTL={lang === 'he'}
+          onDragOffset={setDragOffset}
         />
 
         {/* Scrollable screens (main / profile / goals / preferences) */}
@@ -2474,7 +2489,6 @@ export function SettingsSheet({
                 weightLogEntries={weightLogEntries}
                 onLogWeight={onLogWeight}
                 onDeleteWeightEntry={onDeleteWeightEntry}
-                dailyCalGoal={goals?.default_calories}
                 saveRef={profileSaveRef}
                 onSaveDone={handleSaveDone}
               />

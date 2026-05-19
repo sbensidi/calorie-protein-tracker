@@ -65,11 +65,23 @@ const PHRASES = {
       'כולם חורגים לפעמים. מה שחשוב זה מה שעושים מחר בבוקר',
       'חריגה קורית — אל תיקח את זה קשה, פשוט ממשיכים',
     ],
+    overCalProtOk: [
+      'הקלוריות קצת חרגו — אבל החלבון של היום היה מושלם',
+      'חרגת קצת בקלוריות — הצד החיובי: החלבון היה מדויק',
+      'לא מושלם בקלוריות, אבל החלבון ב-100% — זה חשוב',
+      'הקלוריות יצאו מעל קצת. מחר מתחדשים — על החלבון כל הכבוד',
+    ],
     goalMet: [
       'עמדת ביעד היום — תן לגוף שלך לנוח',
       'עוד יום שבו בחרת בעצמך — מגיע לך',
       'יום מוצלח! עקביות היא הסוד האמיתי',
       'כל הכבוד — זה לא מובן מאליו',
+    ],
+    calOkUnderProt: [
+      'קלוריות בשליטה — עוד {prot} גרם חלבון ואתה שלם ביום',
+      'עמדת בקלוריות — הוסף עוד קצת חלבון לפני שהיום נגמר',
+      'יפה! הקלוריות מדויקות — החלבון מחכה לעוד {prot} גרם',
+      'מחצית הדרך: קלוריות ✓, חלבון עוד {prot} גרם — אתה יכול',
     ],
     streak: [
       '{N} ימים ברצף — זה לא מקרה, זו הרגל',
@@ -125,11 +137,23 @@ const PHRASES = {
       'Everyone slips sometimes. What matters is tomorrow morning',
       'It happens — don\'t be hard on yourself, just keep going',
     ],
+    overCalProtOk: [
+      'Went a bit over on calories — but your protein game was perfect today',
+      'Calories drifted a little — on the bright side, protein was spot on',
+      'Not perfect on calories, but protein was 100% — that counts for a lot',
+      'Calories a touch high, fresh start tomorrow. Great job on protein today',
+    ],
     goalMet: [
       'You hit your goal today — let your body rest',
       'Another day where you chose yourself — well done',
       'Successful day! Consistency is the real secret',
       'Well done — this doesn\'t happen by accident',
+    ],
+    calOkUnderProt: [
+      'Calories on point — just {prot}g of protein left to complete your day',
+      'Calories ✓ — protein needs a boost, {prot}g to go',
+      'Nice! Calories in check — finish strong with {prot}g of protein',
+      'Halfway there: calories done, protein still needs {prot}g',
     ],
     streak: [
       '{N} days in a row — that\'s not luck, that\'s a habit',
@@ -222,15 +246,23 @@ export function getGreeting(ctx: GreetingContext): Greeting {
     return { line1, line2: `${pick(JOKES, Math.floor(dayOfYear / 4))} 😄`, isJoke: true }
   }
 
+  const calOver  = calsConsumed > calsGoal
+  const calDone  = calsRemaining <= calsGoal * 0.1   // within 10% = effectively met
+  const protDone = protRemaining <= 0
+
   let line2: string
   if (hour >= 21) {
     line2 = pick(p.nightLine2, dayOfYear + 7)
   } else if (calsConsumed === 0) {
     line2 = pick(hour < 12 ? p.noMealsMorning : p.noMealsLate, dayOfYear)
-  } else if (calsConsumed > calsGoal) {
+  } else if (calOver && protDone) {
+    line2 = pick(p.overCalProtOk, dayOfYear)
+  } else if (calOver) {
     line2 = pick(p.overGoal, dayOfYear)
-  } else if (calsRemaining <= calsGoal * 0.1) {
+  } else if (calDone && protDone) {
     line2 = pick(p.goalMet, dayOfYear)
+  } else if (calDone && !protDone) {
+    line2 = pick(p.calOkUnderProt, dayOfYear).replace('{prot}', String(Math.max(1, protRemaining)))
   } else if (streak >= 2) {
     line2 = pick(p.streak, dayOfYear).replace('{N}', String(streak))
   } else if (fluidGoalMl > 0 && fluidPct >= 1) {
@@ -355,4 +387,103 @@ export function calcProjectedDays(
   // or surplus (dailyDiff<0) + want to gain (kgDiff>0). Same sign = wrong direction.
   if (Math.sign(dailyDiff) === Math.sign(kgDiff)) return null
   return Math.round(Math.abs(kgDiff) * 7700 / Math.abs(dailyDiff))
+}
+
+// ── Cooking weight estimation ──────────────────────────────────────────────────
+//
+// Each ingredient loses or gains weight during cooking (evaporation, absorption).
+// The factor table maps ingredient name keywords → cooking factor.
+// Calories are conserved (water has 0 kcal); only mass changes.
+
+interface FactorEntry { patterns: string[]; factor: number }
+
+const COOKING_FACTOR_TABLE: FactorEntry[] = [
+  // ── Dry carbs (absorb water — factor > 1) ────────────────────────
+  { patterns: ['פסטה','ספגטי','פנה','פרפרים','ריגטוני','tagliatelle','pasta','spaghetti','penne','rigatoni','farfalle'], factor: 2.50 },
+  { patterns: ['אורז חום','brown rice'], factor: 2.50 },
+  { patterns: ['אורז','rice'], factor: 2.80 },
+  { patterns: ['קוסקוס','couscous'], factor: 2.20 },
+  { patterns: ['קינואה','quinoa'], factor: 2.80 },
+  { patterns: ['עדשים','lentil'], factor: 2.50 },
+  { patterns: ['שעועית','חומוס יבש','beans'], factor: 2.20 },
+  // ── Meat & poultry ───────────────────────────────────────────────
+  { patterns: ['תבשיל בקר','נתח','צלי'], factor: 0.70 },
+  { patterns: ['חזה עוף','שניצל עוף','chicken breast'], factor: 0.70 },
+  { patterns: ['אנטריקוט','סינטה','פילה בקר','בקר','המבורגר','burger'], factor: 0.75 },
+  { patterns: ['פרגית','ירך עוף','chicken thigh'], factor: 0.75 },
+  { patterns: ['עוף שלם','whole chicken'], factor: 0.75 },
+  { patterns: ['קציצ'], factor: 0.80 },
+  { patterns: ['נקניקי','sausage'], factor: 0.85 },
+  // ── Fish ─────────────────────────────────────────────────────────
+  { patterns: ['סלמון','salmon'], factor: 0.80 },
+  { patterns: ['טונה טרי','tuna fresh'], factor: 0.75 },
+  { patterns: ['דג','בקלה','אמנון','לברק','מוסר','fish','tilapia'], factor: 0.80 },
+  // ── Vegetables ───────────────────────────────────────────────────
+  { patterns: ['תרד קפוא','ירק קפוא','ברוקולי קפוא','כרובית קפוא'], factor: 0.90 },
+  { patterns: ['תרד טרי'], factor: 0.25 },
+  { patterns: ['בצל קרמל','caramelized onion'], factor: 0.40 },
+  { patterns: ['בצל','onion'], factor: 0.70 },
+  { patterns: ['עגבני','tomato'], factor: 0.75 },
+  { patterns: ['פטרי','mushroom'], factor: 0.60 },
+  { patterns: ['כרובית','ברוקולי','cauliflower','broccoli'], factor: 0.90 },
+  { patterns: ['גזר','carrot'], factor: 0.95 },
+  { patterns: ['תפוח אדמה','פירה','potato'], factor: 0.95 },
+  { patterns: ['בטטה','sweet potato'], factor: 0.85 },
+  { patterns: ['ירק','vegetable','veg'], factor: 0.80 },
+  // ── Oils & sauces ────────────────────────────────────────────────
+  { patterns: ['שמן','oil'], factor: 1.00 },
+  { patterns: ['סויה','soy sauce','soy'], factor: 0.80 },
+  { patterns: ['maple','syrup','סירופ'], factor: 1.00 },
+  { patterns: ['לימון','lemon'], factor: 0.90 },
+  { patterns: ['ציר','מרק','broth','stock'], factor: 0.70 },
+  { patterns: ['יין','wine'], factor: 0.60 },
+  { patterns: ['שמנת','cream'], factor: 0.90 },
+  // ── Eggs ─────────────────────────────────────────────────────────
+  { patterns: ['חביתה','אומלט','omelette','scrambled'], factor: 0.85 },
+  { patterns: ['ביצה','ביצים','egg'], factor: 0.90 },
+  // ── Cheese ───────────────────────────────────────────────────────
+  { patterns: ['גבינה קשה','hard cheese'], factor: 0.90 },
+  { patterns: ['גבינה','cheese'], factor: 0.95 },
+]
+
+const DEFAULT_COOKING_FACTOR = 0.85
+
+export interface CookingBreakdownItem {
+  name:     string
+  rawG:     number   // 0 when unit-based (weight unknown)
+  factor:   number
+  cookedG:  number
+  matched:  boolean  // false = default factor used
+  skipped:  boolean  // true = unit-based item, cannot estimate weight
+}
+
+export function getCookingFactor(name: string): { factor: number; matched: boolean } {
+  const lower = name.toLowerCase()
+  for (const entry of COOKING_FACTOR_TABLE) {
+    if (entry.patterns.some(p => lower.includes(p.toLowerCase()))) {
+      return { factor: entry.factor, matched: true }
+    }
+  }
+  return { factor: DEFAULT_COOKING_FACTOR, matched: false }
+}
+
+export function estimateCookedWeight(meals: Meal[]): {
+  total: number
+  breakdown: CookingBreakdownItem[]
+} {
+  const breakdown: CookingBreakdownItem[] = meals.map(m => {
+    const isFluid   = m.fluid_ml != null && m.fluid_ml > 0
+    const isUnit    = m.grams < 0 && !isFluid
+    const rawG      = isUnit ? 0 : isFluid ? (m.fluid_ml ?? 0) : m.grams
+
+    if (isUnit) {
+      return { name: m.name, rawG: 0, factor: DEFAULT_COOKING_FACTOR, cookedG: 0, matched: false, skipped: true }
+    }
+
+    const { factor, matched } = getCookingFactor(m.name)
+    return { name: m.name, rawG, factor, cookedG: Math.round(rawG * factor), matched, skipped: false }
+  })
+
+  const total = Math.round(breakdown.reduce((s, b) => s + b.cookedG, 0))
+  return { total, breakdown }
 }

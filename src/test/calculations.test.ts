@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { calcBMR, calcDailyTdee, calcWeeklyTdee, calcGoalStreak, calcProjectedDays, calcMealTypeDistribution, calcMacroBreakdown } from '../lib/calculations'
+import { calcBMR, calcDailyTdee, calcWeeklyTdee, calcGoalStreak, calcProjectedDays, calcMealTypeDistribution, calcMacroBreakdown, getCookingFactor, estimateCookedWeight } from '../lib/calculations'
 import type { UserProfile } from '../hooks/useProfile'
 import type { Meal } from '../types'
 
@@ -15,6 +15,7 @@ function makeProfile(overrides: Partial<UserProfile> = {}): UserProfile {
     fluidGoalMl: 2000, fluidThresholdMl: 200,
     fluidZeroCalOnly: false, defaultServingGrams: 100,
     showGreeting: true,
+    displayName: null,
     ...overrides,
   }
 }
@@ -335,5 +336,90 @@ describe('calcMacroBreakdown', () => {
     expect(result.proteinPct % 1).toBe(0)
     expect(result.fatPct % 1).toBe(0)
     expect(result.carbsPct % 1).toBe(0)
+  })
+})
+
+// ── getCookingFactor ───────────────────────────────────────────────────────────
+
+describe('getCookingFactor', () => {
+  it('matches dry pasta with high absorption factor', () => {
+    const { factor, matched } = getCookingFactor('פסטה פנה')
+    expect(factor).toBe(2.50)
+    expect(matched).toBe(true)
+  })
+
+  it('matches beef (grill) correctly', () => {
+    const { factor, matched } = getCookingFactor('אנטריקוט דקדק')
+    expect(factor).toBe(0.75)
+    expect(matched).toBe(true)
+  })
+
+  it('matches frozen vegetables', () => {
+    const { factor, matched } = getCookingFactor('מדליון תרד קפוא')
+    expect(factor).toBe(0.90)
+    expect(matched).toBe(true)
+  })
+
+  it('matches oil with factor 1.00', () => {
+    const { factor, matched } = getCookingFactor('שמן קנולה')
+    expect(factor).toBe(1.00)
+    expect(matched).toBe(true)
+  })
+
+  it('uses default factor for unknown ingredients', () => {
+    const { factor, matched } = getCookingFactor('בלנדר מסתורי')
+    expect(factor).toBe(0.85)
+    expect(matched).toBe(false)
+  })
+
+  it('is case-insensitive', () => {
+    const { factor, matched } = getCookingFactor('SALMON')
+    expect(factor).toBe(0.80)
+    expect(matched).toBe(true)
+  })
+})
+
+// ── estimateCookedWeight ───────────────────────────────────────────────────────
+
+describe('estimateCookedWeight', () => {
+  it('sums cooked weights correctly for known ingredients', () => {
+    const meals = [
+      makeMeal({ name: 'אנטריקוט', grams: 250 }),       // ×0.75 → 187
+      makeMeal({ name: 'פסטה פנה', grams: 186 }),        // ×2.50 → 465
+      makeMeal({ name: 'שמן קנולה', grams: 14 }),        // ×1.00 → 14
+    ]
+    const { total, breakdown } = estimateCookedWeight(meals)
+    // 250×0.75=187.5→188, 186×2.5=465, 14×1=14 → total 667
+    expect(total).toBe(188 + 465 + 14)
+    expect(breakdown).toHaveLength(3)
+    expect(breakdown[0].matched).toBe(true)
+  })
+
+  it('marks fluid items by fluid_ml, not grams', () => {
+    const meal = makeMeal({ name: 'רוטב סויה', grams: -1, fluid_ml: 15 })
+    const { breakdown } = estimateCookedWeight([meal])
+    expect(breakdown[0].rawG).toBe(15)
+    expect(breakdown[0].skipped).toBe(false)
+  })
+
+  it('skips unit-based items (grams < 0, no fluid_ml)', () => {
+    const meal = makeMeal({ name: 'מדליון תרד קפוא', grams: -11, fluid_ml: null })
+    const { breakdown, total } = estimateCookedWeight([meal])
+    expect(breakdown[0].skipped).toBe(true)
+    expect(breakdown[0].cookedG).toBe(0)
+    expect(total).toBe(0)
+  })
+
+  it('returns 0 total for empty list', () => {
+    const { total, breakdown } = estimateCookedWeight([])
+    expect(total).toBe(0)
+    expect(breakdown).toHaveLength(0)
+  })
+
+  it('marks unrecognized ingredient as unmatched', () => {
+    const meal = makeMeal({ name: 'בלנדר מסתורי', grams: 100 })
+    const { breakdown } = estimateCookedWeight([meal])
+    expect(breakdown[0].matched).toBe(false)
+    expect(breakdown[0].factor).toBe(0.85)
   })
 })
