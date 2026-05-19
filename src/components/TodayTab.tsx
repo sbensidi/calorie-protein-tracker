@@ -375,19 +375,27 @@ export function TodayTab({
     const totalCalories = Math.round(allSel.reduce((s, m) => s + m.calories, 0))
     const totalProtein  = Math.round(allSel.reduce((s, m) => s + m.protein, 0) * 10) / 10
 
+    const portionG = parseFloat(composePortion)
+    const loggingPortion = portionG > 0 && batchWeightG > 0 && totalCalories > 0
+
     const newGroup: ComposedGroup = {
       id: crypto.randomUUID(),
       name,
-      mealIds: [...sel],
+      // When logging a portion, original meals will be deleted — store empty mealIds so
+      // they don't get double-counted if the group is later dissolved.
+      mealIds: loggingPortion ? [] : [...sel],
       batchWeightG:  batchWeightG > 0 ? batchWeightG : null,
       totalCalories,
       totalProtein,
     }
     onUpsertGroup(newGroup)
 
-    // If a portion was specified, log it immediately using the just-computed totals
-    const portionG = parseFloat(composePortion)
-    if (portionG > 0 && batchWeightG > 0 && totalCalories > 0) {
+    if (loggingPortion) {
+      // Delete the original ingredient meals so only the portion appears in the daily total.
+      selMeals.forEach(m => onDeleteMeal(m.id))
+      groupMeals.forEach(m => onDeleteMeal(m.id))
+      selGroups.forEach(g => onRemoveGroup(g.id))
+
       const ratio = portionG / batchWeightG
       await onAddMealWithId({
         date:           today(),

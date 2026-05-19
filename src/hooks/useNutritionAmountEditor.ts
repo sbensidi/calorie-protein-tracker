@@ -45,39 +45,37 @@ export function useNutritionAmountEditor({
     const oldUnit  = unit
     const oldIsPcs = oldUnit === 'pcs'
     const newIsPcs = newUnit === 'pcs'
-    let n = numericAmount
+    const n = numericAmount
 
     if (enableScaling && ratios.current != null && ratios.current.calPerUnit > 0) {
       if (oldIsPcs !== newIsPcs) {
+        // pcs↔weight boundary: update ratio and recalculate cal/prot for the new unit.
+        // Amount never changes — if user had 300 and switches to pcs, they now have 300 servings.
         if (oldIsPcs) {
-          // pcs → weight: keep amount as typed, convert ratio cal/serving → cal/gram
-          ratios.current = {
-            calPerUnit:  ratios.current.calPerUnit  / sg.current,
-            protPerUnit: ratios.current.protPerUnit / sg.current,
-            perServing:  false,
+          const newCal  = ratios.current.calPerUnit  / sg.current
+          const newProt = ratios.current.protPerUnit / sg.current
+          ratios.current = { calPerUnit: newCal, protPerUnit: newProt, perServing: false }
+          if (n > 0) {
+            setCalories(Math.round(n * newCal))
+            setProtein(Math.round(n * newProt * 10) / 10)
           }
         } else {
-          // weight → pcs: convert amount proportionally, update ratio cal/gram → cal/serving
-          ratios.current = {
-            calPerUnit:  ratios.current.calPerUnit  * sg.current,
-            protPerUnit: ratios.current.protPerUnit * sg.current,
-            perServing:  true,
+          const newCal  = ratios.current.calPerUnit  * sg.current
+          const newProt = ratios.current.protPerUnit * sg.current
+          ratios.current = { calPerUnit: newCal, protPerUnit: newProt, perServing: true }
+          if (n > 0) {
+            setCalories(Math.round(n * newCal))
+            setProtein(Math.round(n * newProt * 10) / 10)
           }
-          n = Math.max(0.1, Math.round(n / sg.current * 10) / 10)
-          setAmountStr(String(n))
         }
-      }
-
-      if (n > 0) {
+      } else if (n > 0 && !newIsPcs) {
+        // Non-pcs↔non-pcs: keep amount, recalculate nutrition for the new unit.
+        // e.g. 1 tbsp → 1 cup: same number, different physical amount → correct new cal/prot.
         const uid = newUnit as UnitId
-        const base = (() => {
-          if (ratios.current!.perServing) return n
-          if (newIsPcs) return n * sg.current
-          const b = toBase(n, uid)
-          return UNITS[uid].type === 'volume' ? mlToGrams(b, density.current) : b
-        })()
-        setCalories(Math.round(base * ratios.current!.calPerUnit))
-        setProtein(Math.round(base * ratios.current!.protPerUnit * 10) / 10)
+        const b = toBase(n, uid)
+        const base = UNITS[uid].type === 'volume' ? mlToGrams(b, density.current) : b
+        setCalories(Math.round(base * ratios.current.calPerUnit))
+        setProtein(Math.round(base * ratios.current.protPerUnit * 10) / 10)
       }
     }
 
