@@ -2,7 +2,7 @@ import { useState, useRef } from 'react'
 import type { Meal } from '../types'
 import type { Lang } from '../lib/i18n'
 import { t, dir } from '../lib/i18n'
-import { formatWeight, UNITS, toBase, fromBase } from '../lib/units'
+import { formatWeight, UNITS, toBase } from '../lib/units'
 import type { WeightUnit, UnitId } from '../lib/units'
 
 interface MealCardProps {
@@ -220,16 +220,13 @@ export function MealCard({ meal, lang, weightUnit = 'g', showCheckbox, selected,
                   const cal = typeof editCalories === 'number' ? editCalories : Number(editCalories) || 0
                   const prot = typeof editProtein === 'number' ? editProtein  : Number(editProtein)  || 0
                   if (editWeightUnit === 'pcs') {
-                    // pcs → weight: convert serving count → grams, keep total nutrition
-                    const newG = Math.round(w * sg)
-                    setEditWeight(newG)
-                    scalingRatios.current = enableWeightScaling && newG > 0
-                      ? { calPerGram: cal / newG, protPerGram: prot / newG, perServing: false }
+                    // pcs → weight: keep amount as typed, update ratio only
+                    const virtualG = Math.round(w * sg)
+                    scalingRatios.current = enableWeightScaling && virtualG > 0
+                      ? { calPerGram: cal / virtualG, protPerGram: prot / virtualG, perServing: false }
                       : null
                   } else {
-                    // weight → pcs: convert grams → serving count, keep total nutrition
-                    const newServings = Math.max(1, Math.round(w / sg))
-                    setEditWeight(newServings)
+                    // weight → pcs: keep amount as typed, update ratio only
                     scalingRatios.current = enableWeightScaling
                       ? { calPerGram: cal, protPerGram: prot, perServing: true }
                       : null
@@ -239,10 +236,8 @@ export function MealCard({ meal, lang, weightUnit = 'g', showCheckbox, selected,
                 if (editWeightUnit === 'pcs' || newUnit === 'pcs') return
                 const w = typeof editWeight === 'number' ? editWeight : Number(editWeight) || 0
                 if (w <= 0) return
-                const base = toBase(w, editWeightUnit as UnitId)  // use OLD unit
-                // Amount conversion is always unconditional — pure unit arithmetic
-                setEditWeight(Math.round(fromBase(base, newUnit as UnitId) * 100) / 100)
-                // Nutrition scaling only when ratios are available
+                // Reinterpret amount in new unit — no amount conversion, recalculate nutrition only
+                const base = toBase(w, newUnit as UnitId)
                 if (enableWeightScaling && scalingRatios.current) {
                   setEditCalories(Math.round(base * scalingRatios.current.calPerGram))
                   setEditProtein(Math.round(base * scalingRatios.current.protPerGram * 10) / 10)

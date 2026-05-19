@@ -1407,42 +1407,32 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
                   const newIsPcs = newUnit === 'pcs'
                   const sg = servingGrams
                   let n = numericAmount
-                  let standardBase: number | null = null  // base in ml or grams for cal recalc
 
-                  // When crossing pcs↔weight boundary: convert ratio AND amount
+                  // When crossing pcs↔weight boundary: update ratio only, keep amount as typed
                   if (oldIsPcs !== newIsPcs) {
                     if (oldIsPcs) {
-                      // pcs → weight: ratio cal/serving → cal/gram; amount: servings → grams
+                      // pcs → weight: ratio cal/serving → cal/gram
                       historyRatios.current = {
                         calPerUnit:  historyRatios.current.calPerUnit  / sg,
                         protPerUnit: historyRatios.current.protPerUnit / sg,
                         perServing:  false,
                       }
-                      n = Math.round(n * sg)
-                      setAmountStr(String(n))
-                      standardBase = n  // n is now grams
                     } else {
-                      // weight → pcs: ratio cal/gram → cal/serving; amount: grams → servings
+                      // weight → pcs: ratio cal/gram → cal/serving
                       historyRatios.current = {
                         calPerUnit:  historyRatios.current.calPerUnit  * sg,
                         protPerUnit: historyRatios.current.protPerUnit * sg,
                         perServing:  true,
                       }
-                      n = Math.round(n / sg * 10) / 10
-                      setAmountStr(String(n))
                     }
                   }
-                  // non-pcs↔non-pcs: keep amount as typed; only recalculate nutrition below
+                  // In all cases: keep amount as typed, recalculate nutrition for new unit
 
-                  // Recalculate nutrition for the (possibly converted) amount in new unit
                   if (n > 0) {
                     const uid = newUnit as UnitId
                     const base = (() => {
                       if (historyRatios.current.perServing) return n
                       if (newIsPcs) return n * sg
-                      if (standardBase != null) {
-                        return UNITS[uid]?.type === 'volume' ? mlToGrams(standardBase, libraryDensityRef.current ?? 1) : standardBase
-                      }
                       const b = toBase(n, uid)
                       return UNITS[uid].type === 'volume' ? mlToGrams(b, libraryDensityRef.current ?? 1) : b
                     })()
