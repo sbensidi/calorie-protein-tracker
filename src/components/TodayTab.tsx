@@ -752,9 +752,7 @@ export function TodayTab({
 
             {/* Standalone meals */}
             {standalones.map((meal) => {
-              const isPcsMeal = meal.grams < 0
-              const libServingG: number | undefined = (() => {
-                if (!isPcsMeal) return undefined
+              const libServingG: number = (() => {
                 const item = library.find(i => i.name_he === meal.name || i.name_en.toLowerCase() === meal.name.toLowerCase())
                 return (item?.countable && item.serving_size != null) ? Number(item.serving_size) : defaultServingGrams
               })()

@@ -1,9 +1,10 @@
-import { useState, useRef } from 'react'
+import { useState } from 'react'
 import type { Meal } from '../types'
 import type { Lang } from '../lib/i18n'
 import { t, dir } from '../lib/i18n'
 import { formatWeight, UNITS, toBase } from '../lib/units'
 import type { WeightUnit, UnitId } from '../lib/units'
+import { useNutritionAmountEditor } from '../hooks/useNutritionAmountEditor'
 
 interface MealCardProps {
   meal: Meal
@@ -31,54 +32,61 @@ function fmtDisplayUnit(meal: Meal, lang: Lang): string | null {
 
 export function MealCard({ meal, lang, weightUnit = 'g', showCheckbox, selected, onToggleSelect, onEdit, enableWeightScaling = false, servingG, onDelete, onDuplicate, listStyle = false }: MealCardProps) {
   const [editing, setEditing] = useState(false)
-  const scalingRatios = useRef<{ calPerGram: number; protPerGram: number; perServing: boolean } | null>(null)
   const [editName,     setEditName]     = useState(meal.name)
   const [editMealType, setEditMealType] = useState<MealType>(meal.meal_type as MealType)
-  const [editCalories, setEditCalories] = useState<number | ''>(meal.calories)
-  const [editProtein,  setEditProtein]  = useState<number | ''>(meal.protein)
-  // Weight: positive = grams, negative = pcs (stored as negative), fluid uses fluid_ml
-  const isPcsEntry    = meal.grams < 0
-  const isFluidEntry  = meal.fluid_ml != null && !meal.fluid_excluded
-  const [editWeight,  setEditWeight]  = useState<number | ''>(
-    isFluidEntry ? Math.round(meal.fluid_ml!) : Math.abs(meal.grams)
-  )
-  const [editWeightUnit, setEditWeightUnit] = useState<UnitId | 'pcs'>(
-    isFluidEntry ? 'ml' : isPcsEntry ? 'pcs' : 'g'
-  )
   const [editNotes, setEditNotes] = useState(meal.notes ?? '')
+
+  const isPcsEntry   = meal.grams < 0
+  const isFluidEntry = meal.fluid_ml != null && !meal.fluid_excluded
+
+  const editor = useNutritionAmountEditor({
+    initialAmount:   String(isFluidEntry ? Math.round(meal.fluid_ml!) : Math.abs(meal.grams)),
+    initialUnit:     isFluidEntry ? 'ml' : isPcsEntry ? 'pcs' : 'g',
+    initialCalories: meal.calories,
+    initialProtein:  meal.protein,
+    initialSg:       servingG ?? 100,
+    enableScaling:   enableWeightScaling,
+  })
 
   const saveEdit = () => {
     if (!editName.trim()) return
-    const w    = Number(editWeight) || 0
-    const isVol = editWeightUnit !== 'pcs' && UNITS[editWeightUnit as UnitId].type === 'volume'
-    const base  = editWeightUnit === 'pcs' ? w : toBase(w, editWeightUnit as UnitId)
+    const w    = parseFloat(editor.amountStr) || 0
+    const isVol = editor.unit !== 'pcs' && UNITS[editor.unit as UnitId].type === 'volume'
+    const base  = editor.unit === 'pcs' ? w : toBase(w, editor.unit as UnitId)
     onEdit(meal.id, {
       name:      editName.trim(),
       meal_type: editMealType,
-      calories:  Math.max(0, Number(editCalories) || 0),
-      protein:   Math.max(0, Number(editProtein)  || 0),
-      grams:     editWeightUnit === 'pcs' ? -w : Math.round(base),
+      calories:  Math.max(0, Number(editor.calories) || 0),
+      protein:   Math.max(0, Number(editor.protein)  || 0),
+      grams:     editor.unit === 'pcs' ? -w : Math.round(base),
       notes:     editNotes.trim() || null,
       ...(isVol ? { fluid_ml: base } : {}),
     })
     setEditing(false)
   }
+
   const openEdit = () => {
     if (enableWeightScaling) {
       const base = isFluidEntry ? (meal.fluid_ml ?? 0) : Math.abs(meal.grams)
       const d = base || 1
-      scalingRatios.current = { calPerGram: meal.calories / d, protPerGram: meal.protein / d, perServing: isPcsEntry }
+      editor.ratios.current = {
+        calPerUnit: meal.calories / d,
+        protPerUnit: meal.protein / d,
+        perServing: isPcsEntry,
+      }
     }
+    editor.sg.current = servingG ?? 100
     setEditing(true)
   }
 
   const cancelEdit = () => {
     setEditName(meal.name)
     setEditMealType(meal.meal_type as MealType)
-    setEditCalories(meal.calories)
-    setEditProtein(meal.protein)
-    setEditWeight(isFluidEntry ? Math.round(meal.fluid_ml!) : Math.abs(meal.grams))
-    setEditWeightUnit(isFluidEntry ? 'ml' : isPcsEntry ? 'pcs' : 'g')
+    editor.setAmountStr(String(isFluidEntry ? Math.round(meal.fluid_ml!) : Math.abs(meal.grams)))
+    editor.setUnit(isFluidEntry ? 'ml' : isPcsEntry ? 'pcs' : 'g')
+    editor.setCalories(meal.calories)
+    editor.setProtein(meal.protein)
+    editor.ratios.current = null
     setEditNotes(meal.notes ?? '')
     setEditing(false)
   }
@@ -121,7 +129,7 @@ export function MealCard({ meal, lang, weightUnit = 'g', showCheckbox, selected,
             <option value="beverage">{t(lang, 'beverage')}</option>
           </select>
         </div>
-        {/* Row 2: calories | protein | weight | unit — 4 equal columns (Issue 6) */}
+        {/* Row 2: calories | protein | weight | unit */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 8, marginBottom: 8 }}>
           <div>
             <label style={{ fontSize: 11, color: 'var(--accent-hi)', fontWeight: 600, display: 'block', marginBottom: 4 }}>
@@ -132,14 +140,14 @@ export function MealCard({ meal, lang, weightUnit = 'g', showCheckbox, selected,
                 type="number"
                 inputMode="numeric"
                 className="inp"
-                style={{ fontSize: 16, paddingInlineEnd: editCalories !== '' ? 32 : 12 }}
-                value={editCalories}
+                style={{ fontSize: 16, paddingInlineEnd: editor.calories !== '' ? 32 : 12 }}
+                value={editor.calories}
                 placeholder="0"
-                onChange={e => setEditCalories(e.target.value === '' ? '' : Number(e.target.value))}
-                onFocus={() => { if (editCalories === 0) setEditCalories('') }}
+                onChange={e => editor.setCalories(e.target.value === '' ? '' : Number(e.target.value))}
+                onFocus={() => { if (editor.calories === 0) editor.setCalories('') }}
               />
-              {editCalories !== '' && (
-                <button onMouseDown={e => { e.preventDefault(); setEditCalories('') }} tabIndex={-1}
+              {editor.calories !== '' && (
+                <button onMouseDown={e => { e.preventDefault(); editor.setCalories('') }} tabIndex={-1}
                   style={{ position: 'absolute', insetInlineEnd: 0, top: 0, bottom: 0, width: 32, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <span className="icon icon-sm">close</span>
                 </button>
@@ -156,14 +164,14 @@ export function MealCard({ meal, lang, weightUnit = 'g', showCheckbox, selected,
                 inputMode="decimal"
                 step="0.1"
                 className="inp inp-green"
-                style={{ fontSize: 16, paddingInlineEnd: editProtein !== '' ? 32 : 12 }}
-                value={editProtein}
+                style={{ fontSize: 16, paddingInlineEnd: editor.protein !== '' ? 32 : 12 }}
+                value={editor.protein}
                 placeholder="0"
-                onChange={e => setEditProtein(e.target.value === '' ? '' : Number(e.target.value))}
-                onFocus={() => { if (editProtein === 0) setEditProtein('') }}
+                onChange={e => editor.setProtein(e.target.value === '' ? '' : Number(e.target.value))}
+                onFocus={() => { if (editor.protein === 0) editor.setProtein('') }}
               />
-              {editProtein !== '' && (
-                <button onMouseDown={e => { e.preventDefault(); setEditProtein('') }} tabIndex={-1}
+              {editor.protein !== '' && (
+                <button onMouseDown={e => { e.preventDefault(); editor.setProtein('') }} tabIndex={-1}
                   style={{ position: 'absolute', insetInlineEnd: 0, top: 0, bottom: 0, width: 32, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <span className="icon icon-sm">close</span>
                 </button>
@@ -179,23 +187,14 @@ export function MealCard({ meal, lang, weightUnit = 'g', showCheckbox, selected,
                 type="number"
                 inputMode="decimal"
                 className="inp"
-                style={{ width: '100%', fontSize: 16, paddingInlineEnd: editWeight !== '' ? 32 : 12 }}
-                value={editWeight}
+                style={{ width: '100%', fontSize: 16, paddingInlineEnd: editor.amountStr !== '' ? 32 : 12 }}
+                value={editor.amountStr}
                 placeholder="0"
-                onChange={e => {
-                  const w = e.target.value === '' ? '' : Number(e.target.value)
-                  setEditWeight(w)
-                  if (!enableWeightScaling || typeof w !== 'number' || w <= 0 || editWeightUnit === 'pcs') return
-                  if (scalingRatios.current && !scalingRatios.current.perServing) {
-                    const base = toBase(w, editWeightUnit as UnitId)
-                    setEditCalories(Math.round(base * scalingRatios.current.calPerGram))
-                    setEditProtein(Math.round(base * scalingRatios.current.protPerGram * 10) / 10)
-                  }
-                }}
+                onChange={e => editor.handleAmountChange(e.target.value)}
                 onFocus={e => e.target.select()}
               />
-              {editWeight !== '' && (
-                <button onMouseDown={e => { e.preventDefault(); setEditWeight('') }} tabIndex={-1}
+              {editor.amountStr !== '' && (
+                <button onMouseDown={e => { e.preventDefault(); editor.setAmountStr('') }} tabIndex={-1}
                   style={{ position: 'absolute', insetInlineEnd: 0, top: 0, bottom: 0, width: 32, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <span className="icon icon-sm">close</span>
                 </button>
@@ -209,40 +208,8 @@ export function MealCard({ meal, lang, weightUnit = 'g', showCheckbox, selected,
             <select
               className="inp"
               style={{ width: '100%', fontSize: 16 }}
-              value={editWeightUnit}
-              onChange={e => {
-                const newUnit = e.target.value as UnitId | 'pcs'
-                setEditWeightUnit(newUnit)
-                const crossingBoundary = (editWeightUnit === 'pcs') !== (newUnit === 'pcs')
-                if (crossingBoundary) {
-                  const sg  = servingG ?? 100
-                  const w   = typeof editWeight   === 'number' ? editWeight   : Number(editWeight)   || 0
-                  const cal = typeof editCalories === 'number' ? editCalories : Number(editCalories) || 0
-                  const prot = typeof editProtein === 'number' ? editProtein  : Number(editProtein)  || 0
-                  if (editWeightUnit === 'pcs') {
-                    // pcs → weight: keep amount as typed, update ratio only
-                    const virtualG = Math.round(w * sg)
-                    scalingRatios.current = enableWeightScaling && virtualG > 0
-                      ? { calPerGram: cal / virtualG, protPerGram: prot / virtualG, perServing: false }
-                      : null
-                  } else {
-                    // weight → pcs: keep amount as typed, update ratio only
-                    scalingRatios.current = enableWeightScaling
-                      ? { calPerGram: cal, protPerGram: prot, perServing: true }
-                      : null
-                  }
-                  return
-                }
-                if (editWeightUnit === 'pcs' || newUnit === 'pcs') return
-                const w = typeof editWeight === 'number' ? editWeight : Number(editWeight) || 0
-                if (w <= 0) return
-                // Reinterpret amount in new unit — no amount conversion, recalculate nutrition only
-                const base = toBase(w, newUnit as UnitId)
-                if (enableWeightScaling && scalingRatios.current) {
-                  setEditCalories(Math.round(base * scalingRatios.current.calPerGram))
-                  setEditProtein(Math.round(base * scalingRatios.current.protPerGram * 10) / 10)
-                }
-              }}
+              value={editor.unit}
+              onChange={e => editor.handleUnitChange(e.target.value as Parameters<typeof editor.handleUnitChange>[0])}
             >
               <option value="g">{lang === 'he' ? 'גרם' : 'g'}</option>
               <option value="oz">{lang === 'he' ? 'אונקיה' : 'oz'}</option>
@@ -255,7 +222,7 @@ export function MealCard({ meal, lang, weightUnit = 'g', showCheckbox, selected,
             </select>
           </div>
         </div>
-        {editWeightUnit === 'pcs' && servingG && (
+        {editor.unit === 'pcs' && (servingG != null) && (
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 4 }}>
             <span style={{
               fontSize: 10, fontWeight: 600, color: 'var(--text-3)',

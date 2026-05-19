@@ -15,8 +15,8 @@ import type { UnitId } from '../lib/units'
 import { fuzzyMatchLibrary } from '../lib/fuzzyMatch'
 import type { LibraryMatch } from '../lib/fuzzyMatch'
 import { useAppContext } from '../context/AppContext'
-
-type EntryUnit = UnitId | 'pcs'
+import { useNutritionAmountEditor } from '../hooks/useNutritionAmountEditor'
+import type { EntryUnit } from '../hooks/useNutritionAmountEditor'
 
 type EntryMode = 'manual' | 'scan'
 
@@ -91,8 +91,6 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
   const [scanMealType, setScanMealType] = useState<MealType>(() => mealTypeByTime())
 
   const [foodName, setFoodName]       = useState('')
-  const [amountStr, setAmountStr]     = useState('')
-  const [entryUnit, setEntryUnit]     = useState<EntryUnit>(defaultWeightUnit)
   const [mealType, setMealType]       = useState<MealType>(() => defaultMealType ?? mealTypeByTime())
 
   useEffect(() => {
@@ -106,8 +104,13 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
 
   const [calculating, setCalculating] = useState(false)
   const [nutrition, setNutrition]     = useState<NutritionResult | null>(null)
-  const [editCalories, setEditCalories] = useState<number | ''>('')
-  const [editProtein,  setEditProtein]  = useState<number | ''>('')
+  const editor = useNutritionAmountEditor({
+    initialAmount:   '',
+    initialUnit:     defaultWeightUnit,
+    initialCalories: '',
+    initialProtein:  '',
+    initialSg:       defaultServingGrams,
+  })
   const [editFat,      setEditFat]      = useState<number | null>(null)
   const [editCarbs,    setEditCarbs]    = useState<number | null>(null)
   const [mealNotes,    setMealNotes]    = useState('')
@@ -137,14 +140,9 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
   const [fluidExcluded, setFluidExcluded] = useState(false)
   // Track if the current form state came from a history selection (to avoid re-inserting)
   const [selectedHistoryId, setSelectedHistoryId] = useState<string | null>(null)
-  // Per-unit ratios stored on history selection — used to scale nutrition when amount changes in confirmation
-  // perServing=true → ratio is cal/serving (pcs history items)
-  // perServing=false → ratio is cal/gram (library, AI, fluid history items)
-  const historyRatios = useRef<{ calPerUnit: number; protPerUnit: number; perServing: boolean }>({ calPerUnit: 0, protPerUnit: 0, perServing: false })
-
-  const isPcs        = entryUnit === 'pcs'
+  const isPcs        = editor.unit === 'pcs'
   const amountMode: 'g' | 'unit' = isPcs ? 'unit' : 'g'
-  const numericAmount = Number(amountStr) || (isPcs ? 1 : 0)
+  const numericAmount = editor.numericAmount || (isPcs ? 1 : 0)
 
   const openDropdown = (query: string) => {
     const q = query.trim()
@@ -237,17 +235,17 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
     libraryDensityRef.current = item.density ?? null
     matchedLibraryItemRef.current = { item, confidence: 'exact' }
     setMatchedLib({ item, confidence: 'exact' })
-    historyRatios.current = {
+    editor.ratios.current = {
       calPerUnit:  gramsForNutrition > 0 ? cal  / gramsForNutrition : 0,
       protPerUnit: gramsForNutrition > 0 ? prot / gramsForNutrition : 0,
       perServing:  false,
     }
-    setEntryUnit(preferredUnit)
+    editor.setUnit(preferredUnit)
     setFoodName(name)
-    setAmountStr(String(servingBase))
+    editor.setAmountStr(String(servingBase))
     setNutrition({ calories: cal, protein: prot })
-    setEditCalories(cal)
-    setEditProtein(prot)
+    editor.setCalories(cal)
+    editor.setProtein(prot)
     setDropdownOpen(false)
 
     setAiError(null)
@@ -273,7 +271,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
     // Reset to 0 so live scaling is disabled rather than producing absurd numbers.
     const calPerUnit  = (!isFluidItem && item.grams > 0 && rawCal  > 12) ? 0 : rawCal
     const protPerUnit = (!isFluidItem && item.grams > 0 && rawCal  > 12) ? 0 : rawProt
-    historyRatios.current = {
+    editor.ratios.current = {
       calPerUnit,
       protPerUnit,
       perServing:  item.grams < 0 && !isFluidItem,  // pcs items: ratio is cal/serving
@@ -281,11 +279,11 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
     matchedLibraryItemRef.current = null
     setMatchedLib(null)
     setFoodName(item.name)
-    setAmountStr(String(unitAmount))
-    setEntryUnit(item.grams < 0 ? 'pcs' : isFluidItem ? 'ml' : defaultWeightUnit)
+    editor.setAmountStr(String(unitAmount))
+    editor.setUnit(item.grams < 0 ? 'pcs' : isFluidItem ? 'ml' : defaultWeightUnit)
     setNutrition({ calories: item.calories, protein: item.protein })
-    setEditCalories(item.calories || '')
-    setEditProtein(item.protein   || '')
+    editor.setCalories(item.calories || '')
+    editor.setProtein(item.protein   || '')
     setDropdownOpen(false)
 
     setAiError(null)
@@ -326,20 +324,20 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
           const totalGrams = numericAmount * gramsPerServing
           cal  = Math.round(exact.calories_per_100g * totalGrams / 100)
           prot = Math.round(exact.protein_per_100g  * totalGrams / 100 * 10) / 10
-          historyRatios.current = {
+          editor.ratios.current = {
             calPerUnit:  numericAmount > 0 ? cal  / numericAmount : 0,
             protPerUnit: numericAmount > 0 ? prot / numericAmount : 0,
             perServing:  true,
           }
         } else {
-          const uid = entryUnit in UNITS ? entryUnit as UnitId : null
+          const uid = editor.unit in UNITS ? editor.unit as UnitId : null
           const baseAmount = uid ? toBase(numericAmount, uid) : numericAmount
           const gramsForNutrition = uid && UNITS[uid].type === 'volume'
             ? mlToGrams(baseAmount, exact.density ?? 1)
             : baseAmount
           cal  = Math.round(exact.calories_per_100g * gramsForNutrition / 100)
           prot = Math.round(exact.protein_per_100g  * gramsForNutrition / 100 * 10) / 10
-          historyRatios.current = {
+          editor.ratios.current = {
             calPerUnit:  gramsForNutrition > 0 ? cal  / gramsForNutrition : 0,
             protPerUnit: gramsForNutrition > 0 ? prot / gramsForNutrition : 0,
             perServing:  false,
@@ -358,15 +356,15 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
               : toBase(Number(exact.serving_size ?? servingGramsRef.current), servUnit)
             return numericAmount * gpServing
           }
-          const uid = entryUnit in UNITS ? entryUnit as UnitId : null
+          const uid = editor.unit in UNITS ? editor.unit as UnitId : null
           const baseAmt = uid ? toBase(numericAmount, uid) : numericAmount
           return uid && UNITS[uid].type === 'volume' ? mlToGrams(baseAmt, exact.density ?? 1) : baseAmt
         })()
         const fatVal  = exact.fat_per_100g   != null ? Math.round(exact.fat_per_100g   * libGrams / 100 * 10) / 10 : null
         const carbVal = exact.carbs_per_100g != null ? Math.round(exact.carbs_per_100g * libGrams / 100 * 10) / 10 : null
         setNutrition({ calories: cal, protein: prot, fat: fatVal ?? undefined, carbs: carbVal ?? undefined })
-        setEditCalories(cal)
-        setEditProtein(prot)
+        editor.setCalories(cal)
+        editor.setProtein(prot)
         setEditFat(fatVal)
         setEditCarbs(carbVal)
         setCalculating(false)
@@ -378,7 +376,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
     // Convert user amount to grams — AI always expects grams (amountMode='g')
     const amountForAI = (() => {
       if (isPcs) return numericAmount
-      const uid = entryUnit as UnitId
+      const uid = editor.unit as UnitId
       const base = toBase(numericAmount, uid)
       return UNITS[uid].type === 'volume' ? mlToGrams(base, libraryDensityRef.current ?? 1) : base
     })()
@@ -387,44 +385,44 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
       if (result === null) {
         setAiError('notFound')
         setNutrition({ calories: 0, protein: 0 })
-        setEditCalories('')
-        setEditProtein('')
+        editor.setCalories('')
+        editor.setProtein('')
         setEditFat(null)
         setEditCarbs(null)
       } else {
-        historyRatios.current = {
+        editor.ratios.current = {
           calPerUnit:  amountForAI > 0 ? result.calories / amountForAI : 0,
           protPerUnit: amountForAI > 0 ? result.protein  / amountForAI : 0,
           perServing:  isPcs,  // AI calculated in pcs mode → ratio is cal/serving, not cal/gram
         }
         setNutrition(result)
-        setEditCalories(result.calories)
-        setEditProtein(result.protein)
+        editor.setCalories(result.calories)
+        editor.setProtein(result.protein)
         setEditFat(result.fat   != null ? result.fat   : null)
         setEditCarbs(result.carbs != null ? result.carbs : null)
         // Auto-switch to ml when AI identifies a zero-cal zero-prot fluid (e.g. water)
         if (result.calories === 0 && result.protein === 0) {
-          const currentUnitIsWeight = entryUnit === 'g' || entryUnit === 'oz'
-          if (currentUnitIsWeight) setEntryUnit('ml')
+          const currentUnitIsWeight = editor.unit === 'g' || editor.unit === 'oz'
+          if (currentUnitIsWeight) editor.setUnit('ml')
         }
       }
     } catch (err) {
       setAiError(err instanceof AiRateLimitError ? 'rateLimit' : err instanceof AiParseError ? 'parseError' : 'network')
       setNutrition({ calories: 0, protein: 0 })
-      setEditCalories('')
-      setEditProtein('')
+      editor.setCalories('')
+      editor.setProtein('')
       setEditFat(null)
       setEditCarbs(null)
     }
     setCalculating(false)
-  }, [foodName, numericAmount, history, amountMode, entryUnit, isPcs, searchLibrary])
+  }, [foodName, numericAmount, history, amountMode, editor.unit, isPcs, searchLibrary])
 
   const handleCancelNutrition = () => {
     setFoodName('')
-    setAmountStr('')
+    editor.setAmountStr('')
     setNutrition(null)
-    setEditCalories('')
-    setEditProtein('')
+    editor.setCalories('')
+    editor.setProtein('')
     setEditFat(null)
     setEditCarbs(null)
     setMealNotes('')
@@ -432,7 +430,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
 
     setDropdownOpen(false)
     setSuggestions([])
-    setEntryUnit(defaultWeightUnit)
+    editor.setUnit(defaultWeightUnit)
     setFluidExcluded(false)
     setSelectedHistoryId(null)
     libraryDensityRef.current = null
@@ -495,11 +493,11 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
     setScanGrams('100')
   }
 
-  const numCalories = Math.max(0, Number(editCalories) || 0)
-  const numProtein  = Math.max(0, Number(editProtein)  || 0)
+  const numCalories = Math.max(0, Number(editor.calories) || 0)
+  const numProtein  = Math.max(0, Number(editor.protein)  || 0)
   const amountInGrams: number = (() => {
     if (isPcs) return 0
-    const uid = entryUnit as UnitId
+    const uid = editor.unit as UnitId
     const baseAmount = toBase(numericAmount, uid)
     if (UNITS[uid].type === 'volume') {
       return mlToGrams(baseAmount, libraryDensityRef.current ?? 1)
@@ -512,8 +510,8 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
   // ml/cup/fl_oz are unambiguous beverage units → always count as fluid above threshold,
   // regardless of calories (coffee, juice, milk all have calories but are still fluids).
   // tbsp/tsp can be condiments/oils → still respect fluidZeroCalOnly for those.
-  const isVolumeUnit    = entryUnit !== 'pcs' && entryUnit !== 'g' && entryUnit !== 'oz'
-  const detectedFluidMl = isVolumeUnit ? toBase(numericAmount, entryUnit as UnitId) : null
+  const isVolumeUnit    = editor.unit !== 'pcs' && editor.unit !== 'g' && editor.unit !== 'oz'
+  const detectedFluidMl = isVolumeUnit ? toBase(numericAmount, editor.unit as UnitId) : null
   const calZeroOk       = !fluidZeroCalOnly || numCalories === 0
   const isFluid         = detectedFluidMl !== null && detectedFluidMl >= fluidThresholdMl && calZeroOk
 
@@ -532,8 +530,8 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
       time_logged:    currentTime(),
       fluid_ml:       isFluid && !fluidExcluded ? detectedFluidMl : null,
       fluid_excluded: false,
-      display_unit:   entryUnit !== 'g' && entryUnit !== 'pcs' ? entryUnit : null,
-      display_amount: entryUnit !== 'g' && entryUnit !== 'pcs' ? numericAmount : null,
+      display_unit:   editor.unit !== 'g' && editor.unit !== 'pcs' ? editor.unit : null,
+      display_amount: editor.unit !== 'g' && editor.unit !== 'pcs' ? numericAmount : null,
     })
     // If the item came from history, just bump its use_count — don't create a new row.
     // If new (AI / library / manual), upsert normally (creates or updates by name+grams).
@@ -547,17 +545,17 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
     }
     // Reset
     setFoodName('')
-    setAmountStr('')
+    editor.setAmountStr('')
     setNutrition(null)
     setDropdownOpen(false)
     setSuggestions([])
     setAiError(null)
-    setEditCalories('')
-    setEditProtein('')
+    editor.setCalories('')
+    editor.setProtein('')
     setEditFat(null)
     setEditCarbs(null)
     setMealNotes('')
-    setEntryUnit(defaultWeightUnit)
+    editor.setUnit(defaultWeightUnit)
     setFluidExcluded(false)
     setSelectedHistoryId(null)
     libraryDensityRef.current = null
@@ -587,7 +585,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
     display: 'flex', alignItems: 'center', justifyContent: 'center',
   })
 
-  // Serving unit gram value: used when entryUnit === 'pcs' to show gram anchor hint
+  // Serving unit gram value: used when editor.unit === 'pcs' to show gram anchor hint
   const servingGrams = (() => {
     if (matchedLib?.item.countable && matchedLib.item.serving_size != null) {
       return Number(matchedLib.item.serving_size)  // DB may return string — coerce to number
@@ -595,6 +593,8 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
     return defaultServingGrams
   })()
   servingGramsRef.current = servingGrams  // keep ref fresh for use inside useCallback
+  editor.sg.current      = servingGrams
+  editor.density.current = libraryDensityRef.current ?? 1
 
   // Scan product computed totals
   const scanG    = Number(scanGrams) || 0
@@ -961,20 +961,20 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
                 fl_oz: { he: "פל.אונ׳",   en: 'fl oz' },
                 pcs:   { he: 'מנה',       en: 'serving' },
               }
-              return lang === 'he' ? labels[entryUnit].he : labels[entryUnit].en
+              return lang === 'he' ? labels[editor.unit].he : labels[editor.unit].en
             })()}
-            value={amountStr}
+            value={editor.amountStr}
             onFocus={e => e.target.select()}
-            onChange={e => { setAmountStr(e.target.value); setNutrition(null) }}
+            onChange={e => { editor.setAmountStr(e.target.value); setNutrition(null) }}
           />
 
           {/* Col 2 — unit dropdown */}
           <select
             className="inp"
-            value={entryUnit}
+            value={editor.unit}
             onChange={e => {
               const next = e.target.value as EntryUnit
-              setEntryUnit(next)
+              editor.setUnit(next)
               setNutrition(null)
               libraryDensityRef.current = null
             }}
@@ -1024,7 +1024,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
       </div>
 
       {/* Serving hint */}
-      {entryUnit === 'pcs' && (
+      {editor.unit === 'pcs' && (
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 6 }}>
           <span style={{
             fontSize: 10, fontWeight: 600, color: 'var(--text-3)',
@@ -1319,14 +1319,14 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
                   type="number"
                   inputMode="numeric"
                   className="inp"
-                  style={{ borderColor: 'var(--accent-glow)', fontSize: 16, paddingInlineEnd: editCalories !== '' ? 32 : 12 }}
-                  value={editCalories}
+                  style={{ borderColor: 'var(--accent-glow)', fontSize: 16, paddingInlineEnd: editor.calories !== '' ? 32 : 12 }}
+                  value={editor.calories}
                   placeholder="0"
-                  onChange={e => setEditCalories(e.target.value === '' ? '' : Math.round(Number(e.target.value)))}
-                  onFocus={e => { if (numCalories === 0) setEditCalories(''); else e.target.select() }}
+                  onChange={e => editor.setCalories(e.target.value === '' ? '' : Math.round(Number(e.target.value)))}
+                  onFocus={e => { if (numCalories === 0) editor.setCalories(''); else e.target.select() }}
                 />
-                {editCalories !== '' && (
-                  <button onMouseDown={e => { e.preventDefault(); setEditCalories('') }} tabIndex={-1} style={clearBtnStyle()}>
+                {editor.calories !== '' && (
+                  <button onMouseDown={e => { e.preventDefault(); editor.setCalories('') }} tabIndex={-1} style={clearBtnStyle()}>
                     <span className="icon icon-sm">close</span>
                   </button>
                 )}
@@ -1344,14 +1344,14 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
                   inputMode="decimal"
                   step="0.1"
                   className="inp inp-green"
-                  style={{ borderColor: 'var(--positive-glow)', fontSize: 16, paddingInlineEnd: editProtein !== '' ? 32 : 12 }}
-                  value={editProtein}
+                  style={{ borderColor: 'var(--positive-glow)', fontSize: 16, paddingInlineEnd: editor.protein !== '' ? 32 : 12 }}
+                  value={editor.protein}
                   placeholder="0"
-                  onChange={e => setEditProtein(e.target.value === '' ? '' : Math.round(Number(e.target.value) * 10) / 10)}
-                  onFocus={e => { if (numProtein === 0) setEditProtein(''); else e.target.select() }}
+                  onChange={e => editor.setProtein(e.target.value === '' ? '' : Math.round(Number(e.target.value) * 10) / 10)}
+                  onFocus={e => { if (numProtein === 0) editor.setProtein(''); else e.target.select() }}
                 />
-                {editProtein !== '' && (
-                  <button onMouseDown={e => { e.preventDefault(); setEditProtein('') }} tabIndex={-1} style={clearBtnStyle()}>
+                {editor.protein !== '' && (
+                  <button onMouseDown={e => { e.preventDefault(); editor.setProtein('') }} tabIndex={-1} style={clearBtnStyle()}>
                     <span className="icon icon-sm">close</span>
                   </button>
                 )}
@@ -1368,25 +1368,10 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
                 inputMode="decimal"
                 className="inp"
                 style={{ fontSize: 16, textAlign: 'center' }}
-                value={amountStr}
+                value={editor.amountStr}
                 placeholder="0"
                 onFocus={e => e.target.select()}
-                onChange={e => {
-                  const val = e.target.value
-                  setAmountStr(val)
-                  const n = Number(val)
-                  if (n > 0 && historyRatios.current.calPerUnit > 0) {
-                    const base = (() => {
-                      if (historyRatios.current.perServing) return n  // cal/serving: n = serving count
-                      if (entryUnit === 'pcs') return n * servingGrams  // cal/gram: convert servings → grams
-                      const uid = entryUnit as UnitId
-                      const b = toBase(n, uid)
-                      return UNITS[uid].type === 'volume' ? mlToGrams(b, libraryDensityRef.current ?? 1) : b
-                    })()
-                    setEditCalories(Math.round(base * historyRatios.current.calPerUnit))
-                    setEditProtein(Math.round(base * historyRatios.current.protPerUnit * 10) / 10)
-                  }
-                }}
+                onChange={e => editor.handleAmountChange(e.target.value)}
               />
             </div>
 
@@ -1398,48 +1383,8 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
               <select
                 className="inp"
                 style={{ fontSize: 16 }}
-                value={entryUnit}
-                onChange={e => {
-                  const newUnit = e.target.value as EntryUnit
-                  setEntryUnit(newUnit)
-                  if (historyRatios.current.calPerUnit <= 0) return
-                  const oldIsPcs = entryUnit === 'pcs'
-                  const newIsPcs = newUnit === 'pcs'
-                  const sg = servingGrams
-                  let n = numericAmount
-
-                  // When crossing pcs↔weight boundary: update ratio only, keep amount as typed
-                  if (oldIsPcs !== newIsPcs) {
-                    if (oldIsPcs) {
-                      // pcs → weight: ratio cal/serving → cal/gram
-                      historyRatios.current = {
-                        calPerUnit:  historyRatios.current.calPerUnit  / sg,
-                        protPerUnit: historyRatios.current.protPerUnit / sg,
-                        perServing:  false,
-                      }
-                    } else {
-                      // weight → pcs: ratio cal/gram → cal/serving
-                      historyRatios.current = {
-                        calPerUnit:  historyRatios.current.calPerUnit  * sg,
-                        protPerUnit: historyRatios.current.protPerUnit * sg,
-                        perServing:  true,
-                      }
-                    }
-                  }
-                  // In all cases: keep amount as typed, recalculate nutrition for new unit
-
-                  if (n > 0) {
-                    const uid = newUnit as UnitId
-                    const base = (() => {
-                      if (historyRatios.current.perServing) return n
-                      if (newIsPcs) return n * sg
-                      const b = toBase(n, uid)
-                      return UNITS[uid].type === 'volume' ? mlToGrams(b, libraryDensityRef.current ?? 1) : b
-                    })()
-                    setEditCalories(Math.round(base * historyRatios.current.calPerUnit))
-                    setEditProtein(Math.round(base * historyRatios.current.protPerUnit * 10) / 10)
-                  }
-                }}
+                value={editor.unit}
+                onChange={e => editor.handleUnitChange(e.target.value as EntryUnit)}
               >
                 {([
                   { v: 'g',     he: 'גרם',      en: 'g'     },
@@ -1458,7 +1403,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
           </div>
 
           {/* Serving hint — shown when pcs unit selected */}
-          {entryUnit === 'pcs' && (
+          {editor.unit === 'pcs' && (
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 6 }}>
               <span style={{
                 fontSize: 10, fontWeight: 600, color: 'var(--text-3)',
