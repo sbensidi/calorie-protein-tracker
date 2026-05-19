@@ -10,7 +10,7 @@ import type { BarcodeProduct } from '../lib/barcodeApi'
 
 const BarcodeScanner = lazy(() => import('./BarcodeScanner').then(m => ({ default: m.BarcodeScanner })))
 import { FoodHistoryModal } from './FoodHistoryModal'
-import { UNITS, toBase, fromBase, mlToGrams } from '../lib/units'
+import { UNITS, toBase, mlToGrams } from '../lib/units'
 import type { UnitId } from '../lib/units'
 import { fuzzyMatchLibrary } from '../lib/fuzzyMatch'
 import type { LibraryMatch } from '../lib/fuzzyMatch'
@@ -1431,14 +1431,8 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
                       n = Math.round(n / sg * 10) / 10
                       setAmountStr(String(n))
                     }
-                  } else if (!oldIsPcs && !newIsPcs) {
-                    // Both non-pcs: convert displayed amount from old unit to new unit
-                    const b = toBase(n, entryUnit as UnitId)  // base in ml or grams (old unit)
-                    standardBase = b
-                    const inNew = Math.round(fromBase(b, newUnit as UnitId) * 100) / 100
-                    setAmountStr(String(inNew))
-                    n = inNew
                   }
+                  // non-pcs↔non-pcs: keep amount as typed; only recalculate nutrition below
 
                   // Recalculate nutrition for the (possibly converted) amount in new unit
                   if (n > 0) {

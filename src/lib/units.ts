@@ -47,10 +47,10 @@ export function gramsToMl(grams: number, density: number): number {
  * Display a gram amount in the user's preferred weight unit.
  * Returns "85g" or "3 oz" depending on unit.
  */
-export function formatWeight(grams: number, unit: WeightUnit = 'g'): string {
-  if (unit === 'g') return `${Math.round(grams)}g`
+export function formatWeight(grams: number, unit: WeightUnit = 'g', lang?: 'he' | 'en'): string {
+  if (unit === 'g') return `${Math.round(grams)}${lang === 'he' ? 'ג׳' : 'g'}`
   const oz = fromBase(grams, 'oz')
-  return `${Math.round(oz * 10) / 10} oz`
+  return `${Math.round(oz * 10) / 10}${lang === 'he' ? ` ${UNITS.oz.abbr_he}` : ' oz'}`
 }
 
 /**

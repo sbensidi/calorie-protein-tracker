@@ -249,13 +249,13 @@ export function MealCard({ meal, lang, weightUnit = 'g', showCheckbox, selected,
                 }
               }}
             >
-              <option value="g">g</option>
-              <option value="oz">{lang === 'he' ? UNITS.oz.abbr_he : 'oz'}</option>
-              <option value="ml">ml</option>
-              <option value="cup">{lang === 'he' ? UNITS.cup.abbr_he : 'cup'}</option>
-              <option value="tbsp">{lang === 'he' ? UNITS.tbsp.abbr_he : 'tbsp'}</option>
-              <option value="tsp">{lang === 'he' ? UNITS.tsp.abbr_he : 'tsp'}</option>
-              <option value="fl_oz">{lang === 'he' ? UNITS.fl_oz.abbr_he : 'fl oz'}</option>
+              <option value="g">{lang === 'he' ? 'גרם' : 'g'}</option>
+              <option value="oz">{lang === 'he' ? 'אונקיה' : 'oz'}</option>
+              <option value="ml">{lang === 'he' ? 'מ"ל' : 'ml'}</option>
+              <option value="cup">{lang === 'he' ? 'כוס' : 'cup'}</option>
+              <option value="tbsp">{lang === 'he' ? 'כף' : 'tbsp'}</option>
+              <option value="tsp">{lang === 'he' ? 'כפית' : 'tsp'}</option>
+              <option value="fl_oz">{lang === 'he' ? "פל.אונ׳" : 'fl oz'}</option>
               <option value="pcs">{lang === 'he' ? 'מנה' : 'serving'}</option>
             </select>
           </div>
@@ -322,7 +322,7 @@ export function MealCard({ meal, lang, weightUnit = 'g', showCheckbox, selected,
                     : `${Math.round(meal.fluid_ml)}ml`)
                 : meal.grams < 0
                   ? `${Math.abs(meal.grams)} ${t(lang, 'unitLabel')}`
-                  : (fmtDisplayUnit(meal, lang) ?? formatWeight(meal.grams, weightUnit))}
+                  : (fmtDisplayUnit(meal, lang) ?? formatWeight(meal.grams, weightUnit, lang))}
             </span>
           </div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginTop: 2 }}>
@@ -404,7 +404,7 @@ export function MealCard({ meal, lang, weightUnit = 'g', showCheckbox, selected,
                   : `${Math.round(meal.fluid_ml)}ml`)
               : meal.grams < 0
                 ? `${Math.abs(meal.grams)} ${lang === 'he' ? 'מנות' : 'serving(s)'}`
-                : (fmtDisplayUnit(meal, lang) ?? formatWeight(meal.grams, weightUnit))}
+                : (fmtDisplayUnit(meal, lang) ?? formatWeight(meal.grams, weightUnit, lang))}
           </span>
         </div>
         {/* Line 2: calories + protein */}
