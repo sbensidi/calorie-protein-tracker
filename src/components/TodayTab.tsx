@@ -318,6 +318,8 @@ export function TodayTab({
         time_logged:    currentTime(),
         fluid_ml:       src.fluid_ml,
         fluid_excluded: src.fluid_excluded,
+        display_unit:   src.display_unit,
+        display_amount: src.display_amount,
       })
       if (newId) newMealIds.push(newId)
     }
@@ -400,6 +402,8 @@ export function TodayTab({
         time_logged:    currentTime(),
         fluid_ml:       null,
         fluid_excluded: false,
+        display_unit:   null,
+        display_amount: null,
       })
     }
 
@@ -424,6 +428,8 @@ export function TodayTab({
       time_logged:    currentTime(),
       fluid_ml:       null,
       fluid_excluded: false,
+      display_unit:   null,
+      display_amount: null,
     })
   }, [composedGroups, onAddMealWithId])
 

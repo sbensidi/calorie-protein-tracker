@@ -58,12 +58,15 @@ const fakeMealRow: Meal = {
   created_at: '2026-04-26T12:00:00Z',
   fluid_ml: null,
   fluid_excluded: false,
+  display_unit: null,
+  display_amount: null,
 }
 
 const newMealPayload = {
   name: 'Egg', calories: 78, protein: 6, fat: null, carbs: null, notes: null,
   grams: 50, date: '2026-04-26', meal_type: 'breakfast' as const,
   time_logged: '08:00:00', fluid_ml: null, fluid_excluded: false,
+  display_unit: null, display_amount: null,
 }
 
 beforeEach(() => {

@@ -39,6 +39,8 @@ function normalizeMeal(x: Record<string, unknown>): Meal {
     created_at:     x.created_at  as string,
     fluid_ml:       typeof x.fluid_ml === 'number' ? x.fluid_ml : null,
     fluid_excluded: typeof x.fluid_excluded === 'boolean' ? x.fluid_excluded : false,
+    display_unit:   typeof x.display_unit === 'string' ? x.display_unit : null,
+    display_amount: typeof x.display_amount === 'number' ? x.display_amount : null,
   }
 }
 
@@ -54,7 +56,7 @@ export function useMeals(userId: string | null) {
     cutoff.setDate(cutoff.getDate() - 90)
     const { data, error: err } = await supabase
       .from('meals')
-      .select('id,user_id,name,calories,protein,fat,carbs,notes,grams,date,meal_type,time_logged,created_at,fluid_ml,fluid_excluded')
+      .select('id,user_id,name,calories,protein,fat,carbs,notes,grams,date,meal_type,time_logged,created_at,fluid_ml,fluid_excluded,display_unit,display_amount')
       .eq('user_id', userId)
       .gte('date', cutoff.toISOString().slice(0, 10))
       .order('date', { ascending: false })
@@ -141,6 +143,8 @@ export function useMeals(userId: string | null) {
       notes: meal.notes ?? null,
       fluid_ml: meal.fluid_ml ?? null,
       fluid_excluded: meal.fluid_excluded ?? false,
+      display_unit: meal.display_unit ?? null,
+      display_amount: meal.display_amount ?? null,
       time_logged: new Date().toTimeString().slice(0, 8),
     })
     if (err) { if (import.meta.env.DEV) console.error('Duplicate meal error:', err); setError(err.message) }

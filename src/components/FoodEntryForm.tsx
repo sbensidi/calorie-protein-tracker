@@ -469,6 +469,8 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
       time_logged:    currentTime(),
       fluid_ml:       null,
       fluid_excluded: false,
+      display_unit:   null,
+      display_amount: null,
     })
     onUpsertHistory({ name: scanProduct.name, grams, calories, protein, fluid_ml: null })
     // Reset scan state
@@ -530,6 +532,8 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
       time_logged:    currentTime(),
       fluid_ml:       isFluid && !fluidExcluded ? detectedFluidMl : null,
       fluid_excluded: false,
+      display_unit:   entryUnit !== 'g' && entryUnit !== 'pcs' ? entryUnit : null,
+      display_amount: entryUnit !== 'g' && entryUnit !== 'pcs' ? numericAmount : null,
     })
     // If the item came from history, just bump its use_count — don't create a new row.
     // If new (AI / library / manual), upsert normally (creates or updates by name+grams).

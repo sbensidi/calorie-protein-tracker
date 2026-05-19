@@ -28,6 +28,7 @@ function makeMeal(overrides: Partial<Meal> = {}): Meal {
     fat: null, carbs: null, notes: null,
     time_logged: '12:00:00', created_at: new Date().toISOString(),
     fluid_ml: null, fluid_excluded: false,
+    display_unit: null, display_amount: null,
     ...overrides,
   }
 }

@@ -20,6 +20,8 @@ function fakeMeal(overrides: Partial<Meal> = {}): Meal {
     created_at: new Date().toISOString(),
     fluid_ml: null,
     fluid_excluded: false,
+    display_unit: null,
+    display_amount: null,
     ...overrides,
   }
 }

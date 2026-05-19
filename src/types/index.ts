@@ -16,6 +16,8 @@ export interface Meal {
   created_at: string
   fluid_ml:       number | null
   fluid_excluded: boolean
+  display_unit:   string | null
+  display_amount: number | null
 }
 
 export interface Goal {

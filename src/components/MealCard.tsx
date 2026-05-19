@@ -22,6 +22,13 @@ interface MealCardProps {
 
 type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'beverage'
 
+function fmtDisplayUnit(meal: Meal, lang: Lang): string | null {
+  if (meal.display_unit == null || meal.display_amount == null) return null
+  if (!(meal.display_unit in UNITS)) return null
+  const u = UNITS[meal.display_unit as UnitId]
+  return `${meal.display_amount} ${lang === 'he' ? u.abbr_he : u.abbr_en}`
+}
+
 export function MealCard({ meal, lang, weightUnit = 'g', showCheckbox, selected, onToggleSelect, onEdit, enableWeightScaling = false, servingG, onDelete, onDuplicate, listStyle = false }: MealCardProps) {
   const [editing, setEditing] = useState(false)
   const scalingRatios = useRef<{ calPerGram: number; protPerGram: number; perServing: boolean } | null>(null)
@@ -315,7 +322,7 @@ export function MealCard({ meal, lang, weightUnit = 'g', showCheckbox, selected,
                     : `${Math.round(meal.fluid_ml)}ml`)
                 : meal.grams < 0
                   ? `${Math.abs(meal.grams)} ${t(lang, 'unitLabel')}`
-                  : formatWeight(meal.grams, weightUnit)}
+                  : (fmtDisplayUnit(meal, lang) ?? formatWeight(meal.grams, weightUnit))}
             </span>
           </div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginTop: 2 }}>
@@ -397,7 +404,7 @@ export function MealCard({ meal, lang, weightUnit = 'g', showCheckbox, selected,
                   : `${Math.round(meal.fluid_ml)}ml`)
               : meal.grams < 0
                 ? `${Math.abs(meal.grams)} ${lang === 'he' ? 'מנות' : 'serving(s)'}`
-                : formatWeight(meal.grams, weightUnit)}
+                : (fmtDisplayUnit(meal, lang) ?? formatWeight(meal.grams, weightUnit))}
           </span>
         </div>
         {/* Line 2: calories + protein */}
