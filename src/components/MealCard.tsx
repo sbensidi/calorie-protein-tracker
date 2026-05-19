@@ -179,21 +179,10 @@ export function MealCard({ meal, lang, weightUnit = 'g', showCheckbox, selected,
                   const w = e.target.value === '' ? '' : Number(e.target.value)
                   setEditWeight(w)
                   if (!enableWeightScaling || typeof w !== 'number' || w <= 0 || editWeightUnit === 'pcs') return
-                  if (scalingRatios.current) {
-                    if (!scalingRatios.current.perServing) {
-                      const base = toBase(w, editWeightUnit as UnitId)
-                      setEditCalories(Math.round(base * scalingRatios.current.calPerGram))
-                      setEditProtein(Math.round(base * scalingRatios.current.protPerGram * 10) / 10)
-                    }
-                  } else {
-                    // pcs→gram crossing nulled the ref; rebuild from current state so
-                    // subsequent g→oz switches can still scale correctly.
+                  if (scalingRatios.current && !scalingRatios.current.perServing) {
                     const base = toBase(w, editWeightUnit as UnitId)
-                    if (base > 0) {
-                      const cal  = typeof editCalories === 'number' ? editCalories : Number(editCalories) || 0
-                      const prot = typeof editProtein  === 'number' ? editProtein  : Number(editProtein)  || 0
-                      scalingRatios.current = { calPerGram: cal / base, protPerGram: prot / base, perServing: false }
-                    }
+                    setEditCalories(Math.round(base * scalingRatios.current.calPerGram))
+                    setEditProtein(Math.round(base * scalingRatios.current.protPerGram * 10) / 10)
                   }
                 }}
                 onFocus={e => e.target.select()}
@@ -219,7 +208,25 @@ export function MealCard({ meal, lang, weightUnit = 'g', showCheckbox, selected,
                 setEditWeightUnit(newUnit)
                 const crossingBoundary = (editWeightUnit === 'pcs') !== (newUnit === 'pcs')
                 if (crossingBoundary) {
-                  if (scalingRatios.current) scalingRatios.current = null
+                  const sg  = servingG ?? 100
+                  const w   = typeof editWeight   === 'number' ? editWeight   : Number(editWeight)   || 0
+                  const cal = typeof editCalories === 'number' ? editCalories : Number(editCalories) || 0
+                  const prot = typeof editProtein === 'number' ? editProtein  : Number(editProtein)  || 0
+                  if (editWeightUnit === 'pcs') {
+                    // pcs → weight: convert serving count → grams, keep total nutrition
+                    const newG = Math.round(w * sg)
+                    setEditWeight(newG)
+                    scalingRatios.current = enableWeightScaling && newG > 0
+                      ? { calPerGram: cal / newG, protPerGram: prot / newG, perServing: false }
+                      : null
+                  } else {
+                    // weight → pcs: convert grams → serving count, keep total nutrition
+                    const newServings = Math.max(1, Math.round(w / sg))
+                    setEditWeight(newServings)
+                    scalingRatios.current = enableWeightScaling
+                      ? { calPerGram: cal, protPerGram: prot, perServing: true }
+                      : null
+                  }
                   return
                 }
                 if (editWeightUnit === 'pcs' || newUnit === 'pcs') return

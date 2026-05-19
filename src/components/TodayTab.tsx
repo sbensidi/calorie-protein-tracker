@@ -747,9 +747,11 @@ export function TodayTab({
             {/* Standalone meals */}
             {standalones.map((meal) => {
               const isPcsMeal = meal.grams < 0
-              const libServingG = isPcsMeal
-                ? library.find(item => item.name_he === meal.name || item.name_en.toLowerCase() === meal.name.toLowerCase())?.serving_size ?? undefined
-                : undefined
+              const libServingG: number | undefined = (() => {
+                if (!isPcsMeal) return undefined
+                const item = library.find(i => i.name_he === meal.name || i.name_en.toLowerCase() === meal.name.toLowerCase())
+                return (item?.countable && item.serving_size != null) ? Number(item.serving_size) : defaultServingGrams
+              })()
               return (
                 <div key={meal.id} style={styleMode === 'minimal' ? { borderBottom: '1px dashed var(--border)' } : {}}>
                   <MealCard
@@ -761,7 +763,7 @@ export function TodayTab({
                     onToggleSelect={() => toggleSelect(type, meal.id)}
                     onEdit={onEditMeal}
                     enableWeightScaling
-                    servingG={libServingG != null ? Number(libServingG) : undefined}
+                    servingG={libServingG}
                     listStyle={styleMode === 'minimal'}
                   />
                 </div>
