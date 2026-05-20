@@ -25,3 +25,7 @@ dist-ssr
 # Environment secrets
 .env
 .vercel
+
+# Local tooling
+.claude/
+specification/HTML DEMOS/
