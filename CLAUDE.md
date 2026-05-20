@@ -19,6 +19,7 @@
 - [ ] `npx vitest run` — כל הטסטים עוברים
 - [ ] אין imports שאינם בשימוש
 - [ ] אין ternary עם עברית/אנגלית inline — הכל דרך `t(lang, key)`
+- [ ] `grep -rn "lang === 'he'" src/components/ src/App.tsx` — תוצאות מותרות רק עבור `locale` variable ומערכי locale (ראה §2.4–2.5)
 - [ ] אין rgba() ישיר בקומפוננט — הכל דרך CSS tokens
 - [ ] לוגיקה חישובית חדשה — יש לה טסטים ב-`src/test/`
 - [ ] כל i18n key קיים גם בעברית גם באנגלית
@@ -91,6 +92,45 @@ he: { newKey: 'ערך' }
 en: { newKey: 'value' }
 ```
 
+### 2.4 ternaries טכניים — אינם string ממשק, מותרים
+
+```ts
+// ✅ locale variable — טכני, לא מוצג למשתמש — ternary מותר
+const locale = lang === 'he' ? 'he-IL' : 'en-US'
+// ואז: value.toLocaleString(locale)
+
+// ❌ כל string שמשתמש רואה — חייב דרך t()
+const label = lang === 'he' ? 'יעד' : 'Goal'   // ❌
+```
+
+### 2.5 מערכים locale-specific → exported constants ב-`i18n.ts`, לא inline בקומפוננטים
+
+```ts
+// ❌ inline — מפוזר, לא ניתן לשיתוש
+const days = lang === 'he' ? ['א׳','ב׳',...] : ['Su','Mo',...]
+
+// ✅ ב-i18n.ts:
+export const HE_WEEK_SHORT = ['א׳','ב׳','ג׳','ד׳','ה׳','ו׳','ש׳']
+export const EN_WEEK_SHORT = ['Su','Mo','Tu','We','Th','Fr','Sa']
+
+// ובקומפוננט:
+import { HE_WEEK_SHORT, EN_WEEK_SHORT, HE_MONTHS, EN_MONTHS } from '../lib/i18n'
+const label = lang === 'he' ? HE_WEEK_SHORT[d.getDay()] : EN_WEEK_SHORT[d.getDay()]
+```
+
+### 2.6 מפתחות i18n ריקים בכוונה — prefix/suffix pairs
+
+חלק מהמפתחות ריקים בשפה אחת כי הם מהווים חצי מזוג — הסדר מתהפך בין RTL לLTR:
+
+```ts
+// he: overByPrefix: 'חרגת ב-',  overBySuffix: ''        → "חרגת ב-150 קק״ל"
+// en: overByPrefix: '',           overBySuffix: ' over'   → "150 kcal over"
+```
+
+כשמוסיפים key ריק בכוונה — שני דברים חובה:
+1. הוסף comment בi18n.ts ליד ה-key שמסביר למה הוא ריק
+2. הוסף ל-`allowedEmpty` set בtest הסימטריה ב-`src/test/i18n.test.ts`
+
 ### 2.3 אסור להשתמש ב-apostrophe בתוך single quotes
 ```ts
 // ❌ Parse error
@@ -138,7 +178,15 @@ background: 'var(--backdrop)'
 --z-sticky: 10   --z-fab: 40   --z-dropdown: 50
 --z-backdrop: 99  --z-sheet: 100  --z-toast: 300
 ```
-בinline styles של React — השתמש במספר (`zIndex: 100`) עם comment.
+בinline styles של React — השתמש במספר עם comment בפורמט הבא (בדיוק):
+```ts
+zIndex: 10,   // --z-sticky
+zIndex: 40,   // --z-fab
+zIndex: 50,   // --z-dropdown
+zIndex: 99,   // --z-backdrop
+zIndex: 100,  // --z-sheet
+zIndex: 300,  // --z-toast
+```
 
 ### 3.4 היררכיית ניווט — שלוש רמות
 | רמה | שימוש | עיצוב |
@@ -265,6 +313,21 @@ function fakeMeal(overrides: Partial<Meal> = {}): Meal {
     fluid_ml: null, fluid_excluded: false, ...overrides }
 }
 ```
+
+### 7.6 בדיקות פונקציות עם `pick(arr, dayOfYear)` — קבע index ידנית
+
+פונקציות שמשתמשות ב-`arr[day % arr.length]` לבחירת phrase אקראי-דטרמיניסטי:
+
+```ts
+// ✅ קבע dayOfYear=1 בכל הטסטים → pick() = arr[1 % arr.length]
+function makeCtx(overrides = {}): GreetingContext {
+  return { ..., dayOfYear: 1, lang: 'en', ... }
+}
+// ואז חשב ידנית: morning[1 % 4] = morning[1] = 'Morning' → expect(line1).toBe('Morning!')
+// לפני כל expect — אמת את ה-index ואת הstring המלא מהמערך בקוד
+```
+
+אין לבדוק `toContain()` על phrase שלם אם אפשר לבדוק `toBe()` — זה מגלה שינויים בניסוח.
 
 ---
 
