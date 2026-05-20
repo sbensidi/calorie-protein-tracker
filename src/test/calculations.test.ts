@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { calcBMR, calcDailyTdee, calcWeeklyTdee, calcGoalStreak, calcProjectedDays, calcMealTypeDistribution, calcMacroBreakdown, getCookingFactor, estimateCookedWeight } from '../lib/calculations'
+import { calcBMR, calcDailyTdee, calcWeeklyTdee, calcGoalStreak, calcProjectedDays, calcMealTypeDistribution, calcMacroBreakdown, getCookingFactor, estimateCookedWeight, getGreeting } from '../lib/calculations'
+import type { GreetingContext } from '../lib/calculations'
 import type { UserProfile } from '../hooks/useProfile'
 import type { Meal } from '../types'
 
@@ -422,5 +423,130 @@ describe('estimateCookedWeight', () => {
     const { breakdown } = estimateCookedWeight([meal])
     expect(breakdown[0].matched).toBe(false)
     expect(breakdown[0].factor).toBe(0.85)
+  })
+})
+
+// ── getGreeting ───────────────────────────────────────────────────────────────
+
+describe('getGreeting', () => {
+  function makeCtx(overrides: Partial<GreetingContext> = {}): GreetingContext {
+    return {
+      hour: 9,
+      firstName: null,
+      streak: 0,
+      calsConsumed: 1500,
+      calsGoal: 2000,
+      protConsumed: 100,
+      protGoal: 150,
+      fluidMl: 1500,
+      fluidGoalMl: 2000,
+      dayOfYear: 1,
+      lang: 'en',
+      ...overrides,
+    }
+  }
+
+  it('line1: morning greeting without firstName (en)', () => {
+    const { line1 } = getGreeting(makeCtx())
+    // morning[1 % 4] = morning[1] = 'Morning'
+    expect(line1).toBe('Morning!')
+  })
+
+  it('line1: includes firstName when provided', () => {
+    const { line1 } = getGreeting(makeCtx({ firstName: 'Alice' }))
+    expect(line1).toBe('Morning, Alice!')
+  })
+
+  it('line1: Hebrew morning greeting', () => {
+    const { line1 } = getGreeting(makeCtx({ lang: 'he' }))
+    // morning[1 % 4] = morning[1] = 'בוקר מצוין'
+    expect(line1).toBe('בוקר מצוין!')
+  })
+
+  it('isJoke: fires on dayOfYear%4===0 and hour<21', () => {
+    const result = getGreeting(makeCtx({ dayOfYear: 4, hour: 10 }))
+    expect(result.isJoke).toBe(true)
+    expect(result.line2).toContain('😄')
+    // JOKES[floor(4/4)] = JOKES[1]
+    expect(result.line2).toContain('Gym update')
+  })
+
+  it('isJoke: does not fire at night even on joke day', () => {
+    const result = getGreeting(makeCtx({ dayOfYear: 4, hour: 21 }))
+    expect(result.isJoke).toBe(false)
+  })
+
+  it('isJoke: false for regular days', () => {
+    expect(getGreeting(makeCtx({ dayOfYear: 1, hour: 10 })).isJoke).toBe(false)
+  })
+
+  it('night (hour>=21): returns nightLine2 and isJoke=false', () => {
+    const { line1, line2, isJoke } = getGreeting(makeCtx({ hour: 21, dayOfYear: 1 }))
+    // nightWord[1 % 2] = 'Good night'
+    expect(line1).toBe('Good night!')
+    // nightLine2[(1+7) % 3] = nightLine2[2]
+    expect(line2).toBe("What's done is done. Tomorrow starts fresh")
+    expect(isJoke).toBe(false)
+  })
+
+  it('no meals morning: calsConsumed=0 and hour<12', () => {
+    const { line2 } = getGreeting(makeCtx({ calsConsumed: 0, hour: 8 }))
+    // noMealsMorning[1 % 4] = noMealsMorning[1]
+    expect(line2).toBe("A glass of water first, and you're already off to a great start")
+  })
+
+  it('no meals late: calsConsumed=0 and hour>=12', () => {
+    const { line2 } = getGreeting(makeCtx({ calsConsumed: 0, hour: 14 }))
+    // noMealsLate[1 % 3] = noMealsLate[1]
+    expect(line2).toBe("Don't forget to log what you ate — the data helps")
+  })
+
+  it('overCalProtOk: calories over goal but protein done', () => {
+    const { line2 } = getGreeting(makeCtx({
+      calsConsumed: 2100, calsGoal: 2000,
+      protConsumed: 150, protGoal: 150,
+    }))
+    // overCalProtOk[1 % 4] = overCalProtOk[1]
+    expect(line2).toBe('Calories drifted a little — on the bright side, protein was spot on')
+  })
+
+  it('overGoal: calories over goal and protein not done', () => {
+    const { line2 } = getGreeting(makeCtx({
+      calsConsumed: 2100, calsGoal: 2000,
+      protConsumed: 100, protGoal: 150,
+    }))
+    // overGoal[1 % 4] = overGoal[1]
+    expect(line2).toBe("One day doesn't break anything — consistency matters more than perfection")
+  })
+
+  it('goalMet: within 10% of calorie goal and protein done', () => {
+    const { line2 } = getGreeting(makeCtx({
+      calsConsumed: 1900, calsGoal: 2000,   // 100 remaining <= 200 (10%) → calDone
+      protConsumed: 150, protGoal: 150,
+    }))
+    // goalMet[1 % 4] = goalMet[1]
+    expect(line2).toBe("Another day where you chose yourself — well done")
+  })
+
+  it('calOkUnderProt: calories done but protein remaining — substitutes {prot}', () => {
+    const { line2 } = getGreeting(makeCtx({
+      calsConsumed: 1900, calsGoal: 2000,   // calDone=true
+      protConsumed: 100, protGoal: 150,     // protRemaining=50
+    }))
+    // calOkUnderProt[1 % 4] = calOkUnderProt[1], {prot}→50
+    expect(line2).toBe('Calories ✓ — protein needs a boost, 50g to go')
+  })
+
+  it('streak: fires when streak>=2 — substitutes {N}', () => {
+    const { line2 } = getGreeting(makeCtx({ streak: 5 }))
+    // streak[1 % 4] = streak[1], {N}→5
+    expect(line2).toBe('5 days of taking care of yourself — keep it up')
+  })
+
+  it('onTrack (default): substitutes {cal} with remaining calories', () => {
+    // defaults: calsConsumed=1500, calsGoal=2000, streak=0 → falls to onTrack
+    const { line2 } = getGreeting(makeCtx())
+    // onTrack[1 % 4] = onTrack[1], {cal}→500
+    expect(line2).toBe('500 kcal left for today — plenty of room')
   })
 })

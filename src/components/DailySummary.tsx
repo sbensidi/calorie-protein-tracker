@@ -1,6 +1,6 @@
 import type { Meal } from '../types'
 import type { Lang } from '../lib/i18n'
-import { t, formatDate } from '../lib/i18n'
+import { t, dir, formatDate } from '../lib/i18n'
 import { DonutProgress } from './DonutProgress'
 import { useAppContext } from '../context/AppContext'
 
@@ -24,17 +24,19 @@ export function DailySummary({ meals, date, goalCalories, goalProtein, lang, flu
   const remProt   = Math.round((goalProtein - totalProtein) * 10) / 10
   const remFluid  = Math.round(fluidGoalMl - fluidTodayMl)
 
+  const locale = lang === 'he' ? 'he-IL' : 'en-US'
+
   const fmtMl = (ml: number) =>
     ml >= 1000
-      ? `${(ml / 1000).toFixed(1)}${lang === 'he' ? 'ל׳' : 'L'}`
+      ? `${(ml / 1000).toFixed(1)}${t(lang, 'litersUnit')}`
       : `${Math.round(ml)}ml`
 
   const remStr = (rem: number, unit: string) => {
     const abs = Math.abs(rem)
     const val = unit === 'ml' ? fmtMl(abs) : `${abs}${unit}`
     return rem < 0
-      ? (lang === 'he' ? `חרגת ב-${val}` : `${val} over`)
-      : (lang === 'he' ? `נותרו ${val}`   : `${val} left`)
+      ? `${t(lang, 'overByPrefix')}${val}${t(lang, 'overBySuffix')}`
+      : `${t(lang, 'remainingPrefix')}${val}${t(lang, 'remainingSuffix')}`
   }
 
   const items = [
@@ -43,9 +45,9 @@ export function DailySummary({ meals, date, goalCalories, goalProtein, lang, flu
       value:       totalCalories,
       goal:        goalCalories,
       color:       'var(--accent-hi)',
-      label:       lang === 'he' ? 'קלוריות' : 'Calories',
-      centerVal:   totalCalories.toLocaleString(lang === 'he' ? 'he-IL' : 'en-US'),
-      centerGoal:  `${goalCalories.toLocaleString(lang === 'he' ? 'he-IL' : 'en-US')} /`,
+      label:       t(lang, 'calories'),
+      centerVal:   totalCalories.toLocaleString(locale),
+      centerGoal:  `${goalCalories.toLocaleString(locale)} /`,
       remaining:   remStr(remCal, ` ${t(lang, 'caloriesUnit')}`),
       over:        remCal < 0,
     },
@@ -54,7 +56,7 @@ export function DailySummary({ meals, date, goalCalories, goalProtein, lang, flu
       value:       totalProtein,
       goal:        goalProtein,
       color:       'var(--positive-hi)',
-      label:       lang === 'he' ? 'חלבון' : 'Protein',
+      label:       t(lang, 'protein'),
       centerVal:   String(totalProtein),
       centerGoal:  `${goalProtein}${t(lang, 'proteinUnit')} /`,
       remaining:   remStr(remProt, t(lang, 'proteinUnit')),
@@ -65,7 +67,7 @@ export function DailySummary({ meals, date, goalCalories, goalProtein, lang, flu
       value:       fluidTodayMl,
       goal:        fluidGoalMl,
       color:       'var(--accent)',
-      label:       lang === 'he' ? 'נוזלים' : 'Fluid',
+      label:       t(lang, 'fluid'),
       centerVal:   fmtMl(fluidTodayMl),
       centerGoal:  `${fmtMl(fluidGoalMl)} /`,
       remaining:   remStr(remFluid, 'ml'),
@@ -97,7 +99,7 @@ export function DailySummary({ meals, date, goalCalories, goalProtein, lang, flu
         </div>
 
         {/* Hero percentage — always right-aligned regardless of text direction */}
-        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: lang === 'he' ? 'flex-start' : 'flex-end', padding: '16px 4px 0', gap: 4 }}>
+        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: dir(lang) === 'rtl' ? 'flex-start' : 'flex-end', padding: '16px 4px 0', gap: 4 }}>
           <span style={{
             fontSize: 'clamp(72px, 26vw, 132px)',
             fontWeight: 100,
@@ -118,18 +120,16 @@ export function DailySummary({ meals, date, goalCalories, goalProtein, lang, flu
         </div>
 
         {/* Cal meta — always right-aligned to sit below the hero number */}
-        <p style={{ fontSize: 12, fontWeight: 300, color: 'var(--text-2)', padding: '8px 4px 0', textAlign: lang === 'he' ? 'start' : 'end' }}>
-          {totalCalories.toLocaleString(lang === 'he' ? 'he-IL' : 'en-US')}
-          {lang === 'he' ? ' מתוך ' : ' / '}
-          {goalCalories.toLocaleString(lang === 'he' ? 'he-IL' : 'en-US')} {t(lang, 'caloriesUnit')}
+        <p style={{ fontSize: 12, fontWeight: 300, color: 'var(--text-2)', padding: '8px 4px 0', textAlign: dir(lang) === 'rtl' ? 'start' : 'end' }}>
+          {totalCalories.toLocaleString(locale)}
+          {t(lang, 'ofSeparator')}
+          {goalCalories.toLocaleString(locale)} {t(lang, 'caloriesUnit')}
         </p>
 
         {/* Protein bar */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '20px 4px 0' }}>
           <span style={{ fontSize: 11, fontWeight: 300, color: 'var(--positive-hi)', whiteSpace: 'nowrap', flexShrink: 0 }}>
-            {lang === 'he'
-              ? `חלבון ${Math.round(totalProtein)} / ${goalProtein}g`
-              : `protein ${Math.round(totalProtein)} / ${goalProtein}g`}
+            {t(lang, 'protein')} {Math.round(totalProtein)} / {goalProtein}g
           </span>
           <div style={{ flex: 1, height: 2, background: 'var(--border)', position: 'relative', borderRadius: 2 }}>
             <div style={{
@@ -148,9 +148,7 @@ export function DailySummary({ meals, date, goalCalories, goalProtein, lang, flu
         {fluidGoalMl > 0 && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 4px 0' }}>
             <span style={{ fontSize: 11, fontWeight: 300, color: 'var(--cyan-hi)', whiteSpace: 'nowrap', flexShrink: 0 }}>
-              {lang === 'he'
-                ? `נוזלים ${fluidTodayMl >= 1000 ? `${(fluidTodayMl / 1000).toFixed(1)}ל׳` : `${Math.round(fluidTodayMl)}ml`}`
-                : `fluid ${fluidTodayMl >= 1000 ? `${(fluidTodayMl / 1000).toFixed(1)}L` : `${Math.round(fluidTodayMl)}ml`}`}
+              {t(lang, 'fluid')} {fmtMl(fluidTodayMl)}
             </span>
             <div style={{ flex: 1, height: 2, background: 'var(--border)', position: 'relative', borderRadius: 2 }}>
               <div style={{

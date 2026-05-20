@@ -1,4 +1,5 @@
 import type { Toast } from '../hooks/useToast'
+import { t, dir } from '../lib/i18n'
 
 interface ToastContainerProps {
   toasts: Toast[]
@@ -34,7 +35,7 @@ export function ToastContainer({ toasts, onDismiss, lang }: ToastContainerProps)
         display: 'flex',
         flexDirection: 'column',
         gap: 8,
-        zIndex: 300,
+        zIndex: 300, // --z-toast
         pointerEvents: 'none',
       }}
     >
@@ -44,7 +45,7 @@ export function ToastContainer({ toasts, onDismiss, lang }: ToastContainerProps)
           <div
             key={toast.id}
             role="status"
-            dir={lang === 'he' ? 'rtl' : 'ltr'}
+            dir={dir(lang)}
             style={{
               position: 'relative',
               overflow: 'hidden',
@@ -82,7 +83,7 @@ export function ToastContainer({ toasts, onDismiss, lang }: ToastContainerProps)
             )}
             <button
               onClick={() => onDismiss(toast.id)}
-              aria-label={lang === 'he' ? 'סגור הודעה' : 'Dismiss'}
+              aria-label={t(lang, 'dismissNotification')}
               style={{
                 background: 'none', border: 'none', cursor: 'pointer',
                 padding: 2, display: 'flex', color: 'var(--text-3)',

@@ -2407,7 +2407,7 @@ export function SettingsSheet({
       <div
         onClick={handleClose}
         style={{
-          position: 'fixed', inset: 0, zIndex: 99,
+          position: 'fixed', inset: 0, zIndex: 99, // --z-backdrop
           background: 'var(--modal-backdrop)',
           backdropFilter: isOpen ? 'blur(2px)' : 'none',
           opacity: isOpen ? 1 : 0,
@@ -2418,7 +2418,7 @@ export function SettingsSheet({
 
       {/* Sheet — wrapper centres to app width, inner div animates */}
       <div style={{
-        position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 100,
+        position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 100, // --z-sheet
         display: 'flex', justifyContent: 'center', alignItems: 'flex-end',
         pointerEvents: 'none',
       }}>

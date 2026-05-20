@@ -4,7 +4,7 @@ import { useLockBodyScroll } from '../hooks/useLockBodyScroll'
 import { useAppContext } from '../context/AppContext'
 import type { Meal, FoodHistory, ComposedGroup } from '../types'
 import type { Lang, MealTypeKey } from '../lib/i18n'
-import { t, dir, formatDate, today, HE_MONTHS, EN_MONTHS } from '../lib/i18n'
+import { t, dir, formatDate, today, HE_MONTHS, EN_MONTHS, HE_WEEK_SHORT, EN_WEEK_SHORT } from '../lib/i18n'
 import { DonutProgress } from './DonutProgress'
 import type { ComposedEntry } from './FoodEntryForm'
 import { calcMealTypeDistribution, calcMacroBreakdown } from '../lib/calculations'
@@ -411,7 +411,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
     const protDiff = Math.abs(data.totalProtein - data.goal.protein).toFixed(1)
     const protUnit = t(lang, 'proteinUnit')
     const fmtFluid = (ml: number) => ml >= 1000
-      ? `${(ml / 1000).toFixed(1)}${lang === 'he' ? 'ל׳' : 'L'}`
+      ? `${(ml / 1000).toFixed(1)}${t(lang, 'litersUnit')}`
       : `${Math.round(ml)}ml`
     const fluidDiff = Math.round(Math.abs(data.totalFluid - fluidGoalMl))
 
@@ -448,7 +448,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
           {/* Calories row */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
             <span style={{ fontSize: 11, whiteSpace: 'nowrap', flexShrink: 0, minWidth: 80 }}>
-              <span style={{ color: 'var(--text-3)' }}>{lang === 'he' ? 'קל׳ · ' : 'cal · '}</span>
+              <span style={{ color: 'var(--text-3)' }}>{t(lang, 'calDotLabel')}</span>
               <span style={{ color: 'var(--text-2)' }}>{Math.round(data.totalCalories)}</span>
             </span>
             <div style={{ flex: 1, height: 2, background: 'var(--border)', position: 'relative', borderRadius: 2 }}>
@@ -463,7 +463,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
           {/* Protein row */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
             <span style={{ fontSize: 11, whiteSpace: 'nowrap', flexShrink: 0, minWidth: 80 }}>
-              <span style={{ color: 'var(--text-3)' }}>{lang === 'he' ? 'חלבון · ' : 'prot · '}</span>
+              <span style={{ color: 'var(--text-3)' }}>{t(lang, 'protDotLabel')}</span>
               <span style={{ color: 'var(--positive-hi)' }}>{Math.round(data.totalProtein * 10) / 10}{protUnit}</span>
             </span>
             <div style={{ flex: 1, height: 2, background: 'var(--border)', position: 'relative', borderRadius: 2 }}>
@@ -479,7 +479,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
           {fluidGoalMl > 0 && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <span style={{ fontSize: 11, whiteSpace: 'nowrap', flexShrink: 0, minWidth: 80 }}>
-                <span style={{ color: 'var(--text-3)' }}>{lang === 'he' ? 'נוזלים · ' : 'fluid · '}</span>
+                <span style={{ color: 'var(--text-3)' }}>{t(lang, 'fluidDotLabel')}</span>
                 <span style={{ color: 'var(--cyan-hi)' }}>{fmtFluid(data.totalFluid)}</span>
               </span>
               <div style={{ flex: 1, height: 2, background: 'var(--border)', position: 'relative', borderRadius: 2 }}>
@@ -531,7 +531,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
             <DonutProgress value={data.totalCalories} goal={data.goal.calories} type="calories" lang={lang} size={46} strokeWidth={4} />
             <div>
               <div style={{ fontSize: 9, fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 1 }}>
-                {lang === 'he' ? 'קלוריות' : 'Calories'}
+                {t(lang, 'calories')}
               </div>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 2 }}>
                 <span style={{ fontSize: 18, fontWeight: 800, color: 'var(--accent-hi)', lineHeight: 1 }}>
@@ -552,7 +552,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
             <DonutProgress value={data.totalProtein} goal={data.goal.protein} type="protein" lang={lang} size={46} strokeWidth={4} />
             <div>
               <div style={{ fontSize: 9, fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 1 }}>
-                {lang === 'he' ? 'חלבון' : 'Protein'}
+                {t(lang, 'protein')}
               </div>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 2 }}>
                 <span style={{ fontSize: 18, fontWeight: 800, color: 'var(--positive-hi)', lineHeight: 1 }}>
@@ -580,7 +580,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
             }}>
               <span className="icon" style={{ fontSize: 14, color: data.fluidOk ? 'var(--cyan-hi)' : 'var(--text-3)', flexShrink: 0 }}>water_drop</span>
               <span style={{ fontSize: 9, fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em', flexShrink: 0 }}>
-                {lang === 'he' ? 'נוזלים' : 'Fluid'}
+                {t(lang, 'fluid')}
               </span>
               <span style={{ fontSize: 13, fontWeight: 700, color: data.fluidOk ? 'var(--cyan-hi)' : 'var(--text-2)', flexShrink: 0 }}>
                 {fmtFluid(data.totalFluid)}
@@ -667,7 +667,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                           {gCal}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.8 }}>{t(lang, 'caloriesUnit')}</span>
                         </span>
                         <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--positive-hi)', display: 'inline-flex', alignItems: 'baseline', gap: 2 }}>
-                          {gProt}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.8 }}>{lang === 'he' ? 'ג׳ חלבון' : 'g protein'}</span>
+                          {gProt}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.8 }}>{t(lang, 'gProteinLabel')}</span>
                         </span>
                       </div>
                     </div>
@@ -683,7 +683,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                   <div style={{ borderTop: '1px solid var(--border)', borderBottom: isLast ? 'none' : '1px solid var(--border)', marginBottom: isLast ? 0 : 8, background: 'var(--composed-tint)', marginInline: -14, paddingInline: 14 }}>
                     {row.meals.map((meal, idx) => {
                       const iQty = meal.fluid_ml != null && !meal.fluid_excluded
-                        ? (meal.fluid_ml >= 1000 ? `${(meal.fluid_ml / 1000).toFixed(1)}${lang === 'he' ? 'ל׳' : 'L'}` : `${Math.round(meal.fluid_ml)}ml`)
+                        ? (meal.fluid_ml >= 1000 ? `${(meal.fluid_ml / 1000).toFixed(1)}${t(lang, 'litersUnit')}` : `${Math.round(meal.fluid_ml)}ml`)
                         : meal.grams < 0
                           ? `${Math.abs(meal.grams)} ${unitLabel}`
                           : `${meal.grams}g`
@@ -702,7 +702,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                               {Math.round(meal.calories)}<span style={{ fontSize: 9, fontWeight: 400, opacity: 0.8 }}>{t(lang, 'caloriesUnit')}</span>
                             </span>
                             <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--positive-hi)', display: 'inline-flex', alignItems: 'baseline', gap: 2 }}>
-                              {Math.round(meal.protein * 10) / 10}<span style={{ fontSize: 9, fontWeight: 400, opacity: 0.8 }}>{lang === 'he' ? 'ג׳ חלבון' : 'g protein'}</span>
+                              {Math.round(meal.protein * 10) / 10}<span style={{ fontSize: 9, fontWeight: 400, opacity: 0.8 }}>{t(lang, 'gProteinLabel')}</span>
                             </span>
                           </div>
                         </div>
@@ -716,7 +716,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
 
           const meal = row.meal
           const qty = meal.fluid_ml != null && !meal.fluid_excluded
-            ? (meal.fluid_ml >= 1000 ? `${(meal.fluid_ml / 1000).toFixed(1)}${lang === 'he' ? 'ל׳' : 'L'}` : `${Math.round(meal.fluid_ml)}ml`)
+            ? (meal.fluid_ml >= 1000 ? `${(meal.fluid_ml / 1000).toFixed(1)}${t(lang, 'litersUnit')}` : `${Math.round(meal.fluid_ml)}ml`)
             : meal.grams < 0
               ? `${Math.abs(meal.grams)} ${unitLabel}`
               : `${meal.grams}g`
@@ -740,7 +740,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                   {Math.round(meal.calories)}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.8 }}>{t(lang, 'caloriesUnit')}</span>
                 </span>
                 <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--positive-hi)', display: 'inline-flex', alignItems: 'baseline', gap: 2 }}>
-                  {Math.round(meal.protein * 10) / 10}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.8 }}>{lang === 'he' ? 'ג׳ חלבון' : 'g protein'}</span>
+                  {Math.round(meal.protein * 10) / 10}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.8 }}>{t(lang, 'gProteinLabel')}</span>
                 </span>
               </div>
             </div>
@@ -878,7 +878,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                   >
                     <span>{day}</span>
                     {data && (
-                      <div style={{ display: 'flex', gap: 2, alignItems: 'center' }} aria-label={[data.calOk ? (lang === 'he' ? 'קלוריות בסדר' : 'calories ok') : '', data.protOk ? (lang === 'he' ? 'חלבון הושג' : 'protein met') : '', data.fluidOk ? (lang === 'he' ? 'נוזלים הושגו' : 'fluid met') : ''].filter(Boolean).join(', ')}>
+                      <div style={{ display: 'flex', gap: 2, alignItems: 'center' }} aria-label={[data.calOk ? t(lang, 'caloriesOk') : '', data.protOk ? t(lang, 'proteinMet') : '', data.fluidOk ? t(lang, 'fluidMet') : ''].filter(Boolean).join(', ')}>
                         {data.calOk   && <span className="icon" aria-hidden="true" style={{ fontSize: 10, color: 'var(--accent-hi)'  }}>check</span>}
                         {data.protOk  && <span className="icon" aria-hidden="true" style={{ fontSize: 10, color: 'var(--positive-hi)' }}>check</span>}
                         {data.fluidOk && <span className="icon" aria-hidden="true" style={{ fontSize: 10, color: 'var(--cyan-hi)' }}>water_drop</span>}
@@ -914,7 +914,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10, paddingBottom: 80 }}>
             {/* Sticky bar: search (always) + filters (hide on scroll-down) */}
             <div style={{
-              position: 'sticky', top: TOPBAR_H, zIndex: 10,
+              position: 'sticky', top: TOPBAR_H, zIndex: 10, // --z-sticky
               background: 'var(--bg)', paddingTop: 10, paddingBottom: 6,
               touchAction: 'pan-y',
             }}>
@@ -1010,7 +1010,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                     <div ref={searchDropdownRef} style={{
                       position: 'absolute', top: 'calc(46px + 4px)', left: 0, right: 0,
                       background: 'var(--bg-card2)', border: '1px solid var(--border-hi)',
-                      borderRadius: 10, overflow: 'hidden', zIndex: 50,
+                      borderRadius: 10, overflow: 'hidden', zIndex: 50, // --z-dropdown
                       boxShadow: 'var(--shadow-lg)',
                     }}>
                       {matchedComposed.map(entry => (
@@ -1062,14 +1062,14 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                   <>
                     <span className="icon" style={{ fontSize: 28, display: 'block', marginBottom: 8 }}>manage_search</span>
                     <p style={{ fontSize: 13, margin: 0 }}>
-                      {lang === 'he' ? `לא מצאנו "${debouncedSearch}"` : `Nothing for "${debouncedSearch}"`}
+                      {`${t(lang, 'noResultsFor')} "${debouncedSearch}"`}
                     </p>
                     <p style={{ fontSize: 12, margin: '4px 0 0', color: 'var(--text-3)', opacity: 0.7 }}>{t(lang, 'tryOtherWord')}</p>
                     <button
                       onClick={() => setSearch('')}
                       style={{ marginTop: 10, fontSize: 12, color: 'var(--accent-hi)', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px', borderRadius: 6 }}
                     >
-                      {lang === 'he' ? 'נקה חיפוש' : 'Clear search'}
+                      {t(lang, 'clearSearch')}
                     </button>
                   </>
                 ) : statusFilter !== 'all' ? (
@@ -1080,7 +1080,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                       onClick={() => setStatusFilter('all')}
                       style={{ marginTop: 10, fontSize: 12, color: 'var(--accent-hi)', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px', borderRadius: 6 }}
                     >
-                      {lang === 'he' ? 'הצג הכל' : 'Show all'}
+                      {t(lang, 'showAll')}
                     </button>
                   </>
                 ) : (
@@ -1148,7 +1148,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
             return (
               <div className="compose-modal-backdrop" onClick={() => setHistoryModalOpen(false)}>
                 <div className="compose-modal"
-                  role="dialog" aria-modal="true" aria-label={lang === 'he' ? 'היסטוריית מזון' : 'Food history'}
+                  role="dialog" aria-modal="true" aria-label={t(lang, 'foodHistory')}
                   style={{ maxWidth: 440, padding: 0, overflow: 'hidden', maxHeight: '80vh', display: 'flex', flexDirection: 'column' }}
                   onClick={e => e.stopPropagation()}
                 >
@@ -1211,7 +1211,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                         ))}
                         {filtered.length > 0 && (
                           <div style={{ padding: '8px 14px 4px', fontSize: 10, fontWeight: 700, color: 'var(--text-3)', letterSpacing: '0.07em', textTransform: 'uppercase' }}>
-                            {lang === 'he' ? 'היסטוריה' : 'History'}
+                            {t(lang, 'history')}
                           </div>
                         )}
                       </>
@@ -1224,7 +1224,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                       const amtDisplay = item.grams < 0
                         ? `${Math.abs(item.grams)} ${unitLabel}`
                         : item.fluid_ml != null && item.fluid_ml > 0
-                          ? (item.fluid_ml >= 1000 ? `${(item.fluid_ml / 1000).toFixed(1)}${lang === 'he' ? 'ל׳' : 'L'}` : `${Math.round(item.fluid_ml)}ml`)
+                          ? (item.fluid_ml >= 1000 ? `${(item.fluid_ml / 1000).toFixed(1)}${t(lang, 'litersUnit')}` : `${Math.round(item.fluid_ml)}ml`)
                           : `${item.grams}g`
                       return (
                         <button key={item.id}
@@ -1289,9 +1289,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
           const dKey = toKey(d)
           const data = grouped.get(dKey)
           const g    = getGoalForDate(dKey)
-          const dayLabel = lang === 'he'
-            ? ['א׳', 'ב׳', 'ג׳', 'ד׳', 'ה׳', 'ו׳', 'ש׳'][d.getDay()]
-            : ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'][d.getDay()]
+          const dayLabel = lang === 'he' ? HE_WEEK_SHORT[d.getDay()] : EN_WEEK_SHORT[d.getDay()]
           barDays.push({ label: dayLabel, dateKey: dKey, cal: data?.totalCalories ?? 0, prot: data?.totalProtein ?? 0, fluid: fluidForDate(dKey), goalCal: g.calories, goalProt: g.protein, goalFluid: fluidGoalMl, hasData: !!data })
         }
 
@@ -1353,8 +1351,9 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
         const goalDays30Fluid = last30.filter(d => fluidForDate(d) >= fluidGoalMl).length
         const pct7Fluid  = last7.length  > 0 ? Math.round(goalDays7Fluid  / last7.length  * 100) : 0
         const pct30Fluid = last30.length > 0 ? Math.round(goalDays30Fluid / last30.length * 100) : 0
+        const locale = lang === 'he' ? 'he-IL' : 'en-US'
         const fmtMl = (ml: number) => ml >= 1000
-          ? `${(ml / 1000).toFixed(1)}${lang === 'he' ? 'ל׳' : 'L'}`
+          ? `${(ml / 1000).toFixed(1)}${t(lang, 'litersUnit')}`
           : `${ml}ml`
 
         const barH    = 80
@@ -1376,14 +1375,14 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
             }}>
             <p style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-3)', margin: '0 0 6px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{label}</p>
             <p style={{ fontSize: 0, margin: 0 }}>
-              <span style={{ fontSize: 22, fontWeight: 800, color }}>{typeof value === 'number' ? value.toLocaleString(lang === 'he' ? 'he-IL' : 'en-US') : value}</span>
+              <span style={{ fontSize: 22, fontWeight: 800, color }}>{typeof value === 'number' ? value.toLocaleString(locale) : value}</span>
               <span style={{ fontSize: 10, color: 'var(--text-3)', marginInlineStart: 3 }}>{unit}</span>
             </p>
             {pct !== undefined && (
               <p style={{ fontSize: 10, margin: '4px 0 0', lineHeight: 1.4 }}>
                 <span style={{ fontWeight: 700, color: pctColor ?? (pct >= 70 ? 'var(--positive-hi)' : pct >= 40 ? 'var(--warning)' : 'var(--danger)') }}>{pct}%</span>
                 {successDays !== undefined && totalDays !== undefined && (
-                  <span style={{ color: 'var(--text-3)' }}> · {successDays}/{totalDays} {lang === 'he' ? 'ימים' : 'd'}</span>
+                  <span style={{ color: 'var(--text-3)' }}> · {successDays}/{totalDays} {t(lang, 'daysShort')}</span>
                 )}
               </p>
             )}
@@ -1464,19 +1463,19 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
             }}>
               <span className="icon icon-sm" style={{ color: 'var(--text-3)', flexShrink: 0 }}>target</span>
               <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-3)', flexShrink: 0 }}>
-                {lang === 'he' ? 'יעד יומי:' : 'Daily goal:'}
+                {`${t(lang, 'dailyGoal')}:`}
               </span>
               <div style={{ display: 'flex', gap: 12, flex: 1, flexWrap: 'wrap' }}>
                 <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--accent-hi)', whiteSpace: 'nowrap' }}>
-                  {todayGoal.calories.toLocaleString(lang === 'he' ? 'he-IL' : 'en-US')} <span style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-3)' }}>{t(lang, 'caloriesUnit')}</span>
+                  {todayGoal.calories.toLocaleString(locale)} <span style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-3)' }}>{t(lang, 'caloriesUnit')}</span>
                 </span>
                 <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--positive-hi)', whiteSpace: 'nowrap' }}>
-                  {todayGoal.protein}g <span style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-3)' }}>{lang === 'he' ? 'חלבון' : 'protein'}</span>
+                  {todayGoal.protein}g <span style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-3)' }}>{t(lang, 'protein')}</span>
                 </span>
                 {fluidGoalMl > 0 && (
                   <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--accent-hi)', whiteSpace: 'nowrap' }}>
-                    {fluidGoalMl >= 1000 ? `${(fluidGoalMl / 1000).toFixed(1)}${lang === 'he' ? 'ל׳' : 'L'}` : `${fluidGoalMl}ml`}
-                    {' '}<span style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-3)' }}>{lang === 'he' ? 'נוזלים' : 'fluid'}</span>
+                    {fluidGoalMl >= 1000 ? `${(fluidGoalMl / 1000).toFixed(1)}${t(lang, 'litersUnit')}` : `${fluidGoalMl}ml`}
+                    {' '}<span style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-3)' }}>{t(lang, 'fluid')}</span>
                   </span>
                 )}
               </div>
@@ -1586,7 +1585,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                       <StatCard
                         label={t(lang, 'avgFluid')}
                         value={avg7FluidMl >= 1000 ? (avg7FluidMl / 1000).toFixed(1) : avg7FluidMl}
-                        unit={avg7FluidMl >= 1000 ? (lang === 'he' ? 'ל׳' : 'L') : 'ml'}
+                        unit={avg7FluidMl >= 1000 ? t(lang, 'litersUnit') : 'ml'}
                         color="var(--cyan-hi)"
                         pct={pct7Fluid} successDays={goalDays7Fluid} totalDays={last7.length}
                         pctColor={pct7Fluid >= 70 ? 'var(--cyan-hi)' : pct7Fluid >= 40 ? 'var(--warning)' : 'var(--danger)'}
@@ -1713,15 +1712,15 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                     <div style={{ display: 'flex', gap: 14, marginTop: 8, paddingTop: 8, borderTop: '1px solid var(--border)', flexWrap: 'wrap' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, color: 'var(--text-3)' }}>
                         <div style={{ width: 12, height: 3, background: barColor7, borderRadius: 2 }} />
-                        {isCal7 ? (lang === 'he' ? 'קלוריות' : 'Calories') : isProt7 ? (lang === 'he' ? 'חלבון' : 'Protein') : (t(lang, 'fluid'))}
+                        {isCal7 ? t(lang, 'calories') : isProt7 ? t(lang, 'protein') : t(lang, 'fluid')}
                       </div>
                       {(!isFluid7 || fluidGoalMl > 0) && (
                         <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, color: 'var(--text-3)' }}>
                           <div style={{ width: 12, borderTop: `1.5px dashed ${goalLegendColor7}` }} />
-                          {lang === 'he' ? 'יעד' : 'Goal'}
+                          {t(lang, 'goal')}
                           <span style={{ fontWeight: 700, color: 'var(--text-2)' }}>
                             {isCal7
-                              ? `${todayGoal.calories.toLocaleString(lang === 'he' ? 'he-IL' : 'en-US')} ${t(lang, 'caloriesUnit')}`
+                              ? `${todayGoal.calories.toLocaleString(locale)} ${t(lang, 'caloriesUnit')}`
                               : isProt7
                                 ? `${todayGoal.protein}${t(lang, 'proteinUnit')}`
                                 : fmtMl(fluidGoalMl)}
@@ -1731,7 +1730,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                       {!isFluid7 && (
                         <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, color: 'var(--text-3)' }}>
                           <div style={{ width: 12, height: 3, background: 'var(--warning)', borderRadius: 2 }} />
-                          {lang === 'he' ? 'חריגה' : 'Over goal'}
+                          {t(lang, 'overGoal')}
                         </div>
                       )}
                       {isFluid7 && (
@@ -1749,11 +1748,11 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                       <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '2px 5px', fontSize: 12, lineHeight: 1.5 }}>
                         <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--accent-hi)', display: 'inline-block', flexShrink: 0 }} />
                         <span style={{ fontWeight: 700, color: 'var(--text)' }}>
-                          {lang === 'he' ? `${calOkDays7} מתוך ${last7.length} ימים ביעד` : `${calOkDays7} of ${last7.length} days on target`}
+                          {`${calOkDays7} ${t(lang, 'ofLabel')} ${last7.length} ${t(lang, 'daysOnTarget')}`}
                         </span>
                         <span style={{ color: 'var(--text-3)' }}>·</span>
                         <span style={{ color: 'var(--text-2)' }}>
-                          {lang === 'he' ? `ממוצע ${avg7Cal.toLocaleString('he-IL')} קק״ל` : `avg ${avg7Cal.toLocaleString('en-US')} kcal`}
+                          {`${t(lang, 'avgPrefix')}${avg7Cal.toLocaleString(locale)} ${t(lang, 'caloriesUnit')}`}
                         </span>
                         <span style={{
                           fontSize: 11, fontWeight: 600, borderRadius: 5, padding: '1px 6px',
@@ -1761,19 +1760,19 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                           background: delta7Cal === 0 ? 'var(--positive-fill)' : delta7Cal > 0 ? 'var(--warning-tint)' : 'var(--accent-fill)',
                         }}>
                           {delta7Cal === 0
-                            ? (lang === 'he' ? 'בדיוק ביעד' : 'on target')
-                            : `${delta7Cal > 0 ? '+' : '−'}${Math.abs(delta7Cal).toLocaleString(lang === 'he' ? 'he-IL' : 'en-US')} ${lang === 'he' ? 'קק״ל' : 'kcal'}`}
+                            ? t(lang, 'onTarget')
+                            : `${delta7Cal > 0 ? '+' : '−'}${Math.abs(delta7Cal).toLocaleString(locale)} ${t(lang, 'caloriesUnit')}`}
                         </span>
                       </div>
                       {/* protein row */}
                       <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '2px 5px', fontSize: 12, lineHeight: 1.5 }}>
                         <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--positive-hi)', display: 'inline-block', flexShrink: 0 }} />
                         <span style={{ fontWeight: 700, color: 'var(--text)' }}>
-                          {lang === 'he' ? `${protOkDays7} מתוך ${last7.length} ימים ביעד` : `${protOkDays7} of ${last7.length} days on target`}
+                          {`${protOkDays7} ${t(lang, 'ofLabel')} ${last7.length} ${t(lang, 'daysOnTarget')}`}
                         </span>
                         <span style={{ color: 'var(--text-3)' }}>·</span>
                         <span style={{ color: 'var(--text-2)' }}>
-                          {lang === 'he' ? `ממוצע ${avg7Prot}ג׳ חלבון` : `avg ${avg7Prot}g protein`}
+                          {`${t(lang, 'avgPrefix')}${avg7Prot}${t(lang, 'gProteinLabel')}`}
                         </span>
                         <span style={{
                           fontSize: 11, fontWeight: 600, borderRadius: 5, padding: '1px 6px',
@@ -1781,8 +1780,8 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                           background: delta7Prot === 0 ? 'var(--positive-fill)' : delta7Prot > 0 ? 'var(--warning-tint)' : 'var(--accent-fill)',
                         }}>
                           {delta7Prot === 0
-                            ? (lang === 'he' ? 'בדיוק ביעד' : 'on target')
-                            : `${delta7Prot > 0 ? '+' : '−'}${Math.abs(delta7Prot)}${lang === 'he' ? 'ג׳' : 'g'}`}
+                            ? t(lang, 'onTarget')
+                            : `${delta7Prot > 0 ? '+' : '−'}${Math.abs(delta7Prot)}${t(lang, 'proteinUnit')}`}
                         </span>
                       </div>
                       {/* fluid row */}
@@ -1790,11 +1789,11 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                         <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '2px 5px', fontSize: 12, lineHeight: 1.5 }}>
                           <span className="icon" style={{ fontSize: 12, color: 'var(--cyan-hi)', flexShrink: 0 }}>water_drop</span>
                           <span style={{ fontWeight: 700, color: 'var(--text)' }}>
-                            {lang === 'he' ? `${goalDays7Fluid} מתוך ${last7.length} ימים ביעד` : `${goalDays7Fluid} of ${last7.length} days on target`}
+                            {`${goalDays7Fluid} ${t(lang, 'ofLabel')} ${last7.length} ${t(lang, 'daysOnTarget')}`}
                           </span>
                           <span style={{ color: 'var(--text-3)' }}>·</span>
                           <span style={{ color: 'var(--text-2)' }}>
-                            {lang === 'he' ? `ממוצע ${fmtMl(avg7FluidMl)} נוזלים` : `avg ${fmtMl(avg7FluidMl)} fluid`}
+                            {`${t(lang, 'avgPrefix')}${fmtMl(avg7FluidMl)} ${t(lang, 'fluid')}`}
                           </span>
                         </div>
                       )}
@@ -1884,7 +1883,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                       <StatCard
                         label={t(lang, 'avgFluid')}
                         value={avg30FluidMl >= 1000 ? (avg30FluidMl / 1000).toFixed(1) : avg30FluidMl}
-                        unit={avg30FluidMl >= 1000 ? (lang === 'he' ? 'ל׳' : 'L') : 'ml'}
+                        unit={avg30FluidMl >= 1000 ? t(lang, 'litersUnit') : 'ml'}
                         color="var(--cyan-hi)"
                         pct={pct30Fluid} successDays={goalDays30Fluid} totalDays={last30.length}
                         pctColor={pct30Fluid >= 70 ? 'var(--cyan-hi)' : pct30Fluid >= 40 ? 'var(--warning)' : 'var(--danger)'}
@@ -2049,13 +2048,13 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                         <div style={{ display: 'flex', gap: 14, marginTop: 8, paddingTop: 8, borderTop: '1px solid var(--border)', flexWrap: 'wrap' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, color: 'var(--text-3)' }}>
                             <div style={{ width: 16, height: 2, background: lineColorRaw30, borderRadius: 2 }} />
-                            {isCal30 ? (lang === 'he' ? 'קלוריות' : 'Calories') : isProt30 ? (lang === 'he' ? 'חלבון' : 'Protein') : (t(lang, 'fluid'))}
+                            {isCal30 ? t(lang, 'calories') : isProt30 ? t(lang, 'protein') : t(lang, 'fluid')}
                           </div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, color: 'var(--text-3)' }}>
                             <div style={{ width: 16, borderTop: `1.5px dashed ${goalLineColor30}` }} />
-                            {lang === 'he' ? 'יעד' : 'Goal'}
+                            {t(lang, 'goal')}
                             <span style={{ fontWeight: 700, color: 'var(--text-2)' }}>
-                              {isCal30 ? `${lineGoal30.toLocaleString(lang === 'he' ? 'he-IL' : 'en-US')} ${t(lang, 'caloriesUnit')}` : isProt30 ? `${lineGoal30}${t(lang, 'proteinUnit')}` : fmtMl(lineGoal30)}
+                              {isCal30 ? `${lineGoal30.toLocaleString(locale)} ${t(lang, 'caloriesUnit')}` : isProt30 ? `${lineGoal30}${t(lang, 'proteinUnit')}` : fmtMl(lineGoal30)}
                             </span>
                           </div>
                         </div>
@@ -2070,11 +2069,11 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                       <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '2px 5px', fontSize: 12, lineHeight: 1.5 }}>
                         <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--accent-hi)', display: 'inline-block', flexShrink: 0 }} />
                         <span style={{ fontWeight: 700, color: 'var(--text)' }}>
-                          {lang === 'he' ? `${calOkDays30} מתוך ${last30.length} ימים ביעד` : `${calOkDays30} of ${last30.length} days on target`}
+                          {`${calOkDays30} ${t(lang, 'ofLabel')} ${last30.length} ${t(lang, 'daysOnTarget')}`}
                         </span>
                         <span style={{ color: 'var(--text-3)' }}>·</span>
                         <span style={{ color: 'var(--text-2)' }}>
-                          {lang === 'he' ? `ממוצע ${avg30Cal.toLocaleString('he-IL')} קק״ל` : `avg ${avg30Cal.toLocaleString('en-US')} kcal`}
+                          {`${t(lang, 'avgPrefix')}${avg30Cal.toLocaleString(locale)} ${t(lang, 'caloriesUnit')}`}
                         </span>
                         <span style={{
                           fontSize: 11, fontWeight: 600, borderRadius: 5, padding: '1px 6px',
@@ -2082,19 +2081,19 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                           background: delta30Cal === 0 ? 'var(--positive-fill)' : delta30Cal > 0 ? 'var(--warning-tint)' : 'var(--accent-fill)',
                         }}>
                           {delta30Cal === 0
-                            ? (lang === 'he' ? 'בדיוק ביעד' : 'on target')
-                            : `${delta30Cal > 0 ? '+' : '−'}${Math.abs(delta30Cal).toLocaleString(lang === 'he' ? 'he-IL' : 'en-US')} ${lang === 'he' ? 'קק״ל' : 'kcal'}`}
+                            ? t(lang, 'onTarget')
+                            : `${delta30Cal > 0 ? '+' : '−'}${Math.abs(delta30Cal).toLocaleString(locale)} ${t(lang, 'caloriesUnit')}`}
                         </span>
                       </div>
                       {/* protein row */}
                       <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '2px 5px', fontSize: 12, lineHeight: 1.5 }}>
                         <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--positive-hi)', display: 'inline-block', flexShrink: 0 }} />
                         <span style={{ fontWeight: 700, color: 'var(--text)' }}>
-                          {lang === 'he' ? `${protOkDays30} מתוך ${last30.length} ימים ביעד` : `${protOkDays30} of ${last30.length} days on target`}
+                          {`${protOkDays30} ${t(lang, 'ofLabel')} ${last30.length} ${t(lang, 'daysOnTarget')}`}
                         </span>
                         <span style={{ color: 'var(--text-3)' }}>·</span>
                         <span style={{ color: 'var(--text-2)' }}>
-                          {lang === 'he' ? `ממוצע ${avg30Prot}ג׳ חלבון` : `avg ${avg30Prot}g protein`}
+                          {`${t(lang, 'avgPrefix')}${avg30Prot}${t(lang, 'gProteinLabel')}`}
                         </span>
                         <span style={{
                           fontSize: 11, fontWeight: 600, borderRadius: 5, padding: '1px 6px',
@@ -2102,8 +2101,8 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                           background: delta30Prot === 0 ? 'var(--positive-fill)' : delta30Prot > 0 ? 'var(--warning-tint)' : 'var(--accent-fill)',
                         }}>
                           {delta30Prot === 0
-                            ? (lang === 'he' ? 'בדיוק ביעד' : 'on target')
-                            : `${delta30Prot > 0 ? '+' : '−'}${Math.abs(delta30Prot)}${lang === 'he' ? 'ג׳' : 'g'}`}
+                            ? t(lang, 'onTarget')
+                            : `${delta30Prot > 0 ? '+' : '−'}${Math.abs(delta30Prot)}${t(lang, 'proteinUnit')}`}
                         </span>
                       </div>
                       {/* fluid row */}
@@ -2111,11 +2110,11 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                         <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '2px 5px', fontSize: 12, lineHeight: 1.5 }}>
                           <span className="icon" style={{ fontSize: 12, color: 'var(--cyan-hi)', flexShrink: 0 }}>water_drop</span>
                           <span style={{ fontWeight: 700, color: 'var(--text)' }}>
-                            {lang === 'he' ? `${goalDays30Fluid} מתוך ${last30.length} ימים ביעד` : `${goalDays30Fluid} of ${last30.length} days on target`}
+                            {`${goalDays30Fluid} ${t(lang, 'ofLabel')} ${last30.length} ${t(lang, 'daysOnTarget')}`}
                           </span>
                           <span style={{ color: 'var(--text-3)' }}>·</span>
                           <span style={{ color: 'var(--text-2)' }}>
-                            {lang === 'he' ? `ממוצע ${fmtMl(avg30FluidMl)} נוזלים` : `avg ${fmtMl(avg30FluidMl)} fluid`}
+                            {`${t(lang, 'avgPrefix')}${fmtMl(avg30FluidMl)} ${t(lang, 'fluid')}`}
                           </span>
                         </div>
                       )}
@@ -2293,7 +2292,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
           position: 'fixed',
           bottom: 'calc(32px + env(safe-area-inset-bottom, 0px))',
           insetInlineEnd: 'max(calc((100vw - 560px) / 2 + 24px), 24px)',
-          zIndex: 40,
+          zIndex: 40, // --z-fab
           display: 'flex',
           alignItems: 'center',
           background: 'var(--bg-card2)',
@@ -2321,7 +2320,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
         <button
           className="fab-pill-btn"
           onClick={() => { switchView('cal'); setSelectedBarDate(null) }}
-          aria-label={lang === 'he' ? 'תצוגת לוח שנה' : 'Calendar view'}
+          aria-label={t(lang, 'calViewAriaLabel')}
           aria-pressed={view === 'cal'}
           style={{
             width: fabBtnSize, height: fabBtnSize, borderRadius: 999,
@@ -2336,7 +2335,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
         <button
           className="fab-pill-btn"
           onClick={() => { switchView('list'); setSelectedBarDate(null) }}
-          aria-label={lang === 'he' ? 'תצוגת רשימה' : 'List view'}
+          aria-label={t(lang, 'listViewAriaLabel')}
           aria-pressed={view === 'list'}
           style={{
             width: fabBtnSize, height: fabBtnSize, borderRadius: 999,
@@ -2351,7 +2350,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
         <button
           className="fab-pill-btn"
           onClick={() => { switchView('stats'); setSelectedBarDate(null) }}
-          aria-label={lang === 'he' ? 'תצוגת סטטיסטיקות' : 'Statistics view'}
+          aria-label={t(lang, 'statsViewAriaLabel')}
           aria-pressed={view === 'stats'}
           style={{
             width: fabBtnSize, height: fabBtnSize, borderRadius: 999,

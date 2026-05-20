@@ -188,7 +188,7 @@ function BarcodeScanner({ lang, onResult, onNotFound }, ref) {
           }}
         >
           <span className="icon icon-sm">photo_camera</span>
-          {lang === 'he' ? 'הפעל מצלמה' : 'Activate camera'}
+          {t(lang, 'activateCamera')}
         </button>
       </div>
     )

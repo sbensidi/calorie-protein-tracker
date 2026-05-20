@@ -279,9 +279,9 @@ export function TodayTab({
   const dissolveGroup = useCallback((groupId: string) => {
     const cancelFn = scheduleDeletes([], [groupId])
     showToast(
-      lang === 'he' ? 'הקבוצה נמחקה' : 'Group deleted',
+      t(lang, 'groupDeleted'),
       'info',
-      { action: { label: lang === 'he' ? 'בטל' : 'Undo', onClick: cancelFn }, durationMs: 4000 },
+      { action: { label: t(lang, 'undo'), onClick: cancelFn }, durationMs: 4000 },
     )
   }, [scheduleDeletes, showToast, lang])
 
@@ -458,7 +458,7 @@ export function TodayTab({
         count++
       })
     clearSelection(type)
-    if (count > 0) showToast(lang === 'he' ? `שוכפלו ${count} ${count === 1 ? 'פריט' : 'פריטים'}` : `Duplicated ${count} item${count !== 1 ? 's' : ''}`, 'success')
+    if (count > 0) showToast(`${t(lang, 'duplicatedPrefix')}${count} ${count === 1 ? t(lang, 'item') : t(lang, 'items')}`, 'success')
   }
 
   const handleDeleteSelected = (type: MealType) => {
@@ -484,11 +484,11 @@ export function TodayTab({
     const cancelFn = scheduleDeletes(allMealIds, groupIds)
 
     showToast(
-      lang === 'he' ? `נמחקו ${count} ${count === 1 ? 'פריט' : 'פריטים'}` : `Deleted ${count} item${count !== 1 ? 's' : ''}`,
+      `${t(lang, 'deletedPrefix')}${count} ${count === 1 ? t(lang, 'item') : t(lang, 'items')}`,
       'info',
       {
         action: {
-          label: lang === 'he' ? 'בטל' : 'Undo',
+          label: t(lang, 'undo'),
           onClick: cancelFn,
         },
         durationMs: 4000,
@@ -505,9 +505,9 @@ export function TodayTab({
     setEditingGroupType(null)
     const cancelFn = scheduleDeletes(allMealIds, groupIds)
     showToast(
-      lang === 'he' ? `קבוצת ${t(lang, type)} נמחקה` : `${t(lang, type as MealTypeKey)} group deleted`,
+      `${t(lang, 'typeGroupPrefix')}${t(lang, type as MealTypeKey)}${t(lang, 'typeGroupSuffix')}`,
       'info',
-      { action: { label: lang === 'he' ? 'בטל' : 'Undo', onClick: cancelFn }, durationMs: 4000 },
+      { action: { label: t(lang, 'undo'), onClick: cancelFn }, durationMs: 4000 },
     )
   }
 
@@ -600,7 +600,7 @@ export function TodayTab({
                 <span style={{ fontWeight: 400, color: 'var(--text-3)' }}>{t(lang, 'caloriesUnit')}</span>
                 <span style={{ color: 'var(--border)', fontWeight: 300, padding: '0 2px' }}>|</span>
                 <span style={{ fontWeight: 500, color: 'var(--positive-hi)' }}>{totalProt}</span>
-                <span style={{ fontWeight: 400, color: 'var(--text-3)' }}>{lang === 'he' ? "גר׳ חלבון" : 'g protein'}</span>
+                <span style={{ fontWeight: 400, color: 'var(--text-3)' }}>{t(lang, 'gProteinLabel')}</span>
               </span>
             )}
             <span style={{ flex: 1 }} />
@@ -622,7 +622,7 @@ export function TodayTab({
             role="button"
             tabIndex={0}
             aria-expanded={!isCollapsed}
-            aria-label={`${t(lang, type)} — ${isCollapsed ? (lang === 'he' ? 'פתח' : 'expand') : (lang === 'he' ? 'כווץ' : 'collapse')}`}
+            aria-label={`${t(lang, type)} — ${isCollapsed ? t(lang, 'expandGroup') : t(lang, 'collapseGroup')}`}
             onClick={() => toggleCollapse(type)}
             onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') toggleCollapse(type) }}
             style={{
@@ -682,7 +682,7 @@ export function TodayTab({
 
         {/* ── Type picker (inline, under header) ─────────── */}
         {editingGroupType === type && (
-          <div className="type-picker" role="radiogroup" aria-label={lang === 'he' ? 'בחר סוג ארוחה' : 'Select meal type'}>
+          <div className="type-picker" role="radiogroup" aria-label={t(lang, 'selectMealType')}>
             {MEAL_TYPES.map(mt => (
               <div
                 key={mt}
@@ -719,7 +719,7 @@ export function TodayTab({
                 <span className="icon icon-sm" style={{ color: 'var(--danger-hi)' }}>delete</span>
               </div>
               <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--danger-hi)', flex: 1 }}>
-                {lang === 'he' ? `מחק את כל ${t(lang, type as MealTypeKey)}` : `Delete all ${t(lang, type as MealTypeKey)}`}
+                {t(lang, 'deleteAll')} {t(lang, type as MealTypeKey)}
               </span>
             </div>
           </div>
@@ -794,7 +794,7 @@ export function TodayTab({
                 }}
               >
                 <span className="icon" style={{ fontSize: 13 }}>add</span>
-                {lang === 'he' ? `הוסף ל${t(lang, type as MealTypeKey)}` : `Add to ${t(lang, type as MealTypeKey)}`}
+                {t(lang, 'addToPrefix')}{t(lang, type as MealTypeKey)}
               </button>
             ) : (
               <button
@@ -808,7 +808,7 @@ export function TodayTab({
                 }}
               >
                 <span className="icon" style={{ fontSize: 14 }}>add</span>
-                {lang === 'he' ? `הוסף ל${t(lang, type as MealTypeKey)}` : `Add to ${t(lang, type as MealTypeKey)}`}
+                {t(lang, 'addToPrefix')}{t(lang, type as MealTypeKey)}
               </button>
             ))}
 
@@ -890,12 +890,12 @@ export function TodayTab({
 
     return (
       <div className="compose-modal-backdrop" onClick={() => setComposeModal(null)}>
-        <div ref={composeModalRef} className="compose-modal" role="dialog" aria-modal="true" aria-label={lang === 'he' ? 'הגדרת ארוחה מורכבת' : 'Compose meal'} onClick={e => e.stopPropagation()}>
+        <div ref={composeModalRef} className="compose-modal" role="dialog" aria-modal="true" aria-label={t(lang, 'composeMealLabel')} onClick={e => e.stopPropagation()}>
           {/* Title */}
           <div>
             <p style={{ fontSize: 16, fontWeight: 800, textAlign: 'center', margin: 0 }}>{t(lang, 'dishName')}</p>
             <p style={{ fontSize: 12, color: 'var(--text-3)', textAlign: 'center', margin: '4px 0 0' }}>
-              {lang === 'he' ? `מ-${sel.size} פריטים` : `From ${sel.size} items`}
+              {t(lang, 'fromNPrefix')}{sel.size} {t(lang, 'items')}
             </p>
           </div>
 
@@ -951,7 +951,7 @@ export function TodayTab({
             <div style={{ height: 1, background: 'var(--border)', margin: '6px 0' }} />
             {/* Editable total */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ flex: 1, fontWeight: 700, color: 'var(--text-2)' }}>{lang === 'he' ? 'סה"כ' : 'Total'}</span>
+              <span style={{ flex: 1, fontWeight: 700, color: 'var(--text-2)' }}>{t(lang, 'total')}</span>
               <div style={{ position: 'relative' }}>
                 <input
                   type="number"
@@ -978,7 +978,7 @@ export function TodayTab({
           {parseFloat(composeWeight) > 0 && (
             <div style={{ background: 'var(--blue-fill)', border: '1px solid var(--blue-border)', borderRadius: 10, padding: '10px 12px' }}>
               <p style={{ margin: '0 0 8px', fontSize: 12, fontWeight: 700, color: 'var(--blue-hi)' }}>
-                {lang === 'he' ? 'הוסף מנה לרשמת היום (אופציונלי)' : 'Log a portion today (optional)'}
+                {t(lang, 'logPortionOptional')}
               </p>
               <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                 <div style={{ position: 'relative', flex: 1 }}>
@@ -987,7 +987,7 @@ export function TodayTab({
                     inputMode="decimal"
                     className="inp"
                     style={{ fontSize: 14, height: 36, paddingInlineEnd: 24 }}
-                    placeholder={lang === 'he' ? 'משקל מנה' : 'portion g'}
+                    placeholder={t(lang, 'portionGramsPlaceholder')}
                     value={composePortion}
                     onChange={e => setComposePortion(e.target.value)}
                   />
@@ -1084,7 +1084,7 @@ export function TodayTab({
             onClick={() => openEntry()}
             style={{ marginTop: 4, fontSize: 13, height: 40, padding: '0 20px' }}
           >
-            {lang === 'he' ? '+ הוסף ארוחה' : '+ Add meal'}
+            + {t(lang, 'addMeal')}
           </button>
         </div>
       )}
@@ -1096,7 +1096,7 @@ export function TodayTab({
       {/* ── Add ingredient modal ──────────────────────────────── */}
       {addIngredientModal && (
         <div className="compose-modal-backdrop" onClick={() => setAddIngredientModal(null)}>
-          <div ref={addIngredientModalRef} className="compose-modal" role="dialog" aria-modal="true" aria-label={lang === 'he' ? 'הוסף רכיב' : 'Add ingredient'} style={{ maxWidth: 420, padding: 0, overflow: 'hidden' }} onClick={e => e.stopPropagation()}>
+          <div ref={addIngredientModalRef} className="compose-modal" role="dialog" aria-modal="true" aria-label={t(lang, 'addIngredient')} style={{ maxWidth: 420, padding: 0, overflow: 'hidden' }} onClick={e => e.stopPropagation()}>
             <FoodEntryForm
               key={addIngredientModal.groupId}
               lang={lang}
@@ -1121,13 +1121,13 @@ export function TodayTab({
       {/* ── FAB — hidden on empty state ── */}
       {todayMeals.length > 0 && <button
         onClick={() => openEntry()}
-        aria-label={lang === 'he' ? 'הוסף ארוחה' : 'Add meal'}
+        aria-label={t(lang, 'addMeal')}
         className="fab-btn"
         style={{
           position: 'fixed',
           bottom: 'calc(32px + env(safe-area-inset-bottom, 0px))',
           insetInlineEnd: 'max(calc((100vw - 560px) / 2 + 24px), 24px)',
-          zIndex: 40,
+          zIndex: 40, // --z-fab
           width: 56, height: 56, borderRadius: '50%',
           background: 'var(--accent)',
           color: 'var(--on-color)',
@@ -1145,7 +1145,7 @@ export function TodayTab({
       <div
         onClick={() => setEntryOpen(false)}
         style={{
-          position: 'fixed', inset: 0, zIndex: 99,
+          position: 'fixed', inset: 0, zIndex: 99, // --z-backdrop
           background: 'var(--modal-backdrop)',
           backdropFilter: entryOpen ? 'blur(2px)' : 'none',
           opacity: entryOpen ? 1 : 0,
@@ -1154,7 +1154,7 @@ export function TodayTab({
         }}
       />
       <div style={{
-        position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 100,
+        position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 100, // --z-sheet
         display: 'flex', justifyContent: 'center', alignItems: 'flex-end',
         pointerEvents: 'none',
       }}>

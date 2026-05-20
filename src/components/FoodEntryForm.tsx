@@ -1069,7 +1069,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
               border: '1px solid var(--border-hi)',
               borderRadius: 10,
               overflow: 'hidden',
-              zIndex: 50,
+              zIndex: 50, // --z-dropdown
               boxShadow: 'var(--shadow-lg)',
             }}
           >

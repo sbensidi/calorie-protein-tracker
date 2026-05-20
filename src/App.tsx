@@ -224,7 +224,7 @@ export default function App() {
   if (authLoading) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)' }}>
-        <div role="status" aria-label={lang === 'he' ? 'טוען...' : 'Loading...'}>
+        <div role="status" aria-label={t(lang, 'loading')}>
           <div style={{ width: 32, height: 32, border: '2px solid var(--accent)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
         </div>
       </div>
@@ -273,7 +273,7 @@ export default function App() {
                 return (
                   <button
                     onClick={() => setSettingsOpen(true)}
-                    aria-label={lang === 'he' ? 'הגדרות' : 'Settings'}
+                    aria-label={t(lang, 'settings')}
                     style={{
                       width: 44, height: 44, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
                       background: avatarUrl ? 'transparent' : emailInitial ? 'var(--accent-select)' : 'var(--qty-bg)',
@@ -354,7 +354,7 @@ export default function App() {
           fontSize: 12, fontWeight: 600, color: 'var(--danger)',
         }}>
           <span className="icon icon-sm">wifi_off</span>
-          {lang === 'he' ? 'אין חיבור לרשת — הנתונים יסונכרנו כשהחיבור יחזור' : 'Offline — changes will sync when connection is restored'}
+          {t(lang, 'offlineMessage')}
         </div>
       )}
 
@@ -362,7 +362,7 @@ export default function App() {
       <div style={{ maxWidth: 560, margin: '0 auto', padding: '16px 16px calc(80px + env(safe-area-inset-bottom, 0px))' }}>
 
         {tab === 'today' && (
-          <ErrorBoundary label={lang === 'he' ? 'היום' : 'Today'} lang={lang}>
+          <ErrorBoundary label={t(lang, 'today')} lang={lang}>
             <TodayTab
               lang={lang}
               meals={meals}
@@ -399,7 +399,7 @@ export default function App() {
           </ErrorBoundary>
         )}
         {tab === 'history' && (
-          <ErrorBoundary label={lang === 'he' ? 'היסטוריה' : 'History'} lang={lang}>
+          <ErrorBoundary label={t(lang, 'history')} lang={lang}>
             <Suspense fallback={null}>
               <HistoryTab
                 lang={lang}
@@ -417,7 +417,7 @@ export default function App() {
         )}
       </div>
 
-      <ErrorBoundary label={lang === 'he' ? 'הגדרות' : 'Settings'} lang={lang}>
+      <ErrorBoundary label={t(lang, 'settings')} lang={lang}>
         <Suspense fallback={null}>
         <SettingsSheet
           isOpen={settingsOpen}
@@ -467,7 +467,7 @@ function UpdatePasswordPage({ lang, onDone, onToggleLang }: { lang: Lang; onDone
 
   const handleUpdate = async () => {
     if (!password || password.length < 8) {
-      setError(lang === 'he' ? 'הסיסמה חייבת להכיל לפחות 8 תווים' : 'Password must be at least 8 characters')
+      setError(t(lang, 'passwordTooShort'))
       return
     }
     setLoading(true)
@@ -475,9 +475,7 @@ function UpdatePasswordPage({ lang, onDone, onToggleLang }: { lang: Lang; onDone
     const { error } = await supabase.auth.updateUser({ password })
     if (error) {
       const isWeak = /password/i.test(error.message)
-      setError(isWeak
-        ? (lang === 'he' ? 'הסיסמה חלשה מדי' : 'Password is too weak')
-        : (lang === 'he' ? 'שגיאה בעדכון הסיסמה' : 'Failed to update password'))
+      setError(isWeak ? t(lang, 'passwordTooWeak') : t(lang, 'updatePasswordError'))
     } else {
       setDone(true)
       setTimeout(onDone, 1800)
@@ -533,7 +531,7 @@ function UpdatePasswordPage({ lang, onDone, onToggleLang }: { lang: Lang; onDone
             onClick={onToggleLang}
             style={{ padding: '5px 14px', borderRadius: 999, background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text-2)', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}
           >
-            {lang === 'he' ? 'English' : 'עברית'}
+            {t(lang, 'switchToLang')}
           </button>
         </div>
       </div>
@@ -581,9 +579,7 @@ function AuthPage({ lang, onToggleLang }: { lang: Lang; onToggleLang: () => void
       // Generic message prevents user enumeration via error text
       const msg = err instanceof Error ? err.message : ''
       const isCredErr = /credential|not found|invalid|not confirm/i.test(msg)
-      setError(isCredErr
-        ? (lang === 'he' ? 'פרטי התחברות שגויים' : 'Invalid credentials')
-        : (lang === 'he' ? 'שגיאת אימות — נסה שוב' : 'Authentication error — please try again'))
+      setError(isCredErr ? t(lang, 'invalidCredentials') : t(lang, 'authError'))
     }
     setLoading(false)
   }
@@ -612,7 +608,7 @@ function AuthPage({ lang, onToggleLang }: { lang: Lang; onToggleLang: () => void
             {t(lang, 'appTitle')}
           </h1>
           <p style={{ fontSize: 13, color: 'var(--text-2)', marginTop: 6 }}>
-            {lang === 'he' ? 'מעקב תזונה חכם' : 'Smart nutrition tracking'}
+            {t(lang, 'appTagline')}
           </p>
         </div>
 
@@ -741,7 +737,7 @@ function AuthPage({ lang, onToggleLang }: { lang: Lang; onToggleLang: () => void
             onClick={onToggleLang}
             style={{ padding: '5px 14px', borderRadius: 999, background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text-2)', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}
           >
-            {lang === 'he' ? 'English' : 'עברית'}
+            {t(lang, 'switchToLang')}
           </button>
         </div>
       </div>
