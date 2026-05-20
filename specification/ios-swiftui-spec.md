@@ -77,6 +77,9 @@ struct Meal: Codable, Identifiable {
     let createdAt: String
     var fluidMl: Double?      // nil if not a fluid
     var fluidExcluded: Bool   // true = tracked as fluid but excluded from calorie total
+    var displayUnit: String?  // original entry unit when not grams (e.g. "cup", "tbsp", "ml", "fl_oz")
+    var displayAmount: Double? // original entry amount in that unit (e.g. 1.5 for "1.5 cups")
+    // nil for both when meal was entered in grams or as pcs (pieces/servings)
 
     enum CodingKeys: String, CodingKey {
         case id, date, name, grams, calories, protein, fat, carbs, notes
@@ -86,6 +89,8 @@ struct Meal: Codable, Identifiable {
         case createdAt = "created_at"
         case fluidMl = "fluid_ml"
         case fluidExcluded = "fluid_excluded"
+        case displayUnit = "display_unit"
+        case displayAmount = "display_amount"
     }
 }
 
@@ -162,6 +167,8 @@ struct UserProfile: Codable {
     var fluidZeroCalOnly: Bool // only auto-detect fluids when calories == 0
     var defaultServingGrams: Double  // default "1 serving" size
     var targetWeightKg: Double?      // goal weight for projection
+    var showGreeting: Bool           // show/hide daily greeting panel (default true)
+    var displayName: String?         // optional custom name shown in greeting, overrides Google name
 
     enum Sex: String, Codable { case m, f }
     enum GoalType: String, Codable { case lose, maintain, gain }
@@ -179,6 +186,8 @@ struct UserProfile: Codable {
         case fluidZeroCalOnly = "fluid_zero_cal_only"
         case defaultServingGrams = "default_serving_grams"
         case targetWeightKg = "target_weight_kg"
+        case showGreeting = "show_greeting"
+        case displayName = "display_name"
     }
 
     static let defaults = UserProfile(
@@ -187,7 +196,7 @@ struct UserProfile: Codable {
         weightUnit: .g, volumeUnit: .ml,
         fluidGoalMl: 2500, fluidThresholdMl: 100,
         fluidZeroCalOnly: false, defaultServingGrams: 150,
-        targetWeightKg: nil
+        targetWeightKg: nil, showGreeting: true, displayName: nil
     )
 }
 ```
@@ -226,27 +235,36 @@ struct FoodLibraryItem: Codable, Identifiable {
 
 ### 3.6 ComposedGroup
 ```swift
-// Synced to Supabase `composed_groups` table + cached in UserDefaults
+// Synced to Supabase `composed_groups` table + cached locally (UserDefaults/SwiftData).
 struct ComposedGroup: Codable, Identifiable {
     let id: String
     let userId: String
     var name: String
-    var mealIds: [String]  // ordered list of Meal.id values
+    var mealIds: [String]      // ordered list of Meal.id values that belong to this group
+    var batchWeightG: Double?  // estimated total cooked weight (g) — when set, enables recipe scaling
+    var totalCalories: Int?    // total calories of all ingredients, cached at save time
+    var totalProtein: Double?  // total protein of all ingredients, cached at save time
 
     enum CodingKeys: String, CodingKey {
         case id, name
         case userId = "user_id"
         case mealIds = "meal_ids"
+        case batchWeightG = "batch_weight_g"
+        case totalCalories = "total_calories"
+        case totalProtein = "total_protein"
     }
 }
 ```
 
 **Sync rules**:
 - On fetch: load from `composed_groups` table filtered by `user_id`
-- On create/rename: upsert to DB (conflict on `id`)
+- On create/rename: upsert to DB (conflict on `id`); always persist `batch_weight_g`, `total_calories`, `total_protein`
 - On dissolve: delete row from DB
 - On meal delete: remove the meal ID from all groups that reference it; if a group's `mealIds` becomes empty, delete the group row
 - Realtime subscription on `composed_groups` table mirrors the meals pattern
+- Local cache (UserDefaults JSON) used as immediate read source; DB is authoritative
+
+**Recipe scaling**: when `batchWeightG != nil`, the group card shows a "Log portion" mode — the user enters consumed grams and the app scales `totalCalories` / `totalProtein` proportionally (see §22.3).
 
 ### 3.7 NutritionResult
 ```swift
@@ -382,6 +400,12 @@ func goalForDate(_ dateStr: String, goals: Goal) -> (calories: Int, protein: Int
 enum WeightUnit: String { case g, oz }
 enum VolumeUnit: String { case ml, cup, tbsp, tsp, fl_oz }
 
+// Entry units — superset of weight + volume + pcs
+enum EntryUnit: String {
+    case g, oz, ml, cup, tbsp, tsp, fl_oz
+    case pcs   // pieces / servings — "מנה" (he) / "serving" (en)
+}
+
 func toBaseGrams(_ amount: Double, unit: WeightUnit) -> Double {
     unit == .oz ? amount * 28.3495 : amount
 }
@@ -400,6 +424,13 @@ func toBaseMl(_ amount: Double, unit: VolumeUnit) -> Double {
 func mlToGrams(_ ml: Double, density: Double) -> Double { ml * density }
 func gramsToMl(_ g: Double, density: Double) -> Double  { g / density }
 ```
+
+**`pcs` (pieces/servings) unit**:
+- Used for unit-based library items (e.g. "2 eggs", "1 avocado") where `FoodLibraryItem.grams < 0`
+- Also selected manually by the user for any item
+- Gram anchor: `defaultServingGrams` (from user profile) or `FoodLibraryItem.servingSize` when a library match is found
+- Display: "מנה" (Hebrew) / "serving" (English) in the unit picker
+- Stored as `grams = -amount` in DB (e.g. 2 pieces → `grams = -2.0`); `display_unit` / `display_amount` are `nil` for pcs entries
 
 ### 4.6 Serving size
 - Library items may have a `servingSize` (e.g. 1 egg = 60g) and `servingUnit` (e.g. "piece").
@@ -522,7 +553,7 @@ let cutoff = Calendar.current.date(byAdding: .day, value: -90, to: Date())!
 let cutoffStr = ISO8601DateFormatter().string(from: cutoff).prefix(10)
 let meals: [Meal] = try await supabase
     .from("meals")
-    .select("id,user_id,name,calories,protein,grams,date,meal_type,time_logged,created_at,fluid_ml,fluid_excluded")
+    .select("id,user_id,name,calories,protein,grams,date,meal_type,time_logged,created_at,fluid_ml,fluid_excluded,fat,carbs,notes,display_unit,display_amount")
     .eq("user_id", value: userId)
     .gte("date", value: String(cutoffStr))
     .order("date", ascending: false)
@@ -736,11 +767,31 @@ Presented as a bottom sheet (`.sheet` modifier, detents: `.medium`, `.large`).
 ### Fields
 - Food name (text field, search-as-you-type against history + library)
 - Amount value (number field)
-- Amount unit picker: g / oz / ml / cup / tbsp / tsp / fl oz / serving
+- Amount unit picker: **g / oz / ml / cup / tbsp / tsp / fl oz / serving (pcs)**
+  - `pcs` = "מנה" (he) / "serving" (en) — for unit-based items and library items with a defined serving size
+  - Auto-selected when a library item with `grams < 0` is chosen
+  - Shows a gram-anchor hint below the field: "~150g per serving" / "~150ג׳ למנה"
 - Meal type picker: breakfast / lunch / dinner / snack / beverage
 - Date picker (default: today)
 - Fluid ml field (shown when meal type is beverage OR amount unit is a volume)
 - "Fluid excluded" toggle (exclude from calorie total)
+
+### Unit switching — intelligent cal/prot scaling
+When the user changes the amount unit after nutrition values have been calculated, the app recalculates calories and protein automatically:
+- **Non-pcs ↔ non-pcs** (e.g., g → oz, ml → cup): amount stays the same; calories/protein recalculate for the new physical quantity
+- **pcs → weight/volume**: ratio shifts from cal/serving to cal/gram; calories/protein recalculate for current amount
+- **weight/volume → pcs**: ratio shifts from cal/gram to cal/serving; calories/protein recalculate
+- If no nutrition ratio is known yet (before AI calculation), unit switching only changes the unit label — no recalculation
+
+### Composed dish / recipe portion logging
+When the food entry sheet is opened from a ComposedGroup card that has `batchWeightG` set:
+- Shows a special **"Log portion"** mode: a gram input for the amount consumed
+- On confirm: scales `totalCalories` and `totalProtein` proportionally and inserts as a single meal row
+  ```swift
+  let ratio = portionG / group.batchWeightG!
+  let cal  = Int((Double(group.totalCalories!) * ratio).rounded())
+  let prot = (group.totalProtein! * ratio * 10).rounded() / 10
+  ```
 
 ### AI Calculate button
 - Displayed as a **full-width primary-color button** on its own row, below the amount / unit / meal-type row
@@ -965,18 +1016,23 @@ Display: overlay at bottom of screen, auto-dismiss after 4 seconds (same as web)
 ```sql
 -- meals
 create table meals (
-  id            uuid primary key default gen_random_uuid(),
-  user_id       uuid references auth.users not null,
-  date          date not null,
-  meal_type     text not null check (meal_type in ('breakfast','lunch','dinner','snack','beverage')),
-  name          text not null,
-  grams         numeric not null,
-  calories      integer not null,
-  protein       numeric not null,
-  time_logged   time not null,
-  created_at    timestamptz default now(),
-  fluid_ml      numeric,
-  fluid_excluded boolean default false
+  id             uuid primary key default gen_random_uuid(),
+  user_id        uuid references auth.users not null,
+  date           date not null,
+  meal_type      text not null check (meal_type in ('breakfast','lunch','dinner','snack','beverage')),
+  name           text not null,
+  grams          numeric not null,
+  calories       integer not null,
+  protein        numeric not null,
+  time_logged    time not null,
+  created_at     timestamptz default now(),
+  fluid_ml       numeric,
+  fluid_excluded boolean default false,
+  fat            real,           -- grams of fat (optional)
+  carbs          real,           -- grams of carbs (optional)
+  notes          text,           -- free-text user notes (optional)
+  display_unit   text,           -- original entry unit when not grams (e.g. 'cup', 'tbsp', 'ml', 'fl_oz')
+  display_amount real            -- original entry amount in that unit
 );
 
 -- goals
@@ -1004,6 +1060,9 @@ create table profiles (
   fluid_threshold_ml    integer default 100,
   fluid_zero_cal_only   boolean default false,
   default_serving_grams numeric default 150,
+  target_weight_kg      real,
+  show_greeting         boolean not null default true,
+  display_name          text,
   updated_at            timestamptz default now()
 );
 
@@ -1036,6 +1095,39 @@ create table food_library (
   density            numeric,
   countable          boolean default false
 );
+
+-- composed_groups — named dish groupings with optional batch-weight for recipe scaling
+create table composed_groups (
+  id              uuid primary key default gen_random_uuid(),
+  user_id         uuid references auth.users not null,
+  name            text not null,
+  meal_ids        text[] not null default '{}',
+  batch_weight_g  real,           -- total estimated cooked weight; set → enables recipe scaling
+  total_calories  integer,        -- cached sum of all ingredient calories
+  total_protein   real,           -- cached sum of all ingredient protein
+  updated_at      timestamptz default now()
+);
+alter table composed_groups enable row level security;
+create policy "Users manage own composed_groups"
+  on composed_groups for all
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
+-- weight_log — one entry per user per day
+create table weight_log (
+  id         uuid primary key default gen_random_uuid(),
+  user_id    uuid not null references auth.users(id) on delete cascade,
+  date       date not null,
+  weight_kg  real not null,
+  created_at timestamptz not null default now(),
+  unique (user_id, date)
+);
+alter table weight_log enable row level security;
+create policy "Users manage own weight_log"
+  on weight_log for all
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+create index weight_log_user_date on weight_log (user_id, date desc);
 ```
 
 Row Level Security (RLS) is enabled on all tables. Users can only read/write their own rows. `food_library` is public read.
@@ -2269,3 +2361,294 @@ ALTER TABLE profiles ADD COLUMN IF NOT EXISTS display_name TEXT;
 ```
 
 All other schema changes for this batch were already applied in §19.12.
+
+---
+
+## 22. New Features (v3 — May/June 2026)
+
+Features shipped after the §21 batch: serving unit system, original entry unit display, composed-group batch weight & recipe scaling, cooking weight estimation, and notification explanation text.
+
+---
+
+### 22.1 Serving Unit System — Pieces (`pcs`)
+
+**Why**: many foods are naturally quantified by piece or serving (eggs, avocados, protein bars). Logging "2 eggs" in grams forces the user to do mental math. The `pcs` / "מנה" / "serving" unit removes that friction.
+
+#### Entry flow
+
+1. User selects a library item where `countable == true` OR manually switches the unit picker to "מנה" / "serving".
+2. The unit field shows **"מנה"** (Hebrew) / **"serving"** (English).
+3. Below the amount field, a gram-anchor hint appears:
+   - Library match found: `"1 מנה ≈ 60ג׳ (ביצה)"` / `"1 serving ≈ 60g (Egg)"`
+   - No library match: `"1 מנה ≈ 150ג׳"` / `"1 serving ≈ 150g"` (uses `defaultServingGrams`)
+4. Tap the hint chip → auto-fills the gram anchor into the library-match state.
+
+#### Storage
+- `Meal.grams` = `−amount` (negative signals unit-based; e.g. 2 servings → `grams = -2.0`).
+- `display_unit` = `nil`, `display_amount` = `nil` (pcs is its own dimension, not an alternative unit for grams).
+
+#### `NutritionRatios` — proportional scaling across unit switches
+
+```swift
+struct NutritionRatios {
+    var calPerUnit:  Double  // kcal per gram (normal) or kcal per serving (pcs)
+    var protPerUnit: Double  // protein per gram or per serving
+    var perServing:  Bool    // true when unit == pcs
+}
+```
+
+When the user switches units after nutrition is already calculated, the app re-derives cal/prot for the new unit without requiring another AI call:
+
+| From → To | Action |
+|---|---|
+| pcs → weight/volume | Divide ratios by `servingGrams`; recalculate for current amount |
+| weight/volume → pcs | Multiply ratios by `servingGrams`; recalculate for current amount |
+| weight → volume (or reverse) | Keep ratios; convert amount to base, apply density → recalculate |
+
+If `calPerUnit == 0` (no ratio known yet), unit changes only swap the label — no recalculation.
+
+#### Swift sketch
+
+```swift
+func handleUnitChange(to newUnit: EntryUnit,
+                      ratios: inout NutritionRatios?,
+                      amount: Double,
+                      servingGrams: Double,
+                      density: Double) -> (cal: Int, prot: Double)? {
+    guard var r = ratios, r.calPerUnit > 0 else { return nil }
+    let oldIsPcs = /* previousUnit == .pcs */
+    let newIsPcs = newUnit == .pcs
+
+    if oldIsPcs != newIsPcs {
+        if oldIsPcs {
+            // pcs → weight: ratio was cal/serving, convert to cal/gram
+            r.calPerUnit  /= servingGrams
+            r.protPerUnit /= servingGrams
+            r.perServing   = false
+        } else {
+            // weight → pcs: ratio was cal/gram, convert to cal/serving
+            r.calPerUnit  *= servingGrams
+            r.protPerUnit *= servingGrams
+            r.perServing   = true
+        }
+        ratios = r
+    }
+
+    let base: Double = {
+        if r.perServing { return amount }
+        if newUnit == .pcs { return amount * servingGrams }
+        let ml = toBaseMl(amount, unit: newUnit as! VolumeUnit)
+        return UNITS[newUnit].type == .volume ? mlToGrams(ml, density: density) : toBaseGrams(amount, unit: newUnit as! WeightUnit)
+    }()
+    return (Int((base * r.calPerUnit).rounded()), (base * r.protPerUnit * 10).rounded() / 10)
+}
+```
+
+---
+
+### 22.2 Original Entry Unit Display
+
+**Why**: when a user logs "1.5 cups of oatmeal" and it gets stored as 360g, the meal card shows "360g" — the original mental model is lost.
+
+**Solution**: store the original unit + amount in `display_unit` / `display_amount` on the `Meal` row. The meal card reads these and prefers them for display.
+
+#### Rules
+
+| Entry unit | `display_unit` | `display_amount` | Display in MealCard |
+|---|---|---|---|
+| g | nil | nil | "350g" |
+| oz | "oz" | 1.5 | "1.5 oz" |
+| ml | "ml" | 300 | "300ml" |
+| cup | "cup" | 1.5 | "1.5 cup" |
+| tbsp | "tbsp" | 2 | "2 tbsp" |
+| tsp | "tsp" | 1 | "1 tsp" |
+| fl_oz | "fl_oz" | 8 | "8 fl oz" |
+| pcs | nil | nil | "2×" or "2 serving" |
+
+#### MealCard display logic
+
+```swift
+var amountLabel: String {
+    if let unit = meal.displayUnit, let amount = meal.displayAmount {
+        // Show the original entry unit
+        return "\(formatAmount(amount)) \(localizedUnit(unit, lang: lang))"
+    }
+    if meal.grams < 0 {
+        // Unit-based (pcs)
+        return "\(Int(-meal.grams))×"
+    }
+    // Default: grams
+    return "\(Int(meal.grams))g"
+}
+```
+
+#### Swift struct additions (already in §3.1)
+`displayUnit: String?` and `displayAmount: Double?` — both `nil` when the unit is grams or pcs.
+
+---
+
+### 22.3 ComposedGroup Batch Weight & Recipe Scaling
+
+**Why**: a user cooks a batch recipe (e.g. a stew with 5 ingredients totaling 1,200 kcal). They weigh the finished pot (900g). On a given day they eat 300g of it. Instead of re-logging all ingredients, they log "300g of stew" and the app calculates the portion automatically.
+
+#### Batch weight flow
+
+1. In the ComposedGroup card (expanded), tap **"Estimate cooked weight"** / **"הערך משקל מבושל"**.
+2. The app runs `estimateCookedWeight(meals)` (see §22.4) and shows the estimate pre-filled.
+3. User can confirm or edit the number.
+4. Value is saved to `composed_groups.batch_weight_g` via upsert.
+
+#### Recipe scaling flow
+
+When `batchWeightG != nil`, the group card in the Today tab shows a **"Log portion"** button alongside the usual "Log full dish".
+
+```
+┌─ Pasta & veggies ─────────────────────┐
+│  1,200 kcal  ·  85g protein           │
+│  Batch: 900g cooked                   │
+│  [Log portion]   [Log full dish]       │
+└────────────────────────────────────────┘
+```
+
+**"Log portion"** opens a sheet with a gram input. On confirm:
+```swift
+let ratio = portionG / group.batchWeightG!
+let cal   = Int((Double(group.totalCalories!) * ratio).rounded())
+let prot  = (group.totalProtein! * ratio * 10).rounded() / 10
+// Insert as a single Meal row with the scaled values
+```
+
+**"Log full dish"** logs each ingredient as a separate `Meal` row (existing behavior).
+
+#### `totalCalories` / `totalProtein` caching
+
+Set at group-create / group-update time from the sum of all ingredient meals:
+```swift
+let totalCal  = group.mealIds.compactMap { mealById[$0] }.reduce(0) { $0 + $1.calories }
+let totalProt = group.mealIds.compactMap { mealById[$0] }.reduce(0.0) { $0 + $1.protein }
+```
+Stored in `composed_groups.total_calories` and `composed_groups.total_protein`.
+
+---
+
+### 22.4 Cooking Weight Estimation
+
+**Why**: after cooking, the weight of a dish differs from the sum of raw ingredients (water evaporates from meat, pasta absorbs water). This function estimates the cooked weight so users can set an accurate `batchWeightG`.
+
+#### `getCookingFactor(name: String) → (factor: Double, matched: Bool)`
+
+Looks up the ingredient name against a table of ~55 keyword patterns → cooking factor (ratio of cooked to raw weight):
+
+| Category | Example | Factor |
+|---|---|---|
+| Dry pasta / rice / quinoa | פסטה, אורז, quinoa | 2.2–2.8× (absorbs water) |
+| Chicken breast | חזה עוף, chicken breast | 0.70 (loses water) |
+| Beef / burger | אנטריקוט, hamburger | 0.75 |
+| Fish | סלמון, salmon | 0.80 |
+| Leafy vegetables fresh | תרד טרי | 0.25 (wilts dramatically) |
+| Frozen vegetables | תרד קפוא, broccoli | 0.90 |
+| Eggs / cheese | ביצה, גבינה | 0.90–0.95 |
+| Oils / sauces | שמן, maple syrup | 1.00 (no change) |
+
+Default factor when no match: **0.85**.
+`matched = false` when the default is used.
+
+#### `estimateCookedWeight(meals: [Meal]) → { total: Int, breakdown: [CookingBreakdownItem] }`
+
+```swift
+struct CookingBreakdownItem {
+    let name:     String
+    let rawG:     Double   // 0 for unit-based items (weight unknown)
+    let factor:   Double
+    let cookedG:  Int
+    let matched:  Bool     // false = default factor used
+    let skipped:  Bool     // true = unit-based item, cannot estimate weight
+}
+
+func estimateCookedWeight(_ meals: [Meal]) -> (total: Int, breakdown: [CookingBreakdownItem]) {
+    let breakdown = meals.map { m -> CookingBreakdownItem in
+        let isFluid = m.fluidMl != nil
+        let isUnit  = m.grams < 0 && !isFluid
+        let rawG    = isUnit ? 0 : isFluid ? (m.fluidMl ?? 0) : m.grams
+
+        if isUnit {
+            return CookingBreakdownItem(name: m.name, rawG: 0, factor: 0.85,
+                                         cookedG: 0, matched: false, skipped: true)
+        }
+        let (factor, matched) = getCookingFactor(m.name)
+        return CookingBreakdownItem(name: m.name, rawG: rawG, factor: factor,
+                                     cookedG: Int((rawG * factor).rounded()),
+                                     matched: matched, skipped: false)
+    }
+    let total = breakdown.reduce(0) { $0 + $1.cookedG }
+    return (total, breakdown)
+}
+```
+
+#### UI in ComposedGroup card (expanded)
+
+```
+Estimated cooked weight: ~650g
+  ├─ אורז    180g × 2.80 = 504g  ✓
+  ├─ עוף    200g × 0.70 = 140g  ✓
+  └─ שמן      6g × 1.00 =   6g  ✓
+```
+
+Unmatched entries show `~` before their estimate. Skipped (unit-based) entries show "—".
+Tap the row → opens the batch-weight editor pre-filled with the estimate.
+
+---
+
+### 22.5 Reminders Section — Explanation Text
+
+**Where**: Settings → Reminders card (§19.10), below the permission status row and enable button.
+
+**What**: a short explanatory paragraph that describes what the reminders will do, always visible (not conditional on permission state).
+
+```
+"הפעלת התזכורות תאפשר לאפליקציה לשלוח לך תזכורת ארוחה בשעות שתבחר."
+/ "Enabling reminders lets the app send you a meal reminder at times you choose."
+```
+
+This text is a new i18n key: `notificationExplanation`.
+
+| Key | Hebrew | English |
+|---|---|---|
+| `notificationExplanation` | הפעלת התזכורות תאפשר לאפליקציה לשלוח לך תזכורת ארוחה בשעות שתבחר. | Enabling reminders lets the app send you a meal reminder at times you choose. |
+
+**Placement**: between the permission status row and the meal-type time-pickers. Font: caption / `.footnote`, color: text-secondary.
+
+---
+
+### 22.6 DB Migration
+
+```sql
+-- Original entry unit on meals
+ALTER TABLE meals
+  ADD COLUMN IF NOT EXISTS display_unit   TEXT,
+  ADD COLUMN IF NOT EXISTS display_amount REAL;
+
+-- Batch weight + totals on composed_groups
+-- (create the table if migrating from the localStorage-only version)
+CREATE TABLE IF NOT EXISTS composed_groups (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id         UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  name            TEXT NOT NULL,
+  meal_ids        TEXT[] NOT NULL DEFAULT '{}',
+  batch_weight_g  REAL,
+  total_calories  INTEGER,
+  total_protein   REAL,
+  updated_at      TIMESTAMPTZ DEFAULT now()
+);
+ALTER TABLE composed_groups ENABLE ROW LEVEL SECURITY;
+CREATE POLICY IF NOT EXISTS "Users manage own composed_groups"
+  ON composed_groups FOR ALL
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
+
+-- If table already exists, add the new columns
+ALTER TABLE composed_groups
+  ADD COLUMN IF NOT EXISTS batch_weight_g  REAL,
+  ADD COLUMN IF NOT EXISTS total_calories  INTEGER,
+  ADD COLUMN IF NOT EXISTS total_protein   REAL;
+```
