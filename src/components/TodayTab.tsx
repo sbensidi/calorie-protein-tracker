@@ -536,6 +536,8 @@ export function TodayTab({
     return () => document.removeEventListener('keydown', onKey)
   }, [addIngredientModal, composeModal, entryOpen])
   const { scrollRef: entryScrollRef, scrolledDown: entryScrolledDown, onScroll: entryOnScroll } = useSheetScroll()
+  const [entryDragOffset, setEntryDragOffset] = useState(0)
+  const entryIsDragging = entryDragOffset > 0
 
   // ── Render: summary card ─────────────────────────────────────
   const summaryCard = (
@@ -1168,12 +1170,13 @@ export function TodayTab({
           borderRadius: '20px 20px 0 0',
           height: 'min(90dvh, 720px)',
           overflow: 'hidden',
-          transform: entryOpen ? 'translateY(0)' : 'translateY(105%)',
-          transition: 'transform 0.35s cubic-bezier(.22,.9,.36,1)',
+          transform: entryOpen ? `translateY(${entryDragOffset}px)` : 'translateY(105%)',
+          transition: entryIsDragging ? 'none' : 'transform 0.35s cubic-bezier(.22,.9,.36,1)',
+          opacity: entryIsDragging ? Math.max(0.6, 1 - entryDragOffset / 400) : 1,
           display: 'flex',
           flexDirection: 'column',
         }}>
-          <SheetHandle scrolledDown={entryScrolledDown} onClose={() => setEntryOpen(false)} />
+          <SheetHandle scrolledDown={entryScrolledDown} onClose={() => setEntryOpen(false)} onDragOffset={setEntryDragOffset} />
 
           {/* Scroll container — overflow here, NOT on the outer sheet */}
           <div
