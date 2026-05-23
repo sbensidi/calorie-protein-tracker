@@ -26,7 +26,10 @@ if ('serviceWorker' in navigator) {
 
   navigator.serviceWorker.addEventListener('controllerchange', () => {
     if (!hadController) return  // fresh install — no banner needed
-    window.location.reload()
+    const update = () => window.location.reload()
+    // Store for race condition: event may fire before React mounts its listener
+    ;(window as unknown as Record<string, unknown>).__swPendingUpdate = update
+    window.dispatchEvent(new CustomEvent('pwa-update-available', { detail: { update } }))
   })
 }
 

@@ -31,7 +31,6 @@ export default function App() {
   const [connected, setConnected] = useState(true)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [expiredSession, setExpiredSession] = useState(false)
-  const [swUpdated, setSwUpdated] = useState(false)
   const hadSession      = useRef(false)
   const userSignedOut   = useRef(false)
 
@@ -137,23 +136,28 @@ export default function App() {
   const { groups: composedGroups, error: groupsError, upsert: upsertGroup, remove: removeGroup, pruneMealId } = useComposedGroups(userId)
   const { entries: weightLogEntries, logWeight, deleteEntry: deleteWeightEntry } = useWeightLog(userId)
 
-  // After a SW-triggered reload, the new build's __BUILD_TS__ differs from
-  // what was stored on the previous run — reliable across iOS PWA reloads.
+  // C5: persistent toast when a new SW takes control — user clicks Reload.
+  // durationMs:0 keeps the toast alive even while authLoading is still true,
+  // so it appears as soon as ToastContainer is rendered.
   useEffect(() => {
-    const LAST_BUILD_KEY = 'last-build-ts'
-    const lastBuild = localStorage.getItem(LAST_BUILD_KEY)
-    const currentBuild = String(__BUILD_TS__)
-    localStorage.setItem(LAST_BUILD_KEY, currentBuild)
-    if (lastBuild && lastBuild !== currentBuild) setSwUpdated(true)
-  }, [])
+    const showUpdateToast = (update: () => void) => {
+      showToast(
+        t(lang, 'toastAppUpdated'),
+        'info',
+        { action: { label: t(lang, 'toastReload'), onClick: update }, durationMs: 0 },
+      )
+    }
+    // Race condition: controllerchange may have fired before this effect ran
+    const pending = (window as unknown as Record<string, unknown>).__swPendingUpdate as (() => void) | null
+    if (pending) showUpdateToast(pending)
 
-  // Show toast only after auth loading is done — ToastContainer is only
-  // rendered in the authenticated view, not during the loading spinner.
-  useEffect(() => {
-    if (!swUpdated || authLoading) return
-    showToast(t(lang, 'toastAppUpdated'), 'success')
-    setSwUpdated(false)
-  }, [swUpdated, authLoading]) // eslint-disable-line react-hooks/exhaustive-deps
+    const handler = (e: Event) => {
+      const { update } = (e as CustomEvent<{ update: () => void }>).detail
+      showUpdateToast(update)
+    }
+    window.addEventListener('pwa-update-available', handler)
+    return () => window.removeEventListener('pwa-update-available', handler)
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // I9: show toast when session expired unexpectedly
   useEffect(() => {
