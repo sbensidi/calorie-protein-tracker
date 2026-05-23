@@ -26,7 +26,7 @@ if ('serviceWorker' in navigator) {
 
   navigator.serviceWorker.addEventListener('controllerchange', () => {
     if (!hadController) return  // fresh install — no banner needed
-    document.dispatchEvent(new Event('sw-updated'))
+    window.location.reload()
   })
 }
 

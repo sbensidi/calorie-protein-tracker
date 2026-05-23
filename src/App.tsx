@@ -137,12 +137,22 @@ export default function App() {
   const { groups: composedGroups, error: groupsError, upsert: upsertGroup, remove: removeGroup, pruneMealId } = useComposedGroups(userId)
   const { entries: weightLogEntries, logWeight, deleteEntry: deleteWeightEntry } = useWeightLog(userId)
 
-  // Show update banner when new SW takes control
+  // After a SW-triggered reload, the new build's __BUILD_TS__ differs from
+  // what was stored on the previous run — reliable across iOS PWA reloads.
   useEffect(() => {
-    const handler = () => setSwUpdated(true)
-    document.addEventListener('sw-updated', handler)
-    return () => document.removeEventListener('sw-updated', handler)
+    const LAST_BUILD_KEY = 'last-build-ts'
+    const lastBuild = localStorage.getItem(LAST_BUILD_KEY)
+    const currentBuild = String(__BUILD_TS__)
+    localStorage.setItem(LAST_BUILD_KEY, currentBuild)
+    if (lastBuild && lastBuild !== currentBuild) setSwUpdated(true)
   }, [])
+
+  // Auto-dismiss the update banner after 5 seconds
+  useEffect(() => {
+    if (!swUpdated) return
+    const timer = setTimeout(() => setSwUpdated(false), 5000)
+    return () => clearTimeout(timer)
+  }, [swUpdated])
 
   // I9: show toast when session expired unexpectedly
   useEffect(() => {
@@ -331,7 +341,7 @@ export default function App() {
         </div>
       </div>
 
-      {/* ── SW update banner ─────────────────────────────────────── */}
+      {/* ── SW update banner (shown once after auto-reload on update) ── */}
       {swUpdated && (
         <div role="status" style={{
           background: 'var(--blue-fill)',
@@ -340,19 +350,20 @@ export default function App() {
           display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8,
           fontSize: 12, fontWeight: 600, color: 'var(--blue-hi)',
         }}>
-          <span>{t(lang, 'toastAppUpdated')}</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span className="icon icon-sm">check_circle</span>
+            <span>{t(lang, 'toastAppUpdated')}</span>
+          </div>
           <button
-            onClick={() => window.location.reload()}
+            onClick={() => setSwUpdated(false)}
+            aria-label="dismiss"
             style={{
-              background: 'var(--blue-tint)',
-              border: '1px solid var(--blue-border)',
-              color: 'var(--blue-hi)',
-              borderRadius: 8, padding: '3px 12px',
-              fontSize: 12, fontWeight: 700,
-              cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0,
+              background: 'none', border: 'none', padding: 4,
+              color: 'var(--blue-hi)', cursor: 'pointer',
+              display: 'flex', alignItems: 'center',
             }}
           >
-            {t(lang, 'toastReload')}
+            <span className="icon icon-sm">close</span>
           </button>
         </div>
       )}
