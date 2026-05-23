@@ -4,6 +4,9 @@ import type { FoodHistory, FoodLibraryItem, Meal, NutritionResult } from '../typ
 import type { Lang } from '../lib/i18n'
 import { t, dir, currentTime, today } from '../lib/i18n'
 import { calculateNutrition, AiRateLimitError, AiParseError } from '../lib/ai'
+import { PhotoNutritionCapture } from './PhotoNutritionCapture'
+import type { VisionNutritionResult } from '../lib/aiVision'
+import { FEATURES } from '../lib/featureFlags'
 import type { BarcodeScannerHandle } from './BarcodeScanner'
 import { ErrorBoundary } from './ErrorBoundary'
 import type { BarcodeProduct } from '../lib/barcodeApi'
@@ -483,6 +486,26 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
     scannerRef.current?.reset()
   }
 
+  // ── Photo nutrition handlers ──────────────────────────────────
+  const handlePhotoResult = useCallback((result: VisionNutritionResult) => {
+    // Pre-fill manual entry fields and switch to manual mode for user verification
+    editor.ratios.current = {
+      calPerUnit:  result.calories_per_100g / 100,
+      protPerUnit: result.protein_per_100g  / 100,
+      perServing:  false,
+    }
+    editor.setUnit(defaultWeightUnit)
+    editor.setAmountStr('100')
+    editor.setCalories(result.calories_per_100g)
+    editor.setProtein(result.protein_per_100g)
+    setFoodName(result.identified)
+    setNutrition({ calories: result.calories_per_100g, protein: result.protein_per_100g })
+    matchedLibraryItemRef.current = null
+    setAiError(null)
+    setMode('manual')
+    localStorage.setItem('entry-mode', 'manual')
+  }, [editor, defaultWeightUnit])
+
   const switchMode = (m: EntryMode) => {
     if (m === 'scan') setScannerMounted(true)
     if (m === 'manual') scannerRef.current?.stop()
@@ -741,6 +764,13 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
               />
             </Suspense>
           </ErrorBoundary>
+          {FEATURES.photoNutrition && (
+            <PhotoNutritionCapture
+              lang={lang}
+              onResult={handlePhotoResult}
+              onSwitchManual={() => switchMode('manual')}
+            />
+          )}
         </div>
       )}
 
@@ -759,6 +789,13 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
             <span className="icon icon-sm">refresh</span>
             {t(lang, 'scanAgain')}
           </button>
+          {FEATURES.photoNutrition && (
+            <PhotoNutritionCapture
+              lang={lang}
+              onResult={handlePhotoResult}
+              onSwitchManual={() => switchMode('manual')}
+            />
+          )}
         </div>
       )}
 

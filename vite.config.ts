@@ -4,6 +4,9 @@ import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig({
+  define: {
+    __BUILD_TS__: Date.now(),  // epoch ms — rendered in user's local timezone
+  },
   plugins: [
     react(),
     tailwindcss(),

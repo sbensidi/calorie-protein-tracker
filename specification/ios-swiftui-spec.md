@@ -2652,3 +2652,261 @@ ALTER TABLE composed_groups
   ADD COLUMN IF NOT EXISTS total_calories  INTEGER,
   ADD COLUMN IF NOT EXISTS total_protein   REAL;
 ```
+
+---
+
+## 23. Photo-Based Nutrition Analysis (v3 — May 2026)
+
+### 23.1 Overview
+
+המשתמש יכול לצלם תמונה של אוכל (או לבחור מהגלריה) ולקבל הערכת קלוריות וחלבון אוטומטית. הניתוח מבוצע דרך מודל Vision של Groq (`llama-3.2-11b-vision-preview`).
+
+**עקרונות ליישום:**
+- הפיצ'ר **שקוף לגבי אי-הדיוק** — disclaimer קבוע מוצג עם כל תוצאה.
+- תוצאת הניתוח מועברת לשדות ההזנה הידנית לאימות משתמש — אין הוספה אוטומטית ישירות.
+- כל תמונה עוברת resize ל-512×512px בצד הלקוח לפני שליחה (חיסכון של 70–80% tokens).
+- מוגן מאחורי **feature flag** — ניתן לכיבוי מלא ללא שינוי קוד.
+
+---
+
+### 23.2 Feature Flag
+
+```swift
+// AppConfig.swift
+struct AppConfig {
+    // Controlled by build configuration / remote config.
+    // When false, the photo capture button is hidden entirely —
+    // no API calls are ever made.
+    static let photoNutritionEnabled: Bool = {
+        // Read from Info.plist key "PHOTO_NUTRITION_ENABLED"
+        Bundle.main.object(forInfoDictionaryKey: "PHOTO_NUTRITION_ENABLED") as? Bool ?? false
+    }()
+}
+```
+
+**לכיבוי מהיר:** שנה את ערך ה-Info.plist ל-`false` ושחרר עדכון, או השתמש ב-Remote Config — ללא צורך ב-rebuild מלא.
+
+**להסרה מלאה:** מחק את כל הקוד תחת `// MARK: - Photo Nutrition` ואת ה-`PhotoNutritionCaptureView`.
+
+---
+
+### 23.3 UI Placement
+
+הכפתור ממוקם **במסך הסריקה** (Scan mode), מתחת לסקנר הברקוד:
+
+```
+┌─────────────────────────────┐
+│   [ מצלמה פעילה / ברקוד ]   │
+│   ─────── סריקת ברקוד ─────   │
+│                             │
+│   ─ ─ ─ ─  או  ─ ─ ─ ─ ─   │
+│                             │
+│   [ 📷  צלם אוכל ]          │
+│   N צילומים נותרו היום       │
+└─────────────────────────────┘
+```
+
+מוצג גם כאשר ברקוד לא נמצא — כאפשרות חלופית.
+
+---
+
+### 23.4 Vision Analysis Flow
+
+```
+1. משתמש לוחץ "צלם אוכל"
+   → UIImagePickerController (sourceType: .camera, preferFrontCamera: false)
+   → או PHPickerViewController לבחירה מגלריה
+
+2. resize ל-512×512 max (שמירת יחס):
+   let scale = min(1, 512 / max(image.size.width, image.size.height))
+   let newSize = CGSize(width: image.size.width * scale,
+                        height: image.size.height * scale)
+   UIGraphicsBeginImageContextWithOptions(newSize, false, 1.0)
+   image.draw(in: CGRect(origin: .zero, size: newSize))
+   let resized = UIGraphicsGetImageFromCurrentImageContext()!
+   UIGraphicsEndImageContext()
+   let jpegData = resized.jpegData(compressionQuality: 0.82)!
+   let base64 = jpegData.base64EncodedString()
+
+3. POST /api/nutrition-image
+   Body: { "imageBase64": base64, "hint": optionalFoodNameHint }
+   Headers: Authorization: Bearer <supabase_jwt>
+
+4. תגובה מוצלחת:
+   {
+     "identified":        "Chicken breast grilled",
+     "calories_per_100g": 165,
+     "protein_per_100g":  31.0,
+     "fat_per_100g":      3.6,
+     "carbs_per_100g":    0.0,
+     "confidence":        "high" | "medium" | "low"
+   }
+
+5. מילוי שדות ומעבר ל-Manual entry לאימות:
+   foodName  ← result.identified
+   amountStr ← "100" (100g default)
+   calories  ← result.calories_per_100g
+   protein   ← result.protein_per_100g
+   ratios    ← { calPerUnit: cal/100, protPerUnit: prot/100, perServing: false }
+   → switchToManualMode()
+```
+
+---
+
+### 23.5 Server — Edge Function `/api/nutrition-image`
+
+| שדה | ערך |
+|---|---|
+| Runtime | Vercel Edge |
+| Auth | JWT Supabase (חובה) |
+| Rate limit | 5 קריאות / 24 שעות / IP (in-memory) |
+| Payload max | ~2MB base64 |
+| Model | `meta-llama/llama-4-scout-17b-16e-instruct` (Groq) |
+| Max tokens | 120 |
+| Temperature | 0 |
+
+**System prompt שנשלח למודל:**
+> "You are a nutrition estimation assistant. Identify the food and estimate its nutritional values per 100g. Return ONLY valid JSON: {identified, calories_per_100g, protein_per_100g, fat_per_100g, carbs_per_100g, confidence}. Use 'low' confidence for mixed dishes, unclear images, or restaurant food. Use 'high' only for clearly identifiable single ingredients or packaged items with visible labels."
+
+**תגובת 429 עם quota:**
+```http
+HTTP/1.1 429 Too Many Requests
+X-Quota-Exceeded: groq-free-tier
+```
+Client מבדיל בין quota ל-rate-limit גנרי לפי ה-header הזה.
+
+---
+
+### 23.6 Client Rate Limiting — שתי שכבות
+
+#### שכבה 1: Local counter (UserDefaults / localStorage)
+```swift
+struct PhotoRateLimiter {
+    private static let key     = "photo-nutrition-rl"
+    private static let maxDay  = 5
+    private static let msDay   = 86_400_000.0
+
+    struct Record: Codable { var count: Int; var resetAt: Double }
+
+    static func remaining() -> Int {
+        guard let data = UserDefaults.standard.data(forKey: key),
+              let rec = try? JSONDecoder().decode(Record.self, from: data)
+        else { return maxDay }
+        if Date().timeIntervalSince1970 * 1000 > rec.resetAt { return maxDay }
+        return max(0, maxDay - rec.count)
+    }
+
+    static func canRequest() -> Bool { remaining() > 0 }
+
+    // Call only on successful API response
+    static func increment() {
+        let now = Date().timeIntervalSince1970 * 1000
+        var rec = (try? JSONDecoder().decode(
+            Record.self,
+            from: UserDefaults.standard.data(forKey: key) ?? Data()
+        )) ?? Record(count: 0, resetAt: now + msDay)
+        if now > rec.resetAt { rec = Record(count: 1, resetAt: now + msDay) }
+        else { rec.count += 1 }
+        UserDefaults.standard.set(try? JSONEncoder().encode(rec), forKey: key)
+    }
+}
+```
+
+**חשוב:** `increment()` נקרא רק בהצלחה — שגיאות רשת לא גורעות מהמכסה.
+
+#### שכבה 2: Server-side (Edge in-memory per IP)
+גיבוי בלבד — לא תלויים בה לUX.
+
+---
+
+### 23.7 Error Handling
+
+```swift
+enum PhotoNutritionError: Error {
+    case quotaExceeded      // client counter מלא, או 429 + X-Quota-Exceeded: groq-free-tier
+    case rateLimited        // 429 ללא header מיוחד
+    case parseFailure       // תגובה חסרה cal/prot, JSON שבור
+    case networkFailure     // fetch נכשל
+    case imageTooLarge      // 413 מהשרת
+}
+```
+
+| שגיאה | הודעה למשתמש | Action |
+|---|---|---|
+| `quotaExceeded` | "הגעת למכסה היומית (5 צילומים). נסה מחר." | — |
+| `rateLimited` | אותה הודעה כמו quota | — |
+| `parseFailure` | "לא הצלחתי לזהות. נסה תמונה ברורה יותר, או הזן ידנית." | כפתור מעבר לידנית |
+| `networkFailure` | "שירות לא זמין כרגע. נסה שוב מאוחר יותר." | כפתור Retry |
+
+---
+
+### 23.8 Disclaimer — חובה בכל תוצאה
+
+**חייב להיות מוצג תמיד**, ללא אפשרות הסתרה:
+
+```swift
+// עברית
+"הערכה בלבד — הדיוק יכול לחרוג ב-20–30%. אמת מול הערכים האמיתיים לפני שתסתמך."
+
+// אנגלית
+"Estimate only — accuracy may vary ±20–30%. Verify against actual values before relying on this."
+```
+
+**עיצוב:** רקע amber/warning (`systemYellow` ב-opacity 0.12), border amber, אייקון `info.circle`.
+
+---
+
+### 23.9 Confidence Badge
+
+| confidence | צבע | טקסט |
+|---|---|---|
+| `high` | ירוק (`systemGreen`) | "זיהוי גבוה" / "High confidence" |
+| `medium` | אפור (`secondaryLabel`) | "זיהוי בינוני" / "Medium confidence" |
+| `low` | אדום (`systemRed`) | "זיהוי נמוך — אמת ידנית" / "Low confidence — please verify" |
+
+ערך לא מוכר מהשרת → normalize ל-`medium` בצד הלקוח.
+
+---
+
+### 23.10 States של PhotoNutritionCaptureView
+
+```swift
+enum PhotoCaptureState {
+    case idle                    // כפתור "צלם אוכל" + מונה remaining
+    case analyzing               // spinner + תמונה thumbnail
+    case result(VisionResult)    // תוצאה + disclaimer + confidence + retry
+    case errorParse              // "לא זוהה" + קישור לידנית + retry
+    case errorQuota              // "מכסה נגמרה"
+    case errorNetwork            // "שירות לא זמין" + retry
+}
+
+struct VisionResult {
+    let identified:       String
+    let caloriesPer100g:  Int
+    let proteinPer100g:   Double
+    let fatPer100g:       Double?
+    let carbsPer100g:     Double?
+    let confidence:       Confidence
+    enum Confidence { case high, medium, low }
+}
+```
+
+---
+
+### 23.11 Privacy
+
+- התמונה **לא נשמרת** בשרת — נשלחת כ-base64 ונזרקת מיד לאחר הניתוח.
+- אין logging של תוכן התמונה.
+- ב-Info.plist: `NSCameraUsageDescription` + `NSPhotoLibraryUsageDescription` נדרשים.
+- אין שליחה לשירות צד שלישי אחר מלבד Groq (דרך ה-Edge Function שלנו).
+
+---
+
+### 23.12 אי-דיוק — הקשר ומערכות אחרות
+
+מודלי Vision עם תמונות אוכל סובלים מאי-דיוק מובנה:
+- גודל המנה אינו ידוע מהתמונה בלבד (צלחת גדולה vs. קטנה).
+- מזונות מורכבים (סלטים, תבשילים, מנות מסעדה) קשים לפירוק.
+- מראה לא מייצג את ההרכב הפנימי (שמן נסתר, צפיפות שונה).
+
+**השוואה לתעשייה:** MyFitnessPal, Lose It!, Calorie Mama — כולן מציגות אותן אזהרות ± 20–30% ודורשות אימות משתמש. הגישה שאימצנו (pre-fill + manual confirm) תואמת את best practice בתעשייה.
