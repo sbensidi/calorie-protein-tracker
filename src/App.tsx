@@ -147,12 +147,13 @@ export default function App() {
     if (lastBuild && lastBuild !== currentBuild) setSwUpdated(true)
   }, [])
 
-  // Auto-dismiss the update banner after 5 seconds
+  // Show toast only after auth loading is done — ToastContainer is only
+  // rendered in the authenticated view, not during the loading spinner.
   useEffect(() => {
-    if (!swUpdated) return
-    const timer = setTimeout(() => setSwUpdated(false), 5000)
-    return () => clearTimeout(timer)
-  }, [swUpdated])
+    if (!swUpdated || authLoading) return
+    showToast(t(lang, 'toastAppUpdated'), 'success')
+    setSwUpdated(false)
+  }, [swUpdated, authLoading]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // I9: show toast when session expired unexpectedly
   useEffect(() => {
@@ -340,33 +341,6 @@ export default function App() {
           )}
         </div>
       </div>
-
-      {/* ── SW update banner (shown once after auto-reload on update) ── */}
-      {swUpdated && (
-        <div role="status" style={{
-          background: 'var(--blue-fill)',
-          borderBottom: '1px solid var(--blue-border)',
-          padding: '6px 16px',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8,
-          fontSize: 12, fontWeight: 600, color: 'var(--blue-hi)',
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span className="icon icon-sm">check_circle</span>
-            <span>{t(lang, 'toastAppUpdated')}</span>
-          </div>
-          <button
-            onClick={() => setSwUpdated(false)}
-            aria-label="dismiss"
-            style={{
-              background: 'none', border: 'none', padding: 4,
-              color: 'var(--blue-hi)', cursor: 'pointer',
-              display: 'flex', alignItems: 'center',
-            }}
-          >
-            <span className="icon icon-sm">close</span>
-          </button>
-        </div>
-      )}
 
       {/* ── I8: offline indicator ────────────────────────────────── */}
       {!connected && (
