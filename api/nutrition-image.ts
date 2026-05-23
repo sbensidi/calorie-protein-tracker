@@ -24,7 +24,7 @@ function checkRateLimit(ip: string): boolean {
 }
 
 const GROQ_ENDPOINT = 'https://api.groq.com/openai/v1/chat/completions'
-const GROQ_VISION_MODEL = 'llama-3.2-11b-vision-preview'
+const GROQ_VISION_MODEL = 'meta-llama/llama-4-scout-17b-16e-instruct'
 
 // Max base64 payload: ~2MB decoded ≈ 2.7MB base64
 const MAX_B64_LEN = 2_800_000

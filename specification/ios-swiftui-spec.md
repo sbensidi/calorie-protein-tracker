@@ -2761,7 +2761,7 @@ struct AppConfig {
 | Auth | JWT Supabase (חובה) |
 | Rate limit | 5 קריאות / 24 שעות / IP (in-memory) |
 | Payload max | ~2MB base64 |
-| Model | `llama-3.2-11b-vision-preview` (Groq) |
+| Model | `meta-llama/llama-4-scout-17b-16e-instruct` (Groq) |
 | Max tokens | 120 |
 | Temperature | 0 |
 
