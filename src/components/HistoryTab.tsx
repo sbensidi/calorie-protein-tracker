@@ -344,9 +344,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
   const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate()
   const calCells    = [...Array<null>(firstDow).fill(null), ...Array.from({ length: daysInMonth }, (_, i) => i + 1)]
 
-  const weekDayLabels = lang === 'he'
-    ? ['א׳', 'ב׳', 'ג׳', 'ד׳', 'ה׳', 'ו׳', 'ש׳']
-    : ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa']
+  const weekDayLabels = lang === 'he' ? HE_WEEK_SHORT : EN_WEEK_SHORT
 
   // ── Status filter bar (shared) ─────────────────────────────────────
   const filterChips: Array<{ key: StatusFilter; icon: string }> = [
@@ -2178,8 +2176,8 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                     {[
                       { key: 'protein' as const, label: t(lang, 'protein'), color: 'var(--accent-hi)', pct: macro.proteinPct },
                       ...(macro.hasFatCarbs ? [
-                        { key: 'fat' as const, label: t(lang, 'fat'), color: 'var(--amber-hi)', pct: macro.fatPct },
-                        { key: 'carbs' as const, label: t(lang, 'carbs'), color: 'var(--green-hi)', pct: macro.carbsPct },
+                        { key: 'fat' as const, label: t(lang, 'fat'), color: 'var(--warning)', pct: macro.fatPct },
+                        { key: 'carbs' as const, label: t(lang, 'carbs'), color: 'var(--positive-hi)', pct: macro.carbsPct },
                       ] : []),
                     ].map(row => (
                       <div key={row.key}>

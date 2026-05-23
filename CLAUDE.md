@@ -153,9 +153,9 @@ color: '#fff'
 background: 'rgba(0,0,0,0.5)'
 
 // ✅ tokens — theme-aware
-border: 'var(--blue-border)'
+border: 'var(--accent-border)'
 color: 'var(--on-color)'       // לבן על רקע צבעוני (כפתורים, badges)
-background: 'var(--backdrop)'
+background: 'var(--modal-backdrop)'
 ```
 
 אם token מתאים לא קיים — מוסיפים ל-`index.css` ולא כותבים inline.
@@ -171,7 +171,16 @@ background: 'var(--backdrop)'
 | `--*-border-hi` | border active/focus |
 | `--*-hi` | טקסט/אייקון צבעוני |
 
-קיים ל: `--blue-*`, `--green-*`, `--red-*`, `--amber-*`, `--cyan-*`, `--indigo-*`
+הסקאלות המוגדרות ב-`index.css` (שמות אמיתיים — לא לבלבל עם שמות אחרים):
+| prefix | צבע | שימוש |
+|---|---|---|
+| `--accent-*` | כחול | CTA, ניווט ראשי, links |
+| `--positive-*` | ירוק | הצלחה, חלבון, חיובי |
+| `--danger-*` | אדום | מחיקה, שגיאה, חריגה |
+| `--warning-*` | ענבר | אזהרה, שומן, זהירות |
+| `--cyan-hi/tint/fill` | ציאן | נוזלים בלבד |
+
+⚠️ אין `--blue-*`, `--green-*`, `--red-*`, `--amber-*`, `--indigo-*` — אלו שמות שגויים שלא קיימים ב-CSS.
 
 ### 3.3 Z-index — scale קבוע
 ```

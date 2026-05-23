@@ -74,7 +74,7 @@ function GreetingPanel({ greeting, lang, onDismiss }: {
     return (
       <div style={{
         marginBottom: 12, padding: '12px 14px',
-        background: 'var(--bg-card)', border: '1px solid var(--amber-border)',
+        background: 'var(--bg-card)', border: '1px solid var(--warning-border)',
         borderRadius: 12,
       }}>
         <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', margin: '0 0 4px' }}>
@@ -976,8 +976,8 @@ export function TodayTab({
 
           {/* Optional: log a portion today */}
           {parseFloat(composeWeight) > 0 && (
-            <div style={{ background: 'var(--blue-fill)', border: '1px solid var(--blue-border)', borderRadius: 10, padding: '10px 12px' }}>
-              <p style={{ margin: '0 0 8px', fontSize: 12, fontWeight: 700, color: 'var(--blue-hi)' }}>
+            <div style={{ background: 'var(--accent-fill)', border: '1px solid var(--accent-border)', borderRadius: 10, padding: '10px 12px' }}>
+              <p style={{ margin: '0 0 8px', fontSize: 12, fontWeight: 700, color: 'var(--accent-hi)' }}>
                 {t(lang, 'logPortionOptional')}
               </p>
               <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>

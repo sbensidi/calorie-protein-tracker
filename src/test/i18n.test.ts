@@ -26,7 +26,7 @@ describe('t()', () => {
   it('has no empty string values', () => {
     // These keys are intentionally empty: they form half of a prefix+suffix pair
     // that shifts side based on language direction (he prefix = en suffix and vice versa)
-    const allowedEmpty = new Set(['overBySuffix', 'remainingSuffix', 'overByPrefix', 'remainingPrefix', 'typeGroupPrefix'])
+    const allowedEmpty = new Set(['overBySuffix', 'remainingSuffix', 'overByPrefix', 'remainingPrefix', 'typeGroupPrefix', 'showMoreSuffix'])
     for (const [key, val] of Object.entries(translations.he)) {
       if (allowedEmpty.has(key)) continue
       expect(val, `he.${key} is empty`).not.toBe('')

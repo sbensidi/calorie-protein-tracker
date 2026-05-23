@@ -869,7 +869,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
                 position: 'absolute', insetInlineEnd: 10, top: '50%', transform: 'translateY(-50%)',
                 fontSize: 11, fontWeight: 600, color: 'var(--text-3)', pointerEvents: 'none',
               }}>
-                {lang === 'he' ? 'ג׳' : 'g'}
+                {t(lang, 'proteinUnit')}
               </span>
             </div>
             <select
@@ -1055,7 +1055,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
           {calculating && (
             <span className="icon icon-sm" style={{ animation: 'spin 0.7s linear infinite', display: 'inline-block' }}>progress_activity</span>
           )}
-          {calculating ? (lang === 'he' ? 'מחשב...' : 'Calculating...') : t(lang, 'calculate')}
+          {calculating ? t(lang, 'calculating') : t(lang, 'calculate')}
         </button>
 
       </div>
@@ -1068,7 +1068,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
             background: 'var(--bg-card)', border: '1px solid var(--border)',
             borderRadius: 8, padding: '3px 8px',
           }}>
-            {lang === 'he' ? `מנה ≈ ${servingGrams}ג׳` : `serving ≈ ${servingGrams}g`}
+            {`${t(lang, 'serving')} ≈ ${servingGrams}${t(lang, 'proteinUnit')}`}
             {matchedLib?.item.countable && matchedLib.item.serving_size != null && (
               <span style={{ marginInlineStart: 4, color: 'var(--accent-hi)', opacity: 0.8 }}>
                 <span className="icon" style={{ fontSize: 10, verticalAlign: 'middle' }}>library_books</span>
@@ -1129,14 +1129,14 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
                   <>
                     <div style={{ display: 'flex', alignItems: 'baseline', gap: 5, overflow: 'hidden' }}>
                       <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>{entry.name}</span>
-                      <span style={{ fontSize: 10, color: 'var(--composed)', whiteSpace: 'nowrap', flexShrink: 0 }}>{lang === 'he' ? 'מנה מורכבת' : 'dish'}</span>
+                      <span style={{ fontSize: 10, color: 'var(--composed)', whiteSpace: 'nowrap', flexShrink: 0 }}>{t(lang, 'composedDishChip')}</span>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginTop: 2 }}>
                       <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--accent-hi)', display: 'inline-flex', alignItems: 'baseline', gap: 2 }}>
                         {entry.calories}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.8 }}>{t(lang, 'caloriesUnit')}</span>
                       </span>
                       <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--positive-hi)', display: 'inline-flex', alignItems: 'baseline', gap: 2 }}>
-                        {entry.protein}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.8 }}>{lang === 'he' ? 'ג׳ חלבון' : 'g protein'}</span>
+                        {entry.protein}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.8 }}>{t(lang, 'gProteinLabel')}</span>
                       </span>
                     </div>
                   </>
@@ -1179,14 +1179,14 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
                       <>
                         <div style={{ display: 'flex', alignItems: 'baseline', gap: 5, overflow: 'hidden' }}>
                           <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>{name}</span>
-                          <span style={{ fontSize: 10, color: 'var(--library-hi)', whiteSpace: 'nowrap', flexShrink: 0 }}>{lang === 'he' ? 'ספרייה · קרוב' : 'library · close'}</span>
+                          <span style={{ fontSize: 10, color: 'var(--library-hi)', whiteSpace: 'nowrap', flexShrink: 0 }}>{t(lang, 'libraryCloseBadge')}</span>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginTop: 2 }}>
                           <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--accent-hi)', display: 'inline-flex', alignItems: 'baseline', gap: 2 }}>
                             {cal}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.8 }}>{t(lang, 'caloriesUnit')}</span>
                           </span>
                           <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--positive-hi)', display: 'inline-flex', alignItems: 'baseline', gap: 2 }}>
-                            {prot}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.8 }}>{lang === 'he' ? 'ג׳ חלבון' : 'g protein'}</span>
+                            {prot}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.8 }}>{t(lang, 'gProteinLabel')}</span>
                           </span>
                         </div>
                       </>
@@ -1197,7 +1197,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
                         <span style={{
                           fontSize: 9, fontWeight: 700, color: 'var(--library-hi)',
                           background: 'var(--library-chip)', borderRadius: 4, padding: '1px 5px', flexShrink: 0,
-                        }}>{lang === 'he' ? 'קרוב' : 'close'}</span>
+                        }}>{t(lang, 'libraryCloseChip')}</span>
                         <span style={{ fontSize: 11, color: 'var(--accent-hi)', flexShrink: 0, fontWeight: 600 }}>{cal}</span>
                         <span style={{ fontSize: 11, color: 'var(--positive-hi)', flexShrink: 0, fontWeight: 600 }}>{prot}g</span>
                       </div>
@@ -1210,7 +1210,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
                 const itemIsUnit  = item.grams < 0
                 const itemIsFluid = item.fluid_ml != null && item.fluid_ml > 0
                 const amtDisplay  = itemIsUnit  ? `${Math.abs(item.grams)} ${t(lang, 'unitLabel')}`
-                  : itemIsFluid ? (item.fluid_ml! >= 1000 ? `${(item.fluid_ml! / 1000).toFixed(1)}${lang === 'he' ? 'ל׳' : 'L'}` : `${Math.round(item.fluid_ml!)}ml`)
+                  : itemIsFluid ? (item.fluid_ml! >= 1000 ? `${(item.fluid_ml! / 1000).toFixed(1)}${t(lang, 'litersUnit')}` : `${Math.round(item.fluid_ml!)}ml`)
                   : `${item.grams}g`
                 return (
                   <button
@@ -1240,7 +1240,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
                             {Math.round(item.calories)}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.8 }}>{t(lang, 'caloriesUnit')}</span>
                           </span>
                           <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--positive-hi)', display: 'inline-flex', alignItems: 'baseline', gap: 2 }}>
-                            {Math.round(item.protein * 10) / 10}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.8 }}>{lang === 'he' ? 'ג׳ חלבון' : 'g protein'}</span>
+                            {Math.round(item.protein * 10) / 10}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.8 }}>{t(lang, 'gProteinLabel')}</span>
                           </span>
                         </div>
                       </>
@@ -1267,10 +1267,10 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
                 const name = lang === 'he' ? item.name_he : item.name_en
                 const amtDisplay = unit === 'g' ? `${servingBase}g`
                   : unit === 'ml' ? `${servingBase}ml`
-                  : unit === 'cup' ? `${servingBase} ${lang === 'he' ? 'כוס' : 'cup'}`
-                  : unit === 'fl_oz' ? `${servingBase} fl oz`
-                  : unit === 'tbsp' ? `${servingBase} ${lang === 'he' ? 'כף' : 'tbsp'}`
-                  : unit === 'tsp'  ? `${servingBase} ${lang === 'he' ? 'כפית' : 'tsp'}`
+                  : unit === 'cup'   ? `${servingBase} ${t(lang, 'unitOptCup')}`
+                  : unit === 'fl_oz' ? `${servingBase} ${t(lang, 'unitOptFlOz')}`
+                  : unit === 'tbsp'  ? `${servingBase} ${t(lang, 'unitOptTbsp')}`
+                  : unit === 'tsp'   ? `${servingBase} ${t(lang, 'unitOptTsp')}`
                   : `${servingBase}${unit}`
                 return (
                   <button
@@ -1291,14 +1291,14 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
                         <div style={{ display: 'flex', alignItems: 'baseline', gap: 5, overflow: 'hidden' }}>
                           <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>{name}</span>
                           <span style={{ fontSize: 11, color: 'var(--text-3)', whiteSpace: 'nowrap', flexShrink: 0 }}>{amtDisplay}</span>
-                          <span style={{ fontSize: 10, color: 'var(--warning)', whiteSpace: 'nowrap', flexShrink: 0 }}>{lang === 'he' ? 'ספרייה' : 'library'}</span>
+                          <span style={{ fontSize: 10, color: 'var(--warning)', whiteSpace: 'nowrap', flexShrink: 0 }}>{t(lang, 'libraryChip')}</span>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginTop: 2 }}>
                           <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--accent-hi)', display: 'inline-flex', alignItems: 'baseline', gap: 2 }}>
                             {cal}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.8 }}>{t(lang, 'caloriesUnit')}</span>
                           </span>
                           <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--positive-hi)', display: 'inline-flex', alignItems: 'baseline', gap: 2 }}>
-                            {prot}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.8 }}>{lang === 'he' ? 'ג׳ חלבון' : 'g protein'}</span>
+                            {prot}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.8 }}>{t(lang, 'gProteinLabel')}</span>
                           </span>
                         </div>
                       </>
@@ -1373,7 +1373,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
             {/* Protein */}
             <div>
               <label style={{ fontSize: 11, color: 'var(--positive-hi)', fontWeight: 600, display: 'block', marginBottom: 4 }}>
-                {lang === 'he' ? 'חלבון (ג׳)' : 'Protein (g)'}
+                {t(lang, 'proteinGramsLabel')}
               </label>
               <div style={{ position: 'relative' }}>
                 <input
@@ -1447,7 +1447,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
                 background: 'var(--bg-card)', border: '1px solid var(--border)',
                 borderRadius: 8, padding: '3px 8px',
               }}>
-                {lang === 'he' ? `מנה ≈ ${servingGrams}ג׳` : `serving ≈ ${servingGrams}g`}
+                {`${t(lang, 'serving')} ≈ ${servingGrams}${t(lang, 'proteinUnit')}`}
               </span>
             </div>
           )}
@@ -1504,9 +1504,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
                 textDecoration: fluidExcluded ? 'line-through' : 'none',
                 opacity: fluidExcluded ? 0.7 : 1,
               }}>
-                {lang === 'he'
-                  ? `${Math.round(detectedFluidMl!)} מ״ל יתווספו ליעד הנוזלים`
-                  : `${Math.round(detectedFluidMl!)} ml will count toward fluid goal`}
+                {`${Math.round(detectedFluidMl!)}${t(lang, 'fluidGoalSuffix')}`}
               </span>
               {/* Toggle */}
               <button
@@ -1530,7 +1528,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
           {isVolumeUnit && !isFluid && detectedFluidMl !== null && detectedFluidMl >= fluidThresholdMl && (
             <p style={{ fontSize: 11, color: 'var(--text-3)', margin: '10px 0', display: 'flex', alignItems: 'center', gap: 5 }}>
               <span className="icon" style={{ fontSize: 14, color: 'var(--cyan-hi)' }}>water_drop</span>
-              {lang === 'he' ? 'לא יספר לנוזלים — קלוריות > 0' : 'Won\'t count as fluid — calories > 0'}
+              {t(lang, 'fluidExcludeHint')}
             </p>
           )}
 

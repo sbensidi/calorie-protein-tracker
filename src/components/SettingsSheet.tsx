@@ -270,7 +270,7 @@ function MainScreen({ lang, connected, theme, styleMode, showGreeting, onProfile
                 {t(lang, 'personalProfile')}
               </p>
               <p style={{ fontSize: 11, color: 'var(--text-3)', margin: '2px 0 0' }}>
-                {lang === 'he' ? 'גיל, גובה, משקל, פעילות, BMR, BMI' : 'Age, height, weight, activity, BMR, BMI'}
+                {t(lang, 'settingsPersonalSubtitle')}
               </p>
             </div>
             <span className="icon icon-sm" style={{ color: 'var(--text-3)', flexShrink: 0 }}>{chevron}</span>
@@ -284,7 +284,7 @@ function MainScreen({ lang, connected, theme, styleMode, showGreeting, onProfile
                 {t(lang, 'dailyGoalsLabel')}
               </p>
               <p style={{ fontSize: 11, color: 'var(--text-3)', margin: '2px 0 0' }}>
-                {lang === 'he' ? 'קלוריות, חלבון, התאמות שבועיות' : 'Calories, protein, weekly adjustments'}
+                {t(lang, 'settingsGoalsSubtitle')}
               </p>
             </div>
             <span className="icon icon-sm" style={{ color: 'var(--text-3)', flexShrink: 0 }}>{chevron}</span>
@@ -298,7 +298,7 @@ function MainScreen({ lang, connected, theme, styleMode, showGreeting, onProfile
                 {t(lang, 'foodHistory')}
               </p>
               <p style={{ fontSize: 11, color: 'var(--text-3)', margin: '2px 0 0' }}>
-                {lang === 'he' ? 'עריכה ומחיקת מזונות מההיסטוריה' : 'Edit or delete saved food items'}
+                {t(lang, 'settingsFoodHistorySubtitle')}
               </p>
             </div>
             <span className="icon icon-sm" style={{ color: 'var(--text-3)', flexShrink: 0 }}>{chevron}</span>
@@ -312,7 +312,7 @@ function MainScreen({ lang, connected, theme, styleMode, showGreeting, onProfile
                 {t(lang, 'foodLibrary')}
               </p>
               <p style={{ fontSize: 11, color: 'var(--text-3)', margin: '2px 0 0' }}>
-                {lang === 'he' ? 'עיון ב-150+ מזונות מובנים' : 'Browse 150+ built-in foods'}
+                {t(lang, 'settingsFoodLibrarySubtitle')}
               </p>
             </div>
             <span className="icon icon-sm" style={{ color: 'var(--text-3)', flexShrink: 0 }}>{chevron}</span>
@@ -326,7 +326,7 @@ function MainScreen({ lang, connected, theme, styleMode, showGreeting, onProfile
                 {t(lang, 'preferences')}
               </p>
               <p style={{ fontSize: 11, color: 'var(--text-3)', margin: '2px 0 0' }}>
-                {lang === 'he' ? 'יחידות מידה, זיהוי נוזלים' : 'Units, fluid detection'}
+                {t(lang, 'settingsPrefsSubtitle')}
               </p>
             </div>
             <span className="icon icon-sm" style={{ color: 'var(--text-3)', flexShrink: 0 }}>{chevron}</span>
@@ -351,7 +351,7 @@ function MainScreen({ lang, connected, theme, styleMode, showGreeting, onProfile
                 cursor: 'pointer', fontFamily: 'inherit',
               }}
             >
-              {lang === 'he' ? 'EN' : 'עב'}
+              {t(lang, 'switchToLangAbbr')}
             </button>
           </div>
 
@@ -731,7 +731,7 @@ function ProfileScreen({ lang, profile, onSave, showToast, weightLogEntries = []
           <div style={{ minWidth: 0 }}>
             <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-2)', margin: '0 0 2px' }}>BMR</p>
             <p style={{ fontSize: 10, color: 'var(--text-3)', margin: 0, lineHeight: 1.4 }}>
-              {lang === 'he' ? 'חילוף חומרים בסיסי — ללא פעילות' : 'Basal Metabolic Rate — at rest'}
+              {t(lang, 'bmrDescription')}
             </p>
           </div>
           <span key={metricsKey} className="metric-pulse" style={{ fontSize: 18, fontWeight: 800, color: 'var(--text)', flexShrink: 0, marginInlineStart: 10 }}>
@@ -743,7 +743,7 @@ function ProfileScreen({ lang, profile, onSave, showToast, weightLogEntries = []
           <div style={{ minWidth: 0 }}>
             <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-2)', margin: '0 0 2px' }}>BMI</p>
             <p style={{ fontSize: 10, color: 'var(--text-3)', margin: 0, lineHeight: 1.4 }}>
-              {lang === 'he' ? 'תת משקל < 18.5 | תקין 18.5–24.9 | עודף 25–29.9 | השמנה ≥ 30' : 'Under < 18.5 | Normal 18.5–24.9 | Over 25–29.9 | Obese ≥ 30'}
+              {t(lang, 'bmiScale')}
             </p>
           </div>
           <span key={metricsKey} className="metric-pulse" style={{ fontSize: 18, fontWeight: 800, color: bmiColor, flexShrink: 0, marginInlineStart: 10 }}>
@@ -754,16 +754,16 @@ function ProfileScreen({ lang, profile, onSave, showToast, weightLogEntries = []
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '11px 14px' }}>
           <div style={{ minWidth: 0 }}>
             <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-2)', margin: '0 0 2px' }}>
-              {lang === 'he' ? 'נוזלים מומלצים' : 'Recommended fluid'}
+              {t(lang, 'recommendedFluidLabel')}
             </p>
             <p style={{ fontSize: 10, color: 'var(--text-3)', margin: 0, lineHeight: 1.4 }}>
-              {lang === 'he' ? `35מ״ל × ${draft.weight}ק״ג` : `35 ml × ${draft.weight} kg`}
+              {`${t(lang, 'fluidFormulaPrefix')}${draft.weight}${t(lang, 'fluidFormulaSuffix')}`}
             </p>
           </div>
           <span key={metricsKey} className="metric-pulse" style={{ fontSize: 18, fontWeight: 800, color: 'var(--text)', flexShrink: 0, marginInlineStart: 10 }}>
             {suggestedFluidMl >= 1000 ? (suggestedFluidMl / 1000).toFixed(1) : suggestedFluidMl}{' '}
             <span style={{ fontSize: 10, fontWeight: 400 }}>
-              {suggestedFluidMl >= 1000 ? (lang === 'he' ? 'ל׳' : 'L') : 'ml'}
+              {suggestedFluidMl >= 1000 ? t(lang, 'litersUnit') : 'ml'}
             </span>
           </span>
         </div>
@@ -839,8 +839,8 @@ function ProfileScreen({ lang, profile, onSave, showToast, weightLogEntries = []
               >
                 <span className="icon icon-sm">{logExpanded ? 'expand_less' : 'expand_more'}</span>
                 {logExpanded
-                  ? (lang === 'he' ? 'הצג פחות' : 'Show less')
-                  : (lang === 'he' ? `הצג עוד ${weightLogEntries.length - 4}` : `Show ${weightLogEntries.length - 4} more`)}
+                  ? t(lang, 'showLess')
+                  : `${t(lang, 'showMorePrefix')}${weightLogEntries.length - 4}${t(lang, 'showMoreSuffix')}`}
               </button>
             )}
           </div>
@@ -1079,7 +1079,7 @@ function GoalsScreen({ lang, profile, goals, onSave, onSaveProfile, onSaveFluidG
         </div>
       </div>
       {projectedDate && (
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, background: 'var(--accent-fill)', border: '1px solid var(--blue-border)', borderRadius: 10, padding: '8px 12px', marginBottom: 14 }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, background: 'var(--accent-fill)', border: '1px solid var(--accent-border)', borderRadius: 10, padding: '8px 12px', marginBottom: 14 }}>
           <span style={{ fontSize: 16, flexShrink: 0 }}>🎯</span>
           <div>
             <p style={{ fontSize: 11, fontWeight: 600, color: 'var(--accent-hi)', margin: '0 0 1px' }}>{t(lang, 'projectedDateLabel')}</p>
@@ -1096,7 +1096,7 @@ function GoalsScreen({ lang, profile, goals, onSave, onSaveProfile, onSaveFluidG
         <p style={{ fontSize: 12, margin: 0 }}>
           <span style={{ fontWeight: 700, color: 'var(--text-2)' }}>TDEE: </span>
           <span style={{ fontWeight: 800, color: 'var(--accent-hi)' }}>{tdee.toLocaleString(lang === 'he' ? 'he-IL' : 'en-US')}</span>
-          <span style={{ color: 'var(--text-3)', marginInlineStart: 3 }}>{lang === 'he' ? 'קק״ל/יום' : 'kcal/day'}</span>
+          <span style={{ color: 'var(--text-3)', marginInlineStart: 3 }}>{t(lang, 'kcalPerDay')}</span>
         </p>
       </div>
 
@@ -1118,9 +1118,9 @@ function GoalsScreen({ lang, profile, goals, onSave, onSaveProfile, onSaveFluidG
             <div style={{ flex: 1, minWidth: 0 }}>
               <p style={{ fontSize: 11, margin: 0 }}>
                 <span style={{ fontWeight: 800, color: 'var(--accent-hi)' }}>{suggestedCal.toLocaleString(lang === 'he' ? 'he-IL' : 'en-US')}</span>
-                <span style={{ color: 'var(--text-3)', marginInlineStart: 3 }}>{lang === 'he' ? 'קק״ל' : 'kcal'}</span>
+                <span style={{ color: 'var(--text-3)', marginInlineStart: 3 }}>{t(lang, 'caloriesUnit')}</span>
               </p>
-              <p dir={lang === 'he' ? 'rtl' : 'ltr'} style={{ fontSize: 10, color: 'var(--text-3)', margin: '2px 0 0', lineHeight: 1.5 }}>
+              <p dir={dir(lang)} style={{ fontSize: 10, color: 'var(--text-3)', margin: '2px 0 0', lineHeight: 1.5 }}>
                 {lang === 'he'
                   ? draftGoalType === 'lose'
                     ? <>גרעון של 500 קק״ל/יום: <span dir="ltr">{tdee.toLocaleString(lang === 'he' ? 'he-IL' : 'en-US')} − 500 = {suggestedCal.toLocaleString(lang === 'he' ? 'he-IL' : 'en-US')}</span> קק״ל × 7 ≈ 0.5 ק״ג שומן/שבוע</>
@@ -1144,9 +1144,9 @@ function GoalsScreen({ lang, profile, goals, onSave, onSaveProfile, onSaveFluidG
             <div style={{ flex: 1, minWidth: 0 }}>
               <p style={{ fontSize: 11, margin: 0 }}>
                 <span style={{ fontWeight: 800, color: 'var(--positive-hi)' }}>{suggestedProt}</span>
-                <span style={{ color: 'var(--text-3)', marginInlineStart: 3 }}>{lang === 'he' ? 'ג׳ חלבון' : 'g protein'}</span>
+                <span style={{ color: 'var(--text-3)', marginInlineStart: 3 }}>{t(lang, 'gProteinLabel')}</span>
               </p>
-              <p dir={lang === 'he' ? 'rtl' : 'ltr'} style={{ fontSize: 10, color: 'var(--text-3)', margin: '2px 0 0', lineHeight: 1.5 }}>
+              <p dir={dir(lang)} style={{ fontSize: 10, color: 'var(--text-3)', margin: '2px 0 0', lineHeight: 1.5 }}>
                 {lang === 'he'
                   ? draftGoalType === 'lose'
                     ? <>שמירה מרבית על שריר בגרעון: <span dir="ltr">{suggestedProtRate} × {profile.weight} = {suggestedProt}g</span></>
@@ -1173,11 +1173,11 @@ function GoalsScreen({ lang, profile, goals, onSave, onSaveProfile, onSaveFluidG
                   {suggestedFluidMl >= 1000 ? (suggestedFluidMl / 1000).toFixed(1) : suggestedFluidMl}
                 </span>
                 <span style={{ color: 'var(--text-3)', marginInlineStart: 3 }}>
-                  {suggestedFluidMl >= 1000 ? (lang === 'he' ? 'ל׳ נוזלים' : 'L fluid') : 'ml'}
+                  {suggestedFluidMl >= 1000 ? t(lang, 'litersFluid') : 'ml'}
                 </span>
               </p>
-              <p dir={lang === 'he' ? 'rtl' : 'ltr'} style={{ fontSize: 10, color: 'var(--text-3)', margin: '2px 0 0', lineHeight: 1.5 }}>
-                {lang === 'he' ? `מינימום הידרציה יומי — 35 מ״ל × ${profile.weight} ק״ג` : `35 ml × ${profile.weight} kg — minimum daily hydration`}
+              <p dir={dir(lang)} style={{ fontSize: 10, color: 'var(--text-3)', margin: '2px 0 0', lineHeight: 1.5 }}>
+                {`${t(lang, 'hydrationFormulaPrefix')}${profile.weight}${t(lang, 'hydrationFormulaSuffix')}`}
               </p>
             </div>
           </div>
@@ -1248,7 +1248,7 @@ function GoalsScreen({ lang, profile, goals, onSave, onSaveProfile, onSaveFluidG
         </div>
         <div style={{ flex: 1 }}>
           <label style={{ ...labelStyle, color: 'var(--accent-hi)' }}>
-            {lang === 'he' ? 'נוזלים (מ״ל)' : 'Fluid (ml)'}
+            {t(lang, 'fluidMl')}
           </label>
           <div style={{ position: 'relative' }}>
             <input type="number" inputMode="numeric" className="inp"
@@ -1267,7 +1267,7 @@ function GoalsScreen({ lang, profile, goals, onSave, onSaveProfile, onSaveFluidG
             )}
           </div>
           <p style={{ fontSize: 10, color: 'var(--text-3)', margin: '3px 0 0' }}>
-            {lang === 'he' ? `מומלץ ${suggestedFluidMl}מ״ל` : `Suggested ${suggestedFluidMl}ml`}
+            {`${t(lang, 'suggestedFluidPrefix')}${suggestedFluidMl}${t(lang, 'unitOptMl')}`}
           </p>
         </div>
       </div>
@@ -1503,11 +1503,11 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
   }
   const handleDelete = (id: string, name: string) => {
     onDelete(id)
-    showToast(lang === 'he' ? `"${name}" נמחק` : `"${name}" deleted`, 'info')
+    showToast(`"${name}${t(lang, 'itemDeletedSuffix')}`, 'info')
   }
   const handleRemoveGroup = (id: string, name: string) => {
     onRemoveGroup(id)
-    showToast(lang === 'he' ? `"${name}" נמחק` : `"${name}" deleted`, 'info')
+    showToast(`"${name}${t(lang, 'itemDeletedSuffix')}`, 'info')
   }
 
   const inputSm: React.CSSProperties = { height: 42, fontSize: 16, padding: '0 8px', borderRadius: 8 }
@@ -1581,12 +1581,12 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
         <>
           {filter === 'all' && history.length > 0 && beverageHistory.length < history.length && (
             <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '4px 0 8px' }}>
-              {lang === 'he' ? 'מזונות' : 'Foods'}
+              {t(lang, 'foods')}
             </p>
           )}
           {filter === 'beverage' && beverageHistory.length > 0 && (
             <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--cyan-hi)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '4px 0 8px' }}>
-              {lang === 'he' ? 'שתייה' : 'Drinks'}
+              {t(lang, 'drinks')}
             </p>
           )}
           {historyGroups.length === 0 ? (
@@ -1608,12 +1608,10 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
                     ? [String(Math.abs(item.grams)), t(lang, 'unitLabel')]
                     : item.fluid_ml != null && item.fluid_ml > 0
                       ? item.fluid_ml >= 1000
-                        ? [(item.fluid_ml / 1000).toFixed(1), lang === 'he' ? 'ל׳' : 'L']
-                        : [String(Math.round(item.fluid_ml)), lang === 'he' ? 'מ"ל' : 'ml']
-                      : [String(item.grams), lang === 'he' ? 'ג׳' : 'g']
-                  const usesLabel = lang === 'he'
-                    ? (item.use_count === 1 ? 'שימוש' : 'שימושים')
-                    : (item.use_count === 1 ? 'use' : 'uses')
+                        ? [(item.fluid_ml / 1000).toFixed(1), t(lang, 'litersUnit')]
+                        : [String(Math.round(item.fluid_ml)), t(lang, 'unitOptMl')]
+                      : [String(item.grams), t(lang, 'proteinUnit')]
+                  const usesLabel = item.use_count === 1 ? t(lang, 'useSingular') : t(lang, 'uses')
                   const isFluid = item.fluid_ml != null && item.fluid_ml > 0
                   return (
                     <div
@@ -1646,7 +1644,7 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
                                   {Math.round(item.calories)}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.8 }}>{t(lang, 'caloriesUnit')}</span>
                                 </span>
                                 <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--positive-hi)', display: 'inline-flex', alignItems: 'baseline', gap: 2 }}>
-                                  {Math.round(item.protein * 10) / 10}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.8 }}>{lang === 'he' ? 'ג׳ חלבון' : 'g protein'}</span>
+                                  {Math.round(item.protein * 10) / 10}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.8 }}>{t(lang, 'gProteinLabel')}</span>
                                 </span>
                               </div>
                             </div>
@@ -1663,7 +1661,7 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
                             {!inGroup && (
                               <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</p>
                             )}
-                            <div style={{ display: 'flex', flexDirection: 'row', direction: lang === 'he' ? 'rtl' : 'ltr', gap: 5, alignItems: 'baseline', margin: inGroup ? 0 : '2px 0 0', fontSize: 11, color: 'var(--text-3)' }}>
+                            <div style={{ display: 'flex', flexDirection: 'row', direction: dir(lang), gap: 5, alignItems: 'baseline', margin: inGroup ? 0 : '2px 0 0', fontSize: 11, color: 'var(--text-3)' }}>
                               <span style={{ display: 'inline-flex', gap: 4, alignItems: 'baseline', whiteSpace: 'nowrap' }}>
                                 <span>{amtNum}</span><span style={{ fontSize: 10 }}>{amtUnit}</span>
                               </span>
@@ -1693,7 +1691,7 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
                         <div style={{ padding: 10, display: 'flex', flexDirection: 'column', gap: 6 }}>
                           <div style={{ position: 'relative' }}>
                             <input className="inp" value={editDraft.name} onChange={e => setEditDraft(d => ({ ...d, name: e.target.value }))}
-                              placeholder={lang === 'he' ? 'שם' : 'Name'} style={{ ...inputSm, paddingInlineEnd: editDraft.name ? 28 : 8 }} dir={dir(lang)} />
+                              placeholder={t(lang, 'namePlaceholder')} style={{ ...inputSm, paddingInlineEnd: editDraft.name ? 28 : 8 }} dir={dir(lang)} />
                             {editDraft.name && (
                               <button onMouseDown={e => { e.preventDefault(); setEditDraft(d => ({ ...d, name: '' })) }} tabIndex={-1}
                                 style={{ position: 'absolute', insetInlineEnd: 0, top: 0, bottom: 0, width: 28, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -1704,7 +1702,7 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
                           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 6 }}>
                             <div>
                               <label style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-3)', display: 'block', marginBottom: 3 }}>
-                                {lang === 'he' ? 'כמות' : 'Amount'}
+                                {t(lang, 'amountLabel')}
                               </label>
                               <div style={{ position: 'relative' }}>
                                 <input className="inp" type="number" inputMode="decimal" value={editDraft.grams}
@@ -1721,7 +1719,7 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
                             </div>
                             <div>
                               <label style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-3)', display: 'block', marginBottom: 3 }}>
-                                {lang === 'he' ? 'יחידה' : 'Unit'}
+                                {t(lang, 'unitHeader')}
                               </label>
                               <select className="inp" value={editUnit} onChange={e => handleUnitChange(e.target.value as UnitId | 'pcs')}
                                 style={{ ...inputSm, width: '100%' }}>
@@ -1732,13 +1730,13 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
                                 <option value="tbsp">{lang === 'he' ? UNITS.tbsp.abbr_he : 'tbsp'}</option>
                                 <option value="tsp">{lang === 'he' ? UNITS.tsp.abbr_he : 'tsp'}</option>
                                 <option value="fl_oz">{lang === 'he' ? UNITS.fl_oz.abbr_he : 'fl oz'}</option>
-                                <option value="pcs">{lang === 'he' ? 'מנה' : 'serving'}</option>
+                                <option value="pcs">{t(lang, 'serving')}</option>
                               </select>
                             </div>
                             <div>
                               <label style={{ fontSize: 10, fontWeight: 600, color: 'var(--accent-hi)', display: 'flex', alignItems: 'center', gap: 3, marginBottom: 3 }}>
-                                {lang === 'he' ? `קלוריות (${t(lang, 'caloriesUnit')})` : `Calories (${t(lang, 'caloriesUnit')})`}
-                                <span className="icon" style={{ fontSize: 10, opacity: 0.6 }} title={lang === 'he' ? 'מחושב אוטומטית לפי גרם' : 'Auto-scaled from grams'}>calculate</span>
+                                {`${t(lang, 'calories')} (${t(lang, 'caloriesUnit')})`}
+                                <span className="icon" style={{ fontSize: 10, opacity: 0.6 }} title={t(lang, 'autoScaledHint')}>calculate</span>
                               </label>
                               <div style={{ position: 'relative' }}>
                                 <input className="inp" type="number" inputMode="decimal" value={editDraft.calories}
@@ -1755,8 +1753,8 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
                             </div>
                             <div>
                               <label style={{ fontSize: 10, fontWeight: 600, color: 'var(--positive-hi)', display: 'flex', alignItems: 'center', gap: 3, marginBottom: 3 }}>
-                                {lang === 'he' ? `חלבון (${t(lang, 'proteinUnit')})` : `Protein (${t(lang, 'proteinUnit')})`}
-                                <span className="icon" style={{ fontSize: 10, opacity: 0.6 }} title={lang === 'he' ? 'מחושב אוטומטית לפי גרם' : 'Auto-scaled from grams'}>calculate</span>
+                                {`${t(lang, 'protein')} (${t(lang, 'proteinUnit')})`}
+                                <span className="icon" style={{ fontSize: 10, opacity: 0.6 }} title={t(lang, 'autoScaledHint')}>calculate</span>
                               </label>
                               <div style={{ position: 'relative' }}>
                                 <input className="inp" type="number" inputMode="decimal" value={editDraft.protein}
@@ -1777,7 +1775,7 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
                               {t(lang, 'cancel')}
                             </button>
                             <button onClick={saveEdit} className="btn-primary" style={{ flex: 1, height: 34, fontSize: 12, borderRadius: 8 }}>
-                              {lang === 'he' ? 'שמור' : 'Save'}
+                              {t(lang, 'save')}
                             </button>
                           </div>
                         </div>
@@ -1811,15 +1809,15 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
                           <>
                             <div style={{ display: 'flex', alignItems: 'baseline', gap: 5, overflow: 'hidden' }}>
                               <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>{groupItems[0].name}</span>
-                              <span style={{ fontSize: 10, color: 'var(--text-3)', whiteSpace: 'nowrap', flexShrink: 0 }}>{groupItems.length} {lang === 'he' ? 'גרסאות' : 'variants'}</span>
+                              <span style={{ fontSize: 10, color: 'var(--text-3)', whiteSpace: 'nowrap', flexShrink: 0 }}>{groupItems.length} {t(lang, 'variants')}</span>
                             </div>
-                            <span style={{ fontSize: 10, color: 'var(--text-3)' }}>{lang === 'he' ? `${totalUses} שימ׳` : `${totalUses} uses`}</span>
+                            <span style={{ fontSize: 10, color: 'var(--text-3)' }}>{totalUses} {t(lang, 'usesAbbr')}</span>
                           </>
                         ) : (
                           <>
                             <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{groupItems[0].name}</p>
                             <p style={{ fontSize: 11, color: 'var(--text-3)', margin: '2px 0 0' }}>
-                              {groupItems.length} {lang === 'he' ? 'גרסאות' : 'variants'} · {lang === 'he' ? `${totalUses} שימ׳` : `${totalUses} uses`}
+                              {groupItems.length} {t(lang, 'variants')} · {totalUses} {t(lang, 'usesAbbr')}
                             </p>
                           </>
                         )}
@@ -1851,7 +1849,7 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
         <>
           {filter === 'all' && (
             <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '12px 0 8px' }}>
-              {lang === 'he' ? 'מנות' : 'Dishes'}
+              {t(lang, 'dishesHeader')}
             </p>
           )}
           {filteredGroups.length === 0 ? (
@@ -1886,21 +1884,21 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ display: 'flex', alignItems: 'baseline', gap: 5, overflow: 'hidden' }}>
                               <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>{group.name}</span>
-                              <span style={{ fontSize: 10, color: 'var(--composed)', whiteSpace: 'nowrap', flexShrink: 0 }}>{groupMeals.length} {lang === 'he' ? 'מרכיבים' : 'items'}</span>
+                              <span style={{ fontSize: 10, color: 'var(--composed)', whiteSpace: 'nowrap', flexShrink: 0 }}>{groupMeals.length} {t(lang, 'ingredientsUnit')}</span>
                             </div>
                             <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginTop: 2 }}>
                               <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--accent-hi)', display: 'inline-flex', alignItems: 'baseline', gap: 2 }}>
                                 {totalCal}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.8 }}>{t(lang, 'caloriesUnit')}</span>
                               </span>
                               <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--positive-hi)', display: 'inline-flex', alignItems: 'baseline', gap: 2 }}>
-                                {totalProt}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.8 }}>{lang === 'he' ? 'ג׳ חלבון' : 'g protein'}</span>
+                                {totalProt}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.8 }}>{t(lang, 'gProteinLabel')}</span>
                               </span>
                             </div>
                           </div>
                         ) : (
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{group.name}</p>
-                          <div style={{ display: 'flex', flexDirection: 'row', direction: lang === 'he' ? 'rtl' : 'ltr', gap: 5, alignItems: 'baseline', margin: '2px 0 0', fontSize: 11, color: 'var(--text-3)' }}>
+                          <div style={{ display: 'flex', flexDirection: 'row', direction: dir(lang), gap: 5, alignItems: 'baseline', margin: '2px 0 0', fontSize: 11, color: 'var(--text-3)' }}>
                             <span style={{ display: 'inline-flex', gap: 4, alignItems: 'baseline', whiteSpace: 'nowrap' }}>
                               <span style={{ color: 'var(--accent-hi)', fontWeight: 600 }}>{totalCal}</span><span style={{ fontSize: 10 }}>{t(lang, 'caloriesUnit')}</span>
                             </span>
@@ -1910,7 +1908,7 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
                             </span>
                             <span style={{ color: 'var(--border)' }}>·</span>
                             <span style={{ display: 'inline-flex', gap: 4, alignItems: 'baseline', whiteSpace: 'nowrap' }}>
-                              <span>{groupMeals.length}</span><span style={{ fontSize: 10 }}>{lang === 'he' ? 'מרכיבים' : 'items'}</span>
+                              <span>{groupMeals.length}</span><span style={{ fontSize: 10 }}>{t(lang, 'ingredientsUnit')}</span>
                             </span>
                           </div>
                         </div>
@@ -1961,7 +1959,7 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
       {filter === 'all' && q && historyGroups.length === 0 && filteredGroups.length === 0 && (
         <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-3)' }}>
           <span className="icon" style={{ fontSize: 28, display: 'block', marginBottom: 8 }}>search_off</span>
-          <p style={{ fontSize: 13, margin: 0 }}>{lang === 'he' ? 'לא נמצאו תוצאות' : 'No results'}</p>
+          <p style={{ fontSize: 13, margin: 0 }}>{t(lang, 'noResults')}</p>
         </div>
       )}
 
@@ -2043,7 +2041,7 @@ function LibraryScreen({ lang }: { lang: Lang }) {
             {t(lang, 'foodLibrary')}
           </h2>
           <span style={{ fontSize: 11, color: 'var(--text-3)' }}>
-            {library.length} {lang === 'he' ? 'פריטים' : 'items'}
+            {library.length} {t(lang, 'items')}
           </span>
         </div>
 
@@ -2053,7 +2051,7 @@ function LibraryScreen({ lang }: { lang: Lang }) {
           <input
             className="inp"
             type="text"
-            placeholder={lang === 'he' ? 'חיפוש מזון...' : 'Search food...'}
+            placeholder={t(lang, 'searchFood')}
             value={search}
             onChange={e => setSearch(e.target.value)}
             style={{ paddingInlineStart: 34, paddingInlineEnd: search ? 32 : 12 }}
@@ -2078,7 +2076,7 @@ function LibraryScreen({ lang }: { lang: Lang }) {
             onScroll={e => updateChipScroll(e.currentTarget)}
             style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 10, scrollbarWidth: 'none' }}
           >
-            {[{ cat: null, label: lang === 'he' ? `הכל (${library.length})` : `All (${library.length})` },
+            {[{ cat: null, label: `${t(lang, 'all')} (${library.length})` },
               ...categories.filter(c => categoryCounts[c]).map(c => ({ cat: c, label: `${catLabels[c] ?? c} (${categoryCounts[c]})` }))
             ].map(({ cat, label }) => (
               <button
@@ -2106,7 +2104,7 @@ function LibraryScreen({ lang }: { lang: Lang }) {
         {loading ? (
           <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-3)', fontSize: 13 }}>
             <span className="icon" style={{ fontSize: 24, display: 'block', marginBottom: 8, animation: 'spin 0.7s linear infinite' }}>progress_activity</span>
-            {lang === 'he' ? 'טוען...' : 'Loading...'}
+            {t(lang, 'loading')}
           </div>
         ) : filtered.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-3)', fontSize: 13 }}>
@@ -2199,7 +2197,7 @@ function PreferencesScreen({ lang, profile, onSave, showToast, saveRef, onSaveDo
   const handleSave = () => {
     onSave(draft)
     onSaveDone()
-    showToast(lang === 'he' ? 'ההעדפות נשמרו' : 'Preferences saved', 'success')
+    showToast(t(lang, 'preferencesSaved'), 'success')
   }
   saveRef.current = handleSave
 
@@ -2257,7 +2255,7 @@ function PreferencesScreen({ lang, profile, onSave, showToast, saveRef, onSaveDo
       {/* Fluid detection */}
       <div style={{ height: 1, background: 'var(--border)', margin: '4px 0 18px' }} />
       <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.07em', margin: '0 0 14px' }}>
-        {lang === 'he' ? 'סף זיהוי נוזלים' : 'Fluid detection'}
+        {t(lang, 'fluidThreshold')}
       </p>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
         <input
@@ -2271,11 +2269,11 @@ function PreferencesScreen({ lang, profile, onSave, showToast, saveRef, onSaveDo
         <span style={{ fontSize: 12, color: 'var(--text-3)', flexShrink: 0 }}>ml</span>
         <span style={{ flex: 1 }} />
         <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-2)', flexShrink: 0 }}>
-          {lang === 'he' ? '0 קל׳ בלבד' : '0-cal only'}
+          {t(lang, 'zerocalOnly')}
         </span>
         <button
           onClick={() => set('fluidZeroCalOnly', !draft.fluidZeroCalOnly)}
-          aria-label={lang === 'he' ? 'הפעל/בטל' : 'Toggle'}
+          aria-label={t(lang, 'toggle')}
           style={{
             width: 44, height: 26, borderRadius: 99, border: 'none', cursor: 'pointer', flexShrink: 0,
             background: draft.fluidZeroCalOnly ? 'var(--accent)' : 'var(--neutral-glow)',
@@ -2429,7 +2427,7 @@ export function SettingsSheet({
         display: 'flex', justifyContent: 'center', alignItems: 'flex-end',
         pointerEvents: 'none',
       }}>
-      <div ref={sheetRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label={lang === 'he' ? 'הגדרות' : 'Settings'} style={{
+      <div ref={sheetRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label={t(lang, 'settings')} style={{
         width: '100%', maxWidth: 560,
         pointerEvents: 'all',
         background: 'var(--bg)',
@@ -2551,7 +2549,7 @@ export function SettingsSheet({
                   </>
                 : screen === 'profile' ? t(lang, 'saveProfile')
                 : screen === 'goals'  ? t(lang, 'saveGoals')
-                : lang === 'he' ? 'שמור העדפות' : 'Save Preferences'
+                : t(lang, 'savePreferences')
               }
             </button>
           </div>

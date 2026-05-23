@@ -87,7 +87,7 @@ export function PhotoNutritionCapture({ lang, onResult, onSwitchManual }: Props)
         padding: '14px 0 4px',
       }}>
         <div style={{
-          width: '100%', height: 1, background: 'var(--divider)', margin: '0 0 6px',
+          width: '100%', height: 1, background: 'var(--border)', margin: '0 0 6px',
         }} />
 
         <button
@@ -97,8 +97,8 @@ export function PhotoNutritionCapture({ lang, onResult, onSwitchManual }: Props)
             display: 'flex', alignItems: 'center', gap: 8,
             padding: '10px 22px', borderRadius: 12, fontSize: 14, fontWeight: 700,
             background: remaining > 0 ? 'var(--surface-2)' : 'var(--surface-1)',
-            color:      remaining > 0 ? 'var(--text-1)' : 'var(--text-3)',
-            border: `1.5px solid ${remaining > 0 ? 'var(--border)' : 'var(--divider)'}`,
+            color:      remaining > 0 ? 'var(--text)' : 'var(--text-3)',
+            border: '1.5px solid var(--border)',
             cursor: remaining > 0 ? 'pointer' : 'not-allowed',
             fontFamily: 'inherit',
           }}
@@ -159,15 +159,15 @@ export function PhotoNutritionCapture({ lang, onResult, onSwitchManual }: Props)
       : data.confidence === 'low' ? 'photoConfidenceLow'
       : 'photoConfidenceMed'
     const confidenceColor =
-      data.confidence === 'high' ? 'var(--green-hi)'
-      : data.confidence === 'low' ? 'var(--red-hi)'
-      : 'var(--amber-hi, var(--warning))'
+      data.confidence === 'high' ? 'var(--positive-hi)'
+      : data.confidence === 'low' ? 'var(--danger-hi)'
+      : 'var(--warning)'
 
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: '14px 0 4px' }}
            dir={isRTL ? 'rtl' : 'ltr'}>
 
-        <div style={{ width: '100%', height: 1, background: 'var(--divider)', margin: '0 0 2px' }} />
+        <div style={{ width: '100%', height: 1, background: 'var(--border)', margin: '0 0 2px' }} />
 
         {preview && (
           <img
@@ -181,7 +181,7 @@ export function PhotoNutritionCapture({ lang, onResult, onSwitchManual }: Props)
           <span style={{ fontSize: 12, color: 'var(--text-2)', fontWeight: 600 }}>
             {t(lang, 'photoIdentified')}
           </span>
-          <span style={{ fontSize: 13, color: 'var(--text-1)', fontWeight: 700 }}>
+          <span style={{ fontSize: 13, color: 'var(--text)', fontWeight: 700 }}>
             {data.identified}
           </span>
           <span style={{
@@ -242,7 +242,7 @@ export function PhotoNutritionCapture({ lang, onResult, onSwitchManual }: Props)
         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10,
         padding: '14px 12px 4px', textAlign: 'center',
       }} dir={isRTL ? 'rtl' : 'ltr'}>
-        <div style={{ width: '100%', height: 1, background: 'var(--divider)', margin: '0 0 2px' }} />
+        <div style={{ width: '100%', height: 1, background: 'var(--border)', margin: '0 0 2px' }} />
         <span className="icon" style={{ fontSize: 28, color: 'var(--warning)' }}>hourglass_empty</span>
         <p style={{ fontSize: 13, color: 'var(--text-2)', margin: 0, lineHeight: 1.5, maxWidth: 280 }}>
           {t(lang, 'photoQuotaExceeded')}
@@ -258,7 +258,7 @@ export function PhotoNutritionCapture({ lang, onResult, onSwitchManual }: Props)
         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10,
         padding: '14px 12px 4px',
       }} dir={isRTL ? 'rtl' : 'ltr'}>
-        <div style={{ width: '100%', height: 1, background: 'var(--divider)', margin: '0 0 2px' }} />
+        <div style={{ width: '100%', height: 1, background: 'var(--border)', margin: '0 0 2px' }} />
         <span className="icon" style={{ fontSize: 28, color: 'var(--text-3)' }}>hide_image</span>
         <p style={{ fontSize: 13, color: 'var(--text-2)', margin: 0, textAlign: 'center', lineHeight: 1.6 }}>
           {t(lang, 'photoFailed')}{' '}
@@ -303,7 +303,7 @@ export function PhotoNutritionCapture({ lang, onResult, onSwitchManual }: Props)
       display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10,
       padding: '14px 12px 4px',
     }} dir={isRTL ? 'rtl' : 'ltr'}>
-      <div style={{ width: '100%', height: 1, background: 'var(--divider)', margin: '0 0 2px' }} />
+      <div style={{ width: '100%', height: 1, background: 'var(--border)', margin: '0 0 2px' }} />
       <span className="icon" style={{ fontSize: 28, color: 'var(--text-3)' }}>wifi_off</span>
       <p style={{ fontSize: 13, color: 'var(--text-2)', margin: 0 }}>
         {t(lang, 'photoGroqUnavailable')}

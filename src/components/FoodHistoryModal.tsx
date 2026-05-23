@@ -81,7 +81,7 @@ export function FoodHistoryModal({
         className="compose-modal"
         role="dialog"
         aria-modal="true"
-        aria-label={lang === 'he' ? 'היסטוריית מזון' : 'Food history'}
+        aria-label={t(lang, 'foodHistory')}
         style={{ maxWidth: 440, padding: 0, overflow: 'hidden', maxHeight: '80dvh', display: 'flex', flexDirection: 'column' }}
         onClick={e => e.stopPropagation()}
       >
@@ -153,7 +153,7 @@ export function FoodHistoryModal({
                           {entry.calories}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.8 }}>{t(lang, 'caloriesUnit')}</span>
                         </span>
                         <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--positive-hi)', display: 'inline-flex', alignItems: 'baseline', gap: 2 }}>
-                          {entry.protein}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.8 }}>{lang === 'he' ? 'ג׳ חלבון' : 'g protein'}</span>
+                          {entry.protein}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.8 }}>{t(lang, 'gProteinLabel')}</span>
                         </span>
                       </div>
                     </>
@@ -175,7 +175,7 @@ export function FoodHistoryModal({
               ))}
               {filtered.length > 0 && (
                 <div style={{ padding: '8px 14px 4px', fontSize: 10, fontWeight: 700, color: 'var(--text-3)', letterSpacing: '0.07em', textTransform: 'uppercase' }}>
-                  {lang === 'he' ? 'היסטוריה' : 'History'}
+                  {t(lang, 'history')}
                 </div>
               )}
             </>
@@ -193,7 +193,7 @@ export function FoodHistoryModal({
             const itemIsUnit  = item.grams < 0
             const itemIsFluid = item.fluid_ml != null && item.fluid_ml > 0
             const amtDisplay  = itemIsUnit  ? `${Math.abs(item.grams)} ${unitLabel}`
-              : itemIsFluid ? (item.fluid_ml! >= 1000 ? `${(item.fluid_ml! / 1000).toFixed(1)}${lang === 'he' ? 'ל׳' : 'L'}` : `${Math.round(item.fluid_ml!)}ml`)
+              : itemIsFluid ? (item.fluid_ml! >= 1000 ? `${(item.fluid_ml! / 1000).toFixed(1)}${t(lang, 'litersUnit')}` : `${Math.round(item.fluid_ml!)}ml`)
               : `${item.grams}g`
             const isLast = i === filtered.length - 1
             return (
@@ -228,7 +228,7 @@ export function FoodHistoryModal({
                           {Math.round(item.calories)}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.8 }}>{t(lang, 'caloriesUnit')}</span>
                         </span>
                         <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--positive-hi)', display: 'inline-flex', alignItems: 'baseline', gap: 2 }}>
-                          {Math.round(item.protein * 10) / 10}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.8 }}>{lang === 'he' ? 'ג׳ חלבון' : 'g protein'}</span>
+                          {Math.round(item.protein * 10) / 10}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.8 }}>{t(lang, 'gProteinLabel')}</span>
                         </span>
                       </div>
                       <span style={{ fontSize: 10, color: 'var(--text-3)' }}>{item.use_count} {t(lang, 'uses')}</span>

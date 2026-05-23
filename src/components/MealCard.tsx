@@ -156,7 +156,7 @@ export function MealCard({ meal, lang, weightUnit = 'g', showCheckbox, selected,
           </div>
           <div>
             <label style={{ fontSize: 11, color: 'var(--positive-hi)', fontWeight: 600, display: 'block', marginBottom: 4 }}>
-              {lang === 'he' ? 'חלבון (ג׳)' : 'Protein (g)'}
+              {t(lang, 'proteinGramsLabel')}
             </label>
             <div style={{ position: 'relative' }}>
               <input
@@ -211,14 +211,14 @@ export function MealCard({ meal, lang, weightUnit = 'g', showCheckbox, selected,
               value={editor.unit}
               onChange={e => editor.handleUnitChange(e.target.value as Parameters<typeof editor.handleUnitChange>[0])}
             >
-              <option value="g">{lang === 'he' ? 'גרם' : 'g'}</option>
-              <option value="oz">{lang === 'he' ? 'אונקיה' : 'oz'}</option>
-              <option value="ml">{lang === 'he' ? 'מ"ל' : 'ml'}</option>
-              <option value="cup">{lang === 'he' ? 'כוס' : 'cup'}</option>
-              <option value="tbsp">{lang === 'he' ? 'כף' : 'tbsp'}</option>
-              <option value="tsp">{lang === 'he' ? 'כפית' : 'tsp'}</option>
-              <option value="fl_oz">{lang === 'he' ? "פל.אונ׳" : 'fl oz'}</option>
-              <option value="pcs">{lang === 'he' ? 'מנה' : 'serving'}</option>
+              <option value="g">{t(lang, 'unitOptG')}</option>
+              <option value="oz">{t(lang, 'unitOptOz')}</option>
+              <option value="ml">{t(lang, 'unitOptMl')}</option>
+              <option value="cup">{t(lang, 'unitOptCup')}</option>
+              <option value="tbsp">{t(lang, 'unitOptTbsp')}</option>
+              <option value="tsp">{t(lang, 'unitOptTsp')}</option>
+              <option value="fl_oz">{t(lang, 'unitOptFlOz')}</option>
+              <option value="pcs">{t(lang, 'serving')}</option>
             </select>
           </div>
         </div>
@@ -229,7 +229,7 @@ export function MealCard({ meal, lang, weightUnit = 'g', showCheckbox, selected,
               background: 'var(--bg-card)', border: '1px solid var(--border)',
               borderRadius: 8, padding: '3px 8px',
             }}>
-              {lang === 'he' ? `מנה ≈ ${servingG}ג׳` : `serving ≈ ${servingG}g`}
+              {`${t(lang, 'serving')} ≈ ${servingG}${t(lang, 'proteinUnit')}`}
             </span>
           </div>
         )}
@@ -280,7 +280,7 @@ export function MealCard({ meal, lang, weightUnit = 'g', showCheckbox, selected,
             <span style={{ fontSize: 11, fontWeight: 400, color: 'var(--text-3)', whiteSpace: 'nowrap', flexShrink: 0 }}>
               {meal.fluid_ml != null && !meal.fluid_excluded
                 ? (meal.fluid_ml >= 1000
-                    ? `${(meal.fluid_ml / 1000).toFixed(1)}${lang === 'he' ? 'ל׳' : 'L'}`
+                    ? `${(meal.fluid_ml / 1000).toFixed(1)}${t(lang, 'litersUnit')}`
                     : `${Math.round(meal.fluid_ml)}ml`)
                 : meal.grams < 0
                   ? `${Math.abs(meal.grams)} ${t(lang, 'unitLabel')}`
@@ -294,7 +294,7 @@ export function MealCard({ meal, lang, weightUnit = 'g', showCheckbox, selected,
             </span>
             <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--positive-hi)', lineHeight: 1 }}>
               {Math.round(meal.protein * 10) / 10}
-              <span style={{ fontSize: 10, fontWeight: 400, opacity: 0.65, marginInlineStart: 2 }}>{lang === 'he' ? "ג׳ חלבון" : 'g protein'}</span>
+              <span style={{ fontSize: 10, fontWeight: 400, opacity: 0.65, marginInlineStart: 2 }}>{t(lang, 'gProteinLabel')}</span>
             </span>
           </div>
         </div>
@@ -362,10 +362,10 @@ export function MealCard({ meal, lang, weightUnit = 'g', showCheckbox, selected,
           <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-3)', whiteSpace: 'nowrap', flexShrink: 0 }}>
             {meal.fluid_ml != null && !meal.fluid_excluded
               ? (meal.fluid_ml >= 1000
-                  ? `${(meal.fluid_ml / 1000).toFixed(1)}${lang === 'he' ? 'ל׳' : 'L'}`
+                  ? `${(meal.fluid_ml / 1000).toFixed(1)}${t(lang, 'litersUnit')}`
                   : `${Math.round(meal.fluid_ml)}ml`)
               : meal.grams < 0
-                ? `${Math.abs(meal.grams)} ${lang === 'he' ? 'מנות' : 'serving(s)'}`
+                ? `${Math.abs(meal.grams)} ${t(lang, 'unitLabel')}`
                 : (fmtDisplayUnit(meal, lang) ?? formatWeight(meal.grams, weightUnit, lang))}
           </span>
         </div>

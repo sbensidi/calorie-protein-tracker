@@ -134,7 +134,7 @@ export function ComposedMealCard({
                 <span style={{ fontWeight: 400, color: 'var(--text-3)' }}>{t(lang, 'caloriesUnit')}</span>
                 <span style={{ color: 'var(--border)', padding: '0 2px' }}>|</span>
                 <span style={{ fontWeight: 600, color: 'var(--positive-hi)' }}>{totalProt}</span>
-                <span style={{ fontWeight: 400, color: 'var(--text-3)' }}>{lang === 'he' ? "ג׳" : 'g'}</span>
+                <span style={{ fontWeight: 400, color: 'var(--text-3)' }}>{t(lang, 'proteinUnit')}</span>
               </span>
             )}
 
@@ -152,8 +152,8 @@ export function ComposedMealCard({
               <button
                 className="icon-btn"
                 onClick={e => { e.stopPropagation(); onDeleteGroup() }}
-                aria-label={lang === 'he' ? 'פרק מנה לרכיבים' : 'Dissolve dish'}
-                title={lang === 'he' ? 'פרק מנה לרכיבים' : 'Dissolve dish'}
+                aria-label={t(lang, 'dissolveDish')}
+                title={t(lang, 'dissolveDish')}
               >
                 <span className="icon icon-sm" style={{ color: 'var(--danger-hi)', opacity: 0.7 }}>link_off</span>
               </button>
@@ -163,7 +163,7 @@ export function ComposedMealCard({
             <button
               className="icon-btn"
               onClick={e => { e.stopPropagation(); toggleOpen() }}
-              aria-label={open ? (lang === 'he' ? 'כווץ' : 'Collapse') : (lang === 'he' ? 'הרחב' : 'Expand')}
+              aria-label={open ? t(lang, 'collapseGroup') : t(lang, 'expandGroup')}
               aria-expanded={open}
             >
               <span className="icon" style={{ fontSize: 24, color: 'var(--text-3)', transform: open ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>
@@ -337,8 +337,8 @@ export function ComposedMealCard({
           <button
             className="icon-btn"
             onClick={e => { e.stopPropagation(); onDeleteGroup() }}
-            aria-label={lang === 'he' ? 'פרק מנה לרכיבים' : 'Dissolve dish'}
-            title={lang === 'he' ? 'פרק מנה לרכיבים' : 'Dissolve dish'}
+            aria-label={t(lang, 'dissolveDish')}
+            title={t(lang, 'dissolveDish')}
           >
             <span className="icon icon-sm" style={{ color: 'var(--danger-hi)', opacity: 0.7 }}>link_off</span>
           </button>
@@ -349,7 +349,7 @@ export function ComposedMealCard({
           <button
             className="icon-btn"
             onClick={e => { e.stopPropagation(); toggleOpen() }}
-            aria-label={open ? (lang === 'he' ? 'כווץ' : 'Collapse') : (lang === 'he' ? 'הרחב' : 'Expand')}
+            aria-label={open ? t(lang, 'collapseGroup') : t(lang, 'expandGroup')}
             aria-expanded={open}
           >
             <span className="icon" style={{ fontSize: 24, color: 'var(--text-3)', transition: 'transform .2s', transform: open ? 'rotate(180deg)' : 'rotate(0deg)' }}>
