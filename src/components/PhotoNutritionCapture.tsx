@@ -52,7 +52,7 @@ export function PhotoNutritionCapture({ lang, onResult, onSwitchManual }: Props)
     }
 
     try {
-      const result = await analyzeNutritionImage(base64)
+      const result = await analyzeNutritionImage(base64, lang)
       setState({ kind: 'result', data: result })
       onResult(result)
     } catch (err) {

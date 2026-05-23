@@ -90,6 +90,7 @@ export async function resizeImageToBase64(file: File, maxPx = 512): Promise<stri
 // ── Main analysis call ────────────────────────────────────────────────────────
 export async function analyzeNutritionImage(
   imageBase64: string,
+  lang: 'he' | 'en' = 'en',
   hint?: string,
 ): Promise<VisionNutritionResult> {
   if (!canMakeRequest()) throw new AiVisionQuotaError('Daily photo quota reached')
@@ -103,7 +104,7 @@ export async function analyzeNutritionImage(
     res = await fetch('/api/nutrition-image', {
       method: 'POST',
       headers,
-      body: JSON.stringify({ imageBase64, hint }),
+      body: JSON.stringify({ imageBase64, lang, hint }),
     })
   } catch {
     throw new AiNetworkError('Network error')

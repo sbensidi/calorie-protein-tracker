@@ -537,7 +537,10 @@ function MainScreen({ lang, connected, theme, styleMode, showGreeting, onProfile
           </button>
 
           <p style={{ fontSize: 10, color: 'var(--text-3)', textAlign: 'center', margin: '8px 0 0', letterSpacing: 0.3 }}>
-            {__BUILD_TS__}
+            {new Date(__BUILD_TS__).toLocaleString(lang === 'he' ? 'he-IL' : 'en-US', {
+              year: 'numeric', month: '2-digit', day: '2-digit',
+              hour: '2-digit', minute: '2-digit',
+            })}
           </p>
         </div>
       </div>

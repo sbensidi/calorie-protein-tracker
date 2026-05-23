@@ -136,6 +136,13 @@ export default function App() {
   const { groups: composedGroups, error: groupsError, upsert: upsertGroup, remove: removeGroup, pruneMealId } = useComposedGroups(userId)
   const { entries: weightLogEntries, logWeight, deleteEntry: deleteWeightEntry } = useWeightLog(userId)
 
+  // Show "app updated" toast once after SW-triggered reload
+  useEffect(() => {
+    if (sessionStorage.getItem('sw-just-updated') !== '1') return
+    sessionStorage.removeItem('sw-just-updated')
+    showToast(t(lang, 'toastAppUpdated'), 'success')
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
   // I9: show toast when session expired unexpectedly
   useEffect(() => {
     if (!expiredSession) return

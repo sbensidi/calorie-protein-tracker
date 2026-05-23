@@ -18,6 +18,7 @@ if ('serviceWorker' in navigator) {
     .catch(() => {})
 
   navigator.serviceWorker.addEventListener('controllerchange', () => {
+    sessionStorage.setItem('sw-just-updated', '1')
     window.location.reload()
   })
 }

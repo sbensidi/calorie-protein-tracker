@@ -29,13 +29,16 @@ const GROQ_VISION_MODEL = 'meta-llama/llama-4-scout-17b-16e-instruct'
 // Max base64 payload: ~2MB decoded ≈ 2.7MB base64
 const MAX_B64_LEN = 2_800_000
 
-const SYSTEM_PROMPT = `You are a nutrition estimation assistant.
+function buildSystemPrompt(lang: 'he' | 'en'): string {
+  const nameLang = lang === 'he' ? 'Hebrew' : 'English'
+  return `You are a nutrition estimation assistant.
 The user will show you a photo of food or a food label.
 Identify the food and estimate its nutritional values per 100g.
 Return ONLY valid JSON in this exact format (no other text):
-{"identified": "food name in English", "calories_per_100g": number, "protein_per_100g": number, "fat_per_100g": number, "carbs_per_100g": number, "confidence": "high"|"medium"|"low"}
+{"identified": "food name in ${nameLang}", "calories_per_100g": number, "protein_per_100g": number, "fat_per_100g": number, "carbs_per_100g": number, "confidence": "high"|"medium"|"low"}
 Use "low" confidence for mixed dishes, unclear images, or restaurant food.
 Use "high" confidence only for clearly identifiable single ingredients or packaged items with visible labels.`
+}
 
 export default async function handler(req: Request): Promise<Response> {
   if (req.method !== 'POST') {
@@ -73,7 +76,7 @@ export default async function handler(req: Request): Promise<Response> {
   }
 
   // ── Parse body ─────────────────────────────────────────────────────────────
-  let body: { imageBase64: string; hint?: string }
+  let body: { imageBase64: string; lang?: string; hint?: string }
   try {
     body = await req.json()
   } catch {
@@ -81,6 +84,7 @@ export default async function handler(req: Request): Promise<Response> {
   }
 
   const { imageBase64, hint } = body
+  const lang: 'he' | 'en' = body.lang === 'he' ? 'he' : 'en'
 
   if (!imageBase64 || typeof imageBase64 !== 'string') {
     return json({ error: 'Missing imageBase64' }, 400)
@@ -124,7 +128,7 @@ export default async function handler(req: Request): Promise<Response> {
       body: JSON.stringify({
         model: GROQ_VISION_MODEL,
         messages: [
-          { role: 'system', content: SYSTEM_PROMPT },
+          { role: 'system', content: buildSystemPrompt(lang) },
           { role: 'user',   content: userContent },
         ],
         temperature: 0,
