@@ -535,6 +535,10 @@ function MainScreen({ lang, connected, theme, styleMode, showGreeting, onProfile
               </span>
             </div>
           </button>
+
+          <p style={{ fontSize: 10, color: 'var(--text-3)', textAlign: 'center', margin: '8px 0 0', letterSpacing: 0.3 }}>
+            {__BUILD_TS__}
+          </p>
         </div>
       </div>
     </>

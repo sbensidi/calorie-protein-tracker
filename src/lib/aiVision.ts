@@ -56,27 +56,34 @@ function incrementRl(): void {
 
 // ── Image resize (client-side, saves 70-80% of tokens) ───────────────────────
 // Returns a base64 JPEG string (no data-URI prefix).
+// Uses FileReader instead of createObjectURL — more reliable on iOS PWA.
 export async function resizeImageToBase64(file: File, maxPx = 512): Promise<string> {
   return new Promise((resolve, reject) => {
-    const img = new Image()
-    const url = URL.createObjectURL(file)
-    img.onload = () => {
-      URL.revokeObjectURL(url)
-      const scale = Math.min(1, maxPx / Math.max(img.width, img.height))
-      const w = Math.round(img.width  * scale)
-      const h = Math.round(img.height * scale)
-      const canvas = document.createElement('canvas')
-      canvas.width  = w
-      canvas.height = h
-      const ctx = canvas.getContext('2d')
-      if (!ctx) { reject(new Error('canvas 2d unavailable')); return }
-      ctx.drawImage(img, 0, 0, w, h)
-      // quality 0.82 — good tradeoff between file size and visual clarity
-      const b64 = canvas.toDataURL('image/jpeg', 0.82).replace(/^data:image\/jpeg;base64,/, '')
-      resolve(b64)
+    const reader = new FileReader()
+    reader.onerror = () => reject(new Error('File read failed'))
+    reader.onload = (ev) => {
+      const dataUrl = ev.target?.result as string | undefined
+      if (!dataUrl) { reject(new Error('Empty file read')); return }
+
+      const img = new Image()
+      img.onerror = () => reject(new Error('Image decode failed'))
+      img.onload = () => {
+        const scale = Math.min(1, maxPx / Math.max(img.width, img.height))
+        const w = Math.round(img.width  * scale)
+        const h = Math.round(img.height * scale)
+        const canvas = document.createElement('canvas')
+        canvas.width  = w
+        canvas.height = h
+        const ctx = canvas.getContext('2d')
+        if (!ctx) { reject(new Error('canvas 2d unavailable')); return }
+        ctx.drawImage(img, 0, 0, w, h)
+        // quality 0.82 — good tradeoff between file size and visual clarity
+        const b64 = canvas.toDataURL('image/jpeg', 0.82).replace(/^data:image\/jpeg;base64,/, '')
+        resolve(b64)
+      }
+      img.src = dataUrl
     }
-    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Image load failed')) }
-    img.src = url
+    reader.readAsDataURL(file)
   })
 }
 

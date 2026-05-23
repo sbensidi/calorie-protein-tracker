@@ -35,10 +35,9 @@ export function PhotoNutritionCapture({ lang, onResult, onSwitchManual }: Props)
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (!e.target.files) return
-    // Reset input so same file can be reselected after a retry
-    e.target.value = ''
     if (!file) return
+    // Reset after capturing file reference — order matters on iOS
+    e.target.value = ''
 
     setState({ kind: 'analyzing' })
     setPreview(null)
