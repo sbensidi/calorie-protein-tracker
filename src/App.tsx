@@ -31,6 +31,7 @@ export default function App() {
   const [connected, setConnected] = useState(true)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [expiredSession, setExpiredSession] = useState(false)
+  const [swUpdated, setSwUpdated] = useState(false)
   const hadSession      = useRef(false)
   const userSignedOut   = useRef(false)
 
@@ -136,12 +137,12 @@ export default function App() {
   const { groups: composedGroups, error: groupsError, upsert: upsertGroup, remove: removeGroup, pruneMealId } = useComposedGroups(userId)
   const { entries: weightLogEntries, logWeight, deleteEntry: deleteWeightEntry } = useWeightLog(userId)
 
-  // Show "app updated" toast once after SW-triggered reload
+  // Show update banner when new SW takes control
   useEffect(() => {
-    if (sessionStorage.getItem('sw-just-updated') !== '1') return
-    sessionStorage.removeItem('sw-just-updated')
-    showToast(t(lang, 'toastAppUpdated'), 'success')
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+    const handler = () => setSwUpdated(true)
+    document.addEventListener('sw-updated', handler)
+    return () => document.removeEventListener('sw-updated', handler)
+  }, [])
 
   // I9: show toast when session expired unexpectedly
   useEffect(() => {
@@ -329,6 +330,32 @@ export default function App() {
           )}
         </div>
       </div>
+
+      {/* ── SW update banner ─────────────────────────────────────── */}
+      {swUpdated && (
+        <div role="status" style={{
+          background: 'var(--blue-fill)',
+          borderBottom: '1px solid var(--blue-border)',
+          padding: '6px 16px',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8,
+          fontSize: 12, fontWeight: 600, color: 'var(--blue-hi)',
+        }}>
+          <span>{t(lang, 'toastAppUpdated')}</span>
+          <button
+            onClick={() => window.location.reload()}
+            style={{
+              background: 'var(--blue-tint)',
+              border: '1px solid var(--blue-border)',
+              color: 'var(--blue-hi)',
+              borderRadius: 8, padding: '3px 12px',
+              fontSize: 12, fontWeight: 700,
+              cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0,
+            }}
+          >
+            {t(lang, 'toastReload')}
+          </button>
+        </div>
+      )}
 
       {/* ── I8: offline indicator ────────────────────────────────── */}
       {!connected && (
