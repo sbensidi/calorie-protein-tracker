@@ -814,6 +814,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                   <button
                     key={dir}
                     onClick={() => changeMonth(dir)}
+                    aria-label={dir === -1 ? t(lang, 'prevCalMonth') : t(lang, 'nextCalMonth')}
                     style={{
                       background: 'none', border: 'none', cursor: 'pointer',
                       color: 'var(--text-3)', padding: 4, display: 'flex',
@@ -949,6 +950,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                     setTimeout(() => historySearchRef.current?.focus(), 50)
                   }}
                   tabIndex={-1}
+                  aria-label={t(lang, 'foodHistory')}
                   title={t(lang, 'foodHistory')}
                   style={{
                     position: 'absolute',
@@ -985,6 +987,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                 {search && (
                   <button
                     onMouseDown={e => { e.preventDefault(); setSearch(''); setDropdownOpen(false); searchInputRef.current?.focus() }}
+                    aria-label={t(lang, 'clearSearch')}
                     style={{
                       position: 'absolute',
                       ...(isRTL ? { left: 42 } : { right: 42 }),
@@ -1155,7 +1158,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                     <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-2)', flex: 1 }}>
                       {t(lang, 'foodHistory')}
                     </span>
-                    <button onClick={() => setHistoryModalOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 4 }}>
+                    <button onClick={() => setHistoryModalOpen(false)} aria-label={t(lang, 'close')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 4 }}>
                       <span className="icon icon-sm">close</span>
                     </button>
                   </div>
@@ -2243,6 +2246,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                   <button
                     onClick={() => prevDate && goTo(prevDate)}
                     disabled={!prevDate}
+                    aria-label={t(lang, 'prevDay')}
                     style={{ background: 'none', border: 'none', cursor: prevDate ? 'pointer' : 'default', color: prevDate ? 'var(--text-2)' : 'var(--border)', padding: 4, display: 'flex', borderRadius: 6 }}
                   >
                     <span className="icon icon-sm">{lang === 'he' ? 'chevron_right' : 'chevron_left'}</span>
@@ -2250,6 +2254,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                   <button
                     onClick={() => nextDate && goTo(nextDate)}
                     disabled={!nextDate}
+                    aria-label={t(lang, 'nextDay')}
                     style={{ background: 'none', border: 'none', cursor: nextDate ? 'pointer' : 'default', color: nextDate ? 'var(--text-2)' : 'var(--border)', padding: 4, display: 'flex', borderRadius: 6 }}
                   >
                     <span className="icon icon-sm">{lang === 'he' ? 'chevron_left' : 'chevron_right'}</span>
@@ -2257,6 +2262,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                 </div>
                 <button
                   onClick={() => setSelectedBarDate(null)}
+                  aria-label={t(lang, 'close')}
                   style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 4, display: 'flex' }}
                 >
                   <span className="icon icon-sm">close</span>

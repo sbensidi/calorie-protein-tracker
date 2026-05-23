@@ -659,6 +659,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
               </span>
             )}
             <button onMouseDown={e => { e.preventDefault(); setPendingComposed(null) }}
+              aria-label={t(lang, 'close')}
               style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 2, display: 'flex' }}>
               <span className="icon icon-sm">close</span>
             </button>
@@ -687,6 +688,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
                 />
                 {portionStr && (
                   <button onMouseDown={e => { e.preventDefault(); setPortionStr('') }} tabIndex={-1}
+                    aria-label={t(lang, 'clearField')}
                     style={{ position: 'absolute', insetInlineEnd: 0, top: 0, bottom: 0, width: 28, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <span className="icon icon-sm">close</span>
                   </button>
@@ -945,6 +947,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
           <button
             onMouseDown={e => { e.preventDefault(); openHistoryModal() }}
             tabIndex={-1}
+            aria-label={t(lang, 'foodHistory')}
             title={t(lang, 'foodHistory')}
             style={{
               position: 'absolute',
@@ -963,6 +966,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
           {foodName && (
             <button
               onMouseDown={e => { e.preventDefault(); handleFoodNameChange(''); setNutrition(null); inputRef.current?.focus() }}
+              aria-label={t(lang, 'clearSearch')}
               style={{
                 position: 'absolute',
                 ...(isRTL ? { left: 42 } : { right: 42 }),
@@ -1363,7 +1367,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
                   onFocus={e => { if (numCalories === 0) editor.setCalories(''); else e.target.select() }}
                 />
                 {editor.calories !== '' && (
-                  <button onMouseDown={e => { e.preventDefault(); editor.setCalories('') }} tabIndex={-1} style={clearBtnStyle()}>
+                  <button onMouseDown={e => { e.preventDefault(); editor.setCalories('') }} tabIndex={-1} aria-label={t(lang, 'clearField')} style={clearBtnStyle()}>
                     <span className="icon icon-sm">close</span>
                   </button>
                 )}
@@ -1388,7 +1392,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
                   onFocus={e => { if (numProtein === 0) editor.setProtein(''); else e.target.select() }}
                 />
                 {editor.protein !== '' && (
-                  <button onMouseDown={e => { e.preventDefault(); editor.setProtein('') }} tabIndex={-1} style={clearBtnStyle()}>
+                  <button onMouseDown={e => { e.preventDefault(); editor.setProtein('') }} tabIndex={-1} aria-label={t(lang, 'clearField')} style={clearBtnStyle()}>
                     <span className="icon icon-sm">close</span>
                   </button>
                 )}
@@ -1509,6 +1513,8 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
               {/* Toggle */}
               <button
                 onClick={() => setFluidExcluded(v => !v)}
+                aria-label={t(lang, 'toggle')}
+                aria-pressed={fluidExcluded}
                 style={{
                   width: 34, height: 20, borderRadius: 99, border: 'none', cursor: 'pointer',
                   background: fluidExcluded ? 'var(--neutral-glow)' : 'var(--accent)',

@@ -396,6 +396,15 @@ export const translations = {
     all:                          'הכל',
     preferencesSaved:             'ההעדפות נשמרו',
     savePreferences:              'שמור העדפות',
+    // --- aria-labels for icon-only buttons (PLAN-2.3) ---
+    close:                        'סגור',
+    clearField:                   'נקה שדה',
+    prevDay:                      'יום קודם',
+    nextDay:                      'יום הבא',
+    prevCalMonth:                 'חודש קודם',
+    nextCalMonth:                 'חודש הבא',
+    reset:                        'איפוס',
+    toggleGreeting:               'הפעל/כבה ברכת פתיחה',
   },
   en: {
     appTitle: 'Calorie Tracker',
@@ -793,6 +802,15 @@ export const translations = {
     all:                          'All',
     preferencesSaved:             'Preferences saved',
     savePreferences:              'Save Preferences',
+    // --- aria-labels for icon-only buttons (PLAN-2.3) ---
+    close:                        'Close',
+    clearField:                   'Clear field',
+    prevDay:                      'Previous day',
+    nextDay:                      'Next day',
+    prevCalMonth:                 'Previous month',
+    nextCalMonth:                 'Next month',
+    reset:                        'Reset',
+    toggleGreeting:               'Toggle daily greeting',
   },
 } as const
 

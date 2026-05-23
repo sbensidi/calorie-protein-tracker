@@ -110,6 +110,7 @@ export function MealCard({ meal, lang, weightUnit = 'g', showCheckbox, selected,
               <button
                 onMouseDown={e => { e.preventDefault(); setEditName('') }}
                 tabIndex={-1}
+                aria-label={t(lang, 'clearField')}
                 style={{ position: 'absolute', insetInlineEnd: 0, top: 0, bottom: 0, width: 32, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
               >
                 <span className="icon icon-sm">close</span>
@@ -148,6 +149,7 @@ export function MealCard({ meal, lang, weightUnit = 'g', showCheckbox, selected,
               />
               {editor.calories !== '' && (
                 <button onMouseDown={e => { e.preventDefault(); editor.setCalories('') }} tabIndex={-1}
+                  aria-label={t(lang, 'clearField')}
                   style={{ position: 'absolute', insetInlineEnd: 0, top: 0, bottom: 0, width: 32, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <span className="icon icon-sm">close</span>
                 </button>
@@ -172,6 +174,7 @@ export function MealCard({ meal, lang, weightUnit = 'g', showCheckbox, selected,
               />
               {editor.protein !== '' && (
                 <button onMouseDown={e => { e.preventDefault(); editor.setProtein('') }} tabIndex={-1}
+                  aria-label={t(lang, 'clearField')}
                   style={{ position: 'absolute', insetInlineEnd: 0, top: 0, bottom: 0, width: 32, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <span className="icon icon-sm">close</span>
                 </button>
@@ -195,6 +198,7 @@ export function MealCard({ meal, lang, weightUnit = 'g', showCheckbox, selected,
               />
               {editor.amountStr !== '' && (
                 <button onMouseDown={e => { e.preventDefault(); editor.setAmountStr('') }} tabIndex={-1}
+                  aria-label={t(lang, 'clearField')}
                   style={{ position: 'absolute', insetInlineEnd: 0, top: 0, bottom: 0, width: 32, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <span className="icon icon-sm">close</span>
                 </button>

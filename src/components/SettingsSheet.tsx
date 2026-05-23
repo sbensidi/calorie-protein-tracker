@@ -80,6 +80,7 @@ function DayPanel({
         {isCustom && (
           <button
             onClick={onReset}
+            aria-label={t(lang, 'reset')}
             style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 2, display: 'flex' }}
           >
             <span className="icon icon-sm">restart_alt</span>
@@ -446,7 +447,7 @@ function MainScreen({ lang, connected, theme, styleMode, showGreeting, onProfile
             </div>
             <button
               onClick={onToggleGreeting}
-              aria-label="toggle greeting"
+              aria-label={t(lang, 'toggleGreeting')}
               style={{
                 position: 'relative', width: 50, height: 28, borderRadius: 999,
                 border: 'none', cursor: 'pointer', padding: 0, flexShrink: 0,
@@ -705,6 +706,7 @@ function ProfileScreen({ lang, profile, onSave, showToast, weightLogEntries = []
                 <button
                   onMouseDown={e => { e.preventDefault(); set(key, 0 as UserProfile[typeof key]) }}
                   tabIndex={-1}
+                  aria-label={t(lang, 'clearField')}
                   style={{ position: 'absolute', insetInlineEnd: 0, top: 0, bottom: 0, width: 28, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                 >
                   <span className="icon icon-sm">close</span>
@@ -789,6 +791,7 @@ function ProfileScreen({ lang, profile, onSave, showToast, weightLogEntries = []
             <button
               onMouseDown={e => { e.preventDefault(); setWeightInput('') }}
               tabIndex={-1}
+              aria-label={t(lang, 'clearField')}
               style={{ position: 'absolute', insetInlineEnd: 0, top: 0, bottom: 0, width: 28, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
             >
               <span className="icon icon-sm">close</span>
