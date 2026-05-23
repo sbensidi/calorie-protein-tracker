@@ -174,28 +174,7 @@ export default function App() {
   // Goal streak: count consecutive days back from yesterday where calories > 0 and <= goal
   const goalStreak = useMemo(() => calcGoalStreak(meals, getGoalForDate), [meals, getGoalForDate])
 
-  // C5: show a persistent toast when a new SW is waiting — user must click to reload
-  useEffect(() => {
-    const showUpdateToast = (update: () => void) => {
-      showToast(
-        t(lang, 'toastAppUpdated'),
-        'info',
-        { action: { label: t(lang, 'toastReload'), onClick: update }, durationMs: 0 },
-      )
-    }
-    // Handle case where onNeedRefresh fired before this effect mounted (race condition)
-    const pending = (window as unknown as Record<string, unknown>).__swPendingUpdate as (() => void) | null
-    if (pending) showUpdateToast(pending)
-
-    const handler = (e: Event) => {
-      const { update } = (e as CustomEvent<{ update: () => void }>).detail
-      showUpdateToast(update)
-    }
-    window.addEventListener('pwa-update-available', handler)
-    return () => window.removeEventListener('pwa-update-available', handler)
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Surface hook errors as toasts — use a ref so the same error string re-triggers when it resets to null then back
+// Surface hook errors as toasts — use a ref so the same error string re-triggers when it resets to null then back
   const lastShownError = useRef<string | null>(null)
   useEffect(() => {
     const err = mealsError || goalsError || historyError || groupsError || profileError || libraryError
