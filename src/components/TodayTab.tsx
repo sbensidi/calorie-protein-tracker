@@ -290,11 +290,12 @@ export function TodayTab({
 
   const handleAddIngredientSubmit = async (meal: Omit<Meal, 'id' | 'user_id' | 'created_at'>) => {
     if (!addIngredientModal) return
-    const id = await onAddMealWithId({ ...meal, meal_type: addIngredientModal.mealType })
-    if (!id) return
-    const group = composedGroups.find(g => g.id === addIngredientModal.groupId)
-    if (group) onUpsertGroup({ ...group, mealIds: [...group.mealIds, id] })
+    const { groupId, mealType } = addIngredientModal
     setAddIngredientModal(null)
+    const id = await onAddMealWithId({ ...meal, meal_type: mealType })
+    if (!id) return
+    const group = composedGroups.find(g => g.id === groupId)
+    if (group) onUpsertGroup({ ...group, mealIds: [...group.mealIds, id] })
   }
 
   // ── Clone composed group into today ─────────────────────────

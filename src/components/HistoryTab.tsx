@@ -173,8 +173,14 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
     return (saved as StatusFilter) ?? 'all'
   })
   const [sortAsc, setSortAsc] = useState(false)
-  const [chartMetric7,  setChartMetric7]  = useState<'cal' | 'prot' | 'fluid'>('cal')
-  const [chartMetric30, setChartMetric30] = useState<'cal' | 'prot' | 'fluid'>('cal')
+  const [chartMetric7,  setChartMetric7]  = useState<'cal' | 'prot' | 'fluid'>(() => {
+    const v = localStorage.getItem('stats-metric-7')
+    return (v === 'prot' || v === 'fluid') ? v : 'cal'
+  })
+  const [chartMetric30, setChartMetric30] = useState<'cal' | 'prot' | 'fluid'>(() => {
+    const v = localStorage.getItem('stats-metric-30')
+    return (v === 'prot' || v === 'fluid') ? v : 'cal'
+  })
   const [selectedBarDate, setSelectedBarDate] = useState<string | null>(null)
   const [slideDir,       setSlideDir]       = useState<'forward' | 'back' | null>(null)
   const [calSlideDir,    setCalSlideDir]    = useState<'forward' | 'back' | null>(null)
@@ -220,6 +226,9 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
   }, [view])
   const [historyModalOpen, setHistoryModalOpen] = useState(false)
   useLockBodyScroll(historyModalOpen || selectedBarDate !== null)
+
+  useEffect(() => { localStorage.setItem('stats-metric-7',  chartMetric7)  }, [chartMetric7])
+  useEffect(() => { localStorage.setItem('stats-metric-30', chartMetric30) }, [chartMetric30])
 
   useEffect(() => {
     if (!historyModalOpen) return
@@ -869,7 +878,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                       fontSize: 12, fontWeight: 600, borderRadius: 8,
                       cursor: data ? 'pointer' : 'default',
                       color:  isToday ? 'var(--accent-hi)' : data ? 'var(--text-2)' : 'var(--text-3)',
-                      background: data ? 'var(--surface-1)' : 'transparent',
+                      background: isToday ? 'var(--accent-fill)' : data ? 'var(--surface-1)' : 'transparent',
                       border: `1.5px solid ${isToday ? 'var(--accent-border-hi)' : 'transparent'}`,
                       opacity: dimmed ? 0.2 : 1,
                       transition: 'opacity .15s',

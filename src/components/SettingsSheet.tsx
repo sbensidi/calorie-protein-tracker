@@ -772,40 +772,43 @@ function ProfileScreen({ lang, profile, onSave, showToast, weightLogEntries = []
       </div>
 
       {/* ── Weight Log section ─────────────────────────────────── */}
-      <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.07em', margin: '0 0 12px' }}>
-        {t(lang, 'weightLog')}
-      </p>
-      <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-        <div style={{ position: 'relative', flex: 1 }}>
-          <input
-            type="number"
-            inputMode="decimal"
-            className="inp"
-            style={{ width: '100%', fontSize: 16, boxSizing: 'border-box', paddingInlineEnd: weightInput ? 28 : undefined }}
-            placeholder={t(lang, 'weightKgPlaceholder')}
-            value={weightInput}
-            onChange={e => setWeightInput(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter') handleLogWeight() }}
-          />
-          {weightInput && (
-            <button
-              onMouseDown={e => { e.preventDefault(); setWeightInput('') }}
-              tabIndex={-1}
-              aria-label={t(lang, 'clearField')}
-              style={{ position: 'absolute', insetInlineEnd: 0, top: 0, bottom: 0, width: 28, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-            >
-              <span className="icon icon-sm">close</span>
-            </button>
-          )}
+      <div style={{ background: 'var(--accent-fill)', border: '1px solid var(--accent-border)', borderRadius: 12, padding: '12px 14px', marginBottom: 16 }}>
+        <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent-hi)', textTransform: 'uppercase', letterSpacing: '0.07em', margin: '0 0 10px', display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span className="icon" style={{ fontSize: 14 }}>monitor_weight</span>
+          {t(lang, 'weightLog')}
+        </p>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <div style={{ position: 'relative', flex: 1 }}>
+            <input
+              type="number"
+              inputMode="decimal"
+              className="inp"
+              style={{ width: '100%', fontSize: 16, boxSizing: 'border-box', paddingInlineEnd: weightInput ? 28 : undefined }}
+              placeholder={t(lang, 'weightKgPlaceholder')}
+              value={weightInput}
+              onChange={e => setWeightInput(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') handleLogWeight() }}
+            />
+            {weightInput && (
+              <button
+                onMouseDown={e => { e.preventDefault(); setWeightInput('') }}
+                tabIndex={-1}
+                aria-label={t(lang, 'clearField')}
+                style={{ position: 'absolute', insetInlineEnd: 0, top: 0, bottom: 0, width: 28, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              >
+                <span className="icon icon-sm">close</span>
+              </button>
+            )}
+          </div>
+          <button
+            className="btn-primary"
+            style={{ flexShrink: 0, paddingInline: 16, opacity: loggingWeight ? 0.7 : 1 }}
+            onClick={handleLogWeight}
+            disabled={loggingWeight || !weightInput}
+          >
+            {t(lang, 'logWeight')}
+          </button>
         </div>
-        <button
-          className="btn-ghost"
-          style={{ flexShrink: 0, paddingInline: 16, opacity: loggingWeight ? 0.7 : 1, border: '1.5px solid var(--accent)', color: 'var(--accent-hi)' }}
-          onClick={handleLogWeight}
-          disabled={loggingWeight || !weightInput}
-        >
-          {t(lang, 'logWeight')}
-        </button>
       </div>
 
       {/* Entry list — accordion when > 4 entries */}

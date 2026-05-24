@@ -17,6 +17,7 @@ interface DailySummaryProps {
 
 export function DailySummary({ meals, date, goalCalories, goalProtein, lang, fluidGoalMl = 0, fluidTodayMl = 0, streak = 0 }: DailySummaryProps) {
   const { styleMode } = useAppContext()
+  const isNarrow = typeof window !== 'undefined' && window.innerWidth < 380
   const totalCalories = Math.round(meals.reduce((s, m) => s + m.calories, 0))
   const totalProtein  = Math.round(meals.reduce((s, m) => s + m.protein, 0) * 10) / 10
 
@@ -185,9 +186,11 @@ export function DailySummary({ meals, date, goalCalories, goalProtein, lang, flu
       </div>
 
       {/* ── Active: Option B — responsive rich-donut row ── */}
-      <div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'flex-start', gap: 4 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'flex-start', gap: isNarrow ? 2 : 4 }}>
         {items.map(m => {
           const pct = m.goal > 0 ? Math.round((m.value / m.goal) * 100) : 0
+          const sz  = isNarrow ? 72 : 96
+          const sw  = isNarrow ? 7  : 9
           return (
             <div
               key={m.type}
@@ -198,26 +201,26 @@ export function DailySummary({ meals, date, goalCalories, goalProtein, lang, flu
                 goal={m.goal}
                 type={m.type}
                 lang={lang}
-                size={96}
-                strokeWidth={9}
-                style={{ width: '100%', maxWidth: 96, height: 'auto', aspectRatio: '1', flexShrink: 1 }}
+                size={sz}
+                strokeWidth={sw}
+                style={{ width: '100%', maxWidth: sz, height: 'auto', aspectRatio: '1', flexShrink: 1 }}
                 centerContent={
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1, padding: '0 4px' }}>
-                    <span style={{ fontSize: 'clamp(11px, 3.5vw, 17px)', fontWeight: 800, color: m.color, lineHeight: 1, letterSpacing: '-0.02em' }}>
+                    <span style={{ fontSize: isNarrow ? 'clamp(10px, 3vw, 13px)' : 'clamp(11px, 3.5vw, 17px)', fontWeight: 800, color: m.color, lineHeight: 1, letterSpacing: '-0.02em' }}>
                       {m.centerVal}
                     </span>
-                    <span style={{ fontSize: 'clamp(8px, 2.2vw, 10px)', fontWeight: 500, color: 'var(--text-3)', lineHeight: 1 }}>
+                    <span style={{ fontSize: isNarrow ? 'clamp(7px, 2vw, 9px)' : 'clamp(8px, 2.2vw, 10px)', fontWeight: 500, color: 'var(--text-3)', lineHeight: 1 }}>
                       {m.centerGoal}
                     </span>
                   </div>
                 }
               />
               <div style={{ textAlign: 'center', width: '100%' }}>
-                <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)', margin: '0 0 2px', display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: 4 }}>
-                  <span style={{ fontSize: 10, fontWeight: 700, color: m.over ? 'var(--danger)' : m.color, opacity: 0.8 }}>{pct}%</span>
+                <p style={{ fontSize: isNarrow ? 10 : 12, fontWeight: 700, color: 'var(--text)', margin: '0 0 2px', display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: 4 }}>
+                  <span style={{ fontSize: isNarrow ? 9 : 10, fontWeight: 700, color: m.over ? 'var(--danger)' : m.color, opacity: 0.8 }}>{pct}%</span>
                   {m.label}
                 </p>
-                <p style={{ fontSize: 10, fontWeight: 500, color: m.over ? 'var(--danger)' : 'var(--text-3)', margin: 0, lineHeight: 1.3 }}>
+                <p style={{ fontSize: isNarrow ? 9 : 10, fontWeight: 500, color: m.over ? 'var(--danger)' : 'var(--text-3)', margin: 0, lineHeight: 1.3 }}>
                   {m.remaining}
                 </p>
               </div>
