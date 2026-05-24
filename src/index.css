@@ -745,7 +745,7 @@ details[open] summary .chevron-rotate {
   position: fixed; inset: 0;
   background: var(--modal-backdrop);
   display: flex; align-items: center; justify-content: center;
-  z-index: 200; padding: 20px;
+  z-index: 200; padding: 60px 20px 20px;
 }
 .compose-modal {
   background: var(--bg-card2);
