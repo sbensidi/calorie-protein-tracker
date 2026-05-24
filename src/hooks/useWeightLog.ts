@@ -30,7 +30,7 @@ export function useWeightLog(userId: string | null) {
       .select('id,user_id,date,weight_kg,created_at')
       .eq('user_id', userId)
       .gte('date', cutoff.toISOString().slice(0, 10))
-      .order('date', { ascending: false })
+      .order('date', { ascending: true })
     if (err) setError(err.message)
     else { setEntries((data as unknown[]).filter(isWeightLog)); setError(null) }
     setLoading(false)

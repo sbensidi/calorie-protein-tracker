@@ -813,7 +813,7 @@ function ProfileScreen({ lang, profile, onSave, showToast, weightLogEntries = []
 
       {/* Entry list — accordion when > 4 entries */}
       {weightLogEntries.length > 0 && (() => {
-        const visible = logExpanded ? weightLogEntries : weightLogEntries.slice(0, 4)
+        const visible = logExpanded ? weightLogEntries : weightLogEntries.slice(-4)
         return (
           <div style={{ marginBottom: 16 }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
