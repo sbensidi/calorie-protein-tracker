@@ -1127,7 +1127,7 @@ export function TodayTab({
         className="fab-btn"
         style={{
           position: 'fixed',
-          bottom: 'calc(32px + env(safe-area-inset-bottom, 0px))',
+          bottom: 'calc(16px + env(safe-area-inset-bottom, 0px))',
           insetInlineEnd: 'max(calc((100vw - 560px) / 2 + 24px), 24px)',
           zIndex: 40, // --z-fab
           width: 56, height: 56, borderRadius: '50%',

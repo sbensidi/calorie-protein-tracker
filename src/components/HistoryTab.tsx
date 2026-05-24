@@ -2294,7 +2294,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
       <div
         style={{
           position: 'fixed',
-          bottom: 'calc(32px + env(safe-area-inset-bottom, 0px))',
+          bottom: 'calc(16px + env(safe-area-inset-bottom, 0px))',
           insetInlineEnd: 'max(calc((100vw - 560px) / 2 + 24px), 24px)',
           zIndex: 40, // --z-fab
           display: 'flex',
