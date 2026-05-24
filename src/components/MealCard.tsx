@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import type { Meal } from '../types'
 import type { Lang } from '../lib/i18n'
 import { t, dir } from '../lib/i18n'
@@ -32,6 +32,8 @@ function fmtDisplayUnit(meal: Meal, lang: Lang): string | null {
 
 export function MealCard({ meal, lang, weightUnit = 'g', showCheckbox, selected, onToggleSelect, onEdit, enableWeightScaling = false, servingG, onDelete, onDuplicate, listStyle = false }: MealCardProps) {
   const [editing, setEditing] = useState(false)
+  const [quickEdit, setQuickEdit] = useState(false)
+  const quickInputRef = useRef<HTMLInputElement>(null)
   const [editName,     setEditName]     = useState(meal.name)
   const [editMealType, setEditMealType] = useState<MealType>(meal.meal_type as MealType)
   const [editNotes, setEditNotes] = useState(meal.notes ?? '')
@@ -90,6 +92,41 @@ export function MealCard({ meal, lang, weightUnit = 'g', showCheckbox, selected,
     setEditNotes(meal.notes ?? '')
     setEditing(false)
   }
+
+  const openQuickEdit = () => {
+    if (enableWeightScaling) {
+      const base = isFluidEntry ? (meal.fluid_ml ?? 0) : Math.abs(meal.grams)
+      const d = base || 1
+      editor.ratios.current = { calPerUnit: meal.calories / d, protPerUnit: meal.protein / d, perServing: isPcsEntry }
+    }
+    editor.sg.current = servingG ?? 100
+    setQuickEdit(true)
+  }
+
+  const saveQuickEdit = () => {
+    const w     = parseFloat(editor.amountStr) || 0
+    const isVol = editor.unit !== 'pcs' && UNITS[editor.unit as UnitId].type === 'volume'
+    const base  = editor.unit === 'pcs' ? w : toBase(w, editor.unit as UnitId)
+    onEdit(meal.id, {
+      calories: Math.max(0, Number(editor.calories) || 0),
+      protein:  Math.max(0, Number(editor.protein)  || 0),
+      grams:    editor.unit === 'pcs' ? -w : Math.round(base),
+      ...(isVol ? { fluid_ml: base, display_unit: editor.unit, display_amount: w }
+                : { fluid_ml: null, display_unit: null, display_amount: null }),
+    })
+    setQuickEdit(false)
+  }
+
+  const cancelQuickEdit = () => {
+    editor.setAmountStr(String(isFluidEntry ? Math.round(meal.fluid_ml!) : Math.abs(meal.grams)))
+    editor.setUnit(isFluidEntry ? 'ml' : isPcsEntry ? 'pcs' : 'g')
+    editor.ratios.current = null
+    setQuickEdit(false)
+  }
+
+  useEffect(() => {
+    if (quickEdit) quickInputRef.current?.focus()
+  }, [quickEdit])
 
   if (editing) {
     return (
@@ -215,14 +252,20 @@ export function MealCard({ meal, lang, weightUnit = 'g', showCheckbox, selected,
               value={editor.unit}
               onChange={e => editor.handleUnitChange(e.target.value as Parameters<typeof editor.handleUnitChange>[0])}
             >
-              <option value="g">{t(lang, 'unitOptG')}</option>
-              <option value="oz">{t(lang, 'unitOptOz')}</option>
-              <option value="ml">{t(lang, 'unitOptMl')}</option>
-              <option value="cup">{t(lang, 'unitOptCup')}</option>
-              <option value="tbsp">{t(lang, 'unitOptTbsp')}</option>
-              <option value="tsp">{t(lang, 'unitOptTsp')}</option>
-              <option value="fl_oz">{t(lang, 'unitOptFlOz')}</option>
-              <option value="pcs">{t(lang, 'serving')}</option>
+              <optgroup label={t(lang, 'unitGroupWeight')}>
+                <option value="g">{t(lang, 'unitOptG')}</option>
+                <option value="oz">{t(lang, 'unitOptOz')}</option>
+              </optgroup>
+              <optgroup label={t(lang, 'unitGroupVolume')}>
+                <option value="ml">{t(lang, 'unitOptMl')}</option>
+                <option value="fl_oz">{t(lang, 'unitOptFlOz')}</option>
+                <option value="cup">{t(lang, 'unitOptCup')}</option>
+                <option value="tbsp">{t(lang, 'unitOptTbsp')}</option>
+                <option value="tsp">{t(lang, 'unitOptTsp')}</option>
+              </optgroup>
+              <optgroup label={t(lang, 'unitGroupCount')}>
+                <option value="pcs">{t(lang, 'serving')}</option>
+              </optgroup>
             </select>
           </div>
         </div>
@@ -355,23 +398,69 @@ export function MealCard({ meal, lang, weightUnit = 'g', showCheckbox, selected,
 
       {/* Content: 2-line layout — Line1: name+qty, Line2: cal+protein */}
       <div style={{ flex: 1, minWidth: 0 }}>
-        {/* Line 1: food name + quantity */}
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 5, overflow: 'hidden' }}>
+        {/* Line 1: food name + quantity (tap quantity to quick-edit) */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 5, overflow: quickEdit ? 'visible' : 'hidden', flexWrap: quickEdit ? 'wrap' : 'nowrap' }}>
           <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>
             {meal.name}
             {meal.fluid_ml != null && !meal.fluid_excluded && (
               <span className="icon" style={{ fontSize: 13, color: 'var(--cyan-hi)', opacity: 0.8, verticalAlign: 'middle', marginInlineStart: 3 }}>water_drop</span>
             )}
           </span>
-          <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-3)', whiteSpace: 'nowrap', flexShrink: 0 }}>
-            {meal.fluid_ml != null && !meal.fluid_excluded
-              ? (meal.fluid_ml >= 1000
-                  ? `${(meal.fluid_ml / 1000).toFixed(1)}${t(lang, 'litersUnit')}`
-                  : `${Math.round(meal.fluid_ml)}ml`)
-              : meal.grams < 0
-                ? `${Math.abs(meal.grams)} ${t(lang, 'unitLabel')}`
-                : (fmtDisplayUnit(meal, lang) ?? formatWeight(meal.grams, weightUnit, lang))}
-          </span>
+          {quickEdit ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+              <input
+                ref={quickInputRef}
+                type="number"
+                inputMode="decimal"
+                value={editor.amountStr}
+                onChange={e => editor.setAmountStr(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') saveQuickEdit(); if (e.key === 'Escape') cancelQuickEdit() }}
+                style={{ width: 64, fontSize: 13, padding: '3px 6px', border: '1.5px solid var(--accent-border-hi)', borderRadius: 6, background: 'var(--inp-bg)', color: 'var(--text)', outline: 'none', fontFamily: 'inherit' }}
+              />
+              <select
+                value={editor.unit}
+                onChange={e => editor.handleUnitChange(e.target.value as Parameters<typeof editor.handleUnitChange>[0])}
+                style={{ fontSize: 13, padding: '3px 4px', border: '1px solid var(--border)', borderRadius: 6, background: 'var(--inp-bg)', color: 'var(--text)', fontFamily: 'inherit' }}
+              >
+                <optgroup label={t(lang, 'unitGroupWeight')}>
+                  <option value="g">{t(lang, 'unitOptG')}</option>
+                  <option value="oz">{t(lang, 'unitOptOz')}</option>
+                </optgroup>
+                <optgroup label={t(lang, 'unitGroupVolume')}>
+                  <option value="ml">{t(lang, 'unitOptMl')}</option>
+                  <option value="fl_oz">{t(lang, 'unitOptFlOz')}</option>
+                  <option value="cup">{t(lang, 'unitOptCup')}</option>
+                  <option value="tbsp">{t(lang, 'unitOptTbsp')}</option>
+                  <option value="tsp">{t(lang, 'unitOptTsp')}</option>
+                </optgroup>
+                <optgroup label={t(lang, 'unitGroupCount')}>
+                  <option value="pcs">{t(lang, 'serving')}</option>
+                </optgroup>
+              </select>
+              <button onClick={saveQuickEdit} aria-label={t(lang, 'save')} style={{ background: 'var(--accent)', color: 'var(--on-color)', border: 'none', borderRadius: 6, width: 26, height: 26, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <span className="icon" style={{ fontSize: 16 }}>check</span>
+              </button>
+              <button onClick={cancelQuickEdit} aria-label={t(lang, 'cancel')} style={{ background: 'var(--surface-1)', color: 'var(--text-3)', border: '1px solid var(--border)', borderRadius: 6, width: 26, height: 26, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <span className="icon" style={{ fontSize: 16 }}>close</span>
+              </button>
+            </div>
+          ) : (
+            <span
+              onClick={() => !editing && openQuickEdit()}
+              title={t(lang, 'quickEditAmount')}
+              style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-3)', whiteSpace: 'nowrap', flexShrink: 0, cursor: 'pointer', borderRadius: 4, padding: '1px 4px', transition: 'background .12s' }}
+              onMouseEnter={e => (e.currentTarget.style.background = 'var(--accent-fill)')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+            >
+              {meal.fluid_ml != null && !meal.fluid_excluded
+                ? (meal.fluid_ml >= 1000
+                    ? `${(meal.fluid_ml / 1000).toFixed(1)}${t(lang, 'litersUnit')}`
+                    : `${Math.round(meal.fluid_ml)}ml`)
+                : meal.grams < 0
+                  ? `${Math.abs(meal.grams)} ${t(lang, 'unitLabel')}`
+                  : (fmtDisplayUnit(meal, lang) ?? formatWeight(meal.grams, weightUnit, lang))}
+            </span>
+          )}
         </div>
         {/* Line 2: calories + protein */}
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginTop: 3, flexWrap: 'wrap' }}>

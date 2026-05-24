@@ -538,10 +538,13 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
   // ml/cup/fl_oz are unambiguous beverage units → always count as fluid above threshold,
   // regardless of calories (coffee, juice, milk all have calories but are still fluids).
   // tbsp/tsp can be condiments/oils → still respect fluidZeroCalOnly for those.
-  const isVolumeUnit    = editor.unit !== 'pcs' && editor.unit !== 'g' && editor.unit !== 'oz'
-  const detectedFluidMl = isVolumeUnit ? toBase(numericAmount, editor.unit as UnitId) : null
-  const calZeroOk       = !fluidZeroCalOnly || numCalories === 0
-  const isFluid         = detectedFluidMl !== null && detectedFluidMl >= fluidThresholdMl && calZeroOk
+  const isVolumeUnit      = editor.unit !== 'pcs' && editor.unit !== 'g' && editor.unit !== 'oz'
+  const detectedFluidMl   = isVolumeUnit ? toBase(numericAmount, editor.unit as UnitId) : null
+  // ml/cup/fl_oz are unambiguous drinks → always fluid regardless of calories.
+  // tbsp/tsp could be condiments/oils → respect fluidZeroCalOnly for those.
+  const isClearBeverageUnit = editor.unit === 'ml' || editor.unit === 'cup' || editor.unit === 'fl_oz'
+  const calZeroOk           = isClearBeverageUnit || !fluidZeroCalOnly || numCalories === 0
+  const isFluid             = detectedFluidMl !== null && detectedFluidMl >= fluidThresholdMl && calZeroOk
 
   const handleAdd = () => {
     if (!foodName.trim() || nutrition === null) return
@@ -1027,18 +1030,20 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
             }}
             style={{ fontSize: 16, fontWeight: 700, cursor: 'pointer', textOverflow: 'ellipsis', overflow: 'hidden' }}
           >
-            {([
-              { v: 'g',     he: 'גרם',        en: 'g'     },
-              { v: 'oz',    he: 'אונקיה',      en: 'oz'    },
-              { v: 'ml',    he: 'מ"ל',         en: 'ml'    },
-              { v: 'cup',   he: 'כוס',         en: 'cup'   },
-              { v: 'tbsp',  he: 'כף',          en: 'tbsp'  },
-              { v: 'tsp',   he: 'כפית',        en: 'tsp'   },
-              { v: 'fl_oz', he: 'פל.אונ׳',    en: 'fl oz' },
-              { v: 'pcs',   he: 'מנה',         en: 'serving' },
-            ] as const).map(u => (
-              <option key={u.v} value={u.v}>{lang === 'he' ? u.he : u.en}</option>
-            ))}
+            <optgroup label={t(lang, 'unitGroupWeight')}>
+              <option value="g">{lang === 'he' ? 'גרם' : 'g'}</option>
+              <option value="oz">{lang === 'he' ? 'אונקיה' : 'oz'}</option>
+            </optgroup>
+            <optgroup label={t(lang, 'unitGroupVolume')}>
+              <option value="ml">{lang === 'he' ? 'מ"ל' : 'ml'}</option>
+              <option value="fl_oz">{lang === 'he' ? 'פל.אונ׳' : 'fl oz'}</option>
+              <option value="cup">{lang === 'he' ? 'כוס' : 'cup'}</option>
+              <option value="tbsp">{lang === 'he' ? 'כף' : 'tbsp'}</option>
+              <option value="tsp">{lang === 'he' ? 'כפית' : 'tsp'}</option>
+            </optgroup>
+            <optgroup label={t(lang, 'unitGroupCount')}>
+              <option value="pcs">{lang === 'he' ? 'מנה' : 'serving'}</option>
+            </optgroup>
           </select>
 
           {/* Col 3 — meal type */}
@@ -1433,18 +1438,20 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
                 value={editor.unit}
                 onChange={e => editor.handleUnitChange(e.target.value as EntryUnit)}
               >
-                {([
-                  { v: 'g',     he: 'גרם',      en: 'g'     },
-                  { v: 'oz',    he: 'אונקיה',    en: 'oz'    },
-                  { v: 'ml',    he: 'מ"ל',       en: 'ml'    },
-                  { v: 'cup',   he: 'כוס',       en: 'cup'   },
-                  { v: 'tbsp',  he: 'כף',        en: 'tbsp'  },
-                  { v: 'tsp',   he: 'כפית',      en: 'tsp'   },
-                  { v: 'fl_oz', he: "פל.אונ׳",   en: 'fl oz' },
-                  { v: 'pcs',   he: 'מנה',       en: 'serving' },
-                ] as const).map(u => (
-                  <option key={u.v} value={u.v}>{lang === 'he' ? u.he : u.en}</option>
-                ))}
+                <optgroup label={t(lang, 'unitGroupWeight')}>
+                  <option value="g">{lang === 'he' ? 'גרם' : 'g'}</option>
+                  <option value="oz">{lang === 'he' ? 'אונקיה' : 'oz'}</option>
+                </optgroup>
+                <optgroup label={t(lang, 'unitGroupVolume')}>
+                  <option value="ml">{lang === 'he' ? 'מ"ל' : 'ml'}</option>
+                  <option value="fl_oz">{lang === 'he' ? 'פל.אונ׳' : 'fl oz'}</option>
+                  <option value="cup">{lang === 'he' ? 'כוס' : 'cup'}</option>
+                  <option value="tbsp">{lang === 'he' ? 'כף' : 'tbsp'}</option>
+                  <option value="tsp">{lang === 'he' ? 'כפית' : 'tsp'}</option>
+                </optgroup>
+                <optgroup label={t(lang, 'unitGroupCount')}>
+                  <option value="pcs">{lang === 'he' ? 'מנה' : 'serving'}</option>
+                </optgroup>
               </select>
             </div>
           </div>

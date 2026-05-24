@@ -383,8 +383,23 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
     under_prot: { bg: 'var(--library-tint)',  border: 'var(--library-border)',  color: 'var(--library-hi)'  },
   }
 
-  const StatusFilterBar = () => (
-    <div style={{ display: 'flex', gap: 6 }}>
+  const StatusFilterBar = ({ showSort = false }: { showSort?: boolean }) => (
+    <div style={{ display: 'flex', gap: 6, alignItems: 'stretch' }}>
+      {showSort && (
+        <button
+          onClick={() => setSortAsc(v => !v)}
+          aria-label={sortAsc ? t(lang, 'sortOldFirst') : t(lang, 'sortNewFirst')}
+          title={sortAsc ? t(lang, 'sortOldFirst') : t(lang, 'sortNewFirst')}
+          style={{
+            flexShrink: 0, width: 34, borderRadius: 10, cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            border: '1px solid var(--border)', background: 'var(--bg-card)',
+            color: 'var(--text-3)', transition: 'all .15s',
+          }}
+        >
+          <span className="icon icon-sm">{sortAsc ? 'arrow_upward' : 'arrow_downward'}</span>
+        </button>
+      )}
       {filterChips.map(({ key, icon }) => {
         const isActive = statusFilter === key
         const a = filterActive[key]
@@ -935,20 +950,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
               }}>
               <div style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column', gap: 8 }}>
               <div style={{ display: 'flex', gap: 6, alignItems: 'stretch', flexShrink: 0 }}>
-                <button
-                  onClick={() => setSortAsc(v => !v)}
-                  aria-label={sortAsc ? t(lang, 'sortOldFirst') : t(lang, 'sortNewFirst')}
-                  title={sortAsc ? (t(lang, 'sortOldFirst')) : (t(lang, 'sortNewFirst'))}
-                  style={{
-                    flexShrink: 0, width: 36, borderRadius: 10, cursor: 'pointer',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    border: '1px solid var(--border)', background: 'var(--bg-card)',
-                    color: 'var(--text-3)', transition: 'all .15s',
-                  }}
-                >
-                  <span className="icon icon-sm">{sortAsc ? 'arrow_upward' : 'arrow_downward'}</span>
-                </button>
-                {/* Search — moved to row 1 */}
+                {/* Search */}
                 <div style={{ position: 'relative', flex: 1 }}>
                 <button
                   onMouseDown={e => {
@@ -1052,7 +1054,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                 })()}
               </div>
               </div>
-              <StatusFilterBar />
+              <StatusFilterBar showSort />
               </div>{/* end inner overflow wrapper */}
               </div>{/* end rows 1+2 grid wrapper */}
 

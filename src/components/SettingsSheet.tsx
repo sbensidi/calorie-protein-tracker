@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef, useCallback } from 'react'
+import { useState, useMemo, useEffect, useLayoutEffect, useRef, useCallback } from 'react'
 import { useLockBodyScroll } from '../hooks/useLockBodyScroll'
 import { useFocusTrap } from '../hooks/useFocusTrap'
 import { useSheetScroll } from '../hooks/useSheetScroll'
@@ -1396,6 +1396,16 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
   const [editDraft, setEditDraft] = useState<{ name: string; grams: string; calories: string; protein: string }>({ name: '', grams: '', calories: '', protein: '' })
   const [editUnit,  setEditUnit]  = useState<UnitId | 'pcs'>('g')
   const [filter, setFilter]       = useState<'all' | 'foods' | 'beverage' | 'composed'>('all')
+  const HIST_PAGE = 30
+  const [visibleGroupCount, setVisibleGroupCount] = useState(HIST_PAGE)
+  const scrollAreaRef   = useRef<HTMLDivElement>(null)
+  const scrollBeforeLoad = useRef(0)
+  useLayoutEffect(() => {
+    const el = scrollAreaRef.current
+    if (!el || scrollBeforeLoad.current === 0) return
+    el.scrollTop = scrollBeforeLoad.current - 60
+    scrollBeforeLoad.current = 0
+  }, [visibleGroupCount])
   const chipScrollRef = useRef<HTMLDivElement>(null)
   const [chipCanScrollLeft,  setChipCanScrollLeft]  = useState(false)
   const [chipCanScrollRight, setChipCanScrollRight] = useState(false)
@@ -1421,6 +1431,7 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
   const [expandedHistoryGroup, setExpandedHistoryGroup] = useState<string | null>(null)
 
   const q = search.trim().toLowerCase()
+  useEffect(() => { setVisibleGroupCount(HIST_PAGE) }, [q, filter])
   const beverageHistory = history.filter(h => h.fluid_ml != null && h.fluid_ml > 0)
   const baseHistory = filter === 'beverage' ? beverageHistory : history
   const filtered = q
@@ -1580,7 +1591,7 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', position: 'relative', minHeight: 0 }}>
         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 20, background: 'linear-gradient(to bottom, var(--bg), transparent)', zIndex: 2, pointerEvents: 'none' }} />
         <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 56, background: 'linear-gradient(to top, var(--bg), transparent)', zIndex: 2, pointerEvents: 'none' }} />
-      <div style={{ flex: 1, overflowY: 'auto', minHeight: 0, padding: '4px 16px', paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 48px)' }}>
+      <div ref={scrollAreaRef} style={{ flex: 1, overflowY: 'auto', minHeight: 0, padding: '4px 16px', paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 48px)' }}>
 
       {(filter === 'all' || filter === 'foods' || filter === 'beverage') &&
        !(filter === 'all' && q && historyGroups.length === 0) && (
@@ -1602,7 +1613,7 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: minimal ? 0 : 6 }}>
-              {historyGroups.map(groupItems => {
+              {historyGroups.slice(0, visibleGroupCount).map(groupItems => {
                 const groupKey  = groupItems[0].name.toLowerCase()
                 const isGroup   = groupItems.length > 1
                 const isGroupExpanded = expandedHistoryGroup === groupKey
@@ -1956,6 +1967,23 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
                   </div>
                 )
               })}
+              {visibleGroupCount < historyGroups.length && (
+                <button
+                  onClick={() => {
+                    scrollBeforeLoad.current = scrollAreaRef.current?.scrollHeight ?? 0
+                    setVisibleGroupCount(c => c + HIST_PAGE)
+                  }}
+                  style={{
+                    display: 'block', width: '100%', padding: '12px 14px',
+                    background: 'transparent', border: 'none', borderTop: '1px solid var(--border)',
+                    cursor: 'pointer', fontFamily: 'inherit',
+                    fontSize: 12, fontWeight: 600, color: 'var(--accent-hi)',
+                    textAlign: 'center', borderRadius: 0,
+                  }}
+                >
+                  {t(lang, 'showMorePrefix')}{Math.min(HIST_PAGE, historyGroups.length - visibleGroupCount)}{t(lang, 'showMoreSuffix')}
+                </button>
+              )}
             </div>
           )
           }

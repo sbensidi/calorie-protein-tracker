@@ -1,4 +1,4 @@
-import { useRef, useEffect } from 'react'
+import { useRef, useEffect, useState } from 'react'
 import type { FoodHistory } from '../types'
 import type { Lang } from '../lib/i18n'
 import { t } from '../lib/i18n'
@@ -35,6 +35,8 @@ export function FoodHistoryModal({
   const unitLabel = t(lang, 'unitLabel')
   const { styleMode } = useAppContext()
   const minimal = styleMode === 'minimal'
+  const PAGE_SIZE = 30
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
 
   // Auto-focus search on open
   useEffect(() => {
@@ -50,6 +52,9 @@ export function FoodHistoryModal({
   }, [onClose])
 
   const q = search.trim().toLowerCase()
+  // Reset pagination when search query changes
+  useEffect(() => { setVisibleCount(PAGE_SIZE) }, [q])
+
   const filteredRaw = q
     ? [...history]
         .map(h => ({ h, score: fuzzyScore(q, h.name) }))
@@ -181,80 +186,103 @@ export function FoodHistoryModal({
             </>
           )}
 
-          {filtered.length === 0 && matchedComposed.length === 0 ? (
-            <div style={{ padding: '32px 0', textAlign: 'center', color: 'var(--text-3)', fontSize: 13 }}>
-              <p style={{ margin: 0 }}>{t(lang, 'noRecentFood')}</p>
-              <p style={{ fontSize: 11, margin: '4px 0 0', opacity: 0.7, display: 'flex', alignItems: 'center', gap: 4, justifyContent: 'center' }}>
-                <span className="icon" style={{ fontSize: 14 }}>add_circle</span>
-                {t(lang, 'addManually')}
-              </p>
-            </div>
-          ) : filtered.map((item, i) => {
-            const itemIsUnit  = item.grams < 0
-            const itemIsFluid = item.fluid_ml != null && item.fluid_ml > 0
-            const amtDisplay  = itemIsUnit  ? `${Math.abs(item.grams)} ${unitLabel}`
-              : itemIsFluid ? (item.fluid_ml! >= 1000 ? `${(item.fluid_ml! / 1000).toFixed(1)}${t(lang, 'litersUnit')}` : `${Math.round(item.fluid_ml!)}ml`)
-              : `${item.grams}g`
-            const isLast = i === filtered.length - 1
+          {/* Paginate when not searching — search always shows all results */}
+          {(() => {
+            const visibleFiltered = q ? filtered : filtered.slice(0, visibleCount)
+            const hasMore = !q && visibleCount < filtered.length
             return (
-              <button
-                key={item.id}
-                onClick={() => onSelectHistory(item)}
-                style={{
-                  display: 'block', width: '100%',
-                  padding: minimal ? '8px 14px' : '10px 14px',
-                  background: 'transparent', border: 'none',
-                  borderBottom: minimal
-                    ? (isLast ? 'none' : '1px dashed var(--border)')
-                    : (isLast ? 'none' : '1px solid var(--border)'),
-                  cursor: 'pointer', textAlign: 'start', fontFamily: 'inherit',
-                  transition: 'background .12s',
-                }}
-                onMouseEnter={e => (e.currentTarget.style.background = 'var(--inp-bg)')}
-                onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-              >
-                {minimal ? (
-                  <>
-                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 5, overflow: 'hidden' }}>
-                      <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>
-                        {item.name}
-                        {itemIsFluid && <span className="icon" style={{ fontSize: 12, color: 'var(--cyan-hi)', opacity: 0.8, verticalAlign: 'middle', margin: '0 4px' }}>water_drop</span>}
-                      </span>
-                      <span style={{ fontSize: 11, color: 'var(--text-3)', whiteSpace: 'nowrap', flexShrink: 0 }}>{amtDisplay}</span>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginTop: 2 }}>
-                      <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
-                        <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--accent-hi)', display: 'inline-flex', alignItems: 'baseline', gap: 2 }}>
-                          {Math.round(item.calories)}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.8 }}>{t(lang, 'caloriesUnit')}</span>
-                        </span>
-                        <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--positive-hi)', display: 'inline-flex', alignItems: 'baseline', gap: 2 }}>
-                          {Math.round(item.protein * 10) / 10}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.8 }}>{t(lang, 'gProteinLabel')}</span>
-                        </span>
-                      </div>
-                      <span style={{ fontSize: 10, color: 'var(--text-3)' }}>{item.use_count} {t(lang, 'uses')}</span>
-                    </div>
-                  </>
-                ) : (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {item.name}
-                      </p>
-                      <p style={{ fontSize: 11, color: 'var(--text-3)', margin: '2px 0 0' }}>
-                        {amtDisplay} · {item.use_count} {t(lang, 'uses')}
-                      </p>
-                    </div>
-                    <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-                      <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent-hi)' }}>{Math.round(item.calories)}</span>
-                      <span style={{ fontSize: 11, color: 'var(--text-3)' }}>{t(lang, 'caloriesUnit')}</span>
-                      <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--positive-hi)', marginInlineStart: 4 }}>{Math.round(item.protein * 10) / 10}</span>
-                      <span style={{ fontSize: 11, color: 'var(--text-3)' }}>{t(lang, 'proteinUnit')}</span>
-                    </div>
+              <>
+                {visibleFiltered.length === 0 && matchedComposed.length === 0 ? (
+                  <div style={{ padding: '32px 0', textAlign: 'center', color: 'var(--text-3)', fontSize: 13 }}>
+                    <p style={{ margin: 0 }}>{t(lang, 'noRecentFood')}</p>
+                    <p style={{ fontSize: 11, margin: '4px 0 0', opacity: 0.7, display: 'flex', alignItems: 'center', gap: 4, justifyContent: 'center' }}>
+                      <span className="icon" style={{ fontSize: 14 }}>add_circle</span>
+                      {t(lang, 'addManually')}
+                    </p>
                   </div>
+                ) : visibleFiltered.map((item, i) => {
+                  const itemIsUnit  = item.grams < 0
+                  const itemIsFluid = item.fluid_ml != null && item.fluid_ml > 0
+                  const amtDisplay  = itemIsUnit  ? `${Math.abs(item.grams)} ${unitLabel}`
+                    : itemIsFluid ? (item.fluid_ml! >= 1000 ? `${(item.fluid_ml! / 1000).toFixed(1)}${t(lang, 'litersUnit')}` : `${Math.round(item.fluid_ml!)}ml`)
+                    : `${item.grams}g`
+                  const isLast = i === visibleFiltered.length - 1 && !hasMore
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => onSelectHistory(item)}
+                      style={{
+                        display: 'block', width: '100%',
+                        padding: minimal ? '8px 14px' : '10px 14px',
+                        background: 'transparent', border: 'none',
+                        borderBottom: minimal
+                          ? (isLast ? 'none' : '1px dashed var(--border)')
+                          : (isLast ? 'none' : '1px solid var(--border)'),
+                        cursor: 'pointer', textAlign: 'start', fontFamily: 'inherit',
+                        transition: 'background .12s',
+                      }}
+                      onMouseEnter={e => (e.currentTarget.style.background = 'var(--inp-bg)')}
+                      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                    >
+                      {minimal ? (
+                        <>
+                          <div style={{ display: 'flex', alignItems: 'baseline', gap: 5, overflow: 'hidden' }}>
+                            <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>
+                              {item.name}
+                              {itemIsFluid && <span className="icon" style={{ fontSize: 12, color: 'var(--cyan-hi)', opacity: 0.8, verticalAlign: 'middle', margin: '0 4px' }}>water_drop</span>}
+                            </span>
+                            <span style={{ fontSize: 11, color: 'var(--text-3)', whiteSpace: 'nowrap', flexShrink: 0 }}>{amtDisplay}</span>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginTop: 2 }}>
+                            <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+                              <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--accent-hi)', display: 'inline-flex', alignItems: 'baseline', gap: 2 }}>
+                                {Math.round(item.calories)}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.8 }}>{t(lang, 'caloriesUnit')}</span>
+                              </span>
+                              <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--positive-hi)', display: 'inline-flex', alignItems: 'baseline', gap: 2 }}>
+                                {Math.round(item.protein * 10) / 10}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.8 }}>{t(lang, 'gProteinLabel')}</span>
+                              </span>
+                            </div>
+                            <span style={{ fontSize: 10, color: 'var(--text-3)' }}>{item.use_count} {t(lang, 'uses')}</span>
+                          </div>
+                        </>
+                      ) : (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {item.name}
+                            </p>
+                            <p style={{ fontSize: 11, color: 'var(--text-3)', margin: '2px 0 0' }}>
+                              {amtDisplay} · {item.use_count} {t(lang, 'uses')}
+                            </p>
+                          </div>
+                          <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+                            <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent-hi)' }}>{Math.round(item.calories)}</span>
+                            <span style={{ fontSize: 11, color: 'var(--text-3)' }}>{t(lang, 'caloriesUnit')}</span>
+                            <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--positive-hi)', marginInlineStart: 4 }}>{Math.round(item.protein * 10) / 10}</span>
+                            <span style={{ fontSize: 11, color: 'var(--text-3)' }}>{t(lang, 'proteinUnit')}</span>
+                          </div>
+                        </div>
+                      )}
+                    </button>
+                  )
+                })}
+                {hasMore && (
+                  <button
+                    onClick={() => setVisibleCount(c => c + PAGE_SIZE)}
+                    style={{
+                      display: 'block', width: '100%', padding: '12px 14px',
+                      background: 'transparent', border: 'none', borderTop: '1px solid var(--border)',
+                      cursor: 'pointer', fontFamily: 'inherit',
+                      fontSize: 12, fontWeight: 600, color: 'var(--accent-hi)',
+                      textAlign: 'center',
+                    }}
+                  >
+                    {t(lang, 'showMorePrefix')}{Math.min(PAGE_SIZE, filtered.length - visibleCount)}{t(lang, 'showMoreSuffix')}
+                  </button>
                 )}
-              </button>
+              </>
             )
-          })}
+          })()}
         </div>
       </div>
     </div>
