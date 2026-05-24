@@ -105,9 +105,8 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
     }
   }, [isOpen, defaultMealType])
 
-  const [calculating, setCalculating]   = useState(false)
-  const [hasCalculated, setHasCalculated] = useState(false)
-  const [nutrition, setNutrition]       = useState<NutritionResult | null>(null)
+  const [calculating, setCalculating] = useState(false)
+  const [nutrition, setNutrition]     = useState<NutritionResult | null>(null)
   const editor = useNutritionAmountEditor({
     initialAmount:   '',
     initialUnit:     defaultWeightUnit,
@@ -200,7 +199,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
     setFoodName(v)
     openDropdown(v)
     setNutrition(null)
-    setHasCalculated(false)
+
     setSelectedHistoryId(null)   // user is typing a new name — no longer a history selection
     if (!v.trim()) { matchedLibraryItemRef.current = null; setMatchedLib(null) }
   }
@@ -304,7 +303,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
     if (now - lastCalcRef.current < 3000) return
     lastCalcRef.current = now
     setCalculating(true)
-    setHasCalculated(false)
+
     setAiError(null)
     setDropdownOpen(false)
     setSelectedHistoryId(null)
@@ -369,7 +368,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
         const fatVal  = exact.fat_per_100g   != null ? Math.round(exact.fat_per_100g   * libGrams / 100 * 10) / 10 : null
         const carbVal = exact.carbs_per_100g != null ? Math.round(exact.carbs_per_100g * libGrams / 100 * 10) / 10 : null
         setNutrition({ calories: cal, protein: prot, fat: fatVal ?? undefined, carbs: carbVal ?? undefined })
-        setHasCalculated(true)
+
         editor.setCalories(cal)
         editor.setProtein(prot)
         setEditFat(fatVal)
@@ -403,7 +402,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
           perServing:  isPcs,  // AI calculated in pcs mode → ratio is cal/serving, not cal/gram
         }
         setNutrition(result)
-        setHasCalculated(true)
+
         editor.setCalories(result.calories)
         editor.setProtein(result.protein)
         setEditFat(result.fat   != null ? result.fat   : null)
@@ -429,7 +428,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
     setFoodName('')
     editor.setAmountStr('')
     setNutrition(null)
-    setHasCalculated(false)
+
     editor.setCalories('')
     editor.setProtein('')
     setEditFat(null)
@@ -576,7 +575,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
     setFoodName('')
     editor.setAmountStr('')
     setNutrition(null)
-    setHasCalculated(false)
+
     setDropdownOpen(false)
     setSuggestions([])
     setAiError(null)
@@ -1066,7 +1065,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
           {calculating && (
             <span className="icon icon-sm" style={{ animation: 'spin 0.7s linear infinite', display: 'inline-block' }}>progress_activity</span>
           )}
-          {calculating ? t(lang, 'calculating') : hasCalculated ? t(lang, 'recalculate') : t(lang, 'calculate')}
+          {calculating ? t(lang, 'calculating') : t(lang, 'calculate')}
         </button>
 
       </div>
