@@ -818,24 +818,35 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, se
       {/* ── Scan mode: not found ──────────────────────────────── */}
       {mode === 'scan' && !scanProduct && scanNotFound && (
         <div className="scanner-error" dir={isRTL ? 'rtl' : 'ltr'}>
-          <span className="icon" style={{ fontSize: 32, color: 'var(--text-3)', marginBottom: 8 }}>barcode_scanner</span>
+          <span className="icon" style={{ fontSize: 32, color: 'var(--text-3)', marginBottom: 6 }}>barcode_scanner</span>
           <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-2)', textAlign: 'center', marginBottom: 4 }}>
             {t(lang, 'productNotFound')}
           </p>
-          <p dir="ltr" style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 14, fontFamily: 'monospace' }}>
+          <p dir="ltr" style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 6, fontFamily: 'monospace' }}>
             {scanNotFound}
           </p>
-          <button className="btn-ghost" onClick={handleScanAgain}
-            style={{ fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span className="icon icon-sm">refresh</span>
-            {t(lang, 'scanAgain')}
-          </button>
-          {FEATURES.photoNutrition && (
-            <PhotoNutritionCapture
-              lang={lang}
-              onResult={handlePhotoResult}
-              onSwitchManual={() => switchMode('manual')}
-            />
+          {FEATURES.photoNutrition ? (
+            <>
+              <p style={{ fontSize: 12, color: 'var(--text-3)', textAlign: 'center', margin: '0 0 12px', lineHeight: 1.5 }}>
+                {t(lang, 'barcodeNotFoundHint')}
+              </p>
+              <PhotoNutritionCapture
+                lang={lang}
+                onResult={handlePhotoResult}
+                onSwitchManual={() => switchMode('manual')}
+              />
+              <button className="btn-ghost" onClick={handleScanAgain}
+                style={{ fontSize: 12, display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-3)', marginTop: 4 }}>
+                <span className="icon icon-sm">refresh</span>
+                {t(lang, 'scanAgain')}
+              </button>
+            </>
+          ) : (
+            <button className="btn-ghost" onClick={handleScanAgain}
+              style={{ fontSize: 13, display: 'flex', alignItems: 'center', gap: 6, marginTop: 8 }}>
+              <span className="icon icon-sm">refresh</span>
+              {t(lang, 'scanAgain')}
+            </button>
           )}
         </div>
       )}
