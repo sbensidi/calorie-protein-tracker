@@ -120,6 +120,10 @@
   --cyan-hi:   #22d3ee;
   --cyan-tint: rgba(6,182,212,0.10);
   --cyan-fill: rgba(6,182,212,0.07);
+  /* Ghost — period-comparison overlay (phosphorescent yellow-green) */
+  --ghost-fill:   rgba(206,255,30,0.22);
+  --ghost-border: rgba(206,255,30,0.40);
+  --ghost-stroke: rgba(206,255,30,0.50);
   /* Neutral — toggle track / muted UI (text-3 based) */
   --neutral-fill:   rgba(107,127,150,0.06);
   --neutral-chip:   rgba(107,127,150,0.12);
@@ -241,6 +245,10 @@
   --modal-backdrop: rgba(0,0,0,0.40);
   --scanner-bg:     #0e1117;
   --text-on-brand:  rgba(0,0,0,0.65);
+  /* Ghost — muted in light mode (less vivid on white background) */
+  --ghost-fill:   rgba(160,200,0,0.18);
+  --ghost-border: rgba(140,180,0,0.35);
+  --ghost-stroke: rgba(140,180,0,0.45);
 }
 
 /* Accessibility: focus ring */

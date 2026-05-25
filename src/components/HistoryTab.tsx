@@ -110,11 +110,11 @@ function PeriodBalanceCard({ lang, totalDays, daysElapsed, consumed, target, sho
       {/* Three stat tiles */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6 }}>
         {tiles.map(({ key, value, tileColor, prefix }) => (
-          <div key={key} style={{ background: 'var(--bg)', borderRadius: 10, padding: '7px 10px', display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <div key={key} style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 10, padding: '7px 10px', display: 'flex', flexDirection: 'column', gap: 2 }}>
             <span style={{ fontSize: 9, fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
               {t(lang, key)}
             </span>
-            <span style={{ fontSize: 14, fontWeight: 800, color: tileColor, fontVariantNumeric: 'tabular-nums', direction: 'ltr', unicodeBidi: 'embed' }}>
+            <span style={{ fontSize: 14, fontWeight: 800, color: tileColor, fontVariantNumeric: 'tabular-nums', direction: 'ltr', unicodeBidi: 'embed', display: 'block', textAlign: lang === 'he' ? 'right' : 'left' }}>
               {prefix}{Math.round(value).toLocaleString(locale)}
             </span>
           </div>
@@ -1705,7 +1705,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                             <div style={{ position: 'relative', width: '100%', height: barH, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
                               {goalHeight > 0 && <div style={{ position: 'absolute', bottom: goalHeight, left: 0, right: 0, borderTop: `1.5px dashed ${goalDashColor7}` }} />}
                               {prevHeight > 0 && (
-                                <div style={{ position: 'absolute', bottom: 0, left: '50%', transform: 'translateX(-50%)', width: '70%', height: prevHeight, borderRadius: '4px 4px 0 0', background: 'var(--border)', opacity: 0.6 }} />
+                                <div style={{ position: 'absolute', bottom: 0, left: '50%', transform: 'translateX(-50%)', width: '70%', height: prevHeight, borderRadius: '4px 4px 0 0', background: 'repeating-linear-gradient(45deg, transparent 0px, transparent 3px, var(--ghost-fill) 3px, var(--ghost-fill) 4px)', border: '1px solid var(--ghost-border)', borderBottom: 'none' }} />
                               )}
                               {hasBar && (
                                 <div style={{
@@ -1735,7 +1735,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                         {isCal7 ? t(lang, 'calories') : isProt7 ? t(lang, 'protein') : t(lang, 'fluid')}
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, color: 'var(--text-3)' }}>
-                        <div style={{ width: 12, height: 3, background: 'var(--border)', borderRadius: 2, opacity: 0.8 }} />
+                        <div style={{ width: 12, height: 8, borderRadius: 2, background: 'repeating-linear-gradient(45deg, transparent 0px, transparent 2px, var(--ghost-fill) 2px, var(--ghost-fill) 3px)', border: '1px solid var(--ghost-border)' }} />
                         {t(lang, 'prevPeriod')}
                       </div>
                       {(!isFluid7 || fluidGoalMl > 0) && (
@@ -2019,12 +2019,11 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                                 key={`prev-${si}`}
                                 points={seg.map(p => `${p.x},${p.y}`).join(' ')}
                                 fill="none"
-                                stroke="var(--text-3)"
-                                strokeWidth={1}
-                                strokeDasharray="3 2"
+                                stroke="var(--ghost-stroke)"
+                                strokeWidth={1.5}
+                                strokeDasharray="5 4"
                                 strokeLinejoin="round"
                                 strokeLinecap="round"
-                                opacity={0.4}
                               />
                             ))
                           })()}
@@ -2107,7 +2106,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                           </div>
                           {prevLineDays30.some(d => d.hasData) && (
                             <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, color: 'var(--text-3)' }}>
-                              <svg width={16} height={6} style={{ flexShrink: 0 }}><line x1={0} y1={3} x2={16} y2={3} stroke="var(--text-3)" strokeWidth={1} strokeDasharray="3 2" opacity={0.6} /></svg>
+                              <svg width={16} height={6} style={{ flexShrink: 0 }}><line x1={0} y1={3} x2={16} y2={3} stroke="var(--ghost-stroke)" strokeWidth={1.5} strokeDasharray="5 4" /></svg>
                               {t(lang, 'prevPeriod')}
                             </div>
                           )}
