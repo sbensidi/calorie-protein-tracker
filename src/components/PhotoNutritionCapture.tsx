@@ -44,7 +44,7 @@ export function PhotoNutritionCapture({ lang, onResult, onSwitchManual }: Props)
 
     let base64: string
     try {
-      base64 = await resizeImageToBase64(file, 512)
+      base64 = await resizeImageToBase64(file, 768)
       setPreview(`data:image/jpeg;base64,${base64}`)
     } catch {
       setState({ kind: 'error-parse' })

@@ -26,8 +26,8 @@ function checkRateLimit(ip: string): boolean {
 const GROQ_ENDPOINT = 'https://api.groq.com/openai/v1/chat/completions'
 const GROQ_VISION_MODEL = 'meta-llama/llama-4-scout-17b-16e-instruct'
 
-// Max base64 payload: ~2MB decoded ≈ 2.7MB base64
-const MAX_B64_LEN = 2_800_000
+// Max base64 payload: ~4MB decoded ≈ 5.4MB base64 (768px JPEG)
+const MAX_B64_LEN = 5_500_000
 
 function buildSystemPrompt(lang: 'he' | 'en'): string {
   const nameLang = lang === 'he' ? 'Hebrew' : 'English'
@@ -145,7 +145,7 @@ export default async function handler(req: Request): Promise<Response> {
           { role: 'user',   content: userContent },
         ],
         temperature: 0,
-        max_tokens: 120,
+        max_tokens: 160,
       }),
     })
   } catch {
