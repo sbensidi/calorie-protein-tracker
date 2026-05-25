@@ -11,6 +11,7 @@ import type { ComposedEntry } from './FoodEntryForm'
 import { FoodEntryForm } from './FoodEntryForm'
 import { calcMealTypeDistribution, calcMacroBreakdown } from '../lib/calculations'
 import { MealCard } from './MealCard'
+import { SheetHandle } from './SheetHandle'
 
 // ── Constants ────────────────────────────────────────────────────────
 
@@ -209,8 +210,9 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
   const monthTouchStartX  = useRef(0)
   const barChartRef       = useRef<HTMLDivElement>(null)
   const lineChartRef      = useRef<HTMLDivElement>(null)
-  const [sharingChart, setSharingChart] = useState(false)
-  const [addMealDate, setAddMealDate]   = useState<string | null>(null)
+  const [sharingChart, setSharingChart]         = useState(false)
+  const [addMealDate, setAddMealDate]           = useState<string | null>(null)
+  const [addMealDragOffset, setAddMealDragOffset] = useState(0)
   const addMealSheetRef  = useRef<HTMLDivElement>(null)
   useFocusTrap(addMealSheetRef, addMealDate !== null)
   const [statsPeriod, setStatsPeriod] = useState<'week' | 'month'>(
@@ -2423,7 +2425,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                   {onAddMeal && (
                     <div style={{ padding: '10px 14px 14px', borderTop: '1px solid var(--border)' }}>
                       <button
-                        onClick={() => setAddMealDate(selectedBarDate)}
+                        onClick={() => { const d = selectedBarDate; setSelectedBarDate(null); setAddMealDate(d) }}
                         style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600, color: 'var(--accent-hi)', background: 'var(--accent-fill)', border: '1px solid var(--accent-border)', borderRadius: 10, cursor: 'pointer', fontFamily: 'inherit', padding: '8px 14px', width: '100%', justifyContent: 'center' }}
                       >
                         <span className="icon icon-sm">add</span>
@@ -2467,20 +2469,23 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                 display: 'flex',
                 flexDirection: 'column',
                 boxShadow: '0 -4px 40px rgba(0,0,0,0.35)',
+                transform: `translateY(${addMealDragOffset}px)`,
+                transition: addMealDragOffset > 0 ? 'none' : 'transform 0.35s cubic-bezier(.22,.9,.36,1)',
+                opacity: addMealDragOffset > 0 ? Math.max(0.6, 1 - addMealDragOffset / 400) : 1,
               }}
             >
-              {/* Header */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 16px 12px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
+              {/* Drag handle + close */}
+              <SheetHandle
+                scrolledDown={false}
+                onClose={() => { setAddMealDragOffset(0); setAddMealDate(null) }}
+                onDragOffset={setAddMealDragOffset}
+                isRTL={lang === 'he'}
+              />
+              {/* Date title */}
+              <div style={{ padding: '8px 16px 12px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
                 <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>
                   {formatDate(addMealDate, lang)}
                 </span>
-                <button
-                  className="icon-btn"
-                  onClick={() => setAddMealDate(null)}
-                  aria-label={t(lang, 'cancel')}
-                >
-                  <span className="icon icon-sm">close</span>
-                </button>
               </div>
               {/* Scrollable form content */}
               <div style={{ flex: 1, overflowY: 'auto', padding: '20px 16px', paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 24px)' }}>
@@ -2495,7 +2500,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                   defaultWeightUnit={defaultWeightUnit}
                   fluidThresholdMl={fluidThresholdMl}
                   fluidZeroCalOnly={fluidZeroCalOnly}
-                  onAdd={meal => { onAddMeal(meal); setAddMealDate(null) }}
+                  onAdd={meal => { onAddMeal(meal); setAddMealDragOffset(0); setAddMealDate(null) }}
                   onUpsertHistory={onUpsertHistory ?? (() => {})}
                   onTouchHistory={onTouchHistory}
                   dateOverride={addMealDate}

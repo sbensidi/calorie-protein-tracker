@@ -60,7 +60,7 @@ export function SheetHandle({ scrolledDown, onClose, onBack, isRTL, onDragOffset
       <div style={{
         display: 'flex', justifyContent: 'center',
         alignItems: 'center',
-        padding: '12px 0 10px',
+        padding: '16px 0 14px',
         background: 'var(--bg)',
         borderBottom: '1px solid var(--border)',
       }}>
