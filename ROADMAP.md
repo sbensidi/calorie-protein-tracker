@@ -160,7 +160,7 @@
 **קבצים:** schema חדש `meal_templates` + `useMealTemplates.ts` + UI בEntry Form.
 > **⛔ נדלג:** כפילות — פיצ'ר המנה המורכבת (Composed Meal) כבר פותר בדיוק את זה. המשתמש יוצר מנה מורכבת פעם אחת (שם + מרכיבים), ובפעמים הבאות בוחר אותה מHFood History. אין צורך ב-schema נפרד.
 
-### 4.2 · Export מתקדם — שיתוף גרף 🔵 `[C9]` ⏱ 4 שעות 🔄 בביצוע
+### 4.2 · Export מתקדם — שיתוף גרף 🔵 `[C9]` ⏱ 4 שעות ✅
 **מה:** CSV קיים אבל לא ניתן לשתף snapshot.
 **פתרון:** כפתור "שתף" ב-Stats view → `html2canvas` → תמונה של הגרף השבועי לשיתוף (WhatsApp, Notes, אלבום). ב-iOS: Web Share API.
 **קבצים:** `HistoryTab.tsx` + תלות חיצונית (`html2canvas` או SVG → PNG).
@@ -191,7 +191,7 @@
 **פתרון:** שלב עם PhotoNutritionCapture — הוסף מצב "scan label" שמפעיל Groq Vision עם prompt מיוחד לזיהוי טבלאות תזונה.
 **קבצים:** `PhotoNutritionCapture.tsx` — mode prop.
 
-### 5.2 · In-History Meal Edit (מלא) 🔴→⚪ `[B1 continuation]` ✅ (חלקי — מחיקה + הוספה לתאריך עבר)
+### 5.2 · In-History Meal Edit (מלא) 🔴→⚪ `[B1 continuation]` ✅
 **תלוי ב:** 2.1 (שלב ראשון)
 **מה:** שלב 2.1 מממש עריכה בסיסית. שלב זה מוסיף: יצירת ארוחה חדשה לתאריך עבר, מחיקה, שינוי תאריך.
 **פתרון:** Entry Sheet שמקבל `dateOverride` prop — מאפשר הוספת ארוחה לתאריך שאינו היום.
