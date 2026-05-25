@@ -111,6 +111,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, se
 
   const [calculating, setCalculating] = useState(false)
   const [nutrition, setNutrition]     = useState<NutritionResult | null>(null)
+  const [photoSource, setPhotoSource] = useState<'label' | 'dish' | null>(null)
   const editor = useNutritionAmountEditor({
     initialAmount:   '',
     initialUnit:     defaultWeightUnit,
@@ -206,6 +207,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, se
     setFoodName(v)
     openDropdown(v)
     setNutrition(null)
+    setPhotoSource(null)
 
     setSelectedHistoryId(null)   // user is typing a new name — no longer a history selection
     if (!v.trim()) { matchedLibraryItemRef.current = null; setMatchedLib(null) }
@@ -453,6 +455,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, se
     setFoodName('')
     editor.setAmountStr('')
     setNutrition(null)
+    setPhotoSource(null)
 
     editor.setCalories('')
     editor.setProtein('')
@@ -530,6 +533,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, se
     editor.setProtein(result.protein_per_100g)
     setFoodName(result.identified)
     setNutrition({ calories: result.calories_per_100g, protein: result.protein_per_100g })
+    setPhotoSource(result.source)
     matchedLibraryItemRef.current = null
     setAiError(null)
     setMode('manual')
@@ -603,6 +607,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, se
     setFoodName('')
     editor.setAmountStr('')
     setNutrition(null)
+    setPhotoSource(null)
 
     setDropdownOpen(false)
     setSuggestions([])
@@ -1429,9 +1434,21 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, se
               {foodName}
             </span>
           )}
-          <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-2)', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 10 }}>
-            {t(lang, 'confirmNutrition')}
-          </p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+            <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-2)', letterSpacing: '0.06em', textTransform: 'uppercase', margin: 0 }}>
+              {t(lang, 'confirmNutrition')}
+            </p>
+            {photoSource && (
+              <span style={{
+                fontSize: 10, fontWeight: 600, borderRadius: 6, padding: '2px 7px',
+                color:      photoSource === 'label' ? 'var(--positive-hi)' : 'var(--accent-hi)',
+                background: photoSource === 'label' ? 'var(--positive-fill)' : 'var(--accent-fill)',
+                border:     `1px solid ${photoSource === 'label' ? 'var(--positive-border)' : 'var(--accent-border)'}`,
+              }}>
+                {t(lang, photoSource === 'label' ? 'photoSourceLabel' : 'photoSourceDish')}
+              </span>
+            )}
+          </div>
 
           {/* 4-column grid: calories | protein | amount | unit */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 8, marginBottom: 12 }}>
