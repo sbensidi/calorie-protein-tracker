@@ -24,7 +24,7 @@ export function useToast() {
     options?: { action?: ToastAction; durationMs?: number },
   ) => {
     const id = crypto.randomUUID()
-    const durationMs = options?.durationMs ?? 4000
+    const durationMs = options?.durationMs ?? 8000
     setToasts(prev => [...prev, { id, message, type, action: options?.action, durationMs }])
     // durationMs: 0 = persistent (no auto-dismiss, e.g. update notifications)
     if (durationMs === 0) return () => { setToasts(prev => prev.filter(t => t.id !== id)) }

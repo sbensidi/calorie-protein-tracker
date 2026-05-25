@@ -137,6 +137,7 @@ interface TodayTabProps {
   goalProtein: number
   getSuggestions: (q: string) => FoodHistory[]
   searchLibrary?: (q: string) => FoodLibraryItem[]
+  searchUserLibrary?: (q: string) => import('../types').UserFoodItem[]
   library?: FoodLibraryItem[]
   defaultServingGrams?: number
   defaultWeightUnit?: 'g' | 'oz'
@@ -164,7 +165,7 @@ interface TodayTabProps {
 
 export function TodayTab({
   lang, meals, loading = false, history, goalCalories, goalProtein,
-  getSuggestions, searchLibrary, library = [], defaultServingGrams = 150, defaultWeightUnit = 'g', defaultVolumeUnit = 'ml',
+  getSuggestions, searchLibrary, searchUserLibrary, library = [], defaultServingGrams = 150, defaultWeightUnit = 'g', defaultVolumeUnit = 'ml',
   onAddMeal, onAddMealWithId, onEditMeal, onDeleteMeal, onDuplicateMeal, onUpsertHistory, onTouchHistory,
   composedEntries, composedGroups, onUpsertGroup, onRemoveGroup, showToast,
   fluidGoalMl = 2500, fluidThresholdMl = 100, fluidZeroCalOnly = true, goalStreak = 0,
@@ -1106,6 +1107,7 @@ export function TodayTab({
               history={history}
               getSuggestions={getSuggestions}
               searchLibrary={searchLibrary}
+              searchUserLibrary={searchUserLibrary}
               library={library}
               defaultServingGrams={defaultServingGrams}
               defaultWeightUnit={defaultWeightUnit}
@@ -1195,6 +1197,7 @@ export function TodayTab({
               history={history}
               getSuggestions={getSuggestions}
               searchLibrary={searchLibrary}
+              searchUserLibrary={searchUserLibrary}
               library={library}
               defaultServingGrams={defaultServingGrams}
               defaultWeightUnit={defaultWeightUnit}

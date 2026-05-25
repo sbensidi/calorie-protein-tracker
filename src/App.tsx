@@ -10,6 +10,7 @@ import { useGoals } from './hooks/useGoals'
 import { useFoodHistory } from './hooks/useFoodHistory'
 import { useComposedGroups } from './hooks/useComposedGroups'
 import { useFoodLibrary } from './hooks/useFoodLibrary'
+import { useUserFoodLibrary } from './hooks/useUserFoodLibrary'
 import { useToast } from './hooks/useToast'
 import { TodayTab } from './components/TodayTab'
 import { ToastContainer } from './components/ToastContainer'
@@ -133,6 +134,7 @@ export default function App() {
   const { meals, loading: mealsLoading, error: mealsError, addMeal, addMealWithId, updateMeal, deleteMeal, duplicateMeal } = useMeals(userId)
   const { goals, error: goalsError, saveGoals, getGoalForDate } = useGoals(userId)
   const { history, error: historyError, upsertHistory, touchHistory, getSuggestions, deleteHistory, updateHistory } = useFoodHistory(userId)
+  const { items: userFoodItems, addItem: addUserFood, deleteItem: deleteUserFood, searchUserLibrary } = useUserFoodLibrary(userId)
   const { groups: composedGroups, error: groupsError, upsert: upsertGroup, remove: removeGroup, pruneMealId } = useComposedGroups(userId)
   const { entries: weightLogEntries, logWeight, deleteEntry: deleteWeightEntry } = useWeightLog(userId)
 
@@ -374,6 +376,7 @@ export default function App() {
               goalProtein={todayGoal.protein}
               getSuggestions={getSuggestions}
               searchLibrary={searchLibrary}
+              searchUserLibrary={searchUserLibrary}
               library={library}
               defaultServingGrams={profile.defaultServingGrams}
               defaultWeightUnit={profile.weightUnit}
@@ -413,6 +416,7 @@ export default function App() {
                 fluidGoalMl={profile.fluidGoalMl}
                 loading={mealsLoading}
                 weeklyTdee={weeklyTdee}
+                onUpdateMeal={updateMeal}
               />
             </Suspense>
           </ErrorBoundary>
@@ -441,6 +445,7 @@ export default function App() {
           showToast={showToast}
           history={history}
           onDeleteHistory={deleteHistory}
+          onRestoreHistory={upsertHistory}
           onUpdateHistory={updateHistory}
           composedGroups={composedGroups}
           onRemoveGroup={removeGroup}
@@ -450,6 +455,9 @@ export default function App() {
           onLogWeight={logWeight}
           onDeleteWeightEntry={deleteWeightEntry}
           onExportCsv={handleExportCsv}
+          userFoodItems={userFoodItems}
+          onAddUserFood={addUserFood}
+          onDeleteUserFood={deleteUserFood}
         />
         </Suspense>
       </ErrorBoundary>

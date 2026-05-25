@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useEffect, lazy, Suspense } from 'react'
 import { useLockBodyScroll } from '../hooks/useLockBodyScroll'
-import type { FoodHistory, FoodLibraryItem, Meal, NutritionResult } from '../types'
+import type { FoodHistory, FoodLibraryItem, Meal, NutritionResult, UserFoodItem } from '../types'
 import type { Lang } from '../lib/i18n'
 import { t, dir, currentTime, today } from '../lib/i18n'
 import { calculateNutrition, AiRateLimitError, AiParseError } from '../lib/ai'
@@ -42,9 +42,10 @@ export interface ComposedEntry {
 }
 
 type CombinedSuggestion =
-  | { source: 'history'; item: FoodHistory }
-  | { source: 'library'; item: FoodLibraryItem }
-  | { source: 'fuzzy';   item: FoodLibraryItem }
+  | { source: 'history';      item: FoodHistory }
+  | { source: 'library';      item: FoodLibraryItem }
+  | { source: 'fuzzy';        item: FoodLibraryItem }
+  | { source: 'user_library'; item: UserFoodItem }
 
 interface FoodEntryFormProps {
   lang: Lang
@@ -66,9 +67,10 @@ interface FoodEntryFormProps {
   isOpen?: boolean
   defaultServingGrams?: number
   library?: FoodLibraryItem[]
+  searchUserLibrary?: (q: string) => UserFoodItem[]
 }
 
-export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, defaultWeightUnit = 'g', onAdd, onUpsertHistory, onTouchHistory, defaultMealType, composedEntries, onAddComposed, onAddRecipePortion, fluidThresholdMl = 100, fluidZeroCalOnly = true, isOpen, defaultServingGrams = 150, library = [] }: FoodEntryFormProps) {
+export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, searchUserLibrary, defaultWeightUnit = 'g', onAdd, onUpsertHistory, onTouchHistory, defaultMealType, composedEntries, onAddComposed, onAddRecipePortion, fluidThresholdMl = 100, fluidZeroCalOnly = true, isOpen, defaultServingGrams = 150, library = [] }: FoodEntryFormProps) {
   const [mode, setMode]               = useState<EntryMode>(
     () => (localStorage.getItem('entry-mode') as EntryMode) ?? 'scan'
   )
@@ -159,12 +161,15 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
       return true
     })
     const histItems: CombinedSuggestion[] = deduped
-      .slice(0, 6)
+      .slice(0, 5)
       .map(item => ({ source: 'history' as const, item }))
+    const userItems: CombinedSuggestion[] = q && searchUserLibrary
+      ? searchUserLibrary(q).slice(0, 3).map(item => ({ source: 'user_library' as const, item }))
+      : []
     const libItems: CombinedSuggestion[] = q && searchLibrary
       ? searchLibrary(q).slice(0, 4).map(item => ({ source: 'library' as const, item }))
       : []
-    const combined = [...histItems, ...libItems]
+    const combined = [...userItems, ...histItems, ...libItems]
     setSuggestions(combined)
     setDropdownOpen(combined.length > 0)
   }
@@ -255,6 +260,24 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
     setAiError(null)
     inputRef.current?.blur()
     if (isBeverage) setMealType('beverage')
+  }
+
+  const handleUserLibrarySelect = (item: UserFoodItem) => {
+    const unit: EntryUnit = (item.default_unit as UnitId) in UNITS ? (item.default_unit as UnitId) : defaultWeightUnit
+    const amt     = item.default_amount || 100
+    const base    = toBase(amt, unit as UnitId)
+    const cal     = Math.round(item.calories_per_100g * base / 100)
+    const prot    = Math.round(item.protein_per_100g  * base / 100 * 10) / 10
+    editor.ratios.current = { calPerUnit: base > 0 ? cal / base : 0, protPerUnit: base > 0 ? prot / base : 0, perServing: false }
+    editor.setUnit(unit)
+    editor.setAmountStr(String(amt))
+    setFoodName(item.name)
+    setNutrition({ calories: cal, protein: prot })
+    editor.setCalories(cal)
+    editor.setProtein(prot)
+    setDropdownOpen(false)
+    setAiError(null)
+    inputRef.current?.blur()
   }
 
   const handleComposedSelect = (entry: ComposedEntry) => {
@@ -1266,6 +1289,55 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, de
                         <span style={{ fontSize: 11, color: 'var(--text-2)', flexShrink: 0 }}>{amtDisplay}</span>
                         <span style={{ fontSize: 11, color: 'var(--accent-hi)', flexShrink: 0, fontWeight: 600 }}>{Math.round(item.calories)}</span>
                         <span style={{ fontSize: 11, color: 'var(--positive-hi)', flexShrink: 0, fontWeight: 600 }}>{Math.round(item.protein * 10) / 10}g</span>
+                      </div>
+                    )}
+                  </button>
+                )
+              } else if (s.source === 'user_library') {
+                const item    = s.item
+                const unit: UnitId = (item.default_unit as UnitId) in UNITS ? (item.default_unit as UnitId) : 'g'
+                const base    = toBase(item.default_amount, unit)
+                const cal     = Math.round(item.calories_per_100g * base / 100)
+                const prot    = Math.round(item.protein_per_100g  * base / 100 * 10) / 10
+                const amtDisp = `${item.default_amount}${item.default_unit}`
+                return (
+                  <button
+                    key={`ul-${item.id}`}
+                    onMouseDown={() => handleUserLibrarySelect(item)}
+                    style={{
+                      display: 'block', width: '100%',
+                      padding: minimal ? '8px 12px' : '9px 12px', background: 'var(--accent-fill)', border: 'none',
+                      borderBottom: isLast ? 'none' : (minimal ? '1px dashed var(--border)' : '1px solid var(--border)'),
+                      cursor: 'pointer', textAlign: 'start', fontFamily: 'inherit',
+                      transition: 'background .12s',
+                    }}
+                    onMouseEnter={e => (e.currentTarget.style.background = 'var(--accent-tint)')}
+                    onMouseLeave={e => (e.currentTarget.style.background = 'var(--accent-fill)')}
+                  >
+                    {minimal ? (
+                      <>
+                        <div style={{ display: 'flex', alignItems: 'baseline', gap: 5, overflow: 'hidden' }}>
+                          <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>{item.name}</span>
+                          <span style={{ fontSize: 10, color: 'var(--accent-hi)', fontWeight: 700, whiteSpace: 'nowrap', flexShrink: 0 }}>{t(lang, 'myFoodsBadge')}</span>
+                          <span style={{ fontSize: 11, color: 'var(--text-3)', whiteSpace: 'nowrap', flexShrink: 0 }}>{amtDisp}</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginTop: 2 }}>
+                          <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--accent-hi)', display: 'inline-flex', alignItems: 'baseline', gap: 2 }}>
+                            {cal}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.8 }}>{t(lang, 'caloriesUnit')}</span>
+                          </span>
+                          <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--positive-hi)', display: 'inline-flex', alignItems: 'baseline', gap: 2 }}>
+                            {prot}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.8 }}>{t(lang, 'gProteinLabel')}</span>
+                          </span>
+                        </div>
+                      </>
+                    ) : (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <span className="icon icon-sm" style={{ color: 'var(--accent-hi)', flexShrink: 0 }}>bookmark</span>
+                        <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</span>
+                        <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--accent-hi)', background: 'var(--accent-tint)', borderRadius: 4, padding: '1px 5px', flexShrink: 0 }}>{t(lang, 'myFoodsBadge')}</span>
+                        <span style={{ fontSize: 11, color: 'var(--text-2)', flexShrink: 0 }}>{amtDisp}</span>
+                        <span style={{ fontSize: 11, color: 'var(--accent-hi)', flexShrink: 0, fontWeight: 600 }}>{cal}</span>
+                        <span style={{ fontSize: 11, color: 'var(--positive-hi)', flexShrink: 0, fontWeight: 600 }}>{prot}g</span>
                       </div>
                     )}
                   </button>

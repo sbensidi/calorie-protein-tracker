@@ -7,10 +7,11 @@ import type { Lang, DayKey, TranslationKey } from '../lib/i18n'
 import { t, dir, DAY_KEYS, DAY_SHORT_HE, DAY_SHORT_EN } from '../lib/i18n'
 import { toWeekIndex } from '../lib/utils'
 import type { Toast } from '../hooks/useToast'
-import type { Goal, FoodHistory, ComposedGroup, Meal } from '../types'
+import type { Goal, FoodHistory, ComposedGroup, Meal, UserFoodItem } from '../types'
 import type { UserProfile } from '../hooks/useProfile'
 import { useFoodLibrary } from '../hooks/useFoodLibrary'
 import { UNITS, toBase, fromBase, mlToGrams } from '../lib/units'
+import { useNutritionAmountEditor } from '../hooks/useNutritionAmountEditor'
 import type { UnitId } from '../lib/units'
 import { MealCard } from './MealCard'
 import { fuzzyScore } from '../lib/fuzzyMatch'
@@ -21,7 +22,7 @@ const SEARCH_THRESHOLD = 0.45
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-type Screen = 'main' | 'profile' | 'goals' | 'foodHistory' | 'library' | 'preferences'
+type Screen = 'main' | 'profile' | 'goals' | 'foodHistory' | 'library' | 'preferences' | 'myFoods'
 
 // ── DayPanel (module-level to avoid React re-mounting on every render) ────────
 
@@ -201,7 +202,7 @@ function DayPanel({
 
 // ── Main Screen ───────────────────────────────────────────────────────────────
 
-function MainScreen({ lang, connected, theme, styleMode, showGreeting, onProfile, onGoals, onFoodHistory, onLibrary, onPreferences, onToggleLang, onToggleTheme, onSelectStyleMode, onToggleGreeting, onSignOut, onLinkGoogle, hasGoogleLinked, onExportCsv }: {
+function MainScreen({ lang, connected, theme, styleMode, showGreeting, onProfile, onGoals, onFoodHistory, onLibrary, onMyFoods, onPreferences, onToggleLang, onToggleTheme, onSelectStyleMode, onToggleGreeting, onSignOut, onLinkGoogle, hasGoogleLinked, onExportCsv }: {
   lang:                Lang
   connected:           boolean
   theme:               'dark' | 'light'
@@ -211,6 +212,7 @@ function MainScreen({ lang, connected, theme, styleMode, showGreeting, onProfile
   onGoals:             () => void
   onFoodHistory:       () => void
   onLibrary:           () => void
+  onMyFoods:           () => void
   onPreferences:       () => void
   onToggleLang:        () => void
   onToggleTheme:       () => void
@@ -314,6 +316,20 @@ function MainScreen({ lang, connected, theme, styleMode, showGreeting, onProfile
               </p>
               <p style={{ fontSize: 11, color: 'var(--text-3)', margin: '2px 0 0' }}>
                 {t(lang, 'settingsFoodLibrarySubtitle')}
+              </p>
+            </div>
+            <span className="icon icon-sm" style={{ color: 'var(--text-3)', flexShrink: 0 }}>{chevron}</span>
+          </button>
+
+          {!minimal && <div style={divider} />}
+          <button onClick={onMyFoods} style={{ ...rowBase, ...rowSep }}>
+            {!minimal && <span className="icon" style={{ fontSize: 22, color: 'var(--accent-hi)', flexShrink: 0 }}>bookmark</span>}
+            <div style={{ flex: 1, textAlign: 'start' }}>
+              <p style={{ fontSize: minimal ? 13 : 14, fontWeight: 600, color: 'var(--text)', margin: 0 }}>
+                {t(lang, 'myFoods')}
+              </p>
+              <p style={{ fontSize: 11, color: 'var(--text-3)', margin: '2px 0 0' }}>
+                {t(lang, 'settingsMyFoodsSubtitle')}
               </p>
             </div>
             <span className="icon icon-sm" style={{ color: 'var(--text-3)', flexShrink: 0 }}>{chevron}</span>
@@ -1378,16 +1394,17 @@ function GoalsScreen({ lang, profile, goals, onSave, onSaveProfile, onSaveFluidG
 
 // ── Food History Screen ───────────────────────────────────────────────────────
 
-function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onUpdate, onUpdateMeal, onRemoveGroup, showToast }: {
-  lang:           Lang
-  history:        FoodHistory[]
-  composedGroups: ComposedGroup[]
-  meals:          Meal[]
-  onDelete:       (id: string) => void
-  onUpdate:       (id: string, updates: Partial<Pick<FoodHistory, 'name' | 'grams' | 'calories' | 'protein' | 'fluid_ml'>>) => void
-  onUpdateMeal:   (id: string, updates: Partial<Meal>) => void
-  onRemoveGroup:  (id: string) => void
-  showToast:      (msg: string, type: 'success' | 'error' | 'info') => void
+function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onRestore, onUpdate, onUpdateMeal, onRemoveGroup, showToast }: {
+  lang:            Lang
+  history:         FoodHistory[]
+  composedGroups:  ComposedGroup[]
+  meals:           Meal[]
+  onDelete:        (id: string) => void
+  onRestore?:      (item: Pick<FoodHistory, 'name' | 'grams' | 'calories' | 'protein' | 'fluid_ml'>) => void
+  onUpdate:        (id: string, updates: Partial<Pick<FoodHistory, 'name' | 'grams' | 'calories' | 'protein' | 'fluid_ml'>>) => void
+  onUpdateMeal:    (id: string, updates: Partial<Meal>) => void
+  onRemoveGroup:   (id: string) => void
+  showToast:       (msg: string, type: 'success' | 'error' | 'info', options?: { action?: { label: string; onClick: () => void }; durationMs?: number }) => void
 }) {
   const { styleMode } = useAppContext()
   const minimal = styleMode === 'minimal'
@@ -1518,9 +1535,12 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
     setEditingId(null)
     showToast(t(lang, 'saved'), 'success')
   }
-  const handleDelete = (id: string, name: string) => {
-    onDelete(id)
-    showToast(`"${name}${t(lang, 'itemDeletedSuffix')}`, 'info')
+  const handleDelete = (item: FoodHistory) => {
+    const snapshot = { name: item.name, grams: item.grams, calories: item.calories, protein: item.protein, fluid_ml: item.fluid_ml }
+    onDelete(item.id)
+    showToast(`"${item.name}${t(lang, 'itemDeletedSuffix')}`, 'info', {
+      action: onRestore ? { label: t(lang, 'undo'), onClick: () => onRestore(snapshot) } : undefined,
+    })
   }
   const handleRemoveGroup = (id: string, name: string) => {
     onRemoveGroup(id)
@@ -1668,7 +1688,7 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
                             <button onClick={() => startEdit(item)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 4, display: 'flex', borderRadius: 6, flexShrink: 0 }}>
                               <span className="icon icon-sm">edit</span>
                             </button>
-                            <button onClick={() => handleDelete(item.id, item.name)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--danger)', padding: 4, display: 'flex', borderRadius: 6, flexShrink: 0 }}>
+                            <button onClick={() => handleDelete(item)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--danger)', padding: 4, display: 'flex', borderRadius: 6, flexShrink: 0 }}>
                               <span className="icon icon-sm">delete</span>
                             </button>
                           </div>
@@ -1699,7 +1719,7 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onU
                           <button onClick={() => startEdit(item)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 6, display: 'flex', borderRadius: 8 }}>
                             <span className="icon icon-sm">edit</span>
                           </button>
-                          <button onClick={() => handleDelete(item.id, item.name)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--danger)', padding: 6, display: 'flex', borderRadius: 8 }}>
+                          <button onClick={() => handleDelete(item)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--danger)', padding: 6, display: 'flex', borderRadius: 8 }}>
                             <span className="icon icon-sm">delete</span>
                           </button>
                         </div>
@@ -2355,6 +2375,199 @@ function PreferencesScreen({ lang, profile, onSave, showToast, saveRef, onSaveDo
   )
 }
 
+// ── My Foods Screen ───────────────────────────────────────────────────────────
+
+function AddFoodForm({ lang, onSave, onCancel }: {
+  lang:     Lang
+  onSave:   (item: Omit<UserFoodItem, 'id' | 'user_id' | 'created_at'>) => Promise<unknown>
+  onCancel: () => void
+}) {
+  const [name, setName] = useState('')
+  const [saving, setSaving] = useState(false)
+  const editor = useNutritionAmountEditor({ initialAmount: '100', initialUnit: 'g', initialCalories: 0, initialProtein: 0, initialSg: 100, enableScaling: true })
+
+  const handleSave = async () => {
+    const amt  = parseFloat(editor.amountStr) || 100
+    const calN = Number(editor.calories) || 0
+    const protN= Number(editor.protein)  || 0
+    if (!name.trim() || !calN) return
+    const isVol = editor.unit !== 'pcs' && UNITS[editor.unit as UnitId].type === 'volume'
+    const base  = editor.unit === 'pcs' ? amt : toBase(amt, editor.unit as UnitId)
+    const cal100 = base > 0 ? Math.round(calN  * 100 / base) : calN
+    const prot100= base > 0 ? Math.round(protN * 100 / base * 10) / 10 : protN
+    setSaving(true)
+    await onSave({
+      name:              name.trim(),
+      calories_per_100g: cal100,
+      protein_per_100g:  prot100,
+      fat_per_100g:      null,
+      carbs_per_100g:    null,
+      default_unit:      isVol ? editor.unit : editor.unit === 'pcs' ? 'pcs' : 'g',
+      default_amount:    amt,
+    })
+    setSaving(false)
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '14px 16px', background: 'var(--bg-card)', borderBottom: '1px solid var(--border)' }}>
+      {/* Name */}
+      <input
+        className="inp"
+        placeholder={t(lang, 'foodName')}
+        value={name}
+        onChange={e => setName(e.target.value)}
+        dir={dir(lang)}
+        style={{ fontSize: 16 }}
+        autoFocus
+      />
+      {/* Cal · Prot · Amount · Unit — same 4-col grid as MealCard edit */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 8 }}>
+        <div>
+          <label style={{ fontSize: 11, color: 'var(--accent-hi)', fontWeight: 600, display: 'block', marginBottom: 4 }}>{t(lang, 'calories')}</label>
+          <input type="number" inputMode="numeric" className="inp" style={{ fontSize: 16 }}
+            value={editor.calories} placeholder="0"
+            onChange={e => editor.setCalories(e.target.value === '' ? '' : Number(e.target.value))}
+            onFocus={() => { if (editor.calories === 0) editor.setCalories('') }}
+          />
+        </div>
+        <div>
+          <label style={{ fontSize: 11, color: 'var(--positive-hi)', fontWeight: 600, display: 'block', marginBottom: 4 }}>{t(lang, 'proteinGramsLabel')}</label>
+          <input type="number" inputMode="decimal" step="0.1" className="inp inp-green" style={{ fontSize: 16 }}
+            value={editor.protein} placeholder="0"
+            onChange={e => editor.setProtein(e.target.value === '' ? '' : Number(e.target.value))}
+            onFocus={() => { if (editor.protein === 0) editor.setProtein('') }}
+          />
+        </div>
+        <div>
+          <label style={{ fontSize: 11, color: 'var(--text-2)', fontWeight: 600, display: 'block', marginBottom: 4 }}>{t(lang, 'amount')}</label>
+          <input type="number" inputMode="decimal" className="inp" style={{ fontSize: 16 }}
+            value={editor.amountStr} placeholder="100"
+            onChange={e => editor.handleAmountChange(e.target.value)}
+            onFocus={e => e.target.select()}
+          />
+        </div>
+        <div>
+          <label style={{ fontSize: 11, color: 'var(--text-2)', fontWeight: 600, display: 'block', marginBottom: 4 }}>{t(lang, 'unitSingular')}</label>
+          <select className="inp" style={{ fontSize: 16 }} value={editor.unit}
+            onChange={e => editor.handleUnitChange(e.target.value as Parameters<typeof editor.handleUnitChange>[0])}>
+            <optgroup label={t(lang, 'unitGroupWeight')}>
+              <option value="g">{t(lang, 'unitOptG')}</option>
+              <option value="oz">{t(lang, 'unitOptOz')}</option>
+            </optgroup>
+            <optgroup label={t(lang, 'unitGroupVolume')}>
+              <option value="ml">{t(lang, 'unitOptMl')}</option>
+              <option value="cup">{t(lang, 'unitOptCup')}</option>
+              <option value="tbsp">{t(lang, 'unitOptTbsp')}</option>
+              <option value="tsp">{t(lang, 'unitOptTsp')}</option>
+            </optgroup>
+            <optgroup label={t(lang, 'unitGroupCount')}>
+              <option value="pcs">{t(lang, 'serving')}</option>
+            </optgroup>
+          </select>
+        </div>
+      </div>
+      <div style={{ display: 'flex', gap: 8 }}>
+        <button onClick={handleSave} disabled={saving || !name.trim() || !editor.calories} className="btn-confirm" style={{ flex: 1 }}>
+          {t(lang, 'save')}
+        </button>
+        <button onClick={onCancel} className="btn-ghost" style={{ flex: 1 }}>
+          {t(lang, 'cancel')}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function MyFoodsScreen({ lang, items, onAdd, onDelete, showToast }: {
+  lang:       Lang
+  items:      UserFoodItem[]
+  onAdd?:     (item: Omit<UserFoodItem, 'id' | 'user_id' | 'created_at'>) => Promise<unknown>
+  onDelete?:  (id: string) => void
+  showToast:  (msg: string, type: Toast['type']) => void
+}) {
+  const [adding, setAdding] = useState(false)
+
+  const handleSave = async (item: Omit<UserFoodItem, 'id' | 'user_id' | 'created_at'>) => {
+    if (!onAdd) return
+    const err = await onAdd(item)
+    if (!err) { showToast(t(lang, 'myFoodAdded'), 'success'); setAdding(false) }
+  }
+
+  return (
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      {/* Header */}
+      <div style={{ flexShrink: 0, padding: '12px 16px 0', background: 'var(--bg)', borderBottom: adding ? 'none' : '1px solid var(--border)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', paddingBottom: 12 }}>
+          <h2 style={{ fontSize: 17, fontWeight: 800, color: 'var(--text)', margin: 0, flex: 1 }}>
+            {t(lang, 'myFoods')}
+          </h2>
+          {onAdd && items.length > 0 && (
+            <button
+              onClick={() => setAdding(a => !a)}
+              style={{ background: adding ? 'transparent' : 'var(--accent)', color: adding ? 'var(--text-3)' : 'var(--on-color)', border: adding ? '1px solid var(--border)' : 'none', borderRadius: 20, padding: '6px 14px', fontSize: 13, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}
+            >
+              <span className="icon icon-sm">{adding ? 'close' : 'add'}</span>
+              {t(lang, adding ? 'cancel' : 'addMyFood')}
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Add form — same as MealCard edit, shown inline below header */}
+      {adding && onAdd && (
+        <AddFoodForm lang={lang} onSave={handleSave} onCancel={() => setAdding(false)} />
+      )}
+
+      {/* List / empty state */}
+      <div style={{ flex: 1, overflowY: 'auto' }}>
+        {items.length === 0 && !adding ? (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 16, padding: '0 32px' }}>
+            <span className="icon" style={{ fontSize: 48, color: 'var(--text-3)', opacity: 0.5 }}>bookmark_border</span>
+            <div style={{ textAlign: 'center' }}>
+              <p style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-2)', margin: '0 0 6px' }}>{t(lang, 'myFoodsEmpty')}</p>
+              <p style={{ fontSize: 13, color: 'var(--text-3)', margin: 0 }}>{t(lang, 'myFoodsEmptySub')}</p>
+            </div>
+            {onAdd && (
+              <button
+                onClick={() => setAdding(true)}
+                style={{ background: 'var(--accent)', color: 'var(--on-color)', border: 'none', borderRadius: 24, padding: '12px 28px', fontSize: 15, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}
+              >
+                <span className="icon">add</span>
+                {t(lang, 'addMyFood')}
+              </button>
+            )}
+          </div>
+        ) : items.map(item => {
+          return (
+            <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px', borderBottom: '1px solid var(--border)' }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} dir={dir(lang)}>
+                  {item.name}
+                </p>
+                <p style={{ fontSize: 11, color: 'var(--text-3)', margin: '3px 0 0' }}>
+                  <span style={{ color: 'var(--accent-hi)', fontWeight: 600 }}>{Math.round(item.calories_per_100g)}</span>
+                  {' '}{t(lang, 'cal100g')} · <span style={{ color: 'var(--positive-hi)', fontWeight: 600 }}>{Math.round(item.protein_per_100g * 10) / 10}</span>
+                  {' '}{t(lang, 'prot100g')} · {item.default_amount}{item.default_unit !== 'pcs' ? item.default_unit : ` ${t(lang, 'serving')}`}
+                </p>
+              </div>
+              {onDelete && (
+                <button
+                  className="icon-btn danger"
+                  onClick={() => { onDelete(item.id); showToast(t(lang, 'myFoodDeleted'), 'info') }}
+                  aria-label={t(lang, 'delete')}
+                  style={{ flexShrink: 0 }}
+                >
+                  <span className="icon icon-sm">delete</span>
+                </button>
+              )}
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 // ── SettingsSheet ─────────────────────────────────────────────────────────────
 
 interface SettingsSheetProps {
@@ -2374,10 +2587,11 @@ interface SettingsSheetProps {
   styleMode:           'classic' | 'minimal'
   onToggleTheme:       () => void
   onSelectStyleMode:   (m: 'classic' | 'minimal') => void
-  showToast:       (message: string, type: Toast['type']) => void
-  history:         FoodHistory[]
-  onDeleteHistory: (id: string) => void
-  onUpdateHistory: (id: string, updates: Partial<Pick<FoodHistory, 'name' | 'grams' | 'calories' | 'protein' | 'fluid_ml'>>) => void
+  showToast:          (message: string, type: Toast['type']) => void
+  history:            FoodHistory[]
+  onDeleteHistory:    (id: string) => void
+  onRestoreHistory?:  (item: Pick<FoodHistory, 'name' | 'grams' | 'calories' | 'protein' | 'fluid_ml'>) => void
+  onUpdateHistory:    (id: string, updates: Partial<Pick<FoodHistory, 'name' | 'grams' | 'calories' | 'protein' | 'fluid_ml'>>) => void
   composedGroups:  ComposedGroup[]
   onRemoveGroup:   (id: string) => void
   meals:           Meal[]
@@ -2386,12 +2600,16 @@ interface SettingsSheetProps {
   onLogWeight?:      (weight_kg: number, date?: string) => Promise<void>
   onDeleteWeightEntry?: (id: string) => Promise<void>
   onExportCsv?:      () => void
+  userFoodItems?:    import('../types').UserFoodItem[]
+  onAddUserFood?:    (item: Omit<import('../types').UserFoodItem, 'id' | 'user_id' | 'created_at'>) => Promise<unknown>
+  onDeleteUserFood?: (id: string) => void
 }
 
 export function SettingsSheet({
   isOpen, onClose, lang, connected, profile, onSaveProfile, goals, onSaveGoals, onToggleLang, onSignOut, onLinkGoogle, hasGoogleLinked, theme, styleMode, onToggleTheme, onSelectStyleMode, showToast,
-  history, onDeleteHistory, onUpdateHistory, composedGroups, onRemoveGroup, meals, onUpdateMeal,
+  history, onDeleteHistory, onRestoreHistory, onUpdateHistory, composedGroups, onRemoveGroup, meals, onUpdateMeal,
   weightLogEntries = [], onLogWeight, onDeleteWeightEntry, onExportCsv,
+  userFoodItems = [], onAddUserFood, onDeleteUserFood,
 }: SettingsSheetProps) {
   const [screen, setScreen] = useState<Screen>('main')
   useLockBodyScroll(isOpen)
@@ -2508,6 +2726,7 @@ export function SettingsSheet({
                 onGoals={() => setScreen('goals')}
                 onFoodHistory={() => setScreen('foodHistory')}
                 onLibrary={() => setScreen('library')}
+                onMyFoods={() => setScreen('myFoods')}
                 onPreferences={() => setScreen('preferences')}
                 onToggleLang={onToggleLang}
                 onToggleTheme={onToggleTheme}
@@ -2597,6 +2816,7 @@ export function SettingsSheet({
             composedGroups={composedGroups}
             meals={meals}
             onDelete={onDeleteHistory}
+            onRestore={onRestoreHistory}
             onUpdate={onUpdateHistory}
             onUpdateMeal={onUpdateMeal}
             onRemoveGroup={onRemoveGroup}
@@ -2605,6 +2825,15 @@ export function SettingsSheet({
         )}
         {screen === 'library' && (
           <LibraryScreen lang={lang} />
+        )}
+        {screen === 'myFoods' && (
+          <MyFoodsScreen
+            lang={lang}
+            items={userFoodItems}
+            onAdd={onAddUserFood}
+            onDelete={onDeleteUserFood}
+            showToast={showToast}
+          />
         )}
       </div>
       </div>

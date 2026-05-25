@@ -8,6 +8,7 @@ import { t, dir, formatDate, today, HE_MONTHS, EN_MONTHS, HE_WEEK_SHORT, EN_WEEK
 import { DonutProgress } from './DonutProgress'
 import type { ComposedEntry } from './FoodEntryForm'
 import { calcMealTypeDistribution, calcMacroBreakdown } from '../lib/calculations'
+import { MealCard } from './MealCard'
 
 // ── Constants ────────────────────────────────────────────────────────
 
@@ -38,6 +39,7 @@ interface HistoryTabProps {
   fluidGoalMl?:     number
   loading?:         boolean
   weeklyTdee?:      number  // 7 × daily TDEE, for weight-impact calculation
+  onUpdateMeal?:    (id: string, updates: Partial<Meal>) => void
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────
@@ -156,7 +158,7 @@ function PeriodBalanceCard({ lang, totalDays, daysElapsed, consumed, target, sho
 
 // ── Component ────────────────────────────────────────────────────────
 
-export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntries = [], composedGroups = [], fluidGoalMl = 2500, loading = false, weeklyTdee = 0 }: HistoryTabProps) {
+export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntries = [], composedGroups = [], fluidGoalMl = 2500, loading = false, weeklyTdee = 0, onUpdateMeal }: HistoryTabProps) {
   const { styleMode } = useAppContext()
   const todayKey = today()
 
@@ -737,34 +739,17 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
           }
 
           const meal = row.meal
-          const qty = meal.fluid_ml != null && !meal.fluid_excluded
-            ? (meal.fluid_ml >= 1000 ? `${(meal.fluid_ml / 1000).toFixed(1)}${t(lang, 'litersUnit')}` : `${Math.round(meal.fluid_ml)}ml`)
-            : meal.grams < 0
-              ? `${Math.abs(meal.grams)} ${unitLabel}`
-              : `${meal.grams}g`
           return (
-            <div key={meal.id} style={{ padding: '8px 0', borderBottom: isLast ? 'none' : '1px dashed var(--border)' }}>
-              {/* Line 1: name · qty | meal type */}
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: 5, overflow: 'hidden' }}>
-                <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>
-                  {meal.name}
-                  {meal.fluid_ml != null && !meal.fluid_excluded && (
-                    <span className="icon" style={{ fontSize: 12, color: 'var(--cyan-hi)', opacity: 0.8, verticalAlign: 'middle', margin: '0 4px' }}>water_drop</span>
-                  )}
-                </span>
-                <span style={{ fontSize: 11, color: 'var(--text-3)', whiteSpace: 'nowrap', flexShrink: 0 }}>{qty}</span>
-                <span style={{ fontSize: 11, color: 'var(--text-3)', flexShrink: 0 }}>|</span>
-                <span style={{ fontSize: 11, color: 'var(--text-3)', whiteSpace: 'nowrap', flexShrink: 0 }}>{t(lang, meal.meal_type as MealTypeKey)}</span>
-              </div>
-              {/* Line 2: calories | protein */}
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginTop: 3 }}>
-                <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--accent-hi)', display: 'inline-flex', alignItems: 'baseline', gap: 2 }}>
-                  {Math.round(meal.calories)}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.8 }}>{t(lang, 'caloriesUnit')}</span>
-                </span>
-                <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--positive-hi)', display: 'inline-flex', alignItems: 'baseline', gap: 2 }}>
-                  {Math.round(meal.protein * 10) / 10}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.8 }}>{t(lang, 'gProteinLabel')}</span>
-                </span>
-              </div>
+            <div key={meal.id} style={{ borderBottom: isLast ? 'none' : '1px dashed var(--border)' }}>
+              <MealCard
+                meal={meal}
+                lang={lang}
+                listStyle
+                showCheckbox={false}
+                selected={false}
+                onToggleSelect={() => {}}
+                onEdit={onUpdateMeal ?? (() => {})}
+              />
             </div>
           )
         })}
