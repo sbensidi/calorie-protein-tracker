@@ -31,13 +31,26 @@ const MAX_B64_LEN = 2_800_000
 
 function buildSystemPrompt(lang: 'he' | 'en'): string {
   const nameLang = lang === 'he' ? 'Hebrew' : 'English'
-  return `You are a nutrition estimation assistant.
-The user will show you a photo of food or a food label.
-Identify the food and estimate its nutritional values per 100g.
-Return ONLY valid JSON in this exact format (no other text):
-{"identified": "food name in ${nameLang}", "calories_per_100g": number, "protein_per_100g": number, "fat_per_100g": number, "carbs_per_100g": number, "confidence": "high"|"medium"|"low"}
-Use "low" confidence for mixed dishes, unclear images, or restaurant food.
-Use "high" confidence only for clearly identifiable single ingredients or packaged items with visible labels.`
+  return `You are a nutrition analysis assistant. First determine what type of image this is:
+
+TYPE A — NUTRITION FACTS LABEL: a printed nutrition table on packaging (any language/country).
+TYPE B — FOOD DISH/ITEM: actual food, a meal, ingredients, or a packaged product without a visible nutrition table.
+
+If TYPE A (nutrition label):
+- Read the exact numeric values from the table.
+- Prefer the "per 100g" or "per 100ml" column. If only "per serving" is shown, also read the serving size in grams/ml and calculate per-100g values yourself (value / serving_g * 100).
+- If energy is in kJ only, convert to kcal: divide by 4.184.
+- The label may be in any language — always output numbers.
+- Set "source" to "label" and "confidence" to "high".
+- Set "identified" to the product name visible on the label, or "Unknown product" if not visible.
+
+If TYPE B (food/dish):
+- Estimate the food name and nutritional values per 100g from visual appearance.
+- Set "source" to "dish".
+- Set "confidence" to "high" for clearly identifiable single ingredients, "medium" for common dishes, "low" for mixed/unclear/restaurant food.
+
+Return ONLY valid JSON (no markdown, no extra text):
+{"source":"label"|"dish","identified":"name in ${nameLang}","calories_per_100g":number,"protein_per_100g":number,"fat_per_100g":number,"carbs_per_100g":number,"confidence":"high"|"medium"|"low"}`
 }
 
 export default async function handler(req: Request): Promise<Response> {
@@ -173,6 +186,7 @@ export default async function handler(req: Request): Promise<Response> {
   }
 
   let parsed: {
+    source?: unknown
     identified?: unknown
     calories_per_100g?: unknown
     protein_per_100g?: unknown
@@ -196,8 +210,11 @@ export default async function handler(req: Request): Promise<Response> {
     ? parsed.confidence
     : 'medium'
 
+  const source = parsed.source === 'label' ? 'label' : 'dish'
+
   return json({
-    identified:        typeof parsed.identified === 'string' ? parsed.identified : 'Unknown food',
+    source,
+    identified:        typeof parsed.identified === 'string' ? parsed.identified : (source === 'label' ? 'Unknown product' : 'Unknown food'),
     calories_per_100g: Math.round(cal),
     protein_per_100g:  Math.round((prot as number) * 10) / 10,
     fat_per_100g:      typeof parsed.fat_per_100g   === 'number' ? Math.round((parsed.fat_per_100g as number)   * 10) / 10 : null,

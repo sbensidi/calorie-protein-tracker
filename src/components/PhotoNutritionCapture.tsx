@@ -154,6 +154,9 @@ export function PhotoNutritionCapture({ lang, onResult, onSwitchManual }: Props)
   // ── Result ────────────────────────────────────────────────────────────────
   if (state.kind === 'result') {
     const { data } = state
+    const isLabel = data.source === 'label'
+
+    const sourceBadgeColor = isLabel ? 'var(--positive-hi)' : 'var(--accent-hi)'
     const confidenceKey =
       data.confidence === 'high' ? 'photoConfidenceHigh'
       : data.confidence === 'low' ? 'photoConfidenceLow'
@@ -184,29 +187,42 @@ export function PhotoNutritionCapture({ lang, onResult, onSwitchManual }: Props)
           <span style={{ fontSize: 13, color: 'var(--text)', fontWeight: 700 }}>
             {data.identified}
           </span>
+          {/* Source badge — label vs dish */}
           <span style={{
             fontSize: 11, fontWeight: 600,
-            color: confidenceColor,
+            color: sourceBadgeColor,
             background: 'var(--surface-1)',
-            border: `1px solid ${confidenceColor}`,
+            border: `1px solid ${sourceBadgeColor}`,
             borderRadius: 6, padding: '1px 6px',
           }}>
-            {t(lang, confidenceKey)}
+            {t(lang, isLabel ? 'photoSourceLabel' : 'photoSourceDish')}
           </span>
+          {/* Confidence badge — only for dish (label is always exact) */}
+          {!isLabel && (
+            <span style={{
+              fontSize: 11, fontWeight: 600,
+              color: confidenceColor,
+              background: 'var(--surface-1)',
+              border: `1px solid ${confidenceColor}`,
+              borderRadius: 6, padding: '1px 6px',
+            }}>
+              {t(lang, confidenceKey)}
+            </span>
+          )}
         </div>
 
-        {/* Disclaimer — always shown */}
+        {/* Disclaimer — different for label vs dish */}
         <div style={{
-          background: 'var(--warning-fill)',
-          border: '1px solid var(--warning-border)',
+          background: isLabel ? 'var(--positive-fill)' : 'var(--warning-fill)',
+          border: `1px solid ${isLabel ? 'var(--positive-border)' : 'var(--warning-border)'}`,
           borderRadius: 10, padding: '8px 12px',
           display: 'flex', gap: 8, alignItems: 'flex-start',
         }}>
-          <span className="icon icon-sm" style={{ color: 'var(--warning)', flexShrink: 0, marginTop: 1 }}>
-            info
+          <span className="icon icon-sm" style={{ color: isLabel ? 'var(--positive-hi)' : 'var(--warning)', flexShrink: 0, marginTop: 1 }}>
+            {isLabel ? 'check_circle' : 'info'}
           </span>
           <p style={{ fontSize: 11, color: 'var(--text-2)', margin: 0, lineHeight: 1.5 }}>
-            {t(lang, 'photoDisclaimer')}
+            {t(lang, isLabel ? 'photoLabelDisclaimer' : 'photoDisclaimer')}
           </p>
         </div>
 

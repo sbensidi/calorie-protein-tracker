@@ -13,6 +13,7 @@ export interface VisionNutritionResult {
   fat_per_100g:      number | null
   carbs_per_100g:    number | null
   confidence:        'high' | 'medium' | 'low'
+  source:            'dish' | 'label'
 }
 
 // ── Client-side daily rate limit (5/day) ──────────────────────────────────────
@@ -143,5 +144,6 @@ export async function analyzeNutritionImage(
     fat_per_100g:      typeof data.fat_per_100g   === 'number' ? data.fat_per_100g   : null,
     carbs_per_100g:    typeof data.carbs_per_100g === 'number' ? data.carbs_per_100g : null,
     confidence:        data.confidence === 'high' || data.confidence === 'low' ? data.confidence : 'medium',
+    source:            data.source === 'label' ? 'label' : 'dish',
   }
 }
