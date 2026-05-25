@@ -1166,13 +1166,12 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                         </summary>
                         <MealsList data={data} />
                         {onAddMeal && (
-                          <div style={{ padding: '8px 14px 12px', borderTop: '1px solid var(--border)' }}>
+                          <div style={{ padding: '10px 14px 14px', borderTop: '1px solid var(--border)' }}>
                             <button
-                              className="icon-btn"
                               onClick={() => setAddMealDate(date)}
-                              style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--accent-hi)', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', padding: '4px 0' }}
+                              style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600, color: 'var(--accent-hi)', background: 'var(--accent-fill)', border: '1px solid var(--accent-border)', borderRadius: 10, cursor: 'pointer', fontFamily: 'inherit', padding: '8px 14px', width: '100%', justifyContent: 'center' }}
                             >
-                              <span className="icon icon-sm">add_circle</span>
+                              <span className="icon icon-sm">add</span>
                               {t(lang, 'addMealToDate')}
                             </button>
                           </div>
@@ -2422,13 +2421,12 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                 <div style={{ overflowY: 'auto', flex: 1 }}>
                   <MealsList data={data} />
                   {onAddMeal && (
-                    <div style={{ padding: '8px 14px 12px', borderTop: '1px solid var(--border)' }}>
+                    <div style={{ padding: '10px 14px 14px', borderTop: '1px solid var(--border)' }}>
                       <button
-                        className="icon-btn"
                         onClick={() => setAddMealDate(selectedBarDate)}
-                        style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--accent-hi)', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', padding: '4px 0' }}
+                        style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600, color: 'var(--accent-hi)', background: 'var(--accent-fill)', border: '1px solid var(--accent-border)', borderRadius: 10, cursor: 'pointer', fontFamily: 'inherit', padding: '8px 14px', width: '100%', justifyContent: 'center' }}
                       >
-                        <span className="icon icon-sm">add_circle</span>
+                        <span className="icon icon-sm">add</span>
                         {t(lang, 'addMealToDate')}
                       </button>
                     </div>
@@ -2448,48 +2446,63 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
             onClick={() => setAddMealDate(null)}
             style={{ position: 'fixed', inset: 0, background: 'var(--modal-backdrop)', zIndex: 99, backdropFilter: 'blur(2px)' }} // --z-backdrop
           />
-          {/* Sheet */}
-          <div
-            ref={addMealSheetRef}
-            style={{
-              position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)',
-              width: '100%', maxWidth: 560,
-              maxHeight: '92dvh', overflowY: 'auto',
-              background: 'var(--bg-card)', borderRadius: '20px 20px 0 0',
-              boxShadow: '0 -4px 40px rgba(0,0,0,0.4)',
-              zIndex: 100, // --z-sheet
-              paddingBottom: 'env(safe-area-inset-bottom, 0px)',
-            }}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 16px 0' }}>
-              <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>
-                {formatDate(addMealDate, lang)}
-              </span>
-              <button
-                className="icon-btn"
-                onClick={() => setAddMealDate(null)}
-                aria-label={t(lang, 'cancel')}
-              >
-                <span className="icon icon-sm">close</span>
-              </button>
+          {/* Sheet — same height/flex structure as TodayTab entry sheet */}
+          <div style={{
+            position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 100, // --z-sheet
+            display: 'flex', justifyContent: 'center', alignItems: 'flex-end',
+            pointerEvents: 'none',
+          }}>
+            <div
+              ref={addMealSheetRef}
+              style={{
+                width: '100%', maxWidth: 560,
+                pointerEvents: 'all',
+                background: 'var(--bg)',
+                borderTop: '1px solid var(--border)',
+                borderLeft: '1px solid var(--border)',
+                borderRight: '1px solid var(--border)',
+                borderRadius: '20px 20px 0 0',
+                height: 'min(90dvh, 720px)',
+                overflow: 'hidden',
+                display: 'flex',
+                flexDirection: 'column',
+                boxShadow: '0 -4px 40px rgba(0,0,0,0.35)',
+              }}
+            >
+              {/* Header */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 16px 12px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
+                <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>
+                  {formatDate(addMealDate, lang)}
+                </span>
+                <button
+                  className="icon-btn"
+                  onClick={() => setAddMealDate(null)}
+                  aria-label={t(lang, 'cancel')}
+                >
+                  <span className="icon icon-sm">close</span>
+                </button>
+              </div>
+              {/* Scrollable form content */}
+              <div style={{ flex: 1, overflowY: 'auto', padding: '20px 16px', paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 24px)' }}>
+                <FoodEntryForm
+                  lang={lang}
+                  history={history}
+                  getSuggestions={getSuggestions ?? ((_q: string) => history)}
+                  searchLibrary={searchLibrary ?? (() => [])}
+                  searchUserLibrary={searchUserLibrary}
+                  library={library}
+                  defaultServingGrams={defaultServingGrams}
+                  defaultWeightUnit={defaultWeightUnit}
+                  fluidThresholdMl={fluidThresholdMl}
+                  fluidZeroCalOnly={fluidZeroCalOnly}
+                  onAdd={meal => { onAddMeal(meal); setAddMealDate(null) }}
+                  onUpsertHistory={onUpsertHistory ?? (() => {})}
+                  onTouchHistory={onTouchHistory}
+                  dateOverride={addMealDate}
+                  isOpen={true}
+                />
+              </div>
             </div>
-            <FoodEntryForm
-              lang={lang}
-              history={history}
-              getSuggestions={getSuggestions ?? ((_q: string) => history)}
-              searchLibrary={searchLibrary ?? (() => [])}
-              searchUserLibrary={searchUserLibrary}
-              library={library}
-              defaultServingGrams={defaultServingGrams}
-              defaultWeightUnit={defaultWeightUnit}
-              fluidThresholdMl={fluidThresholdMl}
-              fluidZeroCalOnly={fluidZeroCalOnly}
-              onAdd={meal => { onAddMeal(meal); setAddMealDate(null) }}
-              onUpsertHistory={onUpsertHistory ?? (() => {})}
-              onTouchHistory={onTouchHistory}
-              dateOverride={addMealDate}
-              isOpen={true}
-            />
           </div>
         </>
       )}
