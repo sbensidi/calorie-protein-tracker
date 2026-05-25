@@ -186,10 +186,10 @@
 ## פאזה 5 — Long-term / ניסויי
 > **רציונל:** מחייבות מחקר נוסף, תשתית חיצונית, או תלות בפאזות קודמות.
 
-### 5.1 · Nutrition Label OCR ⚪ `[C16]` ⏱ 10+ שעות
+### 5.1 · Nutrition Label OCR ⚪ `[C16]` ⏱ 10+ שעות ✅
 **מה:** צילום תווית מזון → OCR → מילוי שדות תזונה אוטומטי.
-**פתרון:** שלב עם PhotoNutritionCapture — הוסף מצב "scan label" שמפעיל Groq Vision עם prompt מיוחד לזיהוי טבלאות תזונה.
-**קבצים:** `PhotoNutritionCapture.tsx` — mode prop.
+**פתרון:** זיהוי אוטומטי — Groq Vision מחליט בעצמו אם התמונה היא מנה אוכל או תווית תזונה. תווית: קורא ערכים מדויקים לכל 100ג, ממיר kJ→kcal, מנרמל per-serving→per-100g. עובד בכל שפה ופורמט בינלאומי.
+**קבצים:** `api/nutrition-image.ts` (prompt), `aiVision.ts` (source field), `PhotoNutritionCapture.tsx`, `FoodEntryForm.tsx` (badge).
 
 ### 5.2 · In-History Meal Edit (מלא) 🔴→⚪ `[B1 continuation]` ✅
 **תלוי ב:** 2.1 (שלב ראשון)
