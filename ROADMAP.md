@@ -173,6 +173,7 @@
 3. Logic: אל תשלח אם המשתמש כבר רשם ארוחה אחרי שעה מסוימת.
 **קבצים:** `sw.js`, `SettingsSheet.tsx` — toggle + time picker.
 **הערה:** בdeploy — Vercel Edge Functions או Supabase Edge Functions לPush delivery.
+> **⛔ מיותר:** Push Notifications אינן נתמכות ב-iOS PWA — לא ניתן לממש עבור המשתמשים העיקריים.
 > **⛔ נדלג:** PWA Push אינו מעשי כאן — iOS מחייב Add to Home Screen + גרסה 16.4+ ועדיין לא אמין. בנוסף, Web Push API דורש push server עם VAPID keys (Vercel/Supabase Edge Function) — עלות תשתית לא פרופורציונלית לתועלת. Scheduled local notifications (ללא שרת) לא קיימות ב-PWA.
 
 ### ~~4.4 · Barcode History~~ 🔵 `[C15]` ⏱ 3 שעות ⛔ נדלג
