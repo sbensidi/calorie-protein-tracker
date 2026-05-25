@@ -809,7 +809,12 @@ When the food entry sheet is opened from a ComposedGroup card that has `batchWei
 - Full-screen camera with targeting rectangle
 - Uses `AVCaptureSession` + `VNDetectBarcodesRequest`
 - On scan → calls `/api/barcode` → pre-fills food name + nutrition
-- "Scan again" button if product not found
+- **Product not found flow** (primary CTA is photo, not scan-again):
+  1. Icon + "מוצר לא נמצא" / "Product not found" title
+  2. Barcode string displayed in monospace
+  3. Explanatory subtitle: "צלם את תווית התזונה לניתוח אוטומטי, או סרוק שוב" / "Photograph the nutrition label for automatic analysis, or scan again"
+  4. `PhotoNutritionCaptureView` (primary action) — guarded by `AppConfig.photoNutritionEnabled`
+  5. "סרוק שוב" / "Scan again" — ghost/secondary button below photo capture
 - Fallback to manual entry always available
 
 ### Serving size hint
@@ -890,7 +895,8 @@ Create `Localizable.xcstrings` with all keys. Below are ALL translation keys fro
 | scanBarcode | סריקה | Scan |
 | scanHint | כוון את הברקוד למסגרת | Point the barcode at the frame |
 | productFound | מוצר זוהה | Product identified |
-| productNotFound | מוצר לא נמצא — הזן ידנית | Product not found — enter manually |
+| productNotFound | מוצר לא נמצא | Product not found |
+| barcodeNotFoundHint | צלם את תווית התזונה לניתוח אוטומטי, או סרוק שוב | Photograph the nutrition label for automatic analysis, or scan again |
 | per100g | לכל 100 גרם | Per 100g |
 | searchFood | חפש מאכל... | Search food... |
 | manualEntry | הזנה ידנית | Manual entry |
@@ -949,6 +955,10 @@ Create `Localizable.xcstrings` with all keys. Below are ALL translation keys fro
 | defaultServingGrams | גרמים למנה ברירת מחדל | Default grams per serving |
 | sortOldFirst | ישן לחדש | Oldest first |
 | sortNewFirst | חדש לישן | Newest first |
+| photoScanBtn | צלם אוכל / תווית | Scan food / label |
+| photoSourceLabel | נקרא מתווית | Read from label |
+| photoSourceDish | הוערך מתמונה | Estimated from photo |
+| photoLabelDisclaimer | ערכים נקראו ישירות מהתווית. אמת את כמות הצריכה שלך. | Values read directly from the nutrition label. Verify your serving amount. |
 
 ### RTL / LTR layout
 ```swift
@@ -2659,12 +2669,16 @@ ALTER TABLE composed_groups
 
 ### 23.1 Overview
 
-המשתמש יכול לצלם תמונה של אוכל (או לבחור מהגלריה) ולקבל הערכת קלוריות וחלבון אוטומטית. הניתוח מבוצע דרך מודל Vision של Groq (`llama-3.2-11b-vision-preview`).
+המשתמש יכול לצלם תמונה של אוכל **או תווית תזונה** (או לבחור מהגלריה) ולקבל הערכת קלוריות וחלבון אוטומטית. הניתוח מבוצע דרך מודל Vision של Groq (`meta-llama/llama-4-scout-17b-16e-instruct`).
+
+המודל מזהה אוטומטית את סוג התמונה:
+- **TYPE A — תווית תזונה** (nutrition label): קורא ערכים מדויקים מהטבלה, מנרמל ל-100g, ממיר kJ→kcal במידת הצורך. תומך בתוויות מכל מדינה ושפה.
+- **TYPE B — מאכל/מנה**: מעריך ערכים תזונתיים לפי מראה חזותי.
 
 **עקרונות ליישום:**
-- הפיצ'ר **שקוף לגבי אי-הדיוק** — disclaimer קבוע מוצג עם כל תוצאה.
+- הפיצ'ר **שקוף לגבי אי-הדיוק** — disclaimer קבוע מוצג עם כל תוצאה (שונה לפי סוג: תווית vs. הערכה).
 - תוצאת הניתוח מועברת לשדות ההזנה הידנית לאימות משתמש — אין הוספה אוטומטית ישירות.
-- כל תמונה עוברת resize ל-512×512px בצד הלקוח לפני שליחה (חיסכון של 70–80% tokens).
+- כל תמונה עוברת resize ל-**768px** max (שמירת יחס) בצד הלקוח לפני שליחה — שיפור דיוק OCR על תוויות.
 - מוגן מאחורי **feature flag** — ניתן לכיבוי מלא ללא שינוי קוד.
 
 ---
@@ -2706,7 +2720,7 @@ struct AppConfig {
 └─────────────────────────────┘
 ```
 
-מוצג גם כאשר ברקוד לא נמצא — כאפשרות חלופית.
+מוצג גם כאשר ברקוד לא נמצא — כ-**primary CTA** (ראה §8 לפרטי ה-UX).
 
 ---
 
@@ -2717,8 +2731,8 @@ struct AppConfig {
    → UIImagePickerController (sourceType: .camera, preferFrontCamera: false)
    → או PHPickerViewController לבחירה מגלריה
 
-2. resize ל-512×512 max (שמירת יחס):
-   let scale = min(1, 512 / max(image.size.width, image.size.height))
+2. resize ל-**768px** max (שמירת יחס — שיפור דיוק OCR על תוויות):
+   let scale = min(1, 768 / max(image.size.width, image.size.height))
    let newSize = CGSize(width: image.size.width * scale,
                         height: image.size.height * scale)
    UIGraphicsBeginImageContextWithOptions(newSize, false, 1.0)
@@ -2729,11 +2743,12 @@ struct AppConfig {
    let base64 = jpegData.base64EncodedString()
 
 3. POST /api/nutrition-image
-   Body: { "imageBase64": base64, "hint": optionalFoodNameHint }
+   Body: { "imageBase64": base64, "lang": "he"|"en", "hint": optionalFoodNameHint }
    Headers: Authorization: Bearer <supabase_jwt>
 
 4. תגובה מוצלחת:
    {
+     "source":            "label" | "dish",   // ← חדש: סוג זיהוי
      "identified":        "Chicken breast grilled",
      "calories_per_100g": 165,
      "protein_per_100g":  31.0,
@@ -2760,13 +2775,36 @@ struct AppConfig {
 | Runtime | Vercel Edge |
 | Auth | JWT Supabase (חובה) |
 | Rate limit | 5 קריאות / 24 שעות / IP (in-memory) |
-| Payload max | ~2MB base64 |
+| Payload max | ~5.5MB base64 (768px JPEG) |
 | Model | `meta-llama/llama-4-scout-17b-16e-instruct` (Groq) |
-| Max tokens | 120 |
+| Max tokens | 160 |
 | Temperature | 0 |
 
-**System prompt שנשלח למודל:**
-> "You are a nutrition estimation assistant. Identify the food and estimate its nutritional values per 100g. Return ONLY valid JSON: {identified, calories_per_100g, protein_per_100g, fat_per_100g, carbs_per_100g, confidence}. Use 'low' confidence for mixed dishes, unclear images, or restaurant food. Use 'high' only for clearly identifiable single ingredients or packaged items with visible labels."
+**System prompt שנשלח למודל** (dual-detection):
+```
+You are a nutrition analysis assistant. First determine what type of image this is:
+
+TYPE A — NUTRITION FACTS LABEL: a printed nutrition table on packaging (any language/country).
+TYPE B — FOOD DISH/ITEM: actual food, a meal, ingredients, or a packaged product without a visible nutrition table.
+
+If TYPE A (nutrition label):
+- Read the exact numeric values from the table.
+- Prefer the "per 100g" or "per 100ml" column. If only "per serving" is shown, also read the serving size in grams/ml and calculate per-100g values yourself (value / serving_g * 100).
+- If energy is in kJ only, convert to kcal: divide by 4.184.
+- The label may be in any language — always output numbers.
+- Set "source" to "label" and "confidence" to "high".
+- Set "identified" to the product name visible on the label.
+
+If TYPE B (food/dish):
+- Estimate the food name and nutritional values per 100g from visual appearance.
+- Set "source" to "dish".
+- Set "confidence" to "high" for clearly identifiable single ingredients, "medium" for common dishes, "low" for mixed/unclear/restaurant food.
+
+Return ONLY valid JSON (no markdown, no extra text):
+{"source":"label"|"dish","identified":"name in [lang]","calories_per_100g":number,"protein_per_100g":number,"fat_per_100g":number,"carbs_per_100g":number,"confidence":"high"|"medium"|"low"}
+```
+
+`[lang]` = "Hebrew" or "English" בהתאם לפרמטר `lang` שנשלח בבקשה.
 
 **תגובת 429 עם quota:**
 ```http
@@ -2792,6 +2830,7 @@ struct PhotoRateLimiter {
         guard let data = UserDefaults.standard.data(forKey: key),
               let rec = try? JSONDecoder().decode(Record.self, from: data)
         else { return maxDay }
+        // Counter resets at midnight UTC (aligns with Groq's daily quota reset)
         if Date().timeIntervalSince1970 * 1000 > rec.resetAt { return maxDay }
         return max(0, maxDay - rec.count)
     }
@@ -2799,13 +2838,22 @@ struct PhotoRateLimiter {
     static func canRequest() -> Bool { remaining() > 0 }
 
     // Call only on successful API response
+    // Returns the next midnight UTC as ms since epoch
+    private static func nextMidnightUTC() -> Double {
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = TimeZone(identifier: "UTC")!
+        let tomorrow = cal.date(byAdding: .day, value: 1, to: Date())!
+        let midnight  = cal.startOfDay(for: tomorrow)
+        return midnight.timeIntervalSince1970 * 1000
+    }
+
     static func increment() {
         let now = Date().timeIntervalSince1970 * 1000
         var rec = (try? JSONDecoder().decode(
             Record.self,
             from: UserDefaults.standard.data(forKey: key) ?? Data()
-        )) ?? Record(count: 0, resetAt: now + msDay)
-        if now > rec.resetAt { rec = Record(count: 1, resetAt: now + msDay) }
+        )) ?? Record(count: 0, resetAt: nextMidnightUTC())
+        if now > rec.resetAt { rec = Record(count: 1, resetAt: nextMidnightUTC()) }
         else { rec.count += 1 }
         UserDefaults.standard.set(try? JSONEncoder().encode(rec), forKey: key)
     }
@@ -2842,22 +2890,37 @@ enum PhotoNutritionError: Error {
 
 ### 23.8 Disclaimer — חובה בכל תוצאה
 
-**חייב להיות מוצג תמיד**, ללא אפשרות הסתרה:
+**חייב להיות מוצג תמיד**, ללא אפשרות הסתרה. הטקסט שונה לפי סוג המקור:
 
+**תווית (`source == "label"`)** — רקע ירוק, אייקון `checkmark.circle`:
+```swift
+// עברית
+"ערכים נקראו ישירות מהתווית. אמת את כמות הצריכה שלך."
+// אנגלית
+"Values read directly from the nutrition label. Verify your serving amount."
+```
+
+**מנה (`source == "dish"`)** — רקע amber/warning, אייקון `info.circle`:
 ```swift
 // עברית
 "הערכה בלבד — הדיוק יכול לחרוג ב-20–30%. אמת מול הערכים האמיתיים לפני שתסתמך."
-
 // אנגלית
 "Estimate only — accuracy may vary ±20–30%. Verify against actual values before relying on this."
 ```
 
-**עיצוב:** רקע amber/warning (`systemYellow` ב-opacity 0.12), border amber, אייקון `info.circle`.
-
 ---
 
-### 23.9 Confidence Badge
+### 23.9 Source Badge + Confidence Badge
 
+שני badges מוצגים בכרטיס האישור (ב-FoodEntrySheet, ליד "ערכים תזונתיים"):
+
+#### Source badge
+| source | צבע | טקסט |
+|---|---|---|
+| `label` | ירוק (`systemGreen`) | "נקרא מתווית" / "Read from label" |
+| `dish` | כחול (`systemBlue` / accent) | "הוערך מתמונה" / "Estimated from photo" |
+
+#### Confidence badge (מוצג רק עבור `source == "dish"`)
 | confidence | צבע | טקסט |
 |---|---|---|
 | `high` | ירוק (`systemGreen`) | "זיהוי גבוה" / "High confidence" |
@@ -2865,6 +2928,7 @@ enum PhotoNutritionError: Error {
 | `low` | אדום (`systemRed`) | "זיהוי נמוך — אמת ידנית" / "Low confidence — please verify" |
 
 ערך לא מוכר מהשרת → normalize ל-`medium` בצד הלקוח.
+עבור `source == "label"`, ה-confidence תמיד `high` ולא מוצג badge נפרד (התווית היא מקור מדויק).
 
 ---
 
@@ -2872,21 +2936,34 @@ enum PhotoNutritionError: Error {
 
 ```swift
 enum PhotoCaptureState {
-    case idle                    // כפתור "צלם אוכל" + מונה remaining
+    case idle                    // כפתור "צלם אוכל / תווית" + מונה remaining
     case analyzing               // spinner + תמונה thumbnail
-    case result(VisionResult)    // תוצאה + disclaimer + confidence + retry
+    // ⚠️ אין state "result" — אחרי הצלחה קוראים ל-onResult() ועוברים ישירות ל-idle
     case errorParse              // "לא זוהה" + קישור לידנית + retry
     case errorQuota              // "מכסה נגמרה"
     case errorNetwork            // "שירות לא זמין" + retry
 }
+```
 
+**חשוב:** הקומפוננטה **לא** מציגה state תוצאה — אחרי ניתוח מוצלח:
+1. קוראים ל-`onResult(result)`
+2. מעברים ל-`idle` + מנקים את ה-thumbnail
+
+זה מונע הצגת תוצאה ישנה כשהמשתמש חוזר למצב סריקה (הקומפוננטה נשארת mounted בעזרת `display: none` / `.hidden()` — לא unmounted).
+
+ה-source badge וה-disclaimer מוצגים ב-`FoodEntrySheet` עצמו (בכרטיס האישור), לא בתוך `PhotoNutritionCaptureView`.
+
+```swift
 struct VisionResult {
+    let source:           Source     // ← חדש
     let identified:       String
     let caloriesPer100g:  Int
     let proteinPer100g:   Double
     let fatPer100g:       Double?
     let carbsPer100g:     Double?
     let confidence:       Confidence
+
+    enum Source     { case label, dish }
     enum Confidence { case high, medium, low }
 }
 ```
