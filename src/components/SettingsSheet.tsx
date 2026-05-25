@@ -567,6 +567,38 @@ function MainScreen({ lang, connected, theme, styleMode, showGreeting, onProfile
 
 // NotificationsSection — suspended on web, implemented in iOS native only
 
+// ── Weight Sparkline ──────────────────────────────────────────────────────────
+
+function WeightSparkline({ entries }: { entries: import('../types').WeightLog[] }) {
+  if (entries.length < 2) return null
+  const pts = entries.slice(-30)
+  const W = 300, H = 52, pad = 6
+  const weights = pts.map(e => e.weight_kg)
+  const minW = Math.min(...weights), maxW = Math.max(...weights)
+  const range = maxW - minW || 1
+  const x = (i: number) => pad + (i / (pts.length - 1)) * (W - pad * 2)
+  const y = (w: number) => H - pad - ((w - minW) / range) * (H - pad * 2)
+  const points = pts.map((e, i) => `${x(i)},${y(e.weight_kg)}`).join(' ')
+  const area   = `M${x(0)},${H} ` + pts.map((e, i) => `L${x(i)},${y(e.weight_kg)}`).join(' ') + ` L${x(pts.length - 1)},${H} Z`
+  const last   = pts[pts.length - 1]
+  const lx = x(pts.length - 1), ly = y(last.weight_kg)
+  return (
+    <div style={{ margin: '0 0 10px', borderRadius: 10, overflow: 'hidden', background: 'var(--accent-fill)', padding: '8px 8px 4px' }}>
+      <svg viewBox={`0 0 ${W} ${H}`} width="100%" height={H} style={{ display: 'block', overflow: 'visible' }}>
+        <defs>
+          <linearGradient id="wsg" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="var(--accent-hi)" stopOpacity="0.18" />
+            <stop offset="100%" stopColor="var(--accent-hi)" stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        <path d={area} fill="url(#wsg)" />
+        <polyline points={points} fill="none" stroke="var(--accent-hi)" strokeWidth="1.8" strokeLinejoin="round" strokeLinecap="round" />
+        <circle cx={lx} cy={ly} r={3.5} fill="var(--accent-hi)" />
+      </svg>
+    </div>
+  )
+}
+
 // ── Profile Screen ────────────────────────────────────────────────────────────
 
 function ProfileScreen({ lang, profile, onSave, showToast, weightLogEntries = [], onLogWeight, onDeleteWeightEntry, saveRef, onSaveDone }: {
@@ -826,6 +858,9 @@ function ProfileScreen({ lang, profile, onSave, showToast, weightLogEntries = []
           </button>
         </div>
       </div>
+
+      {/* Sparkline — shown when ≥2 entries */}
+      <WeightSparkline entries={weightLogEntries} />
 
       {/* Entry list — accordion when > 4 entries */}
       {weightLogEntries.length > 0 && (() => {

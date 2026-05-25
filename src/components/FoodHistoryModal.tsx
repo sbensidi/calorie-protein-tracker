@@ -18,6 +18,7 @@ interface FoodHistoryModalProps {
   onClose: () => void
   onSelectHistory: (item: FoodHistory) => void
   onSelectComposed?: (entry: ComposedEntry) => void
+  onDeleteHistory?: (id: string) => void
 }
 
 export function FoodHistoryModal({
@@ -29,6 +30,7 @@ export function FoodHistoryModal({
   onClose,
   onSelectHistory,
   onSelectComposed,
+  onDeleteHistory,
 }: FoodHistoryModalProps) {
   const searchRef = useRef<HTMLInputElement>(null)
   const isRTL = lang === 'he'
@@ -208,62 +210,84 @@ export function FoodHistoryModal({
                     : `${item.grams}g`
                   const isLast = i === visibleFiltered.length - 1 && !hasMore
                   return (
-                    <button
+                    <div
                       key={item.id}
-                      onClick={() => onSelectHistory(item)}
                       style={{
-                        display: 'block', width: '100%',
-                        padding: minimal ? '8px 14px' : '10px 14px',
-                        background: 'transparent', border: 'none',
+                        display: 'flex', alignItems: 'center',
                         borderBottom: minimal
                           ? (isLast ? 'none' : '1px dashed var(--border)')
                           : (isLast ? 'none' : '1px solid var(--border)'),
-                        cursor: 'pointer', textAlign: 'start', fontFamily: 'inherit',
-                        transition: 'background .12s',
                       }}
-                      onMouseEnter={e => (e.currentTarget.style.background = 'var(--inp-bg)')}
-                      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                     >
-                      {minimal ? (
-                        <>
-                          <div style={{ display: 'flex', alignItems: 'baseline', gap: 5, overflow: 'hidden' }}>
-                            <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>
-                              {item.name}
-                              {itemIsFluid && <span className="icon" style={{ fontSize: 12, color: 'var(--cyan-hi)', opacity: 0.8, verticalAlign: 'middle', margin: '0 4px' }}>water_drop</span>}
-                            </span>
-                            <span style={{ fontSize: 11, color: 'var(--text-3)', whiteSpace: 'nowrap', flexShrink: 0 }}>{amtDisplay}</span>
-                          </div>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginTop: 2 }}>
-                            <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
-                              <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--accent-hi)', display: 'inline-flex', alignItems: 'baseline', gap: 2 }}>
-                                {Math.round(item.calories)}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.8 }}>{t(lang, 'caloriesUnit')}</span>
+                      <button
+                        onClick={() => onSelectHistory(item)}
+                        style={{
+                          flex: 1, minWidth: 0,
+                          padding: minimal ? '8px 14px' : '10px 14px',
+                          background: 'transparent', border: 'none',
+                          cursor: 'pointer', textAlign: 'start', fontFamily: 'inherit',
+                          transition: 'background .12s',
+                        }}
+                        onMouseEnter={e => (e.currentTarget.style.background = 'var(--inp-bg)')}
+                        onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                      >
+                        {minimal ? (
+                          <>
+                            <div style={{ display: 'flex', alignItems: 'baseline', gap: 5, overflow: 'hidden' }}>
+                              <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>
+                                {item.name}
+                                {itemIsFluid && <span className="icon" style={{ fontSize: 12, color: 'var(--cyan-hi)', opacity: 0.8, verticalAlign: 'middle', margin: '0 4px' }}>water_drop</span>}
                               </span>
-                              <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--positive-hi)', display: 'inline-flex', alignItems: 'baseline', gap: 2 }}>
-                                {Math.round(item.protein * 10) / 10}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.8 }}>{t(lang, 'gProteinLabel')}</span>
-                              </span>
+                              <span style={{ fontSize: 11, color: 'var(--text-3)', whiteSpace: 'nowrap', flexShrink: 0 }}>{amtDisplay}</span>
                             </div>
-                            <span style={{ fontSize: 10, color: 'var(--text-3)' }}>{item.use_count} {t(lang, 'uses')}</span>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginTop: 2 }}>
+                              <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+                                <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--accent-hi)', display: 'inline-flex', alignItems: 'baseline', gap: 2 }}>
+                                  {Math.round(item.calories)}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.8 }}>{t(lang, 'caloriesUnit')}</span>
+                                </span>
+                                <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--positive-hi)', display: 'inline-flex', alignItems: 'baseline', gap: 2 }}>
+                                  {Math.round(item.protein * 10) / 10}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.8 }}>{t(lang, 'gProteinLabel')}</span>
+                                </span>
+                              </div>
+                              <span style={{ fontSize: 10, color: 'var(--text-3)' }}>{item.use_count} {t(lang, 'uses')}</span>
+                            </div>
+                          </>
+                        ) : (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {item.name}
+                              </p>
+                              <p style={{ fontSize: 11, color: 'var(--text-3)', margin: '2px 0 0' }}>
+                                {amtDisplay} · {item.use_count} {t(lang, 'uses')}
+                              </p>
+                            </div>
+                            <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+                              <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent-hi)' }}>{Math.round(item.calories)}</span>
+                              <span style={{ fontSize: 11, color: 'var(--text-3)' }}>{t(lang, 'caloriesUnit')}</span>
+                              <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--positive-hi)', marginInlineStart: 4 }}>{Math.round(item.protein * 10) / 10}</span>
+                              <span style={{ fontSize: 11, color: 'var(--text-3)' }}>{t(lang, 'proteinUnit')}</span>
+                            </div>
                           </div>
-                        </>
-                      ) : (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                              {item.name}
-                            </p>
-                            <p style={{ fontSize: 11, color: 'var(--text-3)', margin: '2px 0 0' }}>
-                              {amtDisplay} · {item.use_count} {t(lang, 'uses')}
-                            </p>
-                          </div>
-                          <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-                            <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent-hi)' }}>{Math.round(item.calories)}</span>
-                            <span style={{ fontSize: 11, color: 'var(--text-3)' }}>{t(lang, 'caloriesUnit')}</span>
-                            <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--positive-hi)', marginInlineStart: 4 }}>{Math.round(item.protein * 10) / 10}</span>
-                            <span style={{ fontSize: 11, color: 'var(--text-3)' }}>{t(lang, 'proteinUnit')}</span>
-                          </div>
-                        </div>
+                        )}
+                      </button>
+                      {onDeleteHistory && (
+                        <button
+                          onClick={() => onDeleteHistory(item.id)}
+                          aria-label={t(lang, 'removeFromHistory')}
+                          style={{
+                            flexShrink: 0, background: 'none', border: 'none', cursor: 'pointer',
+                            color: 'var(--text-3)', padding: '0 12px', alignSelf: 'stretch',
+                            display: 'flex', alignItems: 'center',
+                            transition: 'color .12s',
+                          }}
+                          onMouseEnter={e => (e.currentTarget.style.color = 'var(--danger-hi)')}
+                          onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-3)')}
+                        >
+                          <span className="icon" style={{ fontSize: 16 }}>delete</span>
+                        </button>
                       )}
-                    </button>
+                    </div>
                   )
                 })}
                 {hasMore && (

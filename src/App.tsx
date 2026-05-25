@@ -391,6 +391,7 @@ export default function App() {
               onDuplicateMeal={duplicateMeal}
               onUpsertHistory={upsertHistory}
               onTouchHistory={touchHistory}
+              onDeleteHistory={id => { deleteHistory(id); showToast(t(lang, 'historyItemRemoved'), 'info') }}
               composedEntries={composedEntries}
               composedGroups={composedGroups}
               onUpsertGroup={upsertGroup}

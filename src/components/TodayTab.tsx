@@ -12,7 +12,8 @@ import { MealCard } from './MealCard'
 import { ComposedMealCard } from './ComposedMealCard'
 import { DailySummary } from './DailySummary'
 import { useAppContext } from '../context/AppContext'
-import { getGreeting, estimateCookedWeight } from '../lib/calculations'
+import { getGreeting, estimateCookedWeight, calcDailyInsight } from '../lib/calculations'
+import type { DailyInsight } from '../lib/calculations'
 
 type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'beverage'
 
@@ -127,6 +128,37 @@ function GreetingPanel({ greeting, lang, onDismiss }: {
   )
 }
 
+// ── DailyInsightCard ─────────────────────────────────────────────
+function DailyInsightCard({ insight, lang, onDismiss }: { insight: DailyInsight; lang: Lang; onDismiss: () => void }) {
+  const sub = (key: Parameters<typeof t>[1]) =>
+    t(lang, key).replace('{N}', String(insight.n))
+
+  const configs: Record<DailyInsight['kind'], { titleKey: Parameters<typeof t>[1]; subKey: Parameters<typeof t>[1]; color: string; icon: string }> = {
+    streak:     { titleKey: 'insightStreakTitle',     subKey: 'insightStreakSub',     color: 'var(--positive-hi)', icon: 'local_fire_department' },
+    proteinLow: { titleKey: 'insightProteinLowTitle', subKey: 'insightProteinLowSub', color: 'var(--warning)',     icon: 'fitness_center' },
+    calLow:     { titleKey: 'insightCalLowTitle',     subKey: 'insightCalLowSub',     color: 'var(--warning)',     icon: 'warning' },
+    calOver:    { titleKey: 'insightCalOverTitle',    subKey: 'insightCalOverSub',    color: 'var(--danger-hi)',   icon: 'trending_up' },
+  }
+  const { titleKey, subKey, color, icon } = configs[insight.kind]
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'var(--bg-card)', border: `1px solid var(--border)`, borderRadius: 12, padding: '10px 12px', marginBottom: 12 }}>
+      <span className="icon" style={{ fontSize: 20, color, flexShrink: 0 }}>{icon}</span>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <p style={{ fontSize: 12, fontWeight: 700, color, margin: 0 }}>{sub(titleKey)}</p>
+        <p style={{ fontSize: 11, color: 'var(--text-3)', margin: '1px 0 0' }}>{sub(subKey)}</p>
+      </div>
+      <button
+        onClick={onDismiss}
+        aria-label={t(lang, 'insightDismiss')}
+        style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 4, flexShrink: 0, display: 'flex', alignItems: 'center' }}
+      >
+        <span className="icon" style={{ fontSize: 16 }}>close</span>
+      </button>
+    </div>
+  )
+}
+
 // ── Props ────────────────────────────────────────────────────────
 interface TodayTabProps {
   lang: Lang
@@ -149,6 +181,7 @@ interface TodayTabProps {
   onDuplicateMeal: (meal: Meal) => void
   onUpsertHistory: (item: Pick<FoodHistory, 'name' | 'grams' | 'calories' | 'protein' | 'fluid_ml'>) => void
   onTouchHistory?: (id: string) => void
+  onDeleteHistory?: (id: string) => void
   composedEntries: ComposedEntry[]
   composedGroups: ComposedGroup[]
   onUpsertGroup: (group: ComposedGroup) => void
@@ -166,7 +199,7 @@ interface TodayTabProps {
 export function TodayTab({
   lang, meals, loading = false, history, goalCalories, goalProtein,
   getSuggestions, searchLibrary, searchUserLibrary, library = [], defaultServingGrams = 150, defaultWeightUnit = 'g', defaultVolumeUnit = 'ml',
-  onAddMeal, onAddMealWithId, onEditMeal, onDeleteMeal, onDuplicateMeal, onUpsertHistory, onTouchHistory,
+  onAddMeal, onAddMealWithId, onEditMeal, onDeleteMeal, onDuplicateMeal, onUpsertHistory, onTouchHistory, onDeleteHistory,
   composedEntries, composedGroups, onUpsertGroup, onRemoveGroup, showToast,
   fluidGoalMl = 2500, fluidThresholdMl = 100, fluidZeroCalOnly = true, goalStreak = 0,
   displayName = null, showGreeting = true, onDismissGreeting,
@@ -1064,12 +1097,22 @@ export function TodayTab({
     dayOfYear, lang,
   }), [hour, firstName, goalStreak, calsConsumed, goalCalories, protConsumed, goalProtein, fluidTodayMl, fluidGoalMl, dayOfYear, lang])
 
+  const insight = useMemo(
+    () => calcDailyInsight(meals, goalStreak, goalCalories, goalProtein),
+    [meals, goalStreak, goalCalories, goalProtein],
+  )
+  const [insightDismissed, setInsightDismissed] = useState(false)
+
   return (
     <div>
       {showGreeting && onDismissGreeting && (
         <GreetingPanel greeting={greeting} lang={lang} onDismiss={onDismissGreeting} />
       )}
       {summaryCard}
+
+      {insight && !insightDismissed && (
+        <DailyInsightCard insight={insight} lang={lang} onDismiss={() => setInsightDismissed(true)} />
+      )}
 
       {loading && todayMeals.length === 0 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -1116,6 +1159,7 @@ export function TodayTab({
               onAdd={handleAddIngredientSubmit}
               onUpsertHistory={onUpsertHistory}
               onTouchHistory={onTouchHistory}
+              onDeleteHistory={onDeleteHistory}
               fluidThresholdMl={fluidThresholdMl}
               fluidZeroCalOnly={fluidZeroCalOnly}
             />
@@ -1206,6 +1250,7 @@ export function TodayTab({
               onAdd={meal => { onAddMeal(meal); setEntryOpen(false) }}
               onUpsertHistory={onUpsertHistory}
               onTouchHistory={onTouchHistory}
+              onDeleteHistory={onDeleteHistory}
               composedEntries={composedEntries}
               onAddComposed={(id, mealType) => { handleAddComposed(id, mealType); setEntryOpen(false) }}
               onAddRecipePortion={(id, mealType, portionG) => { handleAddRecipePortion(id, mealType, portionG); setEntryOpen(false) }}

@@ -68,9 +68,10 @@ interface FoodEntryFormProps {
   defaultServingGrams?: number
   library?: FoodLibraryItem[]
   searchUserLibrary?: (q: string) => UserFoodItem[]
+  onDeleteHistory?: (id: string) => void
 }
 
-export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, searchUserLibrary, defaultWeightUnit = 'g', onAdd, onUpsertHistory, onTouchHistory, defaultMealType, composedEntries, onAddComposed, onAddRecipePortion, fluidThresholdMl = 100, fluidZeroCalOnly = true, isOpen, defaultServingGrams = 150, library = [] }: FoodEntryFormProps) {
+export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, searchUserLibrary, defaultWeightUnit = 'g', onAdd, onUpsertHistory, onTouchHistory, onDeleteHistory, defaultMealType, composedEntries, onAddComposed, onAddRecipePortion, fluidThresholdMl = 100, fluidZeroCalOnly = true, isOpen, defaultServingGrams = 150, library = [] }: FoodEntryFormProps) {
   const [mode, setMode]               = useState<EntryMode>(
     () => (localStorage.getItem('entry-mode') as EntryMode) ?? 'scan'
   )
@@ -1650,6 +1651,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, se
         onClose={() => setHistoryModalOpen(false)}
         onSelectHistory={handleHistorySelect}
         onSelectComposed={handleComposedSelect}
+        onDeleteHistory={onDeleteHistory}
       />
     )}
     </>

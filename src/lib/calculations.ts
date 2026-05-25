@@ -487,3 +487,50 @@ export function estimateCookedWeight(meals: Meal[]): {
   const total = Math.round(breakdown.reduce((s, b) => s + b.cookedG, 0))
   return { total, breakdown }
 }
+
+// ── calcDailyInsight ──────────────────────────────────────────────────────────
+
+export type DailyInsightKind = 'streak' | 'proteinLow' | 'calLow' | 'calOver'
+
+export interface DailyInsight {
+  kind: DailyInsightKind
+  n:    number
+}
+
+const STREAK_MILESTONES = new Set([3, 5, 7, 14, 21, 30, 60, 90])
+
+function dateStr(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+/**
+ * Returns one insight card to show in TodayTab, or null if nothing notable.
+ * Priority: very-low-cal > streak milestone > protein-low > over-goal.
+ */
+export function calcDailyInsight(
+  meals:         Meal[],
+  goalStreak:    number,
+  goalCalories:  number,
+  goalProtein:   number,
+): DailyInsight | null {
+  const yd = new Date()
+  yd.setDate(yd.getDate() - 1)
+  const yDate   = dateStr(yd)
+  const yMeals  = meals.filter(m => m.date === yDate)
+  const yCal    = yMeals.reduce((s, m) => s + m.calories, 0)
+  const yProt   = yMeals.reduce((s, m) => s + m.protein, 0)
+
+  if (yCal > 0 && yCal < 1200)
+    return { kind: 'calLow', n: Math.round(yCal) }
+
+  if (STREAK_MILESTONES.has(goalStreak))
+    return { kind: 'streak', n: goalStreak }
+
+  if (yCal > 0 && goalProtein > 0 && yProt < goalProtein * 0.75)
+    return { kind: 'proteinLow', n: Math.round(goalProtein - yProt) }
+
+  if (yCal > 0 && goalCalories > 0 && yCal > goalCalories * 1.1)
+    return { kind: 'calOver', n: Math.round(yCal - goalCalories) }
+
+  return null
+}

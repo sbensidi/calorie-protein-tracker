@@ -1292,6 +1292,13 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
 
         const last7 = barDays.filter(b => b.hasData).map(b => b.dateKey)
 
+        // Previous week data — aligned by weekday (same index = same weekday - 7 days)
+        const prevBarDays = barDays.map(b => {
+          const d = new Date(b.dateKey); d.setDate(d.getDate() - 7)
+          const dKey = toKey(d); const data = grouped.get(dKey)
+          return { cal: data?.totalCalories ?? 0, prot: data?.totalProtein ?? 0, fluid: fluidForDate(dKey), hasData: !!data }
+        })
+
         // ── Calendar month ────────────────────────────────────────
         const HE_MONTHS_SHORT = ['ינו׳','פבר׳','מרץ','אפר׳','מאי','יוני','יולי','אוג׳','ספט׳','אוק׳','נוב׳','דצמ׳']
         const EN_MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
@@ -1412,7 +1419,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
           const val  = isCal7 ? b.cal  : isProt7 ? b.prot  : b.fluid
           const goal = isCal7 ? b.goalCal : isProt7 ? b.goalProt : b.goalFluid
           return Math.max(val, goal)
-        }), 1)
+        }), ...prevBarDays.map(p => isCal7 ? p.cal : isProt7 ? p.prot : p.fluid), 1)
         const barColor7        = isCal7 ? 'var(--accent)'            : isProt7 ? 'var(--positive)'            : 'var(--accent)'
         const goalDashColor7   = isCal7 ? 'var(--accent-border)' : isProt7 ? 'var(--positive-border)' : 'var(--accent-glow)'
         const goalLegendColor7 = isCal7 ? 'var(--accent-border)'  : isProt7 ? 'var(--positive-border)'  : 'var(--accent-glow)'
@@ -1434,6 +1441,16 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
         }
 
         const lineGoal30 = isCal30 ? getGoalForDate(nowKey).calories : isProt30 ? getGoalForDate(nowKey).protein : fluidGoalMl
+
+        // Previous calendar month data
+        const prevMonthStart30 = new Date(calMonthRef.getFullYear(), calMonthRef.getMonth() - 1, 1)
+        const prevDaysInMonth30 = new Date(prevMonthStart30.getFullYear(), prevMonthStart30.getMonth() + 1, 0).getDate()
+        const prevLineDays30 = Array.from({ length: prevDaysInMonth30 }, (_, i) => {
+          const d = new Date(prevMonthStart30); d.setDate(prevMonthStart30.getDate() + i)
+          const dKey = toKey(d); const data = grouped.get(dKey)
+          return { cal: data?.totalCalories ?? 0, prot: data?.totalProtein ?? 0, fluid: fluidForDate(dKey), hasData: !!data }
+        })
+
         // Monthly balance card data
         const monthDaysElapsed  = offset30 === 0 ? lineDays30.filter(b => b.dateKey <= nowKey).length : daysInMonth30
         const monthTargetSoFar  = lineDays30
@@ -1441,7 +1458,8 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
           .reduce((s, b) => s + getGoalForDate(b.dateKey).calories, 0)
         const monthConsumed     = lineDays30.reduce((s, b) => s + b.cal, 0) + (offset30 === 0 ? todayCalories : 0)
         const lineVals30 = lineDays30.map(d => isCal30 ? d.cal : isProt30 ? d.prot : d.fluid)
-        const lineMax30  = Math.max(...lineVals30, lineGoal30, 1)
+        const prevLineVals30 = prevLineDays30.filter(d => d.hasData).map(d => isCal30 ? d.cal : isProt30 ? d.prot : d.fluid)
+        const lineMax30  = Math.max(...lineVals30, ...prevLineVals30, lineGoal30, 1)
         const lineColorRaw30  = isCal30 ? 'var(--accent)' : isProt30 ? 'var(--positive)' : 'var(--accent)'
         const goalLineColor30 = isCal30
           ? 'color-mix(in srgb, var(--accent) 45%, transparent)'
@@ -1656,7 +1674,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                       </div>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4, height: barH + 20 }}>
-                      {barDays.map(b => {
+                      {barDays.map((b, bi) => {
                         const val      = isCal7 ? b.cal  : isProt7 ? b.prot  : b.fluid
                         const goalVal  = isCal7 ? b.goalCal : isProt7 ? b.goalProt : b.goalFluid
                         const hasBar   = b.hasData || (isFluid7 && b.fluid > 0)
@@ -1670,6 +1688,8 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                         const valLabel = isFluid7
                           ? (val >= 1000 ? `${(val / 1000).toFixed(1)}` : `${Math.round(val)}`)
                           : isCal7 ? `${Math.round(val)}` : `${Math.round(val * 10) / 10}`
+                        const prevVal    = isCal7 ? prevBarDays[bi].cal : isProt7 ? prevBarDays[bi].prot : prevBarDays[bi].fluid
+                        const prevHeight = prevBarDays[bi].hasData ? Math.max(2, Math.round((prevVal / maxVal7) * barH)) : 0
                         return (
                           <div
                             key={b.dateKey}
@@ -1684,6 +1704,9 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                           >
                             <div style={{ position: 'relative', width: '100%', height: barH, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
                               {goalHeight > 0 && <div style={{ position: 'absolute', bottom: goalHeight, left: 0, right: 0, borderTop: `1.5px dashed ${goalDashColor7}` }} />}
+                              {prevHeight > 0 && (
+                                <div style={{ position: 'absolute', bottom: 0, left: '50%', transform: 'translateX(-50%)', width: '70%', height: prevHeight, borderRadius: '4px 4px 0 0', background: 'var(--border)', opacity: 0.6 }} />
+                              )}
                               {hasBar && (
                                 <div style={{
                                   width: '70%', height: barHeight,
@@ -1710,6 +1733,10 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                       <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, color: 'var(--text-3)' }}>
                         <div style={{ width: 12, height: 3, background: barColor7, borderRadius: 2 }} />
                         {isCal7 ? t(lang, 'calories') : isProt7 ? t(lang, 'protein') : t(lang, 'fluid')}
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, color: 'var(--text-3)' }}>
+                        <div style={{ width: 12, height: 3, background: 'var(--border)', borderRadius: 2, opacity: 0.8 }} />
+                        {t(lang, 'prevPeriod')}
                       </div>
                       {(!isFluid7 || fluidGoalMl > 0) && (
                         <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, color: 'var(--text-3)' }}>
@@ -1971,6 +1998,37 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                             style={{ stroke: goalLineColor30 }} strokeWidth={1.5} strokeDasharray="4 3"
                           />
 
+                          {/* Previous month polyline */}
+                          {(() => {
+                            const pn = prevLineDays30.length
+                            if (pn < 2) return null
+                            const px = (i: number) => padL + (i / (pn - 1)) * chartW
+                            const prevSegs: { x: number; y: number }[][] = []
+                            let pCur: { x: number; y: number }[] = []
+                            prevLineDays30.forEach((d, i) => {
+                              const v = isCal30 ? d.cal : isProt30 ? d.prot : d.fluid
+                              if (d.hasData || (isFluid30 && v > 0)) {
+                                pCur.push({ x: px(i), y: yPos(v) })
+                              } else {
+                                if (pCur.length > 0) { prevSegs.push(pCur); pCur = [] }
+                              }
+                            })
+                            if (pCur.length > 0) prevSegs.push(pCur)
+                            return prevSegs.map((seg, si) => (
+                              <polyline
+                                key={`prev-${si}`}
+                                points={seg.map(p => `${p.x},${p.y}`).join(' ')}
+                                fill="none"
+                                stroke="var(--text-3)"
+                                strokeWidth={1}
+                                strokeDasharray="3 2"
+                                strokeLinejoin="round"
+                                strokeLinecap="round"
+                                opacity={0.4}
+                              />
+                            ))
+                          })()}
+
                           {/* Area fills */}
                           {segments.map((seg, si) => (
                             <path
@@ -2047,6 +2105,12 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                             <div style={{ width: 16, height: 2, background: lineColorRaw30, borderRadius: 2 }} />
                             {isCal30 ? t(lang, 'calories') : isProt30 ? t(lang, 'protein') : t(lang, 'fluid')}
                           </div>
+                          {prevLineDays30.some(d => d.hasData) && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, color: 'var(--text-3)' }}>
+                              <svg width={16} height={6} style={{ flexShrink: 0 }}><line x1={0} y1={3} x2={16} y2={3} stroke="var(--text-3)" strokeWidth={1} strokeDasharray="3 2" opacity={0.6} /></svg>
+                              {t(lang, 'prevPeriod')}
+                            </div>
+                          )}
                           <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, color: 'var(--text-3)' }}>
                             <div style={{ width: 16, borderTop: `1.5px dashed ${goalLineColor30}` }} />
                             {t(lang, 'goal')}
