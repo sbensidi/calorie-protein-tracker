@@ -192,10 +192,36 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
   const calTouchStartX    = useRef(0)
   const weekTouchStartX   = useRef(0)
   const monthTouchStartX  = useRef(0)
+  const barChartRef       = useRef<HTMLDivElement>(null)
+  const lineChartRef      = useRef<HTMLDivElement>(null)
+  const [sharingChart, setSharingChart] = useState(false)
   const [statsPeriod, setStatsPeriod] = useState<'week' | 'month'>(
     () => (localStorage.getItem('stats-period') as 'week' | 'month') ?? 'week'
   )
   const switchStatsPeriod = (p: 'week' | 'month') => { setStatsPeriod(p); localStorage.setItem('stats-period', p) }
+
+  async function shareChartCard(ref: React.RefObject<HTMLDivElement | null>) {
+    if (!ref.current || sharingChart) return
+    setSharingChart(true)
+    try {
+      const html2canvas = (await import('html2canvas')).default
+      const canvas = await html2canvas(ref.current, { scale: 2, useCORS: true, backgroundColor: null })
+      canvas.toBlob(async blob => {
+        if (!blob) return
+        const file = new File([blob], 'nutrition-chart.png', { type: 'image/png' })
+        if (navigator.canShare?.({ files: [file] })) {
+          await navigator.share({ files: [file], title: t(lang, 'shareChartTitle') })
+        } else {
+          const url = URL.createObjectURL(blob)
+          const a = document.createElement('a')
+          a.href = url; a.download = 'nutrition-chart.png'; a.click()
+          URL.revokeObjectURL(url)
+        }
+      }, 'image/png')
+    } finally {
+      setSharingChart(false)
+    }
+  }
   const [offset7,  setOffset7]  = useState(0) // weeks back (0 = current week)
   const [offset30, setOffset30] = useState(0) // months back (0 = current 30d)
   // Persist search per view
@@ -1651,11 +1677,21 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                   })()}
 
                   {/* Bar chart */}
-                  <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: '14px 12px' }}>
+                  <div ref={barChartRef} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: '14px 12px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
                       <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-2)', margin: 0 }}>
                         {range7Label}
                       </p>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <button
+                        className="icon-btn"
+                        onClick={() => shareChartCard(barChartRef)}
+                        aria-label={t(lang, 'shareChart')}
+                        disabled={sharingChart}
+                        style={{ opacity: sharingChart ? 0.5 : 1 }}
+                      >
+                        <span className="icon icon-sm">share</span>
+                      </button>
                       <div style={{ display: 'flex', background: 'var(--surface-2)', borderRadius: 8, padding: 2, gap: 2 }}>
                         {(['cal', 'prot', 'fluid'] as const).map(m => (
                           <button
@@ -1671,6 +1707,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                             {m === 'cal' ? (t(lang, 'calShort')) : m === 'prot' ? (t(lang, 'protShort')) : (t(lang, 'fluid'))}
                           </button>
                         ))}
+                      </div>
                       </div>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4, height: barH + 20 }}>
@@ -1958,10 +1995,20 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                     }
 
                     return (
-                      <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: '14px 12px' }}>
+                      <div ref={lineChartRef} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: '14px 12px' }}>
                         {/* chart header: range + toggle */}
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
                           <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-2)', margin: 0 }}>{range30Label}</p>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <button
+                            className="icon-btn"
+                            onClick={() => shareChartCard(lineChartRef)}
+                            aria-label={t(lang, 'shareChart')}
+                            disabled={sharingChart}
+                            style={{ opacity: sharingChart ? 0.5 : 1 }}
+                          >
+                            <span className="icon icon-sm">share</span>
+                          </button>
                           <div style={{ display: 'flex', background: 'var(--surface-2)', borderRadius: 8, padding: 2, gap: 2 }}>
                             {(['cal', 'prot', 'fluid'] as const).map(m => (
                               <button
@@ -1977,6 +2024,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                                 {m === 'cal' ? (t(lang, 'calShort')) : m === 'prot' ? (t(lang, 'protShort')) : (t(lang, 'fluid'))}
                               </button>
                             ))}
+                          </div>
                           </div>
                         </div>
 
