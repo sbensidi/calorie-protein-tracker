@@ -418,6 +418,18 @@ export default function App() {
                 loading={mealsLoading}
                 weeklyTdee={weeklyTdee}
                 onUpdateMeal={updateMeal}
+                onDeleteMeal={handleDeleteMeal}
+                onAddMeal={addMeal}
+                getSuggestions={getSuggestions}
+                searchLibrary={searchLibrary}
+                searchUserLibrary={searchUserLibrary}
+                library={library}
+                defaultServingGrams={profile.defaultServingGrams}
+                defaultWeightUnit={profile.weightUnit}
+                fluidThresholdMl={profile.fluidThresholdMl}
+                fluidZeroCalOnly={profile.fluidZeroCalOnly}
+                onUpsertHistory={upsertHistory}
+                onTouchHistory={touchHistory}
               />
             </Suspense>
           </ErrorBoundary>

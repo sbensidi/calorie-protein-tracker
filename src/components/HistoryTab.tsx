@@ -1,12 +1,14 @@
 import { useState, useMemo, useRef, useEffect } from 'react'
 import { useDebounce } from '../hooks/useDebounce'
 import { useLockBodyScroll } from '../hooks/useLockBodyScroll'
+import { useFocusTrap } from '../hooks/useFocusTrap'
 import { useAppContext } from '../context/AppContext'
-import type { Meal, FoodHistory, ComposedGroup } from '../types'
+import type { Meal, FoodHistory, ComposedGroup, FoodLibraryItem, UserFoodItem } from '../types'
 import type { Lang, MealTypeKey } from '../lib/i18n'
 import { t, dir, formatDate, today, HE_MONTHS, EN_MONTHS, HE_WEEK_SHORT, EN_WEEK_SHORT } from '../lib/i18n'
 import { DonutProgress } from './DonutProgress'
 import type { ComposedEntry } from './FoodEntryForm'
+import { FoodEntryForm } from './FoodEntryForm'
 import { calcMealTypeDistribution, calcMacroBreakdown } from '../lib/calculations'
 import { MealCard } from './MealCard'
 
@@ -40,6 +42,19 @@ interface HistoryTabProps {
   loading?:         boolean
   weeklyTdee?:      number  // 7 × daily TDEE, for weight-impact calculation
   onUpdateMeal?:    (id: string, updates: Partial<Meal>) => void
+  onDeleteMeal?:    (id: string) => void
+  // Props for "add meal to past date" feature
+  onAddMeal?:           (meal: Omit<Meal, 'id' | 'user_id' | 'created_at'>) => void
+  getSuggestions?:      (q: string) => FoodHistory[]
+  searchLibrary?:       (q: string) => FoodLibraryItem[]
+  searchUserLibrary?:   (q: string) => UserFoodItem[]
+  library?:             FoodLibraryItem[]
+  defaultServingGrams?: number
+  defaultWeightUnit?:   'g' | 'oz'
+  fluidThresholdMl?:    number
+  fluidZeroCalOnly?:    boolean
+  onUpsertHistory?:     (item: Pick<FoodHistory, 'name' | 'grams' | 'calories' | 'protein' | 'fluid_ml'>) => void
+  onTouchHistory?:      (id: string) => void
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────
@@ -158,7 +173,7 @@ function PeriodBalanceCard({ lang, totalDays, daysElapsed, consumed, target, sho
 
 // ── Component ────────────────────────────────────────────────────────
 
-export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntries = [], composedGroups = [], fluidGoalMl = 2500, loading = false, weeklyTdee = 0, onUpdateMeal }: HistoryTabProps) {
+export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntries = [], composedGroups = [], fluidGoalMl = 2500, loading = false, weeklyTdee = 0, onUpdateMeal, onDeleteMeal, onAddMeal, getSuggestions, searchLibrary, searchUserLibrary, library = [], defaultServingGrams = 150, defaultWeightUnit = 'g', fluidThresholdMl = 100, fluidZeroCalOnly = true, onUpsertHistory, onTouchHistory }: HistoryTabProps) {
   const { styleMode } = useAppContext()
   const todayKey = today()
 
@@ -195,6 +210,9 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
   const barChartRef       = useRef<HTMLDivElement>(null)
   const lineChartRef      = useRef<HTMLDivElement>(null)
   const [sharingChart, setSharingChart] = useState(false)
+  const [addMealDate, setAddMealDate]   = useState<string | null>(null)
+  const addMealSheetRef  = useRef<HTMLDivElement>(null)
+  useFocusTrap(addMealSheetRef, addMealDate !== null)
   const [statsPeriod, setStatsPeriod] = useState<'week' | 'month'>(
     () => (localStorage.getItem('stats-period') as 'week' | 'month') ?? 'week'
   )
@@ -253,7 +271,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
     return () => window.removeEventListener('scroll', onScroll)
   }, [view])
   const [historyModalOpen, setHistoryModalOpen] = useState(false)
-  useLockBodyScroll(historyModalOpen || selectedBarDate !== null)
+  useLockBodyScroll(historyModalOpen || selectedBarDate !== null || addMealDate !== null)
 
   useEffect(() => { localStorage.setItem('stats-metric-7',  chartMetric7)  }, [chartMetric7])
   useEffect(() => { localStorage.setItem('stats-metric-30', chartMetric30) }, [chartMetric30])
@@ -775,6 +793,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                 selected={false}
                 onToggleSelect={() => {}}
                 onEdit={onUpdateMeal ?? (() => {})}
+                onDelete={onDeleteMeal}
               />
             </div>
           )
@@ -1146,6 +1165,18 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                           <DayCardContent date={date} data={data} chevron />
                         </summary>
                         <MealsList data={data} />
+                        {onAddMeal && (
+                          <div style={{ padding: '8px 14px 12px', borderTop: '1px solid var(--border)' }}>
+                            <button
+                              className="icon-btn"
+                              onClick={() => setAddMealDate(date)}
+                              style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--accent-hi)', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', padding: '4px 0' }}
+                            >
+                              <span className="icon icon-sm">add_circle</span>
+                              {t(lang, 'addMealToDate')}
+                            </button>
+                          </div>
+                        )}
                       </details>
                     )
                   })}
@@ -2390,12 +2421,78 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                 </div>
                 <div style={{ overflowY: 'auto', flex: 1 }}>
                   <MealsList data={data} />
+                  {onAddMeal && (
+                    <div style={{ padding: '8px 14px 12px', borderTop: '1px solid var(--border)' }}>
+                      <button
+                        className="icon-btn"
+                        onClick={() => setAddMealDate(selectedBarDate)}
+                        style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--accent-hi)', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', padding: '4px 0' }}
+                      >
+                        <span className="icon icon-sm">add_circle</span>
+                        {t(lang, 'addMealToDate')}
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
           </div>
         )
       })()}
+
+      {/* ── Add meal to past date — bottom sheet ─────────────────── */}
+      {addMealDate !== null && onAddMeal && (
+        <>
+          {/* Backdrop */}
+          <div
+            onClick={() => setAddMealDate(null)}
+            style={{ position: 'fixed', inset: 0, background: 'var(--modal-backdrop)', zIndex: 99, backdropFilter: 'blur(2px)' }} // --z-backdrop
+          />
+          {/* Sheet */}
+          <div
+            ref={addMealSheetRef}
+            style={{
+              position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)',
+              width: '100%', maxWidth: 560,
+              maxHeight: '92dvh', overflowY: 'auto',
+              background: 'var(--bg-card)', borderRadius: '20px 20px 0 0',
+              boxShadow: '0 -4px 40px rgba(0,0,0,0.4)',
+              zIndex: 100, // --z-sheet
+              paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 16px 0' }}>
+              <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>
+                {formatDate(addMealDate, lang)}
+              </span>
+              <button
+                className="icon-btn"
+                onClick={() => setAddMealDate(null)}
+                aria-label={t(lang, 'cancel')}
+              >
+                <span className="icon icon-sm">close</span>
+              </button>
+            </div>
+            <FoodEntryForm
+              lang={lang}
+              history={history}
+              getSuggestions={getSuggestions ?? ((_q: string) => history)}
+              searchLibrary={searchLibrary ?? (() => [])}
+              searchUserLibrary={searchUserLibrary}
+              library={library}
+              defaultServingGrams={defaultServingGrams}
+              defaultWeightUnit={defaultWeightUnit}
+              fluidThresholdMl={fluidThresholdMl}
+              fluidZeroCalOnly={fluidZeroCalOnly}
+              onAdd={meal => { onAddMeal(meal); setAddMealDate(null) }}
+              onUpsertHistory={onUpsertHistory ?? (() => {})}
+              onTouchHistory={onTouchHistory}
+              dateOverride={addMealDate}
+              isOpen={true}
+            />
+          </div>
+        </>
+      )}
 
       {/* ── View switcher — pill FAB, same in all modes. Minimal colors via CSS tokens. ── */}
       <div

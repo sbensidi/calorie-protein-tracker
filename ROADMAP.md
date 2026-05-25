@@ -191,10 +191,11 @@
 **פתרון:** שלב עם PhotoNutritionCapture — הוסף מצב "scan label" שמפעיל Groq Vision עם prompt מיוחד לזיהוי טבלאות תזונה.
 **קבצים:** `PhotoNutritionCapture.tsx` — mode prop.
 
-### 5.2 · In-History Meal Edit (מלא) 🔴→⚪ `[B1 continuation]`
+### 5.2 · In-History Meal Edit (מלא) 🔴→⚪ `[B1 continuation]` ✅ (חלקי — מחיקה + הוספה לתאריך עבר)
 **תלוי ב:** 2.1 (שלב ראשון)
 **מה:** שלב 2.1 מממש עריכה בסיסית. שלב זה מוסיף: יצירת ארוחה חדשה לתאריך עבר, מחיקה, שינוי תאריך.
 **פתרון:** Entry Sheet שמקבל `dateOverride` prop — מאפשר הוספת ארוחה לתאריך שאינו היום.
+> **בוצע:** מחיקת ארוחה מפופאפ היסטוריה (כפתור trash ב-MealCard) + הוספת ארוחה לתאריך עבר (כפתור "+" בפופאפ, פותח FoodEntryForm עם `dateOverride`). שינוי תאריך — נדחה (מורכב, ROI נמוך).
 
 ### 5.3 · Social / Sharing Profile ⚪
 **מה:** שיתוף ימים / קורבנות עם חברים — optional, opt-in.

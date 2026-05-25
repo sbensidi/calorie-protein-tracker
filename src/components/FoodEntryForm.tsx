@@ -69,9 +69,10 @@ interface FoodEntryFormProps {
   library?: FoodLibraryItem[]
   searchUserLibrary?: (q: string) => UserFoodItem[]
   onDeleteHistory?: (id: string) => void
+  dateOverride?: string
 }
 
-export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, searchUserLibrary, defaultWeightUnit = 'g', onAdd, onUpsertHistory, onTouchHistory, onDeleteHistory, defaultMealType, composedEntries, onAddComposed, onAddRecipePortion, fluidThresholdMl = 100, fluidZeroCalOnly = true, isOpen, defaultServingGrams = 150, library = [] }: FoodEntryFormProps) {
+export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, searchUserLibrary, defaultWeightUnit = 'g', onAdd, onUpsertHistory, onTouchHistory, onDeleteHistory, defaultMealType, composedEntries, onAddComposed, onAddRecipePortion, fluidThresholdMl = 100, fluidZeroCalOnly = true, isOpen, defaultServingGrams = 150, library = [], dateOverride }: FoodEntryFormProps) {
   const [mode, setMode]               = useState<EntryMode>(
     () => (localStorage.getItem('entry-mode') as EntryMode) ?? 'scan'
   )
@@ -487,7 +488,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, se
     const calories = Math.round(scanProduct.caloriesPer100g * grams / 100)
     const protein  = Math.round(scanProduct.proteinPer100g  * grams / 100 * 10) / 10
     onAdd({
-      date:           today(),
+      date:           dateOverride ?? today(),
       meal_type:      scanMealType,
       name:           scanProduct.name,
       grams,
@@ -573,7 +574,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, se
   const handleAdd = () => {
     if (!foodName.trim() || nutrition === null) return
     onAdd({
-      date:           today(),
+      date:           dateOverride ?? today(),
       meal_type:      mealType,
       name:           foodName,
       grams:          storedGrams,
