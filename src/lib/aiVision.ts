@@ -16,21 +16,26 @@ export interface VisionNutritionResult {
   source:            'dish' | 'label'
 }
 
-// ── Client-side daily rate limit (5/day) ──────────────────────────────────────
+// ── Client-side daily rate limit (5/day, resets at midnight UTC) ─────────────
 // Guards against accidental runaway calls before the server even sees the request.
-const RL_KEY      = 'photo-nutrition-rl'
-const RL_MAX      = 5
-const MS_PER_DAY  = 86_400_000
+const RL_KEY  = 'photo-nutrition-rl'
+const RL_MAX  = 5
+
+function nextMidnightUTC(): number {
+  const d = new Date()
+  d.setUTCHours(24, 0, 0, 0)
+  return d.getTime()
+}
 
 interface RlRecord { count: number; resetAt: number }
 
 function getRlRecord(): RlRecord {
   try {
     const raw = localStorage.getItem(RL_KEY)
-    if (!raw) return { count: 0, resetAt: Date.now() + MS_PER_DAY }
+    if (!raw) return { count: 0, resetAt: nextMidnightUTC() }
     return JSON.parse(raw) as RlRecord
   } catch {
-    return { count: 0, resetAt: Date.now() + MS_PER_DAY }
+    return { count: 0, resetAt: nextMidnightUTC() }
   }
 }
 
@@ -49,7 +54,7 @@ function incrementRl(): void {
     const rec = getRlRecord()
     const now = Date.now()
     const next: RlRecord = now > rec.resetAt
-      ? { count: 1, resetAt: now + MS_PER_DAY }
+      ? { count: 1, resetAt: nextMidnightUTC() }
       : { count: rec.count + 1, resetAt: rec.resetAt }
     localStorage.setItem(RL_KEY, JSON.stringify(next))
   } catch { /* localStorage unavailable — allow the request */ }
