@@ -53,8 +53,9 @@ export function PhotoNutritionCapture({ lang, onResult, onSwitchManual }: Props)
 
     try {
       const result = await analyzeNutritionImage(base64, lang)
-      setState({ kind: 'result', data: result })
       onResult(result)
+      setState({ kind: 'idle' })
+      setPreview(null)
     } catch (err) {
       if (err instanceof AiVisionQuotaError) {
         setState({ kind: 'error-quota' })
