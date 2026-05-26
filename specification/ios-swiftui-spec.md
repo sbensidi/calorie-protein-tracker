@@ -11,7 +11,7 @@
 | Layer | Choice | Rationale |
 |---|---|---|
 | UI | SwiftUI 5+ (iOS 17+) | Declarative, animation-native, RTL-ready |
-| Data sync | **Supabase Swift SDK** (`supabase-swift`) | Same DB as web — users share data across platforms |
+| Data sync | **Supabase Swift SDK** (`supabase-swift`) | Dedicated iOS Supabase project — same schema as web, independent data |
 | Local cache | SwiftData | Offline-first, no setup overhead, integrates with SwiftUI |
 | Realtime | Supabase Realtime (WebSocket) | Mirrors web behavior — live sync across devices |
 | Auth | Supabase Auth (`GoTrue`) | Email/password + Magic Link + Google OAuth |
@@ -28,6 +28,30 @@
 ---
 
 ## 2. Supabase Configuration
+
+### Dedicated iOS Supabase Project — Policy
+
+The iOS app uses a **separate Supabase project** from the web PWA. Same schema design, independent data.
+
+**Rationale:**
+- The web PWA and the iOS app serve different user populations — there is no cross-platform data sharing requirement.
+- Independent projects allow each platform to evolve its schema without risking breakage on the other.
+- Separate billing and quotas make cost attribution per platform straightforward.
+
+**Schema synchronisation rule (mandatory):**
+
+> Every schema change must be documented in this spec **before** it is applied to any database.
+> - If the change is relevant to **both platforms** → apply to both Supabase projects and update both specs.
+> - If the change is **iOS-only** (e.g. HealthKit sync columns, Watch app data) → apply only to the iOS project, note it clearly in this spec.
+> - If the change is **web-only** → update the web spec; no action needed here.
+>
+> **Never let schemas diverge silently.** An undocumented column difference is a bug waiting to happen.
+
+**Two separate `Secrets.xcconfig` values:**
+```
+SUPABASE_URL     = https://<IOS_PROJECT_REF>.supabase.co   # iOS-dedicated project
+SUPABASE_ANON_KEY = <ios_anon_key>
+```
 
 ### Package dependency
 ```swift
@@ -1243,83 +1267,217 @@ Inject as `@Environment` object at root:
 
 ## 15. Design System
 
-### Colors
-Match the web CSS token system. Define in `Assets.xcassets` with light/dark variants:
+### Visual Direction — Apple Fitness Inspired
 
-| Token | Light | Dark | Usage |
+> **The iOS app's visual language is modelled on the Apple Fitness app** (not the web PWA).
+
+This means:
+- **Dark-first aesthetic** — deep black/charcoal backgrounds (`#000000` / `#1C1C1E`), not white cards on grey.
+- **Vibrant ring & progress UI** — thick activity rings with radial glow, bold colour fills on dark surfaces. Use `Color(.systemRed)`, `Color(.systemGreen)`, `Color(.systemBlue)` against dark backgrounds for maximum contrast — same palette logic as Fitness rings.
+- **Large, bold numerals** — calorie and protein totals rendered in a large rounded font (`.largeTitle` / `.system(size:, weight: .black, design: .rounded)`), dominant in the card.
+- **Blurred glass panels** — use `ultraThinMaterial` / `thinMaterial` for overlay sheets and floating cards (same look as Fitness summary cards).
+- **SF Symbols filled** — prefer `.fill` variants of SF Symbols throughout; they read better on dark surfaces.
+- **Gradient accents** — radial or linear gradients on ring fills and CTA buttons (e.g. red → orange for calorie ring, matching Fitness Move ring).
+- **Minimal chrome** — navigation bars transparent or hidden where content can bleed to edges; large title collapses on scroll.
+- **Haptic feedback everywhere** — Apple Fitness uses haptics liberally; replicate (see §16 Haptics).
+
+**What to avoid:**
+- White background card lists (that is the web PWA look — not the target here).
+- Flat, un-animated progress bars — use rings and arcs.
+- System blue tint for primary actions — use the red/orange accent (brand colour) as the primary CTA, same as Fitness.
+
+### Colors
+Define in `Assets.xcassets` with light/dark variants. Dark mode is the default and primary target:
+
+| Token | Dark (primary) | Light | Usage |
 |---|---|---|---|
-| `accent` | `#E63946` (red) | same | Primary brand color |
-| `text1` | `#111827` | `#F9FAFB` | Primary text |
-| `text2` | `#6B7280` | `#9CA3AF` | Secondary text |
-| `surface` | `#FFFFFF` | `#1C1C1E` | Card / sheet background |
-| `surfaceRaised` | `#F3F4F6` | `#2C2C2E` | Elevated surface |
-| `separator` | `rgba(0,0,0,0.08)` | `rgba(255,255,255,0.08)` | Dividers |
-| `positive` | `#10B981` | `#34D399` | Met goal / success |
-| `warning` | `#F59E0B` | `#FBBF24` | Close to goal |
-| `danger` | `#EF4444` | `#F87171` | Over goal / error |
+| `bgPrimary` | `#000000` | `#F2F2F7` | Root background |
+| `bgCard` | `#1C1C1E` | `#FFFFFF` | Card / section background |
+| `bgRaised` | `#2C2C2E` | `#F3F4F6` | Elevated surface |
+| `accent` | `#FF375F` (Fitness red) | same | Primary CTA, Move ring |
+| `ringCalorie` | `#FF375F` → `#FF6B35` | same | Calorie/Move ring gradient |
+| `ringProtein` | `#30D158` | same | Protein/Exercise ring |
+| `ringFluid` | `#32ADE6` | same | Fluid/Stand ring |
+| `text1` | `#FFFFFF` | `#111827` | Primary text |
+| `text2` | `#8E8E93` | `#6B7280` | Secondary text |
+| `positive` | `#30D158` | `#10B981` | Met goal |
+| `warning` | `#FF9F0A` | `#F59E0B` | Close to goal |
+| `danger` | `#FF453A` | `#EF4444` | Over goal / error |
+| `separator` | `rgba(255,255,255,0.10)` | `rgba(0,0,0,0.08)` | Dividers |
+
 
 ### Typography
-- Primary: SF Pro (system default)
-- Hebrew: system font renders Heebo-equivalent via iOS system
-- Weights: Regular (400), SemiBold (600), Bold (700), ExtraBold (800)
+- Primary: **SF Pro Rounded** — matches Apple Fitness large numerals. Use `.system(.largeTitle, design: .rounded, weight: .black)` for calorie/protein hero numbers.
+- Body text: SF Pro (system default, `.body`, `.subheadline`)
+- Hebrew: system font renders correctly RTL; no special configuration needed.
+- Weights: Regular, SemiBold (600), Bold (700), Black (900) — Black used for hero stats only.
 
 ### Minimum touch targets
 44×44pt minimum for all interactive elements (WCAG 2.5.5). Apply `.contentShape(Rectangle())` with explicit frame if needed.
 
-### Shadow scale
-Match the web token system. Define four elevation levels:
+### Shadow / glow scale
+On dark surfaces, prefer **glow** over drop-shadow (matches Fitness ring glow):
 
-| Token | Usage | Approximate value |
+| Token | Usage | Value |
 |---|---|---|
-| `shadowSm` | Toggle knob, small chips | `0 1px 4px rgba(0,0,0,0.30)` |
-| `shadowMd` | Toasts, search dropdowns | `0 4px 16px rgba(0,0,0,0.20)` |
-| `shadowLg` | Autocomplete panels, popovers | `0 8px 24px rgba(0,0,0,0.40)` |
-| `shadowXl` | FAB, bottom nav pill | `0 8px 32px rgba(0,0,0,0.50)` + inner highlight |
+| `glowCalorie` | Calorie ring outer glow | `.shadow(color: Color(red:1, green:0.22, blue:0.37).opacity(0.5), radius: 12)` |
+| `glowProtein` | Protein ring outer glow | `.shadow(color: Color(red:0.19, green:0.82, blue:0.35).opacity(0.5), radius: 12)` |
+| `shadowCard` | Card elevation on dark bg | `.shadow(color: .black.opacity(0.4), radius: 16, y: 8)` |
+| `shadowSheet` | Bottom sheets | `.shadow(color: .black.opacity(0.6), radius: 24, y: -4)` |
 
-In SwiftUI: use `.shadow(color:radius:x:y:)` — stack two `.shadow` modifiers for the xl level.
+In SwiftUI: stack two `.shadow` modifiers for glow + depth on the same element.
 
 ### Spacing scale
 4pt base unit: 4, 8, 12, 16, 20, 24, 32, 48
 
-### Minimal vs Classic themes
-- **Classic**: standard card shadows, rounded corners 12pt, surface backgrounds
-- **Minimal**: hairline separators (0.5pt), no card shadows, more whitespace, accent red for emphasis only
+### Corner radius
+- Cards: 16pt (matches Fitness summary cards)
+- Chips/tags: 8pt
+- Buttons: 12pt or fully rounded `.clipShape(Capsule())` for pill CTAs
+- Rings: circular — `Circle()` stroke
 
 ---
 
 ## 16. iOS-Specific Considerations
 
+### Native Gestures — Mandatory
+
+> **Implement all standard iOS gestures.** The app must feel indistinguishable from a first-party Apple app. Any interaction that a user expects to work in a native iOS app must work here.
+
+#### Swipe on meal rows
+
+```swift
+.swipeActions(edge: .trailing, allowsFullSwipe: true) {
+    // Full-swipe = delete (matches iOS Mail / Reminders)
+    Button(role: .destructive) { deleteMeal(meal) } label: {
+        Label("מחק / Delete", systemImage: "trash")
+    }
+    Button { openEdit(meal) } label: {
+        Label("ערוך / Edit", systemImage: "pencil")
+    }
+    .tint(.blue)
+}
+.swipeActions(edge: .leading) {
+    // Leading swipe = duplicate
+    Button { duplicateMeal(meal) } label: {
+        Label("שכפל / Duplicate", systemImage: "plus.square.on.square")
+    }
+    .tint(Color(.systemGreen))
+}
+```
+
+**Rules:**
+- Full-swipe on trailing edge triggers delete immediately (with haptic confirmation).
+- Never disable swipe-to-delete — it is a core iOS affordance.
+- Action labels must be localised (Hebrew + English).
+
+#### Pull-to-refresh
+
+```swift
+.refreshable {
+    await store.refreshMeals(force: true)
+}
+```
+
+Applied to every scrollable list (TodayTab, HistoryTab). Triggers a forced cache bypass + Supabase fetch.
+
+#### Long-press context menu
+
+Long-pressing a meal row reveals a `contextMenu` with the same actions as the swipe row, plus any extras:
+
+```swift
+.contextMenu {
+    Button("ערוך / Edit", systemImage: "pencil") { openEdit(meal) }
+    Button("שכפל / Duplicate", systemImage: "plus.square.on.square") { duplicateMeal(meal) }
+    Divider()
+    Button("מחק / Delete", systemImage: "trash", role: .destructive) { deleteMeal(meal) }
+}
+```
+
+#### Interactive dismiss (sheets)
+
+All bottom sheets (`FoodEntrySheet`, `SettingsSheet`, etc.) must support drag-to-dismiss:
+```swift
+.presentationDetents([.large])
+.presentationDragIndicator(.visible)
+.interactiveDismissDisabled(false)
+```
+
+Do **not** set `.interactiveDismissDisabled(true)` unless the user has unsaved changes — in that case, present a confirmation `.confirmationDialog` before dismissing.
+
+#### Navigation — back swipe
+
+Use `NavigationStack` (not `NavigationView`). The system provides the back-swipe gesture automatically; never intercept or disable it.
+
+#### Tap to dismiss keyboard
+
+```swift
+.scrollDismissesKeyboard(.immediately)
+```
+Apply to all `ScrollView` / `List` containers that contain text fields.
+
+#### Pinch / zoom (History chart)
+
+The week/month history chart supports pinch-to-zoom between week and month views:
+```swift
+.gesture(
+    MagnificationGesture()
+        .onEnded { scale in
+            if scale < 0.85 { switchToMonthView() }
+            if scale > 1.15 { switchToWeekView() }
+        }
+)
+```
+
+#### Drag to reorder (Composed groups)
+
+Ingredient rows within a composed group support drag-to-reorder using `.onMove` in an `EditableList` or `List` with `editActions: .move`.
+
+---
+
 ### Safe areas
 Use `.safeAreaInset(edge: .bottom)` for FAB and bottom sheets. Never cover the home indicator.
 
 ### Dynamic Type
-Support all Dynamic Type sizes. Use relative font sizes (`Font.body`, `.headline`, etc.) rather than fixed pt values.
+Support all Dynamic Type sizes. Use relative font sizes (`Font.body`, `.headline`, etc.) rather than fixed pt values. Hero numbers (calorie total) may use a fixed large size but must not clip — test with Accessibility Inspector at xxxLarge.
 
 ### Camera permissions
 Add to `Info.plist`:
 ```xml
 <key>NSCameraUsageDescription</key>
-<string>Used to scan food barcodes</string>
+<string>Used to scan food barcodes and analyse food photos</string>
+<key>NSPhotoLibraryUsageDescription</key>
+<string>Used to analyse food photos from your library</string>
 ```
 
 ### Network calls
-Use `URLSession` with `async/await`. Handle `URLError.notConnectedToInternet` → show offline toast.
+Use `URLSession` with `async/await`. Handle `URLError.notConnectedToInternet` → queue the operation (see §24) + show offline banner (not a blocking error).
 
 ### Background refresh
-Register for background app refresh to sync meals when app is backgrounded:
+Register for background app refresh to sync the write queue when the app is backgrounded:
 ```swift
 BGTaskScheduler.shared.register(forTaskWithIdentifier: "com.yourapp.sync", using: nil) { task in
-    // Fetch latest data from Supabase
+    await store.drainPendingIfOnline()
+    task.setTaskCompleted(success: true)
 }
 ```
 
 ### Widget (optional, phase 2)
-A WidgetKit widget showing today's calorie/protein progress. Uses shared `UserDefaults` app group.
+A WidgetKit widget showing today's calorie/protein progress rings. Uses shared `UserDefaults` app group with the main app.
 
 ### Haptics
-- Light: successful add / duplicate
-- Medium: delete confirmation
-- Error: failed API call
+Use `UIImpactFeedbackGenerator` and `UINotificationFeedbackGenerator`:
+
+| Event | Style |
+|---|---|
+| Successful meal add | `.light` impact |
+| Duplicate meal | `.light` impact |
+| Delete (swipe full-swipe confirm) | `.medium` impact |
+| Delete confirmation dialog confirm | `.heavy` impact |
+| Failed API call / error | `.error` notification |
+| Goal reached (100%) | `.success` notification |
+| Scan barcode found | `.rigid` impact (crisp, matches native scanner feel) |
+| Sheet dismissed | `.soft` impact |
 
 ---
 
