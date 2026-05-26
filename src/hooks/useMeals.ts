@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import type { Meal, PendingMeal, PendingOperation } from '../types'
 import { today } from '../lib/i18n'
@@ -119,34 +119,52 @@ export function useMeals(userId: string | null) {
     else writeCache(opsKey(userId), next)
   }, [userId])
 
+  const drainPendingRef = useRef<() => Promise<void>>(async () => {})
+
   const drainPending = useCallback(async () => {
     if (!userId) return
-    // Drain add queue
+    let didWork = false
+
+    // Drain add queue — per-item error check, keep failures in queue
     if (pendingMeals.length > 0) {
+      const failed: PendingMeal[] = []
       for (const p of pendingMeals) {
-        const { pendingId: _pid, queuedAt: _ts, ...meal } = p
-        await supabase.from('meals').insert({ ...meal, user_id: userId })
+        const { pendingId, queuedAt: _ts, ...meal } = p
+        const { error: err } = await supabase.from('meals').insert({ ...meal, id: pendingId, user_id: userId })
+        if (err) failed.push(p)
+        else didWork = true
       }
-      savePending([])
+      savePending(failed)
     }
-    // Drain edit/delete queue
+
+    // Drain edit/delete queue — per-item error check, treat 404 as success
     if (pendingOps.length > 0) {
+      const failed: PendingOperation[] = []
       for (const op of pendingOps) {
         if (op.type === 'delete') {
-          await supabase.from('meals').delete().eq('id', op.mealId).eq('user_id', userId)
+          const { error: err } = await supabase.from('meals').delete().eq('id', op.mealId).eq('user_id', userId)
+          if (err && err.code !== 'PGRST116') failed.push(op)
+          else didWork = true
         } else if (op.type === 'update' && op.updates) {
-          await supabase.from('meals').update(op.updates).eq('id', op.mealId).eq('user_id', userId)
+          const { error: err } = await supabase.from('meals').update(op.updates).eq('id', op.mealId).eq('user_id', userId)
+          if (err && err.code !== 'PGRST116') failed.push(op)
+          else didWork = true
         }
       }
-      saveOps([])
+      saveOps(failed)
     }
-    if (pendingMeals.length > 0 || pendingOps.length > 0) fetchMeals()
+
+    if (didWork) fetchMeals()
   }, [userId, pendingMeals, pendingOps, savePending, saveOps, fetchMeals])
 
+  // Keep ref current so the stable 'online' listener always calls the latest version
+  useEffect(() => { drainPendingRef.current = drainPending }, [drainPending])
+
   useEffect(() => {
-    window.addEventListener('online', drainPending)
-    return () => window.removeEventListener('online', drainPending)
-  }, [drainPending])
+    const handler = () => drainPendingRef.current()
+    window.addEventListener('online', handler)
+    return () => window.removeEventListener('online', handler)
+  }, [])
 
   const addMeal = useCallback(async (meal: Omit<Meal, 'id' | 'user_id' | 'created_at'>) => {
     if (!userId) return

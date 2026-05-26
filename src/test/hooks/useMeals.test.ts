@@ -1,5 +1,5 @@
 import { renderHook, act, waitFor } from '@testing-library/react'
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
 vi.mock('../../lib/supabase', () => ({
   supabase: {
@@ -72,8 +72,13 @@ const newMealPayload = {
 beforeEach(() => {
   vi.resetAllMocks()
   localStorage.clear()
+  Object.defineProperty(navigator, 'onLine', { value: true, configurable: true })
   fromMock.mockReturnValue(makeChain({ data: [] }))
   channelMock.mockReturnValue(makeChannel())
+})
+
+afterEach(() => {
+  Object.defineProperty(navigator, 'onLine', { value: true, configurable: true })
 })
 
 describe('useMeals', () => {
@@ -148,6 +153,67 @@ describe('useMeals', () => {
 
     expect(chain.delete).toHaveBeenCalled()
     expect(chain.eq).toHaveBeenCalledWith('id', 'meal-1')
+  })
+
+  it('addMeal queues to pendingMeals when offline', async () => {
+    Object.defineProperty(navigator, 'onLine', { value: false, configurable: true })
+    const chain = makeChain({ data: [] })
+    fromMock.mockReturnValue(chain)
+    const { result } = renderHook(() => useMeals(USER))
+    await waitFor(() => expect(result.current.loading).toBe(false))
+
+    const insertCallsBefore = chain.insert.mock.calls.length
+    await act(async () => { await result.current.addMeal(newMealPayload) })
+
+    // No new insert — queued locally instead
+    expect(chain.insert.mock.calls.length).toBe(insertCallsBefore)
+    expect(result.current.pendingMeals).toHaveLength(1)
+    expect(result.current.pendingMeals[0].name).toBe('Egg')
+  })
+
+  it('drainPending fires on online event and clears the queue', async () => {
+    Object.defineProperty(navigator, 'onLine', { value: false, configurable: true })
+    fromMock.mockReturnValue(makeChain({ data: [] }))
+    const { result } = renderHook(() => useMeals(USER))
+    await waitFor(() => expect(result.current.loading).toBe(false))
+
+    await act(async () => { await result.current.addMeal(newMealPayload) })
+    expect(result.current.pendingMeals).toHaveLength(1)
+
+    // Come back online: insert succeeds, then fetchMeals re-fetches
+    Object.defineProperty(navigator, 'onLine', { value: true, configurable: true })
+    const drainChain = makeChain({ data: null, error: null })
+    fromMock
+      .mockReturnValueOnce(drainChain)            // drain insert
+      .mockReturnValue(makeChain({ data: [] }))   // post-drain fetchMeals
+
+    await act(async () => { window.dispatchEvent(new Event('online')) })
+
+    await waitFor(() => expect(result.current.pendingMeals).toHaveLength(0))
+    expect(drainChain.insert).toHaveBeenCalledWith(
+      expect.objectContaining({ name: 'Egg', user_id: USER })
+    )
+  })
+
+  it('drainPending keeps failed items in queue on insert error', async () => {
+    Object.defineProperty(navigator, 'onLine', { value: false, configurable: true })
+    fromMock.mockReturnValue(makeChain({ data: [] }))
+    const { result } = renderHook(() => useMeals(USER))
+    await waitFor(() => expect(result.current.loading).toBe(false))
+
+    await act(async () => { await result.current.addMeal(newMealPayload) })
+    expect(result.current.pendingMeals).toHaveLength(1)
+
+    // Come back online but insert fails
+    Object.defineProperty(navigator, 'onLine', { value: true, configurable: true })
+    const failChain = makeChain({ error: { message: 'server error', code: 'ERR' } })
+    fromMock.mockReturnValue(failChain)
+
+    await act(async () => { window.dispatchEvent(new Event('online')) })
+
+    // Insert was attempted but failed — item must remain in queue
+    expect(failChain.insert).toHaveBeenCalled()
+    expect(result.current.pendingMeals).toHaveLength(1)
   })
 
   it("duplicateMeal calls insert with today's date", async () => {
