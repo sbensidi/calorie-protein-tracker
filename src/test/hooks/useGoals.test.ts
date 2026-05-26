@@ -46,6 +46,7 @@ const dbGoalRow = {
 
 beforeEach(() => {
   vi.resetAllMocks()
+  localStorage.clear()
   fromMock.mockReturnValue(makeChain({ data: null, error: { code: 'PGRST116', message: 'no rows' } }))
   channelMock.mockReturnValue(makeChannel())
 })

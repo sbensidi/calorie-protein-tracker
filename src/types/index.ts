@@ -99,6 +99,22 @@ export interface WeightLog {
   created_at: string
 }
 
+/** Client-side only — a meal queued for upload while offline */
+export interface PendingMeal extends Omit<Meal, 'id' | 'user_id' | 'created_at'> {
+  pendingId: string    // local UUID, replaced by server id after drain
+  queuedAt:  number   // Date.now() timestamp
+}
+
+export type PendingOpType = 'update' | 'delete'
+
+/** Client-side only — an edit/delete queued while offline */
+export interface PendingOperation {
+  type:     PendingOpType
+  mealId:   string
+  updates?: Partial<Meal>  // only present for 'update' ops
+  queuedAt: number
+}
+
 /** Client-side only — persisted in localStorage, not Supabase */
 export interface ComposedGroup {
   id: string

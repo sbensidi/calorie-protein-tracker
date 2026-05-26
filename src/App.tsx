@@ -131,7 +131,7 @@ export default function App() {
   const { toasts, showToast, dismissToast } = useToast()
   const { library, searchLibrary, error: libraryError } = useFoodLibrary()
   const { profile, saveProfile, error: profileError } = useProfile(userId)
-  const { meals, loading: mealsLoading, error: mealsError, addMeal, addMealWithId, updateMeal, deleteMeal, duplicateMeal } = useMeals(userId)
+  const { meals, pendingMeals, pendingOps, loading: mealsLoading, error: mealsError, addMeal, addMealWithId, updateMeal, deleteMeal, duplicateMeal } = useMeals(userId)
   const { goals, error: goalsError, saveGoals, getGoalForDate } = useGoals(userId)
   const { history, error: historyError, upsertHistory, touchHistory, getSuggestions, deleteHistory, updateHistory } = useFoodHistory(userId)
   const { items: userFoodItems, addItem: addUserFood, deleteItem: deleteUserFood, searchUserLibrary } = useUserFoodLibrary(userId)
@@ -370,6 +370,8 @@ export default function App() {
             <TodayTab
               lang={lang}
               meals={meals}
+              pendingMeals={pendingMeals}
+              pendingOps={pendingOps}
               loading={mealsLoading}
               history={history}
               goalCalories={todayGoal.calories}

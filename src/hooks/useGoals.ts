@@ -1,6 +1,10 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import type { Goal } from '../types'
+import { readCache, writeCache } from '../lib/offlineCache'
+
+const GOALS_TTL = 1000 * 60 * 60 * 24 * 7  // 7d
+const goalsKey = (uid: string) => `goals_cache_${uid}`
 
 function isGoal(x: unknown): x is Goal {
   return (
@@ -31,13 +35,19 @@ export function useGoals(userId: string | null) {
       .single()
     if (!err && isGoal(data)) {
       setGoals(data as Goal)
+      writeCache(goalsKey(userId), data as Goal)
       setError(null)
     } else if (err?.code === 'PGRST116') {
       // New user — auto-save defaults to DB so they have something to start with
       const defaults = { ...DEFAULT_GOAL, user_id: userId, updated_at: new Date().toISOString() }
       const { error: upsertErr } = await supabase.from('goals').upsert(defaults, { onConflict: 'user_id' })
       if (upsertErr) setError(upsertErr.message)
-      else { setGoals({ id: '', ...defaults }); setError(null) }
+      else {
+        const g: Goal = { id: '', ...defaults }
+        setGoals(g)
+        writeCache(goalsKey(userId), g)
+        setError(null)
+      }
     } else if (err) {
       setError(err.message)
     }
@@ -45,8 +55,12 @@ export function useGoals(userId: string | null) {
   }, [userId])
 
   useEffect(() => {
+    if (userId) {
+      const cached = readCache<Goal>(goalsKey(userId), GOALS_TTL)
+      if (cached) setGoals(cached)
+    }
     fetchGoals()
-  }, [fetchGoals])
+  }, [fetchGoals, userId])
 
   // Realtime
   useEffect(() => {

@@ -1,7 +1,13 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
-import type { Meal } from '../types'
+import type { Meal, PendingMeal, PendingOperation } from '../types'
 import { today } from '../lib/i18n'
+import { readCache, writeCache, clearCache } from '../lib/offlineCache'
+
+const MEALS_TTL    = 1000 * 60 * 60 * 24  // 24h
+const mealsKey     = (uid: string) => `meals_cache_${uid}`
+const pendingKey   = (uid: string) => `pending_meals_${uid}`
+const opsKey       = (uid: string) => `pending_ops_${uid}`
 
 const MEAL_TYPES = new Set(['breakfast', 'lunch', 'dinner', 'snack', 'beverage'])
 
@@ -45,9 +51,11 @@ function normalizeMeal(x: Record<string, unknown>): Meal {
 }
 
 export function useMeals(userId: string | null) {
-  const [meals, setMeals] = useState<Meal[]>([])
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [meals, setMeals]               = useState<Meal[]>([])
+  const [pendingMeals, setPendingMeals] = useState<PendingMeal[]>([])
+  const [pendingOps, setPendingOps]     = useState<PendingOperation[]>([])
+  const [loading, setLoading]           = useState(false)
+  const [error, setError]               = useState<string | null>(null)
 
   const fetchMeals = useCallback(async () => {
     if (!userId) return
@@ -62,13 +70,26 @@ export function useMeals(userId: string | null) {
       .order('date', { ascending: false })
       .order('time_logged', { ascending: true })
     if (err) setError(err.message)
-    else { setMeals((data as unknown[]).filter(isMeal).map(x => normalizeMeal(x as unknown as Record<string, unknown>))); setError(null) }
+    else {
+      const fresh = (data as unknown[]).filter(isMeal).map(x => normalizeMeal(x as unknown as Record<string, unknown>))
+      setMeals(fresh)
+      writeCache(mealsKey(userId), fresh)
+      setError(null)
+    }
     setLoading(false)
   }, [userId])
 
   useEffect(() => {
+    if (userId) {
+      const cached = readCache<Meal[]>(mealsKey(userId), MEALS_TTL)
+      if (cached) setMeals(cached)
+      const savedPending = readCache<PendingMeal[]>(pendingKey(userId), Infinity) ?? []
+      if (savedPending.length) setPendingMeals(savedPending)
+      const savedOps = readCache<PendingOperation[]>(opsKey(userId), Infinity) ?? []
+      if (savedOps.length) setPendingOps(savedOps)
+    }
     fetchMeals()
-  }, [fetchMeals])
+  }, [fetchMeals, userId])
 
   // Realtime subscription
   useEffect(() => {
@@ -84,9 +105,74 @@ export function useMeals(userId: string | null) {
     return () => { supabase.removeChannel(channel) }
   }, [userId, fetchMeals])
 
+  const savePending = useCallback((next: PendingMeal[]) => {
+    setPendingMeals(next)
+    if (!userId) return
+    if (next.length === 0) clearCache(pendingKey(userId))
+    else writeCache(pendingKey(userId), next)
+  }, [userId])
+
+  const saveOps = useCallback((next: PendingOperation[]) => {
+    setPendingOps(next)
+    if (!userId) return
+    if (next.length === 0) clearCache(opsKey(userId))
+    else writeCache(opsKey(userId), next)
+  }, [userId])
+
+  const drainPending = useCallback(async () => {
+    if (!userId) return
+    // Drain add queue
+    if (pendingMeals.length > 0) {
+      for (const p of pendingMeals) {
+        const { pendingId: _pid, queuedAt: _ts, ...meal } = p
+        await supabase.from('meals').insert({ ...meal, user_id: userId })
+      }
+      savePending([])
+    }
+    // Drain edit/delete queue
+    if (pendingOps.length > 0) {
+      for (const op of pendingOps) {
+        if (op.type === 'delete') {
+          await supabase.from('meals').delete().eq('id', op.mealId).eq('user_id', userId)
+        } else if (op.type === 'update' && op.updates) {
+          await supabase.from('meals').update(op.updates).eq('id', op.mealId).eq('user_id', userId)
+        }
+      }
+      saveOps([])
+    }
+    if (pendingMeals.length > 0 || pendingOps.length > 0) fetchMeals()
+  }, [userId, pendingMeals, pendingOps, savePending, saveOps, fetchMeals])
+
+  useEffect(() => {
+    window.addEventListener('online', drainPending)
+    return () => window.removeEventListener('online', drainPending)
+  }, [drainPending])
+
   const addMeal = useCallback(async (meal: Omit<Meal, 'id' | 'user_id' | 'created_at'>) => {
     if (!userId) return
     setError(null)
+    if (!navigator.onLine) {
+      const p: PendingMeal = {
+        pendingId:      crypto.randomUUID(),
+        queuedAt:       Date.now(),
+        date:           meal.date || today(),
+        meal_type:      meal.meal_type,
+        name:           meal.name,
+        grams:          meal.grams,
+        calories:       meal.calories,
+        protein:        meal.protein,
+        fat:            meal.fat ?? null,
+        carbs:          meal.carbs ?? null,
+        notes:          meal.notes ?? null,
+        time_logged:    meal.time_logged || new Date().toTimeString().slice(0, 8),
+        fluid_ml:       meal.fluid_ml ?? null,
+        fluid_excluded: meal.fluid_excluded ?? false,
+        display_unit:   meal.display_unit ?? null,
+        display_amount: meal.display_amount ?? null,
+      }
+      savePending([...pendingMeals, p])
+      return
+    }
     const { error: err } = await supabase.from('meals').insert({
       ...meal,
       user_id: userId,
@@ -94,7 +180,7 @@ export function useMeals(userId: string | null) {
     })
     if (err) { if (import.meta.env.DEV) console.error('Add meal error:', err); setError(err.message) }
     else fetchMeals()
-  }, [userId, fetchMeals])
+  }, [userId, fetchMeals, pendingMeals, savePending])
 
   const addMealWithId = useCallback(async (meal: Omit<Meal, 'id' | 'user_id' | 'created_at'>): Promise<string | null> => {
     if (!userId) return null
@@ -114,18 +200,36 @@ export function useMeals(userId: string | null) {
   const updateMeal = useCallback(async (id: string, updates: Partial<Meal>) => {
     if (!userId) return
     setError(null)
+    if (!navigator.onLine) {
+      // Optimistic: apply update to local meals state
+      setMeals(prev => prev.map(m => m.id === id ? { ...m, ...updates } : m))
+      // Merge into ops queue — replace any existing update for same id
+      const filtered = pendingOps.filter(op => !(op.mealId === id && op.type === 'update'))
+      const existing = pendingOps.find(op => op.mealId === id && op.type === 'update')
+      const merged   = existing ? { ...existing.updates, ...updates } : updates
+      saveOps([...filtered, { type: 'update', mealId: id, updates: merged, queuedAt: Date.now() }])
+      return
+    }
     const { error: err } = await supabase.from('meals').update(updates).eq('id', id).eq('user_id', userId)
     if (err) { if (import.meta.env.DEV) console.error('Update meal error:', err); setError(err.message) }
     else fetchMeals()
-  }, [userId, fetchMeals])
+  }, [userId, fetchMeals, pendingOps, saveOps])
 
   const deleteMeal = useCallback(async (id: string) => {
     if (!userId) return
     setError(null)
+    if (!navigator.onLine) {
+      // Optimistic: remove from local meals state
+      setMeals(prev => prev.filter(m => m.id !== id))
+      // Cancel any pending update for this meal, then queue delete
+      const filtered = pendingOps.filter(op => !(op.mealId === id && op.type === 'update'))
+      saveOps([...filtered, { type: 'delete', mealId: id, queuedAt: Date.now() }])
+      return
+    }
     const { error: err } = await supabase.from('meals').delete().eq('id', id).eq('user_id', userId)
     if (err) { if (import.meta.env.DEV) console.error('Delete meal error:', err); setError(err.message) }
     else fetchMeals()
-  }, [userId, fetchMeals])
+  }, [userId, fetchMeals, pendingOps, saveOps])
 
   const duplicateMeal = useCallback(async (meal: Meal) => {
     if (!userId) return
@@ -151,5 +255,5 @@ export function useMeals(userId: string | null) {
     else fetchMeals()
   }, [userId, fetchMeals])
 
-  return { meals, loading, error, addMeal, addMealWithId, updateMeal, deleteMeal, duplicateMeal, refetch: fetchMeals }
+  return { meals, pendingMeals, pendingOps, loading, error, addMeal, addMealWithId, updateMeal, deleteMeal, duplicateMeal, refetch: fetchMeals }
 }

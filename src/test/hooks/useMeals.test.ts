@@ -71,6 +71,7 @@ const newMealPayload = {
 
 beforeEach(() => {
   vi.resetAllMocks()
+  localStorage.clear()
   fromMock.mockReturnValue(makeChain({ data: [] }))
   channelMock.mockReturnValue(makeChannel())
 })

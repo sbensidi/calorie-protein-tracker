@@ -1,6 +1,10 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import type { WeightUnit, VolumeUnit } from '../lib/units'
+import { readCache, writeCache } from '../lib/offlineCache'
+
+const PROFILE_TTL = 1000 * 60 * 60 * 24 * 7  // 7d
+const profileKey = (uid: string) => `profile_cache_${uid}`
 
 export interface UserProfile {
   sex:                'm' | 'f'
@@ -128,6 +132,7 @@ export function useProfile(userId: string | null) {
       const p = dbToProfile(data as Record<string, unknown>)
       setProfile(p)
       lsSave(p)
+      writeCache(profileKey(userId), p)
       setError(null)
     } else if (err?.code === 'PGRST116') {
       setError(null)
@@ -137,7 +142,13 @@ export function useProfile(userId: string | null) {
     setLoading(false)
   }, [userId])
 
-  useEffect(() => { fetchProfile() }, [fetchProfile])
+  useEffect(() => {
+    if (userId) {
+      const cached = readCache<UserProfile>(profileKey(userId), PROFILE_TTL)
+      if (cached) setProfile(cached)
+    }
+    fetchProfile()
+  }, [fetchProfile, userId])
 
   useEffect(() => {
     if (!userId) return

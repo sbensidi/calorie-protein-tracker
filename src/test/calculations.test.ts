@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest'
-import { calcBMR, calcDailyTdee, calcWeeklyTdee, calcGoalStreak, calcProjectedDays, calcMealTypeDistribution, calcMacroBreakdown, getCookingFactor, estimateCookedWeight, getGreeting, calcDailyInsight } from '../lib/calculations'
+import { calcBMR, calcDailyTdee, calcWeeklyTdee, calcGoalStreak, calcProjectedDays, calcMealTypeDistribution, calcMacroBreakdown, getCookingFactor, estimateCookedWeight, getGreeting, calcDailyInsight, mergePendingMeals, getMealPendingOp } from '../lib/calculations'
 import type { GreetingContext } from '../lib/calculations'
 import type { UserProfile } from '../hooks/useProfile'
-import type { Meal } from '../types'
+import type { Meal, PendingMeal, PendingOperation } from '../types'
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
 
@@ -621,5 +621,86 @@ describe('calcDailyInsight', () => {
     const todayLocal = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
     const meals = [makeMeal({ date: todayLocal, calories: 800, protein: 40 })]
     expect(calcDailyInsight(meals, 0, 2000, 150)).toBeNull()
+  })
+})
+
+function makePending(overrides: Partial<PendingMeal> = {}): PendingMeal {
+  return {
+    pendingId: 'pending-1', queuedAt: Date.now(),
+    date: '2026-05-26', meal_type: 'lunch', name: 'Test', grams: 100,
+    calories: 200, protein: 20, fat: null, carbs: null, notes: null,
+    time_logged: '12:00:00', fluid_ml: null, fluid_excluded: false,
+    display_unit: null, display_amount: null,
+    ...overrides,
+  }
+}
+
+describe('mergePendingMeals', () => {
+  it('returns server meals unchanged when pending list is empty', () => {
+    const server = [makeMeal({ id: 'srv-1' })]
+    expect(mergePendingMeals(server, [])).toEqual(server)
+  })
+
+  it('prepends pending meals before server meals', () => {
+    const server = [makeMeal({ id: 'srv-1' })]
+    const pending = [makePending({ pendingId: 'p-1' })]
+    const result = mergePendingMeals(server, pending)
+    expect(result[0].id).toBe('p-1')
+    expect(result[1].id).toBe('srv-1')
+    expect(result).toHaveLength(2)
+  })
+
+  it('maps pending fields to Meal correctly', () => {
+    const p = makePending({ pendingId: 'p-2', name: 'Salad', calories: 150, protein: 5 })
+    const [meal] = mergePendingMeals([], [p])
+    expect(meal.id).toBe('p-2')
+    expect(meal.name).toBe('Salad')
+    expect(meal.calories).toBe(150)
+    expect(meal.protein).toBe(5)
+    expect(meal.user_id).toBe('')
+  })
+
+  it('de-duplicates if server already contains the pendingId', () => {
+    const server = [makeMeal({ id: 'p-1' }), makeMeal({ id: 'srv-1' })]
+    const pending = [makePending({ pendingId: 'p-1' })]
+    const result = mergePendingMeals(server, pending)
+    // pending version prepended, server duplicate dropped → length stays 2
+    expect(result).toHaveLength(2)
+    expect(result.filter(m => m.id === 'p-1')).toHaveLength(1)
+  })
+
+  it('handles multiple pending meals', () => {
+    const pending = [
+      makePending({ pendingId: 'p-a', calories: 100 }),
+      makePending({ pendingId: 'p-b', calories: 200 }),
+    ]
+    const result = mergePendingMeals([], pending)
+    expect(result).toHaveLength(2)
+    expect(result.map(m => m.id)).toEqual(['p-a', 'p-b'])
+  })
+})
+
+function makeOp(overrides: Partial<PendingOperation> = {}): PendingOperation {
+  return { type: 'update', mealId: 'meal-1', queuedAt: Date.now(), ...overrides }
+}
+
+describe('getMealPendingOp', () => {
+  it('returns null when ops list is empty', () => {
+    expect(getMealPendingOp('meal-1', [])).toBeNull()
+  })
+
+  it('returns null when no op matches the mealId', () => {
+    expect(getMealPendingOp('meal-99', [makeOp({ mealId: 'meal-1' })])).toBeNull()
+  })
+
+  it('returns the matching op', () => {
+    const op = makeOp({ mealId: 'meal-2', type: 'delete' })
+    expect(getMealPendingOp('meal-2', [op])).toBe(op)
+  })
+
+  it('returns the LAST op when multiple ops match the same mealId', () => {
+    const first  = makeOp({ mealId: 'meal-1', type: 'update', queuedAt: 1000 })
+    const second = makeOp({ mealId: 'meal-1', type: 'delete', queuedAt: 2000 })
+    expect(getMealPendingOp('meal-1', [first, second])).toBe(second)
   })
 })

@@ -3,7 +3,7 @@ import { useLockBodyScroll } from '../hooks/useLockBodyScroll'
 import { useFocusTrap } from '../hooks/useFocusTrap'
 import { useSheetScroll } from '../hooks/useSheetScroll'
 import { SheetHandle } from './SheetHandle'
-import type { Meal, FoodHistory, FoodLibraryItem, ComposedGroup } from '../types'
+import type { Meal, FoodHistory, FoodLibraryItem, ComposedGroup, PendingMeal, PendingOperation } from '../types'
 import type { Lang, MealTypeKey } from '../lib/i18n'
 import { t, dir, today, currentTime } from '../lib/i18n'
 import { FoodEntryForm } from './FoodEntryForm'
@@ -12,7 +12,7 @@ import { MealCard } from './MealCard'
 import { ComposedMealCard } from './ComposedMealCard'
 import { DailySummary } from './DailySummary'
 import { useAppContext } from '../context/AppContext'
-import { getGreeting, estimateCookedWeight, calcDailyInsight } from '../lib/calculations'
+import { getGreeting, estimateCookedWeight, calcDailyInsight, mergePendingMeals, getMealPendingOp } from '../lib/calculations'
 import type { DailyInsight } from '../lib/calculations'
 
 type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'beverage'
@@ -163,6 +163,8 @@ function DailyInsightCard({ insight, lang, onDismiss }: { insight: DailyInsight;
 interface TodayTabProps {
   lang: Lang
   meals: Meal[]
+  pendingMeals?: PendingMeal[]
+  pendingOps?: PendingOperation[]
   loading?: boolean
   history: FoodHistory[]
   goalCalories: number
@@ -197,14 +199,15 @@ interface TodayTabProps {
 }
 
 export function TodayTab({
-  lang, meals, loading = false, history, goalCalories, goalProtein,
+  lang, meals, pendingMeals = [], pendingOps = [], loading = false, history, goalCalories, goalProtein,
   getSuggestions, searchLibrary, searchUserLibrary, library = [], defaultServingGrams = 150, defaultWeightUnit = 'g', defaultVolumeUnit = 'ml',
   onAddMeal, onAddMealWithId, onEditMeal, onDeleteMeal, onDuplicateMeal, onUpsertHistory, onTouchHistory, onDeleteHistory,
   composedEntries, composedGroups, onUpsertGroup, onRemoveGroup, showToast,
   fluidGoalMl = 2500, fluidThresholdMl = 100, fluidZeroCalOnly = true, goalStreak = 0,
   displayName = null, showGreeting = true, onDismissGreeting,
 }: TodayTabProps) {
-  const todayMeals    = useMemo(() => meals.filter(m => m.date === today()), [meals])
+  const displayMeals  = useMemo(() => mergePendingMeals(meals, pendingMeals), [meals, pendingMeals])
+  const todayMeals    = useMemo(() => displayMeals.filter(m => m.date === today()), [displayMeals])
   const fluidTodayMl  = useMemo(() => todayMeals.reduce((s, m) => s + (m.fluid_ml ?? 0), 0), [todayMeals])
 
 
@@ -803,6 +806,14 @@ export function TodayTab({
               })()
               return (
                 <div key={meal.id} style={styleMode === 'minimal' ? { borderBottom: '1px dashed var(--border)' } : {}}>
+                  {getMealPendingOp(meal.id, pendingOps) && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4,
+                      padding: '2px 8px', marginBottom: 2,
+                      background: 'var(--warning-fill)', borderRadius: '4px 4px 0 0' }}>
+                      <span className="icon" style={{ fontSize: 12, color: 'var(--warning-hi)' }}>sync_problem</span>
+                      <span style={{ fontSize: 11, color: 'var(--warning-hi)', fontWeight: 500 }}>{t(lang, 'pendingEditLabel')}</span>
+                    </div>
+                  )}
                   <MealCard
                     meal={meal}
                     lang={lang}
@@ -1108,6 +1119,20 @@ export function TodayTab({
       {showGreeting && onDismissGreeting && (
         <GreetingPanel greeting={greeting} lang={lang} onDismiss={onDismissGreeting} />
       )}
+
+      {(pendingMeals.length > 0 || pendingOps.length > 0) && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12,
+          padding: '6px 10px', borderRadius: 8, background: 'var(--warning-fill)', border: '1px solid var(--warning-border)' }}>
+          <span className="icon" style={{ fontSize: 16, color: 'var(--warning-hi)' }}>cloud_off</span>
+          <span style={{ fontSize: 13, color: 'var(--warning-hi)', fontWeight: 500 }}>
+            {pendingMeals.length > 0 && `${pendingMeals.length} ${t(lang, 'pendingMealsCount')}`}
+            {pendingMeals.length > 0 && pendingOps.length > 0 && ' · '}
+            {pendingOps.length > 0 && `${pendingOps.length} ${t(lang, 'pendingOpsCount')}`}
+            {' — '}{t(lang, 'pendingSyncLabel')}
+          </span>
+        </div>
+      )}
+
       {summaryCard}
 
       {insight && !insightDismissed && (

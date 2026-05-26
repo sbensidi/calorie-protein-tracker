@@ -1,5 +1,5 @@
 import type { UserProfile } from '../hooks/useProfile'
-import type { Meal, DayStats } from '../types'
+import type { Meal, DayStats, PendingMeal, PendingOperation } from '../types'
 
 const TYPE_ORDER = ['breakfast', 'lunch', 'dinner', 'snack', 'beverage'] as const
 
@@ -586,5 +586,50 @@ export function calcDailyInsight(
   if (yCal > 0 && goalCalories > 0 && yCal > goalCalories * 1.1)
     return { kind: 'calOver', n: Math.round(yCal - goalCalories) }
 
+  return null
+}
+
+/**
+ * Merge confirmed server meals with locally-queued pending meals.
+ * Pending meals appear first within their date group so the user sees
+ * what they just added even while offline.
+ */
+export function mergePendingMeals(serverMeals: Meal[], pending: PendingMeal[]): Meal[] {
+  if (pending.length === 0) return serverMeals
+  const asMeals: Meal[] = pending.map(p => ({
+    id:             p.pendingId,
+    user_id:        '',
+    created_at:     new Date(p.queuedAt).toISOString(),
+    date:           p.date,
+    meal_type:      p.meal_type,
+    name:           p.name,
+    grams:          p.grams,
+    calories:       p.calories,
+    protein:        p.protein,
+    fat:            p.fat,
+    carbs:          p.carbs,
+    notes:          p.notes,
+    time_logged:    p.time_logged,
+    fluid_ml:       p.fluid_ml,
+    fluid_excluded: p.fluid_excluded,
+    display_unit:   p.display_unit,
+    display_amount: p.display_amount,
+  }))
+  // De-duplicate: drop any server meal whose id matches a pendingId
+  // (shouldn't happen, but guards against double-display after drain)
+  const pendingIds = new Set(pending.map(p => p.pendingId))
+  const filtered   = serverMeals.filter(m => !pendingIds.has(m.id))
+  return [...asMeals, ...filtered]
+}
+
+/**
+ * Returns the most-recent pending op for a given mealId, or null if none.
+ * Used by MealCard to show an 'unsaved' badge.
+ */
+export function getMealPendingOp(mealId: string, ops: PendingOperation[]): PendingOperation | null {
+  // Walk backwards so the latest queued op wins
+  for (let i = ops.length - 1; i >= 0; i--) {
+    if (ops[i].mealId === mealId) return ops[i]
+  }
   return null
 }
