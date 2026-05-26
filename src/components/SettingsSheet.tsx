@@ -16,7 +16,7 @@ import type { UnitId } from '../lib/units'
 import { MealCard } from './MealCard'
 import { fuzzyScore } from '../lib/fuzzyMatch'
 import { useAppContext } from '../context/AppContext'
-import { calcBMR, calcDailyTdee, calcProjectedDays } from '../lib/calculations'
+import { calcBMR, calcDailyTdee, calcProjectedDays, calcBMI, calcBMICategory, calcSuggestedFluidMl } from '../lib/calculations'
 
 const SEARCH_THRESHOLD = 0.45
 
@@ -65,7 +65,7 @@ function DayPanel({
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
         <span style={{
           fontSize: compact ? 12 : 13, fontWeight: 700,
-          color: isToday ? 'var(--accent-hi)' : isCustom ? 'var(--library-hi, #a5b4fc)' : 'var(--text-2)',
+          color: isToday ? 'var(--accent-hi)' : isCustom ? 'var(--library-hi)' : 'var(--text-2)',
           display: 'flex', alignItems: 'center', gap: 6,
         }}>
           {t(lang, dayKey as TranslationKey)}
@@ -632,11 +632,13 @@ function ProfileScreen({ lang, profile, onSave, showToast, weightLogEntries = []
   }
 
   const { bmr, suggestedFluidMl, bmi, bmiCategory } = useMemo(() => {
-    const bmr              = calcBMR(draft)
-    const suggestedFluidMl = Math.round(draft.weight * 35 / 100) * 100
-    const bmiVal           = Math.round((draft.weight / ((draft.height / 100) ** 2)) * 10) / 10
-    const bmiCategory      = bmiVal < 18.5 ? 'underweight' : bmiVal < 25 ? 'normal' : bmiVal < 30 ? 'overweight' : 'obese'
-    return { bmr, suggestedFluidMl, bmi: bmiVal, bmiCategory }
+    const bmiVal = calcBMI(draft.weight, draft.height)
+    return {
+      bmr:              calcBMR(draft),
+      suggestedFluidMl: calcSuggestedFluidMl(draft.weight),
+      bmi:              bmiVal,
+      bmiCategory:      calcBMICategory(bmiVal),
+    }
   }, [draft])
 
   const handleSave = () => {
@@ -1612,8 +1614,8 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onR
 
         {/* Filter chips */}
         <div style={{ position: 'relative' }}>
-          {chipCanScrollLeft  && <div style={{ position: 'absolute', left: 0, top: 0, bottom: 10, width: 24, background: 'linear-gradient(to right, var(--bg), transparent)', zIndex: 1, pointerEvents: 'none' }} />}
-          {chipCanScrollRight && <div style={{ position: 'absolute', right: 0, top: 0, bottom: 10, width: 24, background: 'linear-gradient(to left, var(--bg), transparent)', zIndex: 1, pointerEvents: 'none' }} />}
+          {chipCanScrollLeft  && <div style={{ position: 'absolute', left: 0, top: 0, bottom: 10, width: 24, background: 'linear-gradient(to right, var(--bg), transparent)', zIndex: 1 /* local stacking */, pointerEvents: 'none' }} />}
+          {chipCanScrollRight && <div style={{ position: 'absolute', right: 0, top: 0, bottom: 10, width: 24, background: 'linear-gradient(to left, var(--bg), transparent)', zIndex: 1 /* local stacking */, pointerEvents: 'none' }} />}
           <div
             ref={chipScrollRef}
             onScroll={e => updateChipScroll(e.currentTarget)}
@@ -1644,8 +1646,8 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onR
 
       {/* Scrollable list with fades */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', position: 'relative', minHeight: 0 }}>
-        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 20, background: 'linear-gradient(to bottom, var(--bg), transparent)', zIndex: 2, pointerEvents: 'none' }} />
-        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 56, background: 'linear-gradient(to top, var(--bg), transparent)', zIndex: 2, pointerEvents: 'none' }} />
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 20, background: 'linear-gradient(to bottom, var(--bg), transparent)', zIndex: 2 /* local stacking */, pointerEvents: 'none' }} />
+        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 56, background: 'linear-gradient(to top, var(--bg), transparent)', zIndex: 2 /* local stacking */, pointerEvents: 'none' }} />
       <div ref={scrollAreaRef} style={{ flex: 1, overflowY: 'auto', minHeight: 0, padding: '4px 16px', paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 48px)' }}>
 
       {(filter === 'all' || filter === 'foods' || filter === 'beverage') &&
@@ -2158,8 +2160,8 @@ function LibraryScreen({ lang }: { lang: Lang }) {
 
         {/* Category chips */}
         <div style={{ position: 'relative' }}>
-          {chipCanScrollLeft  && <div style={{ position: 'absolute', left: 0, top: 0, bottom: 10, width: 24, background: 'linear-gradient(to right, var(--bg), transparent)', zIndex: 1, pointerEvents: 'none' }} />}
-          {chipCanScrollRight && <div style={{ position: 'absolute', right: 0, top: 0, bottom: 10, width: 24, background: 'linear-gradient(to left, var(--bg), transparent)', zIndex: 1, pointerEvents: 'none' }} />}
+          {chipCanScrollLeft  && <div style={{ position: 'absolute', left: 0, top: 0, bottom: 10, width: 24, background: 'linear-gradient(to right, var(--bg), transparent)', zIndex: 1 /* local stacking */, pointerEvents: 'none' }} />}
+          {chipCanScrollRight && <div style={{ position: 'absolute', right: 0, top: 0, bottom: 10, width: 24, background: 'linear-gradient(to left, var(--bg), transparent)', zIndex: 1 /* local stacking */, pointerEvents: 'none' }} />}
           <div
             ref={chipScrollRef}
             onScroll={e => updateChipScroll(e.currentTarget)}
@@ -2187,8 +2189,8 @@ function LibraryScreen({ lang }: { lang: Lang }) {
 
       {/* Scrollable results */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', position: 'relative', minHeight: 0 }}>
-        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 20, background: 'linear-gradient(to bottom, var(--bg), transparent)', zIndex: 2, pointerEvents: 'none' }} />
-        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 56, background: 'linear-gradient(to top, var(--bg), transparent)', zIndex: 2, pointerEvents: 'none' }} />
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 20, background: 'linear-gradient(to bottom, var(--bg), transparent)', zIndex: 2 /* local stacking */, pointerEvents: 'none' }} />
+        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 56, background: 'linear-gradient(to top, var(--bg), transparent)', zIndex: 2 /* local stacking */, pointerEvents: 'none' }} />
       <div style={{ flex: 1, overflowY: 'auto', minHeight: 0, padding: '4px 16px', paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 48px)' }}>
         {loading ? (
           <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-3)', fontSize: 13 }}>
@@ -2818,7 +2820,7 @@ export function SettingsSheet({
           <div style={{
             flexShrink: 0,
             position: 'relative',
-            zIndex: 1,
+            zIndex: 1, // local stacking
             marginTop: -52,
             paddingInline: 16,
             paddingTop: 28,

@@ -1,5 +1,6 @@
 import { Component } from 'react'
 import type { ReactNode, ErrorInfo } from 'react'
+import { t } from '../lib/i18n'
 import type { Lang } from '../lib/i18n'
 
 interface Props {
@@ -36,13 +37,12 @@ export class ErrorBoundary extends Component<Props, State> {
     if (this.state.hasError) {
       if (this.props.fallback) return this.props.fallback
 
-      const isHe = this.props.lang === 'he'
+      const lang  = this.props.lang ?? 'he'
       const label = this.props.label
-      const msg = isHe
-        ? `${label ? `שגיאה ב${label}. ` : ''}משהו השתבש.`
-        : `${label ? `Error in ${label}. ` : ''}Something went wrong.`
-      const retry  = isHe ? 'נסה שוב' : 'Try again'
-      const reload = isHe ? 'רענן דף' : 'Reload'
+      const labelPart = label ? `${t(lang, 'errorMsgLabelPrefix')}${label}. ` : ''
+      const msg   = `${labelPart}${t(lang, 'errorMsg')}`
+      const retry = t(lang, 'errorRetryBtn')
+      const reload = t(lang, 'errorReloadBtn')
 
       return (
         <div

@@ -48,6 +48,13 @@ export interface DayTotals {
   meals: Meal[]
 }
 
+export interface DayStats {
+  totalCalories: number
+  totalProtein:  number
+  calOk:         boolean
+  protOk:        boolean
+}
+
 export interface NutritionResult {
   calories: number
   protein: number

@@ -93,7 +93,7 @@ function GreetingPanel({ greeting, lang, onDismiss }: {
           </button>
           <button
             onClick={onDismiss}
-            style={{ fontSize: 13, fontWeight: 700, color: 'var(--on-color)', background: 'var(--amber)', border: 'none', borderRadius: 8, padding: '6px 14px', cursor: 'pointer', fontFamily: 'inherit' }}
+            style={{ fontSize: 13, fontWeight: 700, color: 'var(--on-color)', background: 'var(--warning)', border: 'none', borderRadius: 8, padding: '6px 14px', cursor: 'pointer', fontFamily: 'inherit' }}
           >
             {t(lang, 'greetingDismissConfirm')}
           </button>
@@ -994,7 +994,7 @@ export function TodayTab({
                   type="number"
                   inputMode="decimal"
                   className="inp"
-                  style={{ height: 32, fontSize: 13, width: 80, textAlign: 'end', paddingInlineEnd: 20 }}
+                  style={{ height: 32, width: 80, textAlign: 'end', paddingInlineEnd: 20 }}
                   value={composeWeight}
                   onChange={e => setComposeWeight(e.target.value)}
                 />
@@ -1023,7 +1023,7 @@ export function TodayTab({
                     type="number"
                     inputMode="decimal"
                     className="inp"
-                    style={{ fontSize: 14, height: 36, paddingInlineEnd: 24 }}
+                    style={{ height: 36, paddingInlineEnd: 24 }}
                     placeholder={t(lang, 'portionGramsPlaceholder')}
                     value={composePortion}
                     onChange={e => setComposePortion(e.target.value)}

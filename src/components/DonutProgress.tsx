@@ -1,5 +1,7 @@
 import { memo } from 'react'
 import type { ReactNode } from 'react'
+import { t } from '../lib/i18n'
+import type { TranslationKey } from '../lib/i18n'
 
 interface DonutProgressProps {
   value:           number
@@ -68,11 +70,14 @@ export const DonutProgress = memo(function DonutProgress({ value, goal, type, la
   return (
     <div
       role="img"
-      aria-label={
-        lang === 'he'
-          ? `${type === 'calories' ? 'קלוריות' : type === 'protein' ? 'חלבון' : 'נוזלים'}: ${realPct}% מהיעד`
-          : `${type === 'calories' ? 'Calories' : type === 'protein' ? 'Protein' : 'Fluid'}: ${realPct}% of goal`
-      }
+      aria-label={(() => {
+        const ARIA_TYPE: Record<'calories' | 'protein' | 'fluid', TranslationKey> = {
+          calories: 'donutAriaCalories',
+          protein:  'donutAriaProtein',
+          fluid:    'donutAriaFluid',
+        }
+        return `${t(lang, ARIA_TYPE[type])}: ${realPct}${t(lang, 'donutAriaGoalPctSuffix')}`
+      })()}
       style={{ position: 'relative', width: size, height: size, flexShrink: 0, ...style }}
     >
       <svg

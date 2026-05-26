@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { calcBMR, calcDailyTdee, calcWeeklyTdee, calcGoalStreak, calcProjectedDays, calcMealTypeDistribution, calcMacroBreakdown, getCookingFactor, estimateCookedWeight, getGreeting } from '../lib/calculations'
+import { calcBMR, calcDailyTdee, calcWeeklyTdee, calcGoalStreak, calcProjectedDays, calcMealTypeDistribution, calcMacroBreakdown, getCookingFactor, estimateCookedWeight, getGreeting, calcDailyInsight } from '../lib/calculations'
 import type { GreetingContext } from '../lib/calculations'
 import type { UserProfile } from '../hooks/useProfile'
 import type { Meal } from '../types'
@@ -548,5 +548,78 @@ describe('getGreeting', () => {
     const { line2 } = getGreeting(makeCtx())
     // onTrack[1 % 4] = onTrack[1], {cal}→500
     expect(line2).toBe('500 kcal left for today — plenty of room')
+  })
+})
+
+// ── calcDailyInsight ──────────────────────────────────────────────────────────
+
+function yesterday(): string {
+  const d = new Date()
+  d.setDate(d.getDate() - 1)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+describe('calcDailyInsight', () => {
+  const yDate = yesterday()
+
+  it('returns null when no meals yesterday', () => {
+    expect(calcDailyInsight([], 0, 2000, 150)).toBeNull()
+  })
+
+  it('returns calLow when yesterday calories < 1200', () => {
+    const meals = [makeMeal({ date: yDate, calories: 800, protein: 60 })]
+    const result = calcDailyInsight(meals, 0, 2000, 150)
+    expect(result).toEqual({ kind: 'calLow', n: 800 })
+  })
+
+  it('calLow takes priority over streak milestone', () => {
+    const meals = [makeMeal({ date: yDate, calories: 900, protein: 100 })]
+    const result = calcDailyInsight(meals, 7, 2000, 150)
+    expect(result?.kind).toBe('calLow')
+  })
+
+  it('returns streak on milestone (3) when calories are normal', () => {
+    const meals = [makeMeal({ date: yDate, calories: 1800, protein: 120 })]
+    const result = calcDailyInsight(meals, 3, 2000, 150)
+    expect(result).toEqual({ kind: 'streak', n: 3 })
+  })
+
+  it('returns streak on milestone (7) when calories are normal', () => {
+    const meals = [makeMeal({ date: yDate, calories: 1800, protein: 120 })]
+    const result = calcDailyInsight(meals, 7, 2000, 150)
+    expect(result).toEqual({ kind: 'streak', n: 7 })
+  })
+
+  it('does not return streak for non-milestone value (4)', () => {
+    const meals = [makeMeal({ date: yDate, calories: 1800, protein: 120 })]
+    const result = calcDailyInsight(meals, 4, 2000, 150)
+    expect(result).toBeNull()
+  })
+
+  it('returns proteinLow when protein < 75% of goal', () => {
+    const meals = [makeMeal({ date: yDate, calories: 1800, protein: 80 })]
+    // goalProtein=150, 75%=112.5, actual=80 → proteinLow, n = 150-80 = 70
+    const result = calcDailyInsight(meals, 0, 2000, 150)
+    expect(result).toEqual({ kind: 'proteinLow', n: 70 })
+  })
+
+  it('returns calOver when calories > 110% of goal', () => {
+    const meals = [makeMeal({ date: yDate, calories: 2300, protein: 140 })]
+    // goalCalories=2000, 110%=2200, actual=2300 → calOver, n=2300-2000=300
+    const result = calcDailyInsight(meals, 0, 2000, 150)
+    expect(result).toEqual({ kind: 'calOver', n: 300 })
+  })
+
+  it('returns null when calories are fine and no milestone or low protein', () => {
+    const meals = [makeMeal({ date: yDate, calories: 1800, protein: 130 })]
+    const result = calcDailyInsight(meals, 4, 2000, 150)
+    expect(result).toBeNull()
+  })
+
+  it('ignores meals from today (not yesterday)', () => {
+    const d = new Date()
+    const todayLocal = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+    const meals = [makeMeal({ date: todayLocal, calories: 800, protein: 40 })]
+    expect(calcDailyInsight(meals, 0, 2000, 150)).toBeNull()
   })
 })

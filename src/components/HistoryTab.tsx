@@ -9,7 +9,7 @@ import { t, dir, formatDate, today, HE_MONTHS, EN_MONTHS, HE_WEEK_SHORT, EN_WEEK
 import { DonutProgress } from './DonutProgress'
 import type { ComposedEntry } from './FoodEntryForm'
 import { FoodEntryForm } from './FoodEntryForm'
-import { calcMealTypeDistribution, calcMacroBreakdown } from '../lib/calculations'
+import { calcMealTypeDistribution, calcMacroBreakdown, calcDatesAverage, calcGoalMetPct, calcFluidAvgMl, calcFluidGoalPct } from '../lib/calculations'
 import { MealCard } from './MealCard'
 import { SheetHandle } from './SheetHandle'
 
@@ -1091,7 +1091,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
               </div>{/* end rows 1+2 grid wrapper */}
 
               {/* Top gradient fade */}
-              <div style={{ position: 'relative', height: 0, overflow: 'visible', zIndex: 9, pointerEvents: 'none' }}>
+              <div style={{ position: 'relative', height: 0, overflow: 'visible', zIndex: 9, pointerEvents: 'none' }}>{/* local stacking */}
                 <div style={{
                   position: 'absolute', top: 0, left: -16, right: -16, height: 28,
                   background: 'linear-gradient(to bottom, var(--bg), transparent)',
@@ -1191,7 +1191,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
             position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)',
             width: '100%', maxWidth: 560, height: 80,
             background: 'linear-gradient(to top, var(--bg) 20%, transparent)',
-            pointerEvents: 'none', zIndex: 39,
+            pointerEvents: 'none', zIndex: 39, // local stacking — below --z-fab:40
           }} />
 
           {/* Food history modal */}
@@ -1374,13 +1374,8 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
           return t >= monthStart.getTime() && t <= monthEnd.getTime()
         })
 
-        const avg = (arr: string[], key: 'totalCalories' | 'totalProtein') => {
-          if (arr.length === 0) return 0
-          return Math.round(arr.reduce((s, d) => s + (grouped.get(d)?.[key] ?? 0), 0) / arr.length)
-        }
-
-        const avg7Cal   = avg(last7,  'totalCalories')
-        const avg7Prot  = avg(last7,  'totalProtein')
+        const avg7Cal   = calcDatesAverage(last7,  'totalCalories', grouped)
+        const avg7Prot  = calcDatesAverage(last7,  'totalProtein',  grouped)
 
         // ── Weekly calorie balance ─────────────────────────────────
         // grouped skips today (intentionally — shown in Today tab), so add today separately
@@ -1392,27 +1387,27 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
         const weekTargetSoFar  = barDays
           .filter(b => offset7 === 0 ? b.dateKey <= nowKey : true)
           .reduce((s, b) => s + b.goalCal, 0)
-        const avg30Cal  = avg(last30, 'totalCalories')
-        const avg30Prot = avg(last30, 'totalProtein')
+        const avg30Cal  = calcDatesAverage(last30, 'totalCalories', grouped)
+        const avg30Prot = calcDatesAverage(last30, 'totalProtein',  grouped)
 
         const calOkDays7   = last7.filter(d  => grouped.get(d)?.calOk).length
         const protOkDays7  = last7.filter(d  => grouped.get(d)?.protOk).length
         const calOkDays30  = last30.filter(d => grouped.get(d)?.calOk).length
         const protOkDays30 = last30.filter(d => grouped.get(d)?.protOk).length
-        const pct7Cal  = last7.length  ? Math.round(calOkDays7  / last7.length  * 100) : 0
-        const pct7Prot = last7.length  ? Math.round(protOkDays7 / last7.length  * 100) : 0
-        const pct30Cal = last30.length ? Math.round(calOkDays30 / last30.length * 100) : 0
-        const pct30Prot= last30.length ? Math.round(protOkDays30/ last30.length * 100) : 0
+        const pct7Cal   = calcGoalMetPct(last7,  grouped, 'calOk')
+        const pct7Prot  = calcGoalMetPct(last7,  grouped, 'protOk')
+        const pct30Cal  = calcGoalMetPct(last30, grouped, 'calOk')
+        const pct30Prot = calcGoalMetPct(last30, grouped, 'protOk')
 
         // ── Fluid stats ───────────────────────────────────────────
-        const fluidDays7    = last7.filter(d  => fluidForDate(d) > 0)
-        const fluidDays30   = last30.filter(d => fluidForDate(d) > 0)
-        const avg7FluidMl   = fluidDays7.length  > 0 ? Math.round(fluidDays7.reduce( (s, d) => s + fluidForDate(d), 0) / fluidDays7.length)  : 0
-        const avg30FluidMl  = fluidDays30.length > 0 ? Math.round(fluidDays30.reduce((s, d) => s + fluidForDate(d), 0) / fluidDays30.length) : 0
+        const avg7FluidMl     = calcFluidAvgMl(last7,  fluidForDate)
+        const avg30FluidMl    = calcFluidAvgMl(last30, fluidForDate)
+        const pct7Fluid       = calcFluidGoalPct(last7,  fluidForDate, fluidGoalMl)
+        const pct30Fluid      = calcFluidGoalPct(last30, fluidForDate, fluidGoalMl)
+        const fluidDays7      = last7.filter(d  => fluidForDate(d) > 0)
+        const fluidDays30     = last30.filter(d => fluidForDate(d) > 0)
         const goalDays7Fluid  = last7.filter(d  => fluidForDate(d) >= fluidGoalMl).length
         const goalDays30Fluid = last30.filter(d => fluidForDate(d) >= fluidGoalMl).length
-        const pct7Fluid  = last7.length  > 0 ? Math.round(goalDays7Fluid  / last7.length  * 100) : 0
-        const pct30Fluid = last30.length > 0 ? Math.round(goalDays30Fluid / last30.length * 100) : 0
         const locale = lang === 'he' ? 'he-IL' : 'en-US'
         const fmtMl = (ml: number) => ml >= 1000
           ? `${(ml / 1000).toFixed(1)}${t(lang, 'litersUnit')}`
@@ -2468,7 +2463,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                 overflow: 'hidden',
                 display: 'flex',
                 flexDirection: 'column',
-                boxShadow: '0 -4px 40px rgba(0,0,0,0.35)',
+                boxShadow: 'var(--shadow-sheet-lift)',
                 transform: `translateY(${addMealDragOffset}px)`,
                 transition: addMealDragOffset > 0 ? 'none' : 'transform 0.35s cubic-bezier(.22,.9,.36,1)',
                 opacity: addMealDragOffset > 0 ? Math.max(0.6, 1 - addMealDragOffset / 400) : 1,
@@ -2552,7 +2547,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
             width: fabBtnSize, height: fabBtnSize, borderRadius: 999,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             border: 'none', background: 'transparent', cursor: 'pointer',
-            position: 'relative', zIndex: 1,
+            position: 'relative', zIndex: 1, // local stacking
             color: view === 'cal' ? 'var(--accent-hi)' : 'var(--text-3)',
           }}
         >
@@ -2567,7 +2562,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
             width: fabBtnSize, height: fabBtnSize, borderRadius: 999,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             border: 'none', background: 'transparent', cursor: 'pointer',
-            position: 'relative', zIndex: 1,
+            position: 'relative', zIndex: 1, // local stacking
             color: view === 'list' ? 'var(--accent-hi)' : 'var(--text-3)',
           }}
         >
@@ -2582,7 +2577,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
             width: fabBtnSize, height: fabBtnSize, borderRadius: 999,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             border: 'none', background: 'transparent', cursor: 'pointer',
-            position: 'relative', zIndex: 1,
+            position: 'relative', zIndex: 1, // local stacking
             color: view === 'stats' ? 'var(--accent-hi)' : 'var(--text-3)',
           }}
         >

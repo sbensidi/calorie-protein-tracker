@@ -1,5 +1,5 @@
 import type { UserProfile } from '../hooks/useProfile'
-import type { Meal } from '../types'
+import type { Meal, DayStats } from '../types'
 
 const TYPE_ORDER = ['breakfast', 'lunch', 'dinner', 'snack', 'beverage'] as const
 
@@ -293,6 +293,20 @@ export function calcWeeklyTdee(p: UserProfile): number {
   return calcDailyTdee(p) * 7
 }
 
+export type BMICategory = 'underweight' | 'normal' | 'overweight' | 'obese'
+
+export function calcBMI(weight: number, height: number): number {
+  return Math.round((weight / ((height / 100) ** 2)) * 10) / 10
+}
+
+export function calcBMICategory(bmi: number): BMICategory {
+  return bmi < 18.5 ? 'underweight' : bmi < 25 ? 'normal' : bmi < 30 ? 'overweight' : 'obese'
+}
+
+export function calcSuggestedFluidMl(weight: number): number {
+  return Math.round(weight * 35 / 100) * 100
+}
+
 /**
  * Count consecutive days backwards from the day before `referenceDate`
  * where meals were logged (calories > 0) and calories stayed within the goal.
@@ -486,6 +500,46 @@ export function estimateCookedWeight(meals: Meal[]): {
 
   const total = Math.round(breakdown.reduce((s, b) => s + b.cookedG, 0))
   return { total, breakdown }
+}
+
+// ── History stats pure helpers ────────────────────────────────────────────────
+
+export function calcDatesAverage(
+  dates: string[],
+  key: 'totalCalories' | 'totalProtein',
+  grouped: Map<string, Pick<DayStats, 'totalCalories' | 'totalProtein'>>,
+): number {
+  if (dates.length === 0) return 0
+  return Math.round(dates.reduce((s, d) => s + (grouped.get(d)?.[key] ?? 0), 0) / dates.length)
+}
+
+export function calcGoalMetPct(
+  dates: string[],
+  grouped: Map<string, Pick<DayStats, 'calOk' | 'protOk'>>,
+  key: 'calOk' | 'protOk',
+): number {
+  if (dates.length === 0) return 0
+  const met = dates.filter(d => grouped.get(d)?.[key]).length
+  return Math.round(met / dates.length * 100)
+}
+
+export function calcFluidAvgMl(
+  dates: string[],
+  getFluidForDate: (date: string) => number,
+): number {
+  const daysWithFluid = dates.filter(d => getFluidForDate(d) > 0)
+  if (daysWithFluid.length === 0) return 0
+  return Math.round(daysWithFluid.reduce((s, d) => s + getFluidForDate(d), 0) / daysWithFluid.length)
+}
+
+export function calcFluidGoalPct(
+  dates: string[],
+  getFluidForDate: (date: string) => number,
+  fluidGoalMl: number,
+): number {
+  if (dates.length === 0) return 0
+  const met = dates.filter(d => getFluidForDate(d) >= fluidGoalMl).length
+  return Math.round(met / dates.length * 100)
 }
 
 // ── calcDailyInsight ──────────────────────────────────────────────────────────

@@ -258,7 +258,7 @@ export default function App() {
 
       {/* ── Sticky app header ─────────────────────────────────────── */}
       <div style={{
-        position: 'sticky', top: 0, zIndex: 30,
+        position: 'sticky', top: 0, zIndex: 30, // local stacking — between content and dropdowns
         background: 'var(--bg)',
         borderBottom: '1px solid var(--border)',
         paddingTop: 'env(safe-area-inset-top)',

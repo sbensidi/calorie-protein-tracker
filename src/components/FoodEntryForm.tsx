@@ -708,7 +708,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, se
           {isRecipe && (
             <>
               <div style={{ display: 'flex', gap: 12, marginBottom: 10, padding: '6px 10px', background: 'var(--surface-2)', borderRadius: 8 }}>
-                <span style={{ fontSize: 11, color: 'var(--text-3)', flex: 1 }}>per 100g</span>
+                <span style={{ fontSize: 11, color: 'var(--text-3)', flex: 1 }}>{t(lang, 'per100g')}</span>
                 <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent-hi)' }}>{per100Cal} {t(lang, 'caloriesUnit')}</span>
                 <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--positive-hi)', marginInlineStart: 8 }}>{per100Prot} {t(lang, 'proteinUnit')}</span>
               </div>
@@ -945,7 +945,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, se
               borderRadius: 10, padding: '9px 12px',
             }}>
               <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-3)', flex: 1 }}>
-                {t(lang, 'totalGrams').replace('גרמים', '').replace('grams', '').trim() || 'סה״כ'}
+                {t(lang, 'totalGramsAbbr')}
               </span>
               <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 2, fontSize: 15, fontWeight: 800, color: 'var(--accent-hi)' }}>
                 {scanCal}
@@ -1072,18 +1072,18 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, se
             style={{ fontSize: 16, fontWeight: 700, cursor: 'pointer', textOverflow: 'ellipsis', overflow: 'hidden' }}
           >
             <optgroup label={t(lang, 'unitGroupWeight')}>
-              <option value="g">{lang === 'he' ? 'גרם' : 'g'}</option>
-              <option value="oz">{lang === 'he' ? 'אונקיה' : 'oz'}</option>
+              <option value="g">{t(lang, 'unitOptG')}</option>
+              <option value="oz">{t(lang, 'unitOptOz')}</option>
             </optgroup>
             <optgroup label={t(lang, 'unitGroupVolume')}>
-              <option value="ml">{lang === 'he' ? 'מ"ל' : 'ml'}</option>
-              <option value="fl_oz">{lang === 'he' ? 'פל.אונ׳' : 'fl oz'}</option>
-              <option value="cup">{lang === 'he' ? 'כוס' : 'cup'}</option>
-              <option value="tbsp">{lang === 'he' ? 'כף' : 'tbsp'}</option>
-              <option value="tsp">{lang === 'he' ? 'כפית' : 'tsp'}</option>
+              <option value="ml">{t(lang, 'unitOptMl')}</option>
+              <option value="fl_oz">{t(lang, 'unitOptFlOz')}</option>
+              <option value="cup">{t(lang, 'unitOptCup')}</option>
+              <option value="tbsp">{t(lang, 'unitOptTbsp')}</option>
+              <option value="tsp">{t(lang, 'unitOptTsp')}</option>
             </optgroup>
             <optgroup label={t(lang, 'unitGroupCount')}>
-              <option value="pcs">{lang === 'he' ? 'מנה' : 'serving'}</option>
+              <option value="pcs">{t(lang, 'unitOptPcs')}</option>
             </optgroup>
           </select>
 
