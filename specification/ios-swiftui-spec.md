@@ -992,10 +992,12 @@ let userPrefsKey      = "user_prefs"        // UserProfile subset (no biometrics
 **Rule from web**: Only non-sensitive preferences are cached locally. Biometrics (age, height, weight, sex) come from DB only. Cache only: `weightUnit`, `volumeUnit`, `fluidGoalMl`, `fluidThresholdMl`, `fluidZeroCalOnly`, `defaultServingGrams`.
 
 ### Offline behavior
-- Show cached meals (SwiftData) when offline
-- Show "No internet connection" toast
-- Queue writes when offline → sync on reconnect (use `URLSession` background tasks or simple retry)
-- Realtime subscription reconnects automatically via Supabase SDK
+See **§24** for the full offline-first architecture (3-phase: read cache, optimistic add, write queue).
+Short summary:
+- Meals, Goals, Profile are cached locally with TTL; stale cache shown immediately while fetch runs.
+- Offline adds/edits/deletes go to a persistent pending queue; the app stays fully usable.
+- On reconnect (`NWPathMonitor`) the queue drains automatically with per-item error recovery.
+- Realtime subscription reconnects automatically via Supabase SDK.
 
 ---
 
@@ -2987,3 +2989,306 @@ struct VisionResult {
 - מראה לא מייצג את ההרכב הפנימי (שמן נסתר, צפיפות שונה).
 
 **השוואה לתעשייה:** MyFitnessPal, Lose It!, Calorie Mama — כולן מציגות אותן אזהרות ± 20–30% ודורשות אימות משתמש. הגישה שאימצנו (pre-fill + manual confirm) תואמת את best practice בתעשייה.
+
+---
+
+## 24. Offline-First Architecture (v3 — May 2026)
+
+The app is **fully usable without a network connection**. All reads, adds, edits, and deletes work offline; changes are persisted locally and synced automatically the moment connectivity returns.
+
+The implementation follows a **3-phase model** identical to the web PWA:
+
+| Phase | Name | What it covers |
+|---|---|---|
+| 1 | Read cache | Stale-while-revalidate cache for Meals, Goals, Profile |
+| 2 | Optimistic add | Offline food-add queued locally, shown immediately in the UI |
+| 3 | Full write queue | Offline edits and deletes queued, replayed on reconnect |
+
+---
+
+### 24.1 Phase 1 — Read Cache (Stale-While-Revalidate)
+
+Use **SwiftData** as the persistent cache layer (mirrors `localStorage` in the web app). On every cold launch or tab switch, the cached data is shown immediately while a background fetch runs.
+
+#### TTLs
+
+| Store | Cache key pattern | TTL |
+|---|---|---|
+| Meals | `MealCache` (`@Model`) — filtered by userId | 24 hours |
+| Goals | `GoalCache` (`@Model`) — keyed by userId | 7 days |
+| UserProfile | `ProfileCache` (`@Model`) — keyed by userId | 7 days |
+
+#### Pattern
+
+```swift
+// On view appear:
+// 1. Read SwiftData → show immediately (stale-while-revalidate)
+// 2. If TTL not expired and not forced refresh → skip fetch
+// 3. Else: fetch from Supabase → update SwiftData + reset TTL
+// 4. Never block the UI waiting for network
+
+actor MealStore {
+    func mealsForUser(_ userId: String, context: ModelContext) async -> [Meal] {
+        let cached = fetchFromSwiftData(userId: userId, context: context)
+        if let cached, !isCacheExpired(for: userId, ttl: 24 * 3600) {
+            return cached
+        }
+        // Background fetch — don't await in UI code
+        Task { await refreshFromSupabase(userId: userId, context: context) }
+        return cached ?? []
+    }
+}
+```
+
+#### Cache invalidation
+
+- Successful Supabase fetch → update SwiftData + write new TTL timestamp to `UserDefaults`.
+- Force-refresh: pull-to-refresh on TodayTab, or any successful write operation.
+- Cache is **never cleared** on auth sign-out — it is keyed per `userId` so another user's data is never exposed.
+
+---
+
+### 24.2 Phase 2 — Optimistic Add
+
+When the user submits a new meal while offline, the app:
+
+1. Creates a `PendingMeal` with a stable client-generated UUID (`pendingId`).
+2. Persists it to SwiftData (survives app restart).
+3. Displays it immediately in the meal list — visually identical to a real meal but with a warning badge.
+4. On reconnect, inserts it to Supabase **using the same UUID as the row `id`** — this is critical for deduplication (prevents showing both the pending entry and the server entry simultaneously).
+
+#### Swift types
+
+```swift
+// PendingMeal — mirrors Meal but with extra queue metadata
+struct PendingMeal: Codable, Identifiable {
+    let pendingId: UUID          // stable client UUID, becomes `id` on server insert
+    let queuedAt: Date           // for display and ordering
+    var date: String
+    var mealType: MealType
+    var name: String
+    var grams: Double
+    var calories: Int
+    var protein: Double
+    var fat: Double?
+    var carbs: Double?
+    var notes: String?
+    var timeLogged: String
+    var fluidMl: Double?
+    var fluidExcluded: Bool
+    var displayUnit: String?
+    var displayAmount: Double?
+}
+
+enum PendingOpType: String, Codable { case update, delete }
+
+struct PendingOperation: Codable, Identifiable {
+    let id: UUID
+    let type: PendingOpType
+    let mealId: String           // UUID of the target Meal
+    var updates: [String: AnyCodable]?  // non-nil for .update
+    let queuedAt: Date
+}
+```
+
+#### Deduplication — `mergePendingMeals`
+
+Before displaying meals in TodayTab, merge the server list with the pending list:
+
+```swift
+func mergePendingMeals(serverMeals: [Meal], pending: [PendingMeal]) -> [Meal] {
+    guard !pending.isEmpty else { return serverMeals }
+    let pendingIds = Set(pending.map { $0.pendingId.uuidString })
+    // Remove server rows that were already inserted via drain (same UUID)
+    let filtered = serverMeals.filter { !pendingIds.contains($0.id) }
+    // Convert pending → Meal for uniform display
+    let asMeals = pending.map { p -> Meal in
+        Meal(id: p.pendingId.uuidString, userId: "", /* ... */ createdAt: ISO8601DateFormatter().string(from: p.queuedAt))
+    }
+    // Pending entries shown first (most recent activity)
+    return asMeals + filtered
+}
+```
+
+---
+
+### 24.3 Phase 3 — Write Queue (Edit + Delete)
+
+Offline edits and deletes are queued as `PendingOperation` entries in SwiftData.
+
+#### Queuing rules
+
+| User action | While offline → |
+|---|---|
+| Edit a meal | Optimistic state update (immediate UI change) + queue `.update` op; if a previous `.update` for same `mealId` is in queue, merge the two (latest wins per field) |
+| Delete a meal | Remove from local list immediately + queue `.delete` op; cancel any pending `.update` for same `mealId` |
+
+#### `drainPending` — flush on reconnect
+
+Called automatically when `NWPathMonitor` fires `.satisfied`. Must use a **stable reference** (stored property on the `@Observable` store actor) to avoid re-registering the listener on every state change.
+
+```swift
+func drainPending(userId: String, context: ModelContext) async {
+    var didWork = false
+
+    // --- Add queue ---
+    let pendingMeals = fetchPendingMeals(userId: userId, context: context)
+    var failedMeals: [PendingMeal] = []
+    for p in pendingMeals {
+        do {
+            try await supabase.from("meals").insert([
+                "id":       p.pendingId.uuidString,   // ← must match pendingId exactly
+                "user_id":  userId,
+                // ... all other fields
+            ]).execute()
+            didWork = true
+        } catch {
+            failedMeals.append(p)   // keep in queue for next attempt
+        }
+    }
+    replacePendingMeals(failedMeals, userId: userId, context: context)
+
+    // --- Edit/delete queue ---
+    let pendingOps = fetchPendingOps(userId: userId, context: context)
+    var failedOps: [PendingOperation] = []
+    for op in pendingOps {
+        do {
+            switch op.type {
+            case .delete:
+                try await supabase.from("meals")
+                    .delete().eq("id", value: op.mealId).eq("user_id", value: userId)
+                    .execute()
+                didWork = true
+            case .update:
+                guard let updates = op.updates else { continue }
+                try await supabase.from("meals")
+                    .update(updates).eq("id", value: op.mealId).eq("user_id", value: userId)
+                    .execute()
+                didWork = true
+            }
+        } catch let err as PostgrestError where err.code == "PGRST116" {
+            didWork = true   // row not found → treat as success (silent 404)
+        } catch {
+            failedOps.append(op)    // keep in queue for next attempt
+        }
+    }
+    replacePendingOps(failedOps, userId: userId, context: context)
+
+    if didWork { await refreshMeals(userId: userId, context: context) }
+}
+```
+
+**Key rules:**
+- `id: p.pendingId.uuidString` must be passed on insert — server must not generate a new UUID.
+- `PGRST116` (row not found) on delete/update → success; do not re-queue.
+- Failed items **stay in the queue**; they will be retried on the next reconnect.
+- `refreshMeals` is called only when at least one operation succeeded (`didWork`).
+
+#### Stable `NWPathMonitor` listener
+
+```swift
+import Network
+
+final class ConnectivityMonitor {
+    private let monitor = NWPathMonitor()
+    private let queue   = DispatchQueue(label: "connectivity")
+    var onBecomeOnline: (() -> Void)?
+
+    func start() {
+        monitor.pathUpdateHandler = { [weak self] path in
+            if path.status == .satisfied {
+                DispatchQueue.main.async { self?.onBecomeOnline?() }
+            }
+        }
+        monitor.start(queue: queue)
+    }
+
+    deinit { monitor.cancel() }
+}
+```
+
+Register **once** when the store initialises; the closure captures the latest drain function via a stored reference — not recreated on every state change.
+
+---
+
+### 24.4 UI — Offline Indicators
+
+#### Global banner (TodayTab)
+
+Shown when `pendingMeals.count > 0 || pendingOps.count > 0`:
+
+```
+┌────────────────────────────────────────┐
+│  ☁ [count] ארוחות ממתינות · [count]   │
+│    שינויים ממתינים — ממתין לסנכרון     │
+└────────────────────────────────────────┘
+```
+
+- Background: `--warning-fill` equivalent → `Color(.systemYellow).opacity(0.12)`
+- Border: `Color(.systemYellow).opacity(0.4)`
+- Icon: SF Symbol `cloud.slash` (color: `Color(.systemOrange)`)
+
+#### Per-meal badge
+
+Shown on each meal card that has a pending edit/delete in the queue (`getMealPendingOp`):
+
+```
+┌─────────────────────────────────────┐
+│  ⚠ לא נשמר / Unsaved               │  ← warning chip above card
+├─────────────────────────────────────┤
+│  [normal meal card content]         │
+└─────────────────────────────────────┘
+```
+
+- Icon: SF Symbol `exclamationmark.icloud` (color: `Color(.systemOrange)`)
+- Background: same warning fill as global banner.
+
+#### Pending-add badge
+
+Meals from the add queue (not yet on server) show a `pendingId`-based visual marker:
+- Small `clock` SF Symbol in the top-trailing corner of the meal card.
+- No calorie contribution change — they are already counted in the daily total.
+
+---
+
+### 24.5 i18n Keys (Hebrew + English)
+
+| Key | עברית | English |
+|---|---|---|
+| `pendingSyncLabel` | ממתין לסנכרון | Pending sync |
+| `pendingMealsCount` | ארוחות ממתינות | pending meals |
+| `pendingEditLabel` | לא נשמר | Unsaved |
+| `pendingOpsCount` | שינויים ממתינים | pending changes |
+
+Use the same pattern as other i18n strings: `NSLocalizedString` / `String(localized:)` with Hebrew and English entries in the `.xcstrings` catalog.
+
+---
+
+### 24.6 SwiftData Schema
+
+```swift
+@Model
+final class PendingMealModel {
+    @Attribute(.unique) var pendingId: String   // UUID string
+    var userId: String
+    var queuedAt: Date
+    var mealJSON: Data                           // JSON-encoded PendingMeal
+}
+
+@Model
+final class PendingOpModel {
+    @Attribute(.unique) var opId: String        // UUID string
+    var userId: String
+    var queuedAt: Date
+    var opJSON: Data                            // JSON-encoded PendingOperation
+}
+
+@Model
+final class MealCacheModel {
+    var userId: String
+    var cachedAt: Date
+    var mealsJSON: Data                         // JSON-encoded [Meal]
+}
+```
+
+TTL timestamps (`cachedAt`) are stored in each cache model itself — no separate `UserDefaults` entry needed beyond the model query.
