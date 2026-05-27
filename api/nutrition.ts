@@ -189,25 +189,29 @@ export default async function handler(req: Request): Promise<Response> {
 
   // Step 2 — nutrition lookup using English name
   const userMsg = amountType === 'unit'
-    ? `Per 1 piece of ${queryName}? JSON only: {"calories": number, "protein": number}`
-    : `Per 100g of ${queryName}? JSON only: {"calories": number, "protein": number}`
+    ? `Per 1 piece of ${queryName}? JSON only: {"calories":number,"protein":number,"fat":number,"carbs":number}`
+    : `Per 100g of ${queryName}? JSON only: {"calories":number,"protein":number,"fat":number,"carbs":number}`
 
   const text = await groqCall(apiKey, [
-    { role: 'system', content: 'You are a nutrition database. Return USDA values as JSON only: {"calories": number, "protein": number}. No other text.' },
+    { role: 'system', content: 'You are a nutrition database. Return USDA values as JSON only: {"calories":number,"protein":number,"fat":number,"carbs":number}. No other text.' },
     { role: 'user', content: userMsg },
-  ])
+  ], 120)
 
   let groqCalories: number | null = null
-  let groqProtein: number | null = null
+  let groqProtein:  number | null = null
+  let groqFat:      number | null = null
+  let groqCarbs:    number | null = null
 
   if (text) {
-    const match = text.match(/\{[^{}]*"calories"[^{}]*"protein"[^{}]*\}|\{[^{}]*"protein"[^{}]*"calories"[^{}]*\}/)
+    const match = text.match(/\{[^{}]+\}/)
     if (match) {
       try {
         const parsed = JSON.parse(match[0])
         if (typeof parsed.calories === 'number' && typeof parsed.protein === 'number') {
           groqCalories = parsed.calories
           groqProtein  = parsed.protein
+          groqFat      = typeof parsed.fat   === 'number' ? parsed.fat   : null
+          groqCarbs    = typeof parsed.carbs === 'number' ? parsed.carbs : null
         }
       } catch { /* fall through to USDA */ }
     }
@@ -216,13 +220,13 @@ export default async function handler(req: Request): Promise<Response> {
   // Scale Groq result if we have one
   if (groqCalories !== null && groqProtein !== null) {
     const scale = amountType === 'unit' ? amount : amount / 100
-    return new Response(
-      JSON.stringify({
-        calories: Math.round(groqCalories * scale),
-        protein:  Math.round(groqProtein  * scale * 10) / 10,
-      }),
-      { headers: { 'Content-Type': 'application/json' } }
-    )
+    const resp: Record<string, number> = {
+      calories: Math.round(groqCalories * scale),
+      protein:  Math.round(groqProtein  * scale * 10) / 10,
+    }
+    if (groqFat   !== null) resp.fat   = Math.round(groqFat   * scale * 10) / 10
+    if (groqCarbs !== null) resp.carbs = Math.round(groqCarbs * scale * 10) / 10
+    return new Response(JSON.stringify(resp), { headers: { 'Content-Type': 'application/json' } })
   }
 
   // Groq failed — USDA fallback (grams mode only; USDA doesn't do per-piece)
@@ -243,15 +247,21 @@ export default async function handler(req: Request): Promise<Response> {
           const proteinN = nutrients.find((n: { nutrientName: string }) =>
             n.nutrientName.toLowerCase() === 'protein'
           )
+          const fatN     = nutrients.find((n: { nutrientName: string }) =>
+            n.nutrientName.toLowerCase().includes('total lipid') || n.nutrientName.toLowerCase() === 'fat'
+          )
+          const carbsN   = nutrients.find((n: { nutrientName: string }) =>
+            n.nutrientName.toLowerCase().includes('carbohydrate')
+          )
           if (energyN || proteinN) {
             const scale = amount / 100
-            return new Response(
-              JSON.stringify({
-                calories: Math.round((energyN?.value  ?? 0) * scale),
-                protein:  Math.round((proteinN?.value ?? 0) * scale * 10) / 10,
-              }),
-              { headers: { 'Content-Type': 'application/json' } }
-            )
+            const resp: Record<string, number> = {
+              calories: Math.round((energyN?.value  ?? 0) * scale),
+              protein:  Math.round((proteinN?.value ?? 0) * scale * 10) / 10,
+            }
+            if (fatN)   resp.fat   = Math.round((fatN.value   ?? 0) * scale * 10) / 10
+            if (carbsN) resp.carbs = Math.round((carbsN.value ?? 0) * scale * 10) / 10
+            return new Response(JSON.stringify(resp), { headers: { 'Content-Type': 'application/json' } })
           }
         }
       }
