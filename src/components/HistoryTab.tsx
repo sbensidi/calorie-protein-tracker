@@ -987,6 +987,8 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                 <button
                   onMouseDown={e => {
                     e.preventDefault()
+                    // Blur active input so iOS Safari resets zoom before the modal appears
+                    if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
                     setHistorySearch('')
                     setHistoryModalOpen(true)
                     setDropdownOpen(false)

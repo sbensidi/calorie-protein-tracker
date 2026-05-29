@@ -17,6 +17,7 @@ interface ComposedMealCardProps {
   onDeleteMeal: (id: string) => void
   onRename: (name: string) => void
   onDeleteGroup: () => void  // dissolves the group (meals remain as standalones)
+  onDuplicate: () => void
   onAddIngredient: () => void  // signals TodayTab to open the FoodEntryForm modal
   onChangeMealType: (type: MealType) => void
   open?: boolean
@@ -25,7 +26,7 @@ interface ComposedMealCardProps {
 
 export function ComposedMealCard({
   group, meals, lang, selected, onToggleSelect,
-  onEditMeal, onDeleteMeal, onRename, onDeleteGroup, onAddIngredient, onChangeMealType,
+  onEditMeal, onDeleteMeal, onRename, onDeleteGroup, onDuplicate, onAddIngredient, onChangeMealType,
   open: openProp, onToggleOpen,
 }: ComposedMealCardProps) {
   // open state: controlled from parent (Today tab) to survive group collapse/expand
@@ -145,6 +146,16 @@ export function ComposedMealCard({
               aria-label={t(lang, 'edit')}
             >
               <span className="icon icon-sm">edit</span>
+            </button>
+
+            {/* Duplicate group */}
+            <button
+              className="icon-btn"
+              onClick={e => { e.stopPropagation(); onDuplicate() }}
+              aria-label={t(lang, 'duplicate')}
+              title={t(lang, 'duplicate')}
+            >
+              <span className="icon icon-sm">content_copy</span>
             </button>
 
             {/* Dissolve — visible in header when open, so user doesn't need to scroll */}

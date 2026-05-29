@@ -479,22 +479,68 @@ export function TodayTab({
     })
   }, [composedGroups, onAddMealWithId])
 
+  const duplicateGroup = useCallback(async (group: ComposedGroup) => {
+    const groupMeals = todayMeals.filter(m => group.mealIds.includes(m.id))
+    const newIds: string[] = []
+    for (const m of groupMeals) {
+      const newId = await onAddMealWithId({
+        date: today(), meal_type: m.meal_type, name: m.name,
+        grams: m.grams, calories: m.calories, protein: m.protein,
+        fat: m.fat ?? null, carbs: m.carbs ?? null, notes: m.notes ?? null,
+        fluid_ml: m.fluid_ml ?? null, fluid_excluded: m.fluid_excluded ?? false,
+        display_unit: m.display_unit ?? null, display_amount: m.display_amount ?? null,
+        time_logged: currentTime(),
+      })
+      if (newId) newIds.push(newId)
+    }
+    if (newIds.length > 0) {
+      await onUpsertGroup({
+        id: crypto.randomUUID(),
+        name: group.name,
+        mealIds: newIds,
+        batchWeightG:  group.batchWeightG,
+        totalCalories: group.totalCalories,
+        totalProtein:  group.totalProtein,
+      })
+    }
+    showToast(`${t(lang, 'duplicatedPrefix')}1 ${t(lang, 'item')}`, 'success')
+  }, [todayMeals, onAddMealWithId, onUpsertGroup, lang])
+
   // ── Action bar helpers ───────────────────────────────────────
-  const handleDuplicateSelected = (type: MealType) => {
+  const handleDuplicateSelected = async (type: MealType) => {
     const sel = selectedIds[type]
     if (!sel) return
     let count = 0
     mealsByType[type]
       .filter(m => sel.has(m.id))
       .forEach(m => { onDuplicateMeal(m); count++ })
-    // Also duplicate any composed groups fully selected
-    composedGroups
-      .filter(g => sel.has(g.id))
-      .forEach(g => {
-        const groupMeals = todayMeals.filter(m => g.mealIds.includes(m.id))
-        groupMeals.forEach(m => onDuplicateMeal(m))
-        count++
-      })
+    // Duplicate composed groups — preserve group structure
+    for (const g of composedGroups.filter(g => sel.has(g.id))) {
+      const groupMeals = todayMeals.filter(m => g.mealIds.includes(m.id))
+      const newIds: string[] = []
+      for (const m of groupMeals) {
+        const newId = await onAddMealWithId({
+          date: today(), meal_type: m.meal_type, name: m.name,
+          grams: m.grams, calories: m.calories, protein: m.protein,
+          fat: m.fat ?? null, carbs: m.carbs ?? null, notes: m.notes ?? null,
+          fluid_ml: m.fluid_ml ?? null, fluid_excluded: m.fluid_excluded ?? false,
+          display_unit: m.display_unit ?? null, display_amount: m.display_amount ?? null,
+          time_logged: currentTime(),
+        })
+        if (newId) newIds.push(newId)
+      }
+      if (newIds.length > 0) {
+        await onUpsertGroup({
+          id: crypto.randomUUID(),
+          name: g.name,
+          mealIds: newIds,
+          batchWeightG:  g.batchWeightG,
+          totalCalories: g.totalCalories,
+          totalProtein:  g.totalProtein,
+        })
+      }
+      count++
+    }
     clearSelection(type)
     if (count > 0) showToast(`${t(lang, 'duplicatedPrefix')}${count} ${count === 1 ? t(lang, 'item') : t(lang, 'items')}`, 'success')
   }
@@ -790,6 +836,7 @@ export function TodayTab({
                   onDeleteMeal={onDeleteMeal}
                   onRename={name => renameGroup(group.id, name)}
                   onDeleteGroup={() => dissolveGroup(group.id)}
+                  onDuplicate={() => duplicateGroup(group)}
                   onAddIngredient={() => setAddIngredientModal({ groupId: group.id, mealType: type })}
                   onChangeMealType={newType => groupMeals.forEach(m => onEditMeal(m.id, { meal_type: newType }))}
                   open={openComposedIds.has(group.id)}

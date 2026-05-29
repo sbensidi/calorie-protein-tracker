@@ -224,6 +224,8 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, se
   }
 
   const openHistoryModal = () => {
+    // Blur active input before opening modal so iOS Safari resets zoom first
+    if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
     setHistorySearch('')
     setHistoryModalOpen(true)
     setDropdownOpen(false)
