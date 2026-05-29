@@ -57,11 +57,19 @@ export function EditRecipeModal({
     return () => document.removeEventListener('keydown', onKey)
   }, [addingIngredient, onClose])
 
-  const scaleIngredient = (idx: number, newGrams: number) => {
+  const scaleIngredient = (idx: number, newAmount: number) => {
     setIngredients(prev => prev.map((ing, i) => {
       if (i !== idx) return ing
-      const ratio = ing.grams > 0 ? newGrams / ing.grams : 0
-      return { ...ing, grams: newGrams, calories: Math.round(ing.calories * ratio), protein: Math.round(ing.protein * ratio * 10) / 10 }
+      const isFluid = ing.fluid_ml != null && ing.fluid_ml > 0
+      const current = isFluid ? ing.fluid_ml! : ing.grams
+      const ratio = current > 0 ? newAmount / current : 0
+      return {
+        ...ing,
+        grams:    isFluid ? Math.round(ing.grams * ratio) : newAmount,
+        fluid_ml: isFluid ? newAmount : ing.fluid_ml,
+        calories: Math.round(ing.calories * ratio),
+        protein:  Math.round(ing.protein * ratio * 10) / 10,
+      }
     }))
   }
 
@@ -77,6 +85,7 @@ export function EditRecipeModal({
       grams:    meal.grams,
       calories: Math.round(meal.calories),
       protein:  Math.round(meal.protein * 10) / 10,
+      fluid_ml: meal.fluid_ml ?? null,
     }])
     setAddingIngredient(false)
   }
@@ -117,74 +126,79 @@ export function EditRecipeModal({
 
           {/* Editable ingredient rows */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {ingredients.map((ing, i) => (
-              <div key={i} style={{ display: 'flex', gap: 5, alignItems: 'center' }}>
-                {/* Name input + history search button */}
-                <div style={{ position: 'relative', flex: 1, minWidth: 0 }}>
-                  <input
+            {ingredients.map((ing, i) => {
+              const isFluid    = ing.fluid_ml != null && ing.fluid_ml > 0
+              const displayAmt = isFluid ? ing.fluid_ml! : ing.grams
+              const unitLabel  = isFluid ? t(lang, 'unitOptMl') : t(lang, 'gramsUnit')
+              return (
+                <div key={i} style={{ display: 'flex', gap: 5, alignItems: 'center' }}>
+                  {/* Name input + history search button */}
+                  <div style={{ position: 'relative', flex: 1, minWidth: 0 }}>
+                    <input
+                      className="inp"
+                      style={{ width: '100%', fontSize: 16, height: 36, paddingInlineEnd: 34 }}
+                      value={ing.name}
+                      onChange={e => updateName(i, e.target.value)}
+                      dir={dir(lang)}
+                    />
+                    <button
+                      className="icon-btn"
+                      tabIndex={-1}
+                      onClick={() => { setSearchingRow(i); setHistorySearch('') }}
+                      aria-label={t(lang, 'foodHistory')}
+                      style={{ position: 'absolute', insetInlineEnd: 0, top: 0, bottom: 0, width: 34, padding: 0, borderRadius: '0 8px 8px 0' }}
+                    >
+                      <span className="icon icon-sm" style={{ fontSize: 16, color: 'var(--text-3)' }}>manage_search</span>
+                    </button>
+                  </div>
+                  {/* Amount input — fixed width, unit reflects original entry (g or ml) */}
+                  <div
                     className="inp"
-                    style={{ width: '100%', fontSize: 16, height: 36, paddingInlineEnd: 34 }}
-                    value={ing.name}
-                    onChange={e => updateName(i, e.target.value)}
-                    dir={dir(lang)}
-                  />
-                  <button
-                    className="icon-btn"
-                    tabIndex={-1}
-                    onClick={() => { setSearchingRow(i); setHistorySearch('') }}
-                    aria-label={t(lang, 'foodHistory')}
-                    style={{ position: 'absolute', insetInlineEnd: 0, top: 0, bottom: 0, width: 34, padding: 0, borderRadius: '0 8px 8px 0' }}
+                    style={{
+                      height: 36, display: 'flex', alignItems: 'center', gap: 3,
+                      justifyContent: lang === 'he' ? 'flex-start' : 'flex-end',
+                      padding: '0 8px', flexShrink: 0, cursor: 'text',
+                      width: 76, boxSizing: 'border-box',
+                    }}
+                    onClick={e => (e.currentTarget.querySelector('input') as HTMLInputElement | null)?.focus()}
                   >
-                    <span className="icon icon-sm" style={{ fontSize: 16, color: 'var(--text-3)' }}>manage_search</span>
-                  </button>
-                </div>
-                {/* Grams input — fixed width, content right-aligned in RTL */}
-                <div
-                  className="inp"
-                  style={{
+                    <input
+                      type="number" inputMode="decimal"
+                      style={{
+                        border: 'none', background: 'transparent', outline: 'none',
+                        fontSize: 16, color: 'var(--text)', fontFamily: 'inherit',
+                        width: `${Math.max(2, String(Math.round(Math.abs(displayAmt)) || '').length + 1)}ch`,
+                        minWidth: '2ch', padding: 0, margin: 0, lineHeight: 1,
+                      }}
+                      value={displayAmt > 0 ? displayAmt : ''}
+                      onChange={e => scaleIngredient(i, parseFloat(e.target.value) || 0)}
+                    />
+                    <span style={{ fontSize: 10, color: 'var(--text-3)', flexShrink: 0, lineHeight: 1, userSelect: 'none' }}>
+                      {unitLabel}
+                    </span>
+                  </div>
+                  {/* Calories — fixed width, same alignment pattern */}
+                  <div style={{
                     height: 36, display: 'flex', alignItems: 'center', gap: 3,
                     justifyContent: lang === 'he' ? 'flex-start' : 'flex-end',
-                    padding: '0 8px', flexShrink: 0, cursor: 'text',
+                    background: 'var(--accent-fill)', borderRadius: 8,
+                    padding: '0 8px', flexShrink: 0,
                     width: 76, boxSizing: 'border-box',
-                  }}
-                  onClick={e => (e.currentTarget.querySelector('input') as HTMLInputElement | null)?.focus()}
-                >
-                  <input
-                    type="number" inputMode="decimal"
-                    style={{
-                      border: 'none', background: 'transparent', outline: 'none',
-                      fontSize: 16, color: 'var(--text)', fontFamily: 'inherit',
-                      width: `${Math.max(2, String(Math.round(Math.abs(ing.grams)) || '').length + 1)}ch`,
-                      minWidth: '2ch', padding: 0, margin: 0, lineHeight: 1,
-                    }}
-                    value={ing.grams > 0 ? ing.grams : ''}
-                    onChange={e => scaleIngredient(i, parseFloat(e.target.value) || 0)}
-                  />
-                  <span style={{ fontSize: 10, color: 'var(--text-3)', flexShrink: 0, lineHeight: 1, userSelect: 'none' }}>
-                    {t(lang, 'gramsUnit')}
-                  </span>
+                  }}>
+                    <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--accent-hi)', lineHeight: 1 }}>
+                      {ing.calories}
+                    </span>
+                    <span style={{ fontSize: 9, color: 'var(--accent-hi)', opacity: 0.7, flexShrink: 0, lineHeight: 1, userSelect: 'none' }}>
+                      {t(lang, 'caloriesUnit')}
+                    </span>
+                  </div>
+                  {/* Delete */}
+                  <button className="icon-btn" onClick={() => removeRow(i)} aria-label={t(lang, 'delete')}>
+                    <span className="icon icon-sm" style={{ color: 'var(--danger-hi)', fontSize: 16 }}>delete</span>
+                  </button>
                 </div>
-                {/* Calories — fixed width, same alignment pattern */}
-                <div style={{
-                  height: 36, display: 'flex', alignItems: 'center', gap: 3,
-                  justifyContent: lang === 'he' ? 'flex-start' : 'flex-end',
-                  background: 'var(--accent-fill)', borderRadius: 8,
-                  padding: '0 8px', flexShrink: 0,
-                  width: 76, boxSizing: 'border-box',
-                }}>
-                  <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--accent-hi)', lineHeight: 1 }}>
-                    {ing.calories}
-                  </span>
-                  <span style={{ fontSize: 9, color: 'var(--accent-hi)', opacity: 0.7, flexShrink: 0, lineHeight: 1, userSelect: 'none' }}>
-                    {t(lang, 'caloriesUnit')}
-                  </span>
-                </div>
-                {/* Delete */}
-                <button className="icon-btn" onClick={() => removeRow(i)} aria-label={t(lang, 'delete')}>
-                  <span className="icon icon-sm" style={{ color: 'var(--danger-hi)', fontSize: 16 }}>delete</span>
-                </button>
-              </div>
-            ))}
+              )
+            })}
           </div>
 
           {/* Add ingredient — dashed button opens FoodEntryForm sub-modal */}

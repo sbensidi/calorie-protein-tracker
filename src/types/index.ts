@@ -121,6 +121,7 @@ export interface RecipeIngredient {
   grams:    number
   calories: number
   protein:  number
+  fluid_ml?: number | null
 }
 
 export interface ComposedGroup {
