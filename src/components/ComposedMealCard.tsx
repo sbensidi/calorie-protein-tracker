@@ -285,20 +285,22 @@ export function ComposedMealCard({
             {isPortionMode && group.ingredients ? (
               <>
                 {group.ingredients.map((ing, i) => (
-                  <div
-                    key={i}
-                    style={{ display: 'flex', alignItems: 'center', gap: 6, borderTop: i === 0 ? 'none' : '1px dashed var(--border)', padding: '6px 0' }}
-                  >
-                    <span style={{ flex: 1, fontSize: 12, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {ing.name}
-                    </span>
-                    <span style={{ fontSize: 11, color: 'var(--text-3)', whiteSpace: 'nowrap' }}>{ing.grams}g</span>
-                    <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent-hi)', whiteSpace: 'nowrap' }}>
-                      {ing.calories}<span style={{ fontSize: 10, opacity: 0.7, marginInlineStart: 1 }}>{t(lang, 'caloriesUnit')}</span>
-                    </span>
-                    <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--positive-hi)', whiteSpace: 'nowrap' }}>
-                      {ing.protein}<span style={{ fontSize: 10, opacity: 0.7, marginInlineStart: 1 }}>{t(lang, 'proteinUnit')}</span>
-                    </span>
+                  <div key={i} style={{ borderTop: i === 0 ? 'none' : '1px dashed var(--border)', padding: '6px 0' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 5, overflow: 'hidden' }}>
+                      <div style={{ width: 4, height: 4, borderRadius: '50%', background: 'var(--composed-border-hi)', flexShrink: 0 }} />
+                      <span style={{ flex: 1, fontSize: 12, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {ing.name}
+                      </span>
+                      <span style={{ fontSize: 11, color: 'var(--text-3)', whiteSpace: 'nowrap', flexShrink: 0 }}>{ing.grams}{t(lang, 'gramsUnit')}</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginTop: 2, paddingInlineStart: 9 }}>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent-hi)', display: 'inline-flex', alignItems: 'baseline', gap: 1 }}>
+                        {ing.calories}<span style={{ fontSize: 9, fontWeight: 400, opacity: 0.7 }}>{t(lang, 'caloriesUnit')}</span>
+                      </span>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--positive-hi)', display: 'inline-flex', alignItems: 'baseline', gap: 1 }}>
+                        {ing.protein}<span style={{ fontSize: 9, fontWeight: 400, opacity: 0.7 }}>{t(lang, 'proteinUnit')}</span>
+                      </span>
+                    </div>
                   </div>
                 ))}
                 {/* Edit recipe */}
@@ -570,26 +572,22 @@ export function ComposedMealCard({
             /* Portion mode: snapshot ingredient rows + edit button + portion MealCard */
             <>
               {group.ingredients.map((ing, i) => (
-                <div
-                  key={i}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 8,
-                    padding: '8px 12px',
-                    borderTop: i === 0 ? 'none' : '1px solid var(--border)',
-                  }}
-                >
-                  <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {ing.name}
-                  </span>
-                  <span style={{ fontSize: 12, color: 'var(--text-3)', whiteSpace: 'nowrap' }}>
-                    {ing.grams}g
-                  </span>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent-hi)', whiteSpace: 'nowrap' }}>
-                    {ing.calories}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.7, marginInlineStart: 1 }}>{t(lang, 'caloriesUnit')}</span>
-                  </span>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--positive-hi)', whiteSpace: 'nowrap' }}>
-                    {ing.protein}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.7, marginInlineStart: 1 }}>{t(lang, 'proteinUnit')}</span>
-                  </span>
+                <div key={i} style={{ padding: '8px 12px', borderTop: i === 0 ? 'none' : '1px solid var(--border)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, overflow: 'hidden' }}>
+                    <div style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--composed-border-hi)', flexShrink: 0 }} />
+                    <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {ing.name}
+                    </span>
+                    <span style={{ fontSize: 12, color: 'var(--text-3)', whiteSpace: 'nowrap', flexShrink: 0 }}>{ing.grams}{t(lang, 'gramsUnit')}</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginTop: 3, paddingInlineStart: 11 }}>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent-hi)', display: 'inline-flex', alignItems: 'baseline', gap: 2 }}>
+                      {ing.calories}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.7 }}>{t(lang, 'caloriesUnit')}</span>
+                    </span>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--positive-hi)', display: 'inline-flex', alignItems: 'baseline', gap: 2 }}>
+                      {ing.protein}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.7 }}>{t(lang, 'proteinUnit')}</span>
+                    </span>
+                  </div>
                 </div>
               ))}
               {/* Edit recipe button */}

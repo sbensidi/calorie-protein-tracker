@@ -783,20 +783,20 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                           return { key: meal.id, name: meal.name, qty, cal: Math.round(meal.calories), prot: Math.round(meal.protein * 10) / 10, isFirst: idx === 0 }
                         })
                     ).map(row => (
-                      <div key={row.key} style={{ padding: '6px 0 6px 16px', borderTop: row.isFirst ? 'none' : '1px dashed var(--border)' }}>
-                        <div style={{ display: 'flex', alignItems: 'baseline', gap: 5, overflow: 'hidden' }}>
-                          <div style={{ width: 4, height: 4, borderRadius: '50%', background: 'var(--composed-border-hi)', flexShrink: 0, alignSelf: 'center' }} />
-                          <span style={{ fontSize: 12, color: 'var(--text-2)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>
+                      <div key={row.key} style={{ padding: '8px 0', borderTop: row.isFirst ? 'none' : '1px dashed var(--border)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, overflow: 'hidden' }}>
+                          <div style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--composed-border-hi)', flexShrink: 0 }} />
+                          <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>
                             {row.name}
                           </span>
-                          <span style={{ fontSize: 10, color: 'var(--text-3)', whiteSpace: 'nowrap', flexShrink: 0 }}>{row.qty}</span>
+                          <span style={{ fontSize: 12, color: 'var(--text-3)', whiteSpace: 'nowrap', flexShrink: 0 }}>{row.qty}</span>
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginTop: 2, paddingInlineStart: 12 }}>
-                          <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--accent-hi)', display: 'inline-flex', alignItems: 'baseline', gap: 2 }}>
-                            {row.cal}<span style={{ fontSize: 9, fontWeight: 400, opacity: 0.8 }}>{t(lang, 'caloriesUnit')}</span>
+                        <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginTop: 3, paddingInlineStart: 11 }}>
+                          <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent-hi)', display: 'inline-flex', alignItems: 'baseline', gap: 2 }}>
+                            {row.cal}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.7 }}>{t(lang, 'caloriesUnit')}</span>
                           </span>
-                          <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--positive-hi)', display: 'inline-flex', alignItems: 'baseline', gap: 2 }}>
-                            {row.prot}<span style={{ fontSize: 9, fontWeight: 400, opacity: 0.8 }}>{t(lang, 'gProteinLabel')}</span>
+                          <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--positive-hi)', display: 'inline-flex', alignItems: 'baseline', gap: 2 }}>
+                            {row.prot}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.7 }}>{t(lang, 'proteinUnit')}</span>
                           </span>
                         </div>
                       </div>
