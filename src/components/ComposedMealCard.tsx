@@ -88,11 +88,6 @@ export function ComposedMealCard({
     setEditingPortion(false)
   }
 
-  // Computed portion values for display while editing
-  const portionG = parseFloat(portionGrams) || 0
-  const portionRatio = meals[0] && meals[0].grams > 0 ? portionG / meals[0].grams : 0
-  const portionCalPreview  = meals[0] ? Math.round(meals[0].calories * portionRatio) : 0
-  const portionProtPreview = meals[0] ? Math.round(meals[0].protein  * portionRatio * 10) / 10 : 0
 
   // ── Minimal mode ────────────────────────────────────────────────
   if (styleMode === 'minimal') {
@@ -100,30 +95,47 @@ export function ComposedMealCard({
       <div style={{ borderBottom: '1px dashed var(--border)' }}>
         {/* Header */}
         {editingPortion ? (
-          /* Portion edit: two-row, matching normal display position */
+          /* Portion edit: same layout as editingName — name + meal type, then grams row */
           <div style={{ padding: '6px 4px', display: 'flex', flexDirection: 'column', gap: 4 }}>
-            {/* Row 1: editable name + count + ✓/✗ */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-              <input
+            {/* Row 1: name input + meal type select + ✓ */}
+            <div style={{ display: 'flex', flexDirection: 'row', gap: 6, alignItems: 'center' }}>
+              <div style={{ position: 'relative', flex: 3 }}>
+                <input
+                  className="inp"
+                  style={{ width: '100%', height: 36, fontSize: 16, fontWeight: 600, paddingInlineStart: 8, paddingInlineEnd: portionName ? 32 : 8 }}
+                  value={portionName}
+                  autoFocus
+                  onChange={e => setPortionName(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') savePortion(); if (e.key === 'Escape') setEditingPortion(false) }}
+                  dir={dir(lang)}
+                />
+                {portionName && (
+                  <button
+                    onMouseDown={e => { e.preventDefault(); setPortionName('') }}
+                    tabIndex={-1}
+                    style={{ position: 'absolute', insetInlineEnd: 0, top: 0, bottom: 0, width: 32, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  >
+                    <span className="icon icon-sm">close</span>
+                  </button>
+                )}
+              </div>
+              <select
                 className="inp"
-                style={{ flex: 1, height: 32, fontSize: 16, fontWeight: 600 }}
-                value={portionName}
-                autoFocus
-                onChange={e => setPortionName(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter') savePortion(); if (e.key === 'Escape') setEditingPortion(false) }}
-                dir={dir(lang)}
-              />
-              <span style={{ fontSize: 11, color: 'var(--text-3)', whiteSpace: 'nowrap', flexShrink: 0 }}>
-                {ingredientCount} {t(lang, 'ingredients')}
-              </span>
+                style={{ fontSize: 16, flex: 1 }}
+                value={meals[0]?.meal_type ?? 'snack'}
+                onChange={e => onChangeMealType(e.target.value as MealType)}
+              >
+                <option value="breakfast">{t(lang, 'breakfast')}</option>
+                <option value="lunch">{t(lang, 'lunch')}</option>
+                <option value="dinner">{t(lang, 'dinner')}</option>
+                <option value="snack">{t(lang, 'snack')}</option>
+                <option value="beverage">{t(lang, 'beverage')}</option>
+              </select>
               <button className="icon-btn" onClick={savePortion} aria-label={t(lang, 'save')}>
                 <span className="icon icon-sm" style={{ color: 'var(--positive-hi)' }}>check</span>
               </button>
-              <button className="icon-btn" onClick={() => setEditingPortion(false)} aria-label={t(lang, 'cancel')}>
-                <span className="icon icon-sm">close</span>
-              </button>
             </div>
-            {/* Row 2: grams input + cal/prot preview */}
+            {/* Row 2: grams input only */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <div style={{ position: 'relative', width: 76 }}>
                 <input
@@ -135,12 +147,6 @@ export function ComposedMealCard({
                 />
                 <span style={{ position: 'absolute', insetInlineEnd: 5, top: '50%', transform: 'translateY(-50%)', fontSize: 10, color: 'var(--text-3)', pointerEvents: 'none' }}>g</span>
               </div>
-              <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--accent-hi)', whiteSpace: 'nowrap' }}>
-                {portionCalPreview} <span style={{ opacity: 0.7, fontWeight: 400 }}>{t(lang, 'caloriesUnit')}</span>
-              </span>
-              <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--positive-hi)', whiteSpace: 'nowrap' }}>
-                {portionProtPreview} <span style={{ opacity: 0.7, fontWeight: 400 }}>{t(lang, 'proteinUnit')}</span>
-              </span>
             </div>
           </div>
         ) : editingName ? (
@@ -395,30 +401,50 @@ export function ComposedMealCard({
 
         {/* Name / edit area */}
         {editingPortion ? (
-          /* Portion edit: two-row inline in the name block — same visual position as normal display */
+          /* Portion edit: same layout as editingName — name + meal type, then grams row */
           <div style={{ flex: 1, minWidth: 0 }}>
-            {/* Row 1: editable name + ingredient count + ✓/✗ */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <input
+            {/* Row 1: name input + meal type select + ✓ */}
+            <div
+              style={{ display: 'flex', flexDirection: 'row', gap: 6, alignItems: 'center' }}
+              onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget as Node)) savePortion() }}
+            >
+              <div style={{ position: 'relative', flex: 3 }}>
+                <input
+                  className="inp"
+                  style={{ width: '100%', height: 38, fontSize: 16, fontWeight: 700, paddingInlineStart: 8, paddingInlineEnd: portionName ? 32 : 8, borderColor: 'var(--accent-border-hi)' }}
+                  value={portionName}
+                  autoFocus
+                  onChange={e => setPortionName(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') savePortion(); if (e.key === 'Escape') setEditingPortion(false) }}
+                  dir={dir(lang)}
+                />
+                {portionName && (
+                  <button
+                    onMouseDown={e => { e.preventDefault(); setPortionName('') }}
+                    tabIndex={-1}
+                    style={{ position: 'absolute', insetInlineEnd: 0, top: 0, bottom: 0, width: 32, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  >
+                    <span className="icon icon-sm">close</span>
+                  </button>
+                )}
+              </div>
+              <select
                 className="inp"
-                style={{ flex: 1, height: 32, fontSize: 16, fontWeight: 600 }}
-                value={portionName}
-                autoFocus
-                onChange={e => setPortionName(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter') savePortion(); if (e.key === 'Escape') setEditingPortion(false) }}
-                dir={dir(lang)}
-              />
-              <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-3)', whiteSpace: 'nowrap', flexShrink: 0 }}>
-                {ingredientCount} {t(lang, 'ingredients')}
-              </span>
+                style={{ fontSize: 16, flex: 1 }}
+                value={meals[0]?.meal_type ?? 'snack'}
+                onChange={e => onChangeMealType(e.target.value as MealType)}
+              >
+                <option value="breakfast">{t(lang, 'breakfast')}</option>
+                <option value="lunch">{t(lang, 'lunch')}</option>
+                <option value="dinner">{t(lang, 'dinner')}</option>
+                <option value="snack">{t(lang, 'snack')}</option>
+                <option value="beverage">{t(lang, 'beverage')}</option>
+              </select>
               <button className="icon-btn" onClick={savePortion} aria-label={t(lang, 'save')}>
                 <span className="icon icon-sm" style={{ color: 'var(--positive-hi)' }}>check</span>
               </button>
-              <button className="icon-btn" onClick={() => setEditingPortion(false)} aria-label={t(lang, 'cancel')}>
-                <span className="icon icon-sm">close</span>
-              </button>
             </div>
-            {/* Row 2: grams input + cal/prot preview (replaces cal/prot display row) */}
+            {/* Row 2: grams input only */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
               <div style={{ position: 'relative', width: 84 }}>
                 <input
@@ -430,12 +456,6 @@ export function ComposedMealCard({
                 />
                 <span style={{ position: 'absolute', insetInlineEnd: 6, top: '50%', transform: 'translateY(-50%)', fontSize: 10, color: 'var(--text-3)', pointerEvents: 'none' }}>g</span>
               </div>
-              <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent-hi)', lineHeight: 1 }}>
-                {portionCalPreview}<span style={{ fontSize: 11, fontWeight: 500, opacity: 0.65, marginInlineStart: 2 }}>{t(lang, 'caloriesUnit')}</span>
-              </span>
-              <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--positive-hi)', lineHeight: 1 }}>
-                {portionProtPreview}<span style={{ fontSize: 11, fontWeight: 500, opacity: 0.65, marginInlineStart: 2 }}>{t(lang, 'proteinUnit')}</span>
-              </span>
             </div>
           </div>
         ) : editingName ? (
