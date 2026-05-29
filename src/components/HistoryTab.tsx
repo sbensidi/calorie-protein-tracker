@@ -717,6 +717,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                   style={{ padding: '8px 0', cursor: 'pointer', userSelect: 'none' }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span className="icon icon-sm" style={{ color: 'var(--composed)', fontSize: 14, flexShrink: 0 }}>restaurant</span>
                     {/* Two-line content */}
                     <div style={{ flex: 1, minWidth: 0 }}>
                       {/* Line 1: name · count | meal type */}
@@ -1245,22 +1246,20 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                   <div style={{ padding: '10px 14px' }}>
                     <div style={{ position: 'relative' }}>
                       <input ref={historySearchRef} className="inp"
-                        style={{ paddingInlineStart: 36, height: 40, fontSize: 16 }}
+                        style={{ paddingInlineStart: 36, paddingInlineEnd: historySearch ? 32 : 12, height: 40, fontSize: 16 }}
                         placeholder={t(lang, 'search')}
                         value={historySearch} onChange={e => setHistorySearch(e.target.value)}
                         dir={dir(lang)}
                       />
                       <span className="icon icon-sm" style={{
-                        position: 'absolute', top: '50%', transform: 'translateY(-50%)',
-                        ...(isRTL ? { right: 10 } : { left: 10 }),
+                        position: 'absolute', insetInlineStart: 10, top: '50%', transform: 'translateY(-50%)',
                         color: 'var(--text-3)', pointerEvents: 'none',
                       }}>search</span>
                       {historySearch && (
                         <button onClick={() => setHistorySearch('')} style={{
-                          position: 'absolute', top: '50%', transform: 'translateY(-50%)',
-                          ...(isRTL ? { left: 8 } : { right: 8 }),
+                          position: 'absolute', insetInlineEnd: 0, top: 0, bottom: 0, width: 32,
                           background: 'none', border: 'none', cursor: 'pointer',
-                          color: 'var(--text-3)', padding: 2, display: 'flex',
+                          color: 'var(--text-3)', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
                         }}>
                           <span className="icon icon-sm">close</span>
                         </button>

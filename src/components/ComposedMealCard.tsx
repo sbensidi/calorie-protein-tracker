@@ -96,59 +96,55 @@ export function ComposedMealCard({
       <div style={{ borderBottom: '1px dashed var(--border)' }}>
         {/* Header */}
         {editingPortion ? (
-          /* Portion edit: same layout as editingName — name + meal type, then grams row */
-          <div style={{ padding: '6px 4px', display: 'flex', flexDirection: 'column', gap: 4 }}>
-            {/* Row 1: name input + meal type select + ✓ */}
-            <div style={{ display: 'flex', flexDirection: 'row', gap: 6, alignItems: 'center' }}>
-              <div style={{ position: 'relative', flex: 3 }}>
-                <input
-                  className="inp"
-                  style={{ width: '100%', height: 36, fontSize: 16, fontWeight: 600, paddingInlineStart: 8, paddingInlineEnd: portionName ? 32 : 8 }}
-                  value={portionName}
-                  autoFocus
-                  onChange={e => setPortionName(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter') savePortion(); if (e.key === 'Escape') setEditingPortion(false) }}
-                  dir={dir(lang)}
-                />
-                {portionName && (
-                  <button
-                    onMouseDown={e => { e.preventDefault(); setPortionName('') }}
-                    tabIndex={-1}
-                    style={{ position: 'absolute', insetInlineEnd: 0, top: 0, bottom: 0, width: 32, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                  >
-                    <span className="icon icon-sm">close</span>
-                  </button>
-                )}
-              </div>
-              <select
+          <div
+            style={{ padding: '6px 4px', display: 'flex', gap: 6, alignItems: 'center' }}
+            onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget as Node)) savePortion() }}
+          >
+            <div style={{ position: 'relative', flex: 2, minWidth: 0 }}>
+              <input
                 className="inp"
-                style={{ fontSize: 16, flex: 1 }}
-                value={meals[0]?.meal_type ?? 'snack'}
-                onChange={e => onChangeMealType(e.target.value as MealType)}
-              >
-                <option value="breakfast">{t(lang, 'breakfast')}</option>
-                <option value="lunch">{t(lang, 'lunch')}</option>
-                <option value="dinner">{t(lang, 'dinner')}</option>
-                <option value="snack">{t(lang, 'snack')}</option>
-                <option value="beverage">{t(lang, 'beverage')}</option>
-              </select>
-              <button className="icon-btn" onClick={savePortion} aria-label={t(lang, 'save')}>
-                <span className="icon icon-sm" style={{ color: 'var(--positive-hi)' }}>check</span>
-              </button>
+                style={{ width: '100%', height: 36, fontSize: 16, fontWeight: 600, paddingInlineStart: 8, paddingInlineEnd: portionName ? 32 : 8, borderColor: 'var(--accent-border-hi)' }}
+                value={portionName}
+                autoFocus
+                onChange={e => setPortionName(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') savePortion(); if (e.key === 'Escape') setEditingPortion(false) }}
+                dir={dir(lang)}
+              />
+              {portionName && (
+                <button
+                  onMouseDown={e => { e.preventDefault(); setPortionName('') }}
+                  tabIndex={-1}
+                  style={{ position: 'absolute', insetInlineEnd: 0, top: 0, bottom: 0, width: 32, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                >
+                  <span className="icon icon-sm">close</span>
+                </button>
+              )}
             </div>
-            {/* Row 2: grams input only */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <div style={{ position: 'relative', width: 76 }}>
-                <input
-                  type="number" inputMode="decimal" className="inp"
-                  style={{ height: 28, fontSize: 16, paddingInlineEnd: 18, textAlign: 'end', width: '100%' }}
-                  value={portionGrams}
-                  onChange={e => setPortionGrams(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter') savePortion() }}
-                />
-                <span style={{ position: 'absolute', insetInlineEnd: 5, top: '50%', transform: 'translateY(-50%)', fontSize: 10, color: 'var(--text-3)', pointerEvents: 'none' }}>{t(lang, 'gramsUnit')}</span>
-              </div>
+            <select
+              className="inp"
+              style={{ fontSize: 16, flex: 1, minWidth: 70 }}
+              value={meals[0]?.meal_type ?? 'snack'}
+              onChange={e => onChangeMealType(e.target.value as MealType)}
+            >
+              <option value="breakfast">{t(lang, 'breakfast')}</option>
+              <option value="lunch">{t(lang, 'lunch')}</option>
+              <option value="dinner">{t(lang, 'dinner')}</option>
+              <option value="snack">{t(lang, 'snack')}</option>
+              <option value="beverage">{t(lang, 'beverage')}</option>
+            </select>
+            <div style={{ position: 'relative', width: 70, flexShrink: 0 }}>
+              <input
+                type="number" inputMode="decimal" className="inp"
+                style={{ height: 36, fontSize: 16, paddingInlineEnd: 22, textAlign: 'start', width: '100%' }}
+                value={portionGrams}
+                onChange={e => setPortionGrams(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') savePortion() }}
+              />
+              <span style={{ position: 'absolute', insetInlineEnd: 5, top: '50%', transform: 'translateY(-50%)', fontSize: 10, color: 'var(--text-3)', pointerEvents: 'none' }}>{t(lang, 'gramsUnit')}</span>
             </div>
+            <button className="icon-btn" onClick={savePortion} aria-label={t(lang, 'save')}>
+              <span className="icon icon-sm" style={{ color: 'var(--positive-hi)' }}>check</span>
+            </button>
           </div>
         ) : editingName ? (
           <div
@@ -401,8 +397,8 @@ export function ComposedMealCard({
         onKeyDown={e => { if (!editingName && !editingPortion && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); toggleOpen() } }}
         style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', cursor: editingName || editingPortion ? 'default' : 'pointer', userSelect: 'none' }}
       >
-        {/* Checkbox + Icon — hidden only while editing name (to maximise input width) */}
-        {!editingName && (
+        {/* Checkbox + Icon — hidden while editing name or editing portion */}
+        {!editingName && !editingPortion && (
           <>
             <div
               role="checkbox"
@@ -427,62 +423,56 @@ export function ComposedMealCard({
 
         {/* Name / edit area */}
         {editingPortion ? (
-          /* Portion edit: same layout as editingName — name + meal type, then grams row */
-          <div style={{ flex: 1, minWidth: 0 }}>
-            {/* Row 1: name input + meal type select + ✓ */}
-            <div
-              style={{ display: 'flex', flexDirection: 'row', gap: 6, alignItems: 'center' }}
-              onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget as Node)) savePortion() }}
-            >
-              <div style={{ position: 'relative', flex: 3 }}>
-                <input
-                  className="inp"
-                  style={{ width: '100%', height: 38, fontSize: 16, fontWeight: 700, paddingInlineStart: 8, paddingInlineEnd: portionName ? 32 : 8, borderColor: 'var(--accent-border-hi)' }}
-                  value={portionName}
-                  autoFocus
-                  onChange={e => setPortionName(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter') savePortion(); if (e.key === 'Escape') setEditingPortion(false) }}
-                  dir={dir(lang)}
-                />
-                {portionName && (
-                  <button
-                    onMouseDown={e => { e.preventDefault(); setPortionName('') }}
-                    tabIndex={-1}
-                    style={{ position: 'absolute', insetInlineEnd: 0, top: 0, bottom: 0, width: 32, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                  >
-                    <span className="icon icon-sm">close</span>
-                  </button>
-                )}
-              </div>
-              <select
+          /* Portion edit — single row: name · meal type · grams · ✓ */
+          <div
+            style={{ flex: 1, minWidth: 0, display: 'flex', gap: 6, alignItems: 'center' }}
+            onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget as Node)) savePortion() }}
+          >
+            <div style={{ position: 'relative', flex: 2, minWidth: 0 }}>
+              <input
                 className="inp"
-                style={{ fontSize: 16, flex: 1 }}
-                value={meals[0]?.meal_type ?? 'snack'}
-                onChange={e => onChangeMealType(e.target.value as MealType)}
-              >
-                <option value="breakfast">{t(lang, 'breakfast')}</option>
-                <option value="lunch">{t(lang, 'lunch')}</option>
-                <option value="dinner">{t(lang, 'dinner')}</option>
-                <option value="snack">{t(lang, 'snack')}</option>
-                <option value="beverage">{t(lang, 'beverage')}</option>
-              </select>
-              <button className="icon-btn" onClick={savePortion} aria-label={t(lang, 'save')}>
-                <span className="icon icon-sm" style={{ color: 'var(--positive-hi)' }}>check</span>
-              </button>
+                style={{ width: '100%', height: 38, fontSize: 16, fontWeight: 700, paddingInlineStart: 8, paddingInlineEnd: portionName ? 32 : 8, borderColor: 'var(--accent-border-hi)' }}
+                value={portionName}
+                autoFocus
+                onChange={e => setPortionName(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') savePortion(); if (e.key === 'Escape') setEditingPortion(false) }}
+                dir={dir(lang)}
+              />
+              {portionName && (
+                <button
+                  onMouseDown={e => { e.preventDefault(); setPortionName('') }}
+                  tabIndex={-1}
+                  style={{ position: 'absolute', insetInlineEnd: 0, top: 0, bottom: 0, width: 32, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                >
+                  <span className="icon icon-sm">close</span>
+                </button>
+              )}
             </div>
-            {/* Row 2: grams input only */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
-              <div style={{ position: 'relative', width: 84 }}>
-                <input
-                  type="number" inputMode="decimal" className="inp"
-                  style={{ height: 28, fontSize: 16, paddingInlineEnd: 20, textAlign: 'end', width: '100%' }}
-                  value={portionGrams}
-                  onChange={e => setPortionGrams(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter') savePortion() }}
-                />
-                <span style={{ position: 'absolute', insetInlineEnd: 6, top: '50%', transform: 'translateY(-50%)', fontSize: 10, color: 'var(--text-3)', pointerEvents: 'none' }}>{t(lang, 'gramsUnit')}</span>
-              </div>
+            <select
+              className="inp"
+              style={{ fontSize: 16, flex: 1, minWidth: 70 }}
+              value={meals[0]?.meal_type ?? 'snack'}
+              onChange={e => onChangeMealType(e.target.value as MealType)}
+            >
+              <option value="breakfast">{t(lang, 'breakfast')}</option>
+              <option value="lunch">{t(lang, 'lunch')}</option>
+              <option value="dinner">{t(lang, 'dinner')}</option>
+              <option value="snack">{t(lang, 'snack')}</option>
+              <option value="beverage">{t(lang, 'beverage')}</option>
+            </select>
+            <div style={{ position: 'relative', width: 70, flexShrink: 0 }}>
+              <input
+                type="number" inputMode="decimal" className="inp"
+                style={{ height: 38, fontSize: 16, paddingInlineEnd: 22, textAlign: 'start', width: '100%' }}
+                value={portionGrams}
+                onChange={e => setPortionGrams(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') savePortion() }}
+              />
+              <span style={{ position: 'absolute', insetInlineEnd: 5, top: '50%', transform: 'translateY(-50%)', fontSize: 10, color: 'var(--text-3)', pointerEvents: 'none' }}>{t(lang, 'gramsUnit')}</span>
             </div>
+            <button className="icon-btn" onClick={savePortion} aria-label={t(lang, 'save')}>
+              <span className="icon icon-sm" style={{ color: 'var(--positive-hi)' }}>check</span>
+            </button>
           </div>
         ) : editingName ? (
           <div
@@ -574,8 +564,8 @@ export function ComposedMealCard({
           </button>
         )}
 
-        {/* Chevron — hidden only while editing name */}
-        {!editingName && (
+        {/* Chevron — hidden while editing name or editing portion */}
+        {!editingName && !editingPortion && (
           <button
             className="icon-btn"
             onClick={e => { e.stopPropagation(); toggleOpen() }}
