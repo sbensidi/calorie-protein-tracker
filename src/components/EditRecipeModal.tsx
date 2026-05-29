@@ -166,8 +166,8 @@ export function EditRecipeModal({
                       onClick={() => { setSearchingRow(i); setHistorySearch('') }}
                       aria-label={t(lang, 'foodHistory')}
                       style={{
-                        position: 'absolute', insetInlineEnd: 0, top: 0, bottom: 0,
-                        width: 34, padding: 0, borderRadius: '0 8px 8px 0',
+                        position: 'absolute', insetInlineEnd: 0, top: 0,
+                        width: 34, height: '100%', padding: 0, borderRadius: '0 8px 8px 0',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                       }}
                     >
