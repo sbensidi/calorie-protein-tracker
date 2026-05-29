@@ -117,11 +117,13 @@ export interface PendingOperation {
 
 /** One ingredient row in a saved recipe snapshot */
 export interface RecipeIngredient {
-  name:     string
-  grams:    number
-  calories: number
-  protein:  number
-  fluid_ml?: number | null
+  name:           string
+  grams:          number          // negative = pcs/unit count (same convention as Meal)
+  calories:       number
+  protein:        number
+  fluid_ml?:      number | null
+  display_unit?:  string | null   // 'ml'|'cup'|'tbsp'|'tsp'|'oz'|'fl_oz' when non-gram unit
+  display_amount?: number | null  // the amount in display_unit
 }
 
 export interface ComposedGroup {

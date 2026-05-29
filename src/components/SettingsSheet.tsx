@@ -1491,7 +1491,7 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onR
   const openRecipeEditor = (group: ComposedGroup, groupMeals: Meal[]) => {
     const withIngredients = group.ingredients?.length
       ? group
-      : { ...group, ingredients: groupMeals.map<RecipeIngredient>(m => ({ name: m.name, grams: Math.abs(m.grams), calories: Math.round(m.calories), protein: Math.round(m.protein * 10) / 10, fluid_ml: m.fluid_ml ?? null })) }
+      : { ...group, ingredients: groupMeals.map<RecipeIngredient>(m => ({ name: m.name, grams: m.grams, calories: Math.round(m.calories), protein: Math.round(m.protein * 10) / 10, fluid_ml: m.fluid_ml ?? null, display_unit: m.display_unit ?? null, display_amount: m.display_amount ?? null })) }
     setEditingRecipeGroup(withIngredients)
   }
 

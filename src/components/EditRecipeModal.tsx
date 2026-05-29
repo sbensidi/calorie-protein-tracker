@@ -60,15 +60,18 @@ export function EditRecipeModal({
   const scaleIngredient = (idx: number, newAmount: number) => {
     setIngredients(prev => prev.map((ing, i) => {
       if (i !== idx) return ing
-      const isFluid = ing.fluid_ml != null && ing.fluid_ml > 0
-      const current = isFluid ? ing.fluid_ml! : ing.grams
-      const ratio = current > 0 ? newAmount / current : 0
+      const isPcs      = ing.grams < 0
+      const hasDisplay = !isPcs && ing.display_amount != null && ing.display_amount > 0
+      const isFluid    = !isPcs && !hasDisplay && ing.fluid_ml != null && ing.fluid_ml > 0
+      const current    = isPcs ? Math.abs(ing.grams) : hasDisplay ? ing.display_amount! : isFluid ? ing.fluid_ml! : ing.grams
+      const ratio      = current > 0 ? newAmount / current : 0
       return {
         ...ing,
-        grams:    isFluid ? Math.round(ing.grams * ratio) : newAmount,
-        fluid_ml: isFluid ? newAmount : ing.fluid_ml,
-        calories: Math.round(ing.calories * ratio),
-        protein:  Math.round(ing.protein * ratio * 10) / 10,
+        grams:          isPcs      ? -newAmount                                               : Math.round(ing.grams * ratio),
+        fluid_ml:       ing.fluid_ml != null                                                  ? Math.round(ing.fluid_ml * ratio) : null,
+        display_amount: hasDisplay ? newAmount                                                 : ing.display_amount,
+        calories:       Math.round(ing.calories * ratio),
+        protein:        Math.round(ing.protein * ratio * 10) / 10,
       }
     }))
   }
@@ -81,11 +84,13 @@ export function EditRecipeModal({
 
   const handleAddIngredient = (meal: Omit<Meal, 'id' | 'user_id' | 'created_at'>) => {
     setIngredients(prev => [...prev, {
-      name:     meal.name,
-      grams:    meal.grams,
-      calories: Math.round(meal.calories),
-      protein:  Math.round(meal.protein * 10) / 10,
-      fluid_ml: meal.fluid_ml ?? null,
+      name:           meal.name,
+      grams:          meal.grams,
+      calories:       Math.round(meal.calories),
+      protein:        Math.round(meal.protein * 10) / 10,
+      fluid_ml:       meal.fluid_ml       ?? null,
+      display_unit:   meal.display_unit   ?? null,
+      display_amount: meal.display_amount ?? null,
     }])
     setAddingIngredient(false)
   }
@@ -127,9 +132,19 @@ export function EditRecipeModal({
           {/* Editable ingredient rows */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             {ingredients.map((ing, i) => {
-              const isFluid    = ing.fluid_ml != null && ing.fluid_ml > 0
-              const displayAmt = isFluid ? ing.fluid_ml! : ing.grams
-              const unitLabel  = isFluid ? t(lang, 'unitOptMl') : t(lang, 'gramsUnit')
+              const isPcs      = ing.grams < 0
+              const hasDisplay = !isPcs && ing.display_amount != null && ing.display_amount > 0
+              const isFluid    = !isPcs && !hasDisplay && ing.fluid_ml != null && ing.fluid_ml > 0
+              const displayAmt = isPcs ? Math.abs(ing.grams) : hasDisplay ? ing.display_amount! : isFluid ? ing.fluid_ml! : ing.grams
+              const unitMap: Record<string, string> = {
+                'oz': t(lang, 'unitOptOz'), 'ml': t(lang, 'unitOptMl'),
+                'cup': t(lang, 'unitOptCup'), 'tbsp': t(lang, 'unitOptTbsp'),
+                'tsp': t(lang, 'unitOptTsp'), 'fl_oz': t(lang, 'unitOptFlOz'),
+              }
+              const unitLabel = isPcs      ? t(lang, 'unitOptPcs')
+                              : hasDisplay ? (unitMap[ing.display_unit!] ?? ing.display_unit!)
+                              : isFluid    ? t(lang, 'unitOptMl')
+                              : t(lang, 'gramsUnit')
               return (
                 <div key={i} style={{ display: 'flex', gap: 5, alignItems: 'center' }}>
                   {/* Name input + history search button */}
