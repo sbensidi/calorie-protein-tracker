@@ -1482,6 +1482,7 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onR
   // Ratios per base unit (grams or ml) — used for proportional scaling when amount changes
   const editRatios = useRef({ calPerBase: 0, protPerBase: 0 })
   const [expandedGroupId, setExpandedGroupId]           = useState<string | null>(null)
+  const [editingMealId,   setEditingMealId]             = useState<string | null>(null)
   const [expandedHistoryGroup, setExpandedHistoryGroup] = useState<string | null>(null)
 
   const q = search.trim().toLowerCase()
@@ -1953,22 +1954,20 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onR
                         onClick={() => setExpandedGroupId(isExpanded ? null : group.id)}
                         style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 10, background: 'none', border: 'none', cursor: 'pointer', padding: 0, minWidth: 0, textAlign: 'start' }}
                       >
-                        {!minimal && <span className="icon icon-sm" style={{ color: 'var(--composed)', flexShrink: 0 }}>restaurant</span>}
+                        <span className="icon icon-sm" style={{ color: 'var(--composed)', flexShrink: 0 }}>restaurant</span>
                         {minimal ? (
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ display: 'flex', alignItems: 'baseline', gap: 5, overflow: 'hidden' }}>
-                              <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>{group.name}</span>
-                              <span style={{ fontSize: 10, color: 'var(--composed)', whiteSpace: 'nowrap', flexShrink: 0 }}>{groupMeals.length} {t(lang, 'ingredientsUnit')}</span>
-                            </div>
-                            <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginTop: 2 }}>
-                              <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--accent-hi)', display: 'inline-flex', alignItems: 'baseline', gap: 2 }}>
-                                {totalCal}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.8 }}>{t(lang, 'caloriesUnit')}</span>
-                              </span>
-                              <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--positive-hi)', display: 'inline-flex', alignItems: 'baseline', gap: 2 }}>
-                                {totalProt}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.8 }}>{t(lang, 'gProteinLabel')}</span>
-                              </span>
-                            </div>
-                          </div>
+                          <>
+                            <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>{group.name}</span>
+                            <span style={{ fontSize: 11, color: 'var(--text-3)', whiteSpace: 'nowrap', flexShrink: 0 }}>{groupMeals.length} {t(lang, 'ingredientsUnit')}</span>
+                            <span style={{ flex: 1 }} />
+                            <span style={{ display: 'flex', alignItems: 'baseline', gap: 4, flexShrink: 0, fontSize: 11 }}>
+                              <span style={{ fontWeight: 600, color: 'var(--accent-hi)' }}>{totalCal}</span>
+                              <span style={{ fontWeight: 400, color: 'var(--text-3)' }}>{t(lang, 'caloriesUnit')}</span>
+                              <span style={{ color: 'var(--border)', padding: '0 2px' }}>|</span>
+                              <span style={{ fontWeight: 600, color: 'var(--positive-hi)' }}>{totalProt}</span>
+                              <span style={{ fontWeight: 400, color: 'var(--text-3)' }}>{t(lang, 'proteinUnit')}</span>
+                            </span>
+                          </>
                         ) : (
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{group.name}</p>
@@ -2003,20 +2002,58 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onR
                         paddingInline: 16,
                       } : {}}>
                         {groupMeals.map((meal, mi) => (
-                          <div key={meal.id} style={{ borderBottom: minimal ? (mi === groupMeals.length - 1 ? 'none' : '1px dashed var(--border)') : '1px solid var(--border-subtle, var(--border))' }}>
-                            <MealCard
-                              meal={meal}
-                              lang={lang}
-                              showCheckbox={false}
-                              selected={false}
-                              onToggleSelect={() => {}}
-                              onEdit={(id, updates) => {
-                                onUpdateMeal(id, updates)
-                                showToast(t(lang, 'saved'), 'success')
-                              }}
-                              enableWeightScaling
-                              listStyle={minimal}
-                            />
+                          <div key={meal.id} style={{ borderTop: mi === 0 ? 'none' : (minimal ? '1px dashed var(--border)' : '1px solid var(--border-subtle, var(--border))') }}>
+                            {editingMealId === meal.id ? (
+                              <MealCard
+                                meal={meal}
+                                lang={lang}
+                                showCheckbox={false}
+                                selected={false}
+                                onToggleSelect={() => {}}
+                                onEdit={(id, updates) => {
+                                  onUpdateMeal(id, updates)
+                                  showToast(t(lang, 'saved'), 'success')
+                                  setEditingMealId(null)
+                                }}
+                                enableWeightScaling
+                                listStyle={minimal}
+                              />
+                            ) : minimal ? (
+                              <div style={{ padding: '6px 0' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 5, overflow: 'hidden' }}>
+                                  <div style={{ width: 4, height: 4, borderRadius: '50%', background: 'var(--composed-border-hi)', flexShrink: 0 }} />
+                                  <span style={{ flexShrink: 1, minWidth: 0, fontSize: 12, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{meal.name}</span>
+                                  <span style={{ fontSize: 11, color: 'var(--text-3)', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                                    {meal.fluid_ml && !meal.fluid_excluded ? `${Math.round(meal.fluid_ml)}ml` : `${Math.abs(meal.grams)}${t(lang, 'gramsUnit')}`}
+                                  </span>
+                                  <span style={{ flex: 1 }} />
+                                  <button className="icon-btn" onClick={() => setEditingMealId(meal.id)} aria-label={t(lang, 'edit')}>
+                                    <span className="icon icon-sm">edit</span>
+                                  </button>
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginTop: 2, paddingInlineStart: 9 }}>
+                                  <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent-hi)', display: 'inline-flex', alignItems: 'baseline', gap: 1 }}>
+                                    {Math.round(meal.calories)}<span style={{ fontSize: 9, fontWeight: 400, opacity: 0.7 }}>{t(lang, 'caloriesUnit')}</span>
+                                  </span>
+                                  <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--positive-hi)', display: 'inline-flex', alignItems: 'baseline', gap: 1 }}>
+                                    {Math.round(meal.protein * 10) / 10}<span style={{ fontSize: 9, fontWeight: 400, opacity: 0.7 }}>{t(lang, 'proteinUnit')}</span>
+                                  </span>
+                                </div>
+                              </div>
+                            ) : (
+                              <MealCard
+                                meal={meal}
+                                lang={lang}
+                                showCheckbox={false}
+                                selected={false}
+                                onToggleSelect={() => {}}
+                                onEdit={(id, updates) => {
+                                  onUpdateMeal(id, updates)
+                                  showToast(t(lang, 'saved'), 'success')
+                                }}
+                                enableWeightScaling
+                              />
+                            )}
                           </div>
                         ))}
                       </div>
