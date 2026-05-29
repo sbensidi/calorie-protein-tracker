@@ -100,39 +100,48 @@ export function ComposedMealCard({
       <div style={{ borderBottom: '1px dashed var(--border)' }}>
         {/* Header */}
         {editingPortion ? (
-          /* Portion mode edit: name + grams with proportional cal/prot preview */
-          <div
-            style={{ padding: '8px 4px', display: 'flex', flexDirection: 'row', gap: 6, alignItems: 'center' }}
-            onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget as Node)) savePortion() }}
-          >
-            <input
-              className="inp"
-              style={{ flex: 2, height: 36, fontSize: 16, fontWeight: 600 }}
-              value={portionName}
-              autoFocus
-              onChange={e => setPortionName(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter') savePortion(); if (e.key === 'Escape') setEditingPortion(false) }}
-              dir={dir(lang)}
-            />
-            <div style={{ position: 'relative', width: 72 }}>
+          /* Portion edit: two-row, matching normal display position */
+          <div style={{ padding: '6px 4px', display: 'flex', flexDirection: 'column', gap: 4 }}>
+            {/* Row 1: editable name + count + ✓/✗ */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
               <input
-                type="number" inputMode="decimal" className="inp"
-                style={{ height: 36, fontSize: 16, paddingInlineEnd: 18, textAlign: 'end', width: '100%' }}
-                value={portionGrams}
-                onChange={e => setPortionGrams(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter') savePortion() }}
+                className="inp"
+                style={{ flex: 1, height: 32, fontSize: 16, fontWeight: 600 }}
+                value={portionName}
+                autoFocus
+                onChange={e => setPortionName(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') savePortion(); if (e.key === 'Escape') setEditingPortion(false) }}
+                dir={dir(lang)}
               />
-              <span style={{ position: 'absolute', insetInlineEnd: 5, top: '50%', transform: 'translateY(-50%)', fontSize: 10, color: 'var(--text-3)', pointerEvents: 'none' }}>g</span>
+              <span style={{ fontSize: 11, color: 'var(--text-3)', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                {ingredientCount} {t(lang, 'ingredients')}
+              </span>
+              <button className="icon-btn" onClick={savePortion} aria-label={t(lang, 'save')}>
+                <span className="icon icon-sm" style={{ color: 'var(--positive-hi)' }}>check</span>
+              </button>
+              <button className="icon-btn" onClick={() => setEditingPortion(false)} aria-label={t(lang, 'cancel')}>
+                <span className="icon icon-sm">close</span>
+              </button>
             </div>
-            <span style={{ fontSize: 11, color: 'var(--accent-hi)', whiteSpace: 'nowrap', flexShrink: 0 }}>
-              {portionCalPreview} {t(lang, 'caloriesUnit')}
-            </span>
-            <button className="icon-btn" onClick={savePortion} aria-label={t(lang, 'save')}>
-              <span className="icon icon-sm" style={{ color: 'var(--positive-hi)' }}>check</span>
-            </button>
-            <button className="icon-btn" onClick={() => setEditingPortion(false)} aria-label={t(lang, 'cancel')}>
-              <span className="icon icon-sm">close</span>
-            </button>
+            {/* Row 2: grams input + cal/prot preview */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <div style={{ position: 'relative', width: 76 }}>
+                <input
+                  type="number" inputMode="decimal" className="inp"
+                  style={{ height: 28, fontSize: 13, paddingInlineEnd: 18, textAlign: 'end', width: '100%' }}
+                  value={portionGrams}
+                  onChange={e => setPortionGrams(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') savePortion() }}
+                />
+                <span style={{ position: 'absolute', insetInlineEnd: 5, top: '50%', transform: 'translateY(-50%)', fontSize: 10, color: 'var(--text-3)', pointerEvents: 'none' }}>g</span>
+              </div>
+              <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--accent-hi)', whiteSpace: 'nowrap' }}>
+                {portionCalPreview} <span style={{ opacity: 0.7, fontWeight: 400 }}>{t(lang, 'caloriesUnit')}</span>
+              </span>
+              <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--positive-hi)', whiteSpace: 'nowrap' }}>
+                {portionProtPreview} <span style={{ opacity: 0.7, fontWeight: 400 }}>{t(lang, 'proteinUnit')}</span>
+              </span>
+            </div>
           </div>
         ) : editingName ? (
           <div
@@ -360,8 +369,8 @@ export function ComposedMealCard({
         onKeyDown={e => { if (!editingName && !editingPortion && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); toggleOpen() } }}
         style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', cursor: editingName || editingPortion ? 'default' : 'pointer', userSelect: 'none' }}
       >
-        {/* Checkbox + Icon — hidden while editing to maximise input width */}
-        {!editingName && !editingPortion && (
+        {/* Checkbox + Icon — hidden only while editing name (to maximise input width) */}
+        {!editingName && (
           <>
             <div
               role="checkbox"
@@ -386,44 +395,48 @@ export function ComposedMealCard({
 
         {/* Name / edit area */}
         {editingPortion ? (
-          /* Portion edit: name + grams with proportional cal/prot preview */
-          <div
-            style={{ flex: 1, display: 'flex', flexDirection: 'row', gap: 6, alignItems: 'center' }}
-            onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget as Node)) savePortion() }}
-          >
-            <input
-              className="inp"
-              style={{ flex: 2, height: 38, fontSize: 16, fontWeight: 700, borderColor: 'var(--accent-border-hi)' }}
-              value={portionName}
-              autoFocus
-              onChange={e => setPortionName(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter') savePortion(); if (e.key === 'Escape') setEditingPortion(false) }}
-              dir={dir(lang)}
-            />
-            <div style={{ position: 'relative', width: 80 }}>
+          /* Portion edit: two-row inline in the name block — same visual position as normal display */
+          <div style={{ flex: 1, minWidth: 0 }}>
+            {/* Row 1: editable name + ingredient count + ✓/✗ */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <input
-                type="number" inputMode="decimal" className="inp"
-                style={{ height: 38, fontSize: 16, paddingInlineEnd: 20, textAlign: 'end', width: '100%' }}
-                value={portionGrams}
-                onChange={e => setPortionGrams(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter') savePortion() }}
+                className="inp"
+                style={{ flex: 1, height: 32, fontSize: 14, fontWeight: 600 }}
+                value={portionName}
+                autoFocus
+                onChange={e => setPortionName(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') savePortion(); if (e.key === 'Escape') setEditingPortion(false) }}
+                dir={dir(lang)}
               />
-              <span style={{ position: 'absolute', insetInlineEnd: 6, top: '50%', transform: 'translateY(-50%)', fontSize: 11, color: 'var(--text-3)', pointerEvents: 'none' }}>g</span>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', flexShrink: 0 }}>
-              <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent-hi)', lineHeight: 1.2 }}>
-                {portionCalPreview}<span style={{ fontSize: 10, opacity: 0.7, marginInlineStart: 1 }}>{t(lang, 'caloriesUnit')}</span>
+              <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-3)', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                {ingredientCount} {t(lang, 'ingredients')}
               </span>
-              <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--positive-hi)', lineHeight: 1.2 }}>
-                {portionProtPreview}<span style={{ fontSize: 10, opacity: 0.7, marginInlineStart: 1 }}>{t(lang, 'proteinUnit')}</span>
+              <button className="icon-btn" onClick={savePortion} aria-label={t(lang, 'save')}>
+                <span className="icon icon-sm" style={{ color: 'var(--positive-hi)' }}>check</span>
+              </button>
+              <button className="icon-btn" onClick={() => setEditingPortion(false)} aria-label={t(lang, 'cancel')}>
+                <span className="icon icon-sm">close</span>
+              </button>
+            </div>
+            {/* Row 2: grams input + cal/prot preview (replaces cal/prot display row) */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
+              <div style={{ position: 'relative', width: 84 }}>
+                <input
+                  type="number" inputMode="decimal" className="inp"
+                  style={{ height: 28, fontSize: 13, paddingInlineEnd: 20, textAlign: 'end', width: '100%' }}
+                  value={portionGrams}
+                  onChange={e => setPortionGrams(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') savePortion() }}
+                />
+                <span style={{ position: 'absolute', insetInlineEnd: 6, top: '50%', transform: 'translateY(-50%)', fontSize: 10, color: 'var(--text-3)', pointerEvents: 'none' }}>g</span>
+              </div>
+              <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent-hi)', lineHeight: 1 }}>
+                {portionCalPreview}<span style={{ fontSize: 11, fontWeight: 500, opacity: 0.65, marginInlineStart: 2 }}>{t(lang, 'caloriesUnit')}</span>
+              </span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--positive-hi)', lineHeight: 1 }}>
+                {portionProtPreview}<span style={{ fontSize: 11, fontWeight: 500, opacity: 0.65, marginInlineStart: 2 }}>{t(lang, 'proteinUnit')}</span>
               </span>
             </div>
-            <button className="icon-btn" onClick={savePortion} aria-label={t(lang, 'save')}>
-              <span className="icon icon-sm" style={{ color: 'var(--positive-hi)' }}>check</span>
-            </button>
-            <button className="icon-btn" onClick={() => setEditingPortion(false)} aria-label={t(lang, 'cancel')}>
-              <span className="icon icon-sm">close</span>
-            </button>
           </div>
         ) : editingName ? (
           <div
@@ -515,8 +528,8 @@ export function ComposedMealCard({
           </button>
         )}
 
-        {/* Chevron — hidden while editing */}
-        {!editingName && !editingPortion && (
+        {/* Chevron — hidden only while editing name */}
+        {!editingName && (
           <button
             className="icon-btn"
             onClick={e => { e.stopPropagation(); toggleOpen() }}

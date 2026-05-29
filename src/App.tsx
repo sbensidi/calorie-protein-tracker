@@ -433,6 +433,7 @@ export default function App() {
                 fluidZeroCalOnly={profile.fluidZeroCalOnly}
                 onUpsertHistory={upsertHistory}
                 onTouchHistory={touchHistory}
+                onUpsertGroup={upsertGroup}
               />
             </Suspense>
           </ErrorBoundary>

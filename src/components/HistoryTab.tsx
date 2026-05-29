@@ -12,6 +12,7 @@ import { FoodEntryForm } from './FoodEntryForm'
 import { calcMealTypeDistribution, calcMacroBreakdown, calcDatesAverage, calcGoalMetPct, calcFluidAvgMl, calcFluidGoalPct } from '../lib/calculations'
 import { MealCard } from './MealCard'
 import { SheetHandle } from './SheetHandle'
+import { EditRecipeModal } from './EditRecipeModal'
 
 // ── Constants ────────────────────────────────────────────────────────
 
@@ -56,6 +57,7 @@ interface HistoryTabProps {
   fluidZeroCalOnly?:    boolean
   onUpsertHistory?:     (item: Pick<FoodHistory, 'name' | 'grams' | 'calories' | 'protein' | 'fluid_ml'>) => void
   onTouchHistory?:      (id: string) => void
+  onUpsertGroup?:       (group: ComposedGroup) => void
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────
@@ -174,7 +176,7 @@ function PeriodBalanceCard({ lang, totalDays, daysElapsed, consumed, target, sho
 
 // ── Component ────────────────────────────────────────────────────────
 
-export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntries = [], composedGroups = [], fluidGoalMl = 2500, loading = false, weeklyTdee = 0, onUpdateMeal, onDeleteMeal, onAddMeal, getSuggestions, searchLibrary, searchUserLibrary, library = [], defaultServingGrams = 150, defaultWeightUnit = 'g', fluidThresholdMl = 100, fluidZeroCalOnly = true, onUpsertHistory, onTouchHistory }: HistoryTabProps) {
+export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntries = [], composedGroups = [], fluidGoalMl = 2500, loading = false, weeklyTdee = 0, onUpdateMeal, onDeleteMeal, onAddMeal, getSuggestions, searchLibrary, searchUserLibrary, library = [], defaultServingGrams = 150, defaultWeightUnit = 'g', fluidThresholdMl = 100, fluidZeroCalOnly = true, onUpsertHistory, onTouchHistory, onUpsertGroup }: HistoryTabProps) {
   const { styleMode } = useAppContext()
   const todayKey = today()
 
@@ -253,6 +255,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
   const [expandedGroupIds, setExpandedGroupIds] = useState<Set<string>>(new Set())
   const toggleGroupExpand = (id: string) =>
     setExpandedGroupIds(prev => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n })
+  const [editRecipeModal, setEditRecipeModal] = useState<{ group: ComposedGroup } | null>(null)
 
   // ── Scroll-aware sticky (list view only) ──────────────────────────
   const [scrolledDown, setScrolledDown] = useState(false)
@@ -741,6 +744,17 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                         </span>
                       </div>
                     </div>
+                    {/* Edit ingredients button */}
+                    {row.group.ingredients && row.group.ingredients.length > 0 && onUpsertGroup && (
+                      <button
+                        className="icon-btn"
+                        onClick={e => { e.stopPropagation(); setEditRecipeModal({ group: row.group }) }}
+                        aria-label={t(lang, 'editRecipe')}
+                        style={{ flexShrink: 0 }}
+                      >
+                        <span className="icon icon-sm" style={{ color: 'var(--composed)', fontSize: 16 }}>edit</span>
+                      </button>
+                    )}
                     {/* Chevron — centered to full header height */}
                     <span className="icon icon-chevron" style={{ color: 'var(--text-3)', flexShrink: 0, transition: 'transform .2s', transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>
                       expand_more
@@ -2586,6 +2600,27 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
           <span className="icon" style={{ fontSize: 20 }}>bar_chart</span>
         </button>
       </div>
+
+      {/* ── Edit recipe modal ─────────────────────────────────── */}
+      {editRecipeModal && onUpsertGroup && (
+        <EditRecipeModal
+          group={editRecipeModal.group}
+          lang={lang}
+          onSave={updatedGroup => { onUpsertGroup(updatedGroup); setEditRecipeModal(null) }}
+          onClose={() => setEditRecipeModal(null)}
+          history={history}
+          getSuggestions={getSuggestions ?? (() => [])}
+          searchLibrary={searchLibrary}
+          searchUserLibrary={searchUserLibrary}
+          library={library}
+          defaultServingGrams={defaultServingGrams}
+          defaultWeightUnit={defaultWeightUnit}
+          fluidThresholdMl={fluidThresholdMl}
+          fluidZeroCalOnly={fluidZeroCalOnly}
+          onUpsertHistory={onUpsertHistory}
+          onTouchHistory={onTouchHistory}
+        />
+      )}
     </>
   )
 }
