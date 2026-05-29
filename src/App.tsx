@@ -213,13 +213,14 @@ export default function App() {
   const composedEntries = useMemo(() =>
     composedGroups.map(g => {
       const gMeals = meals.filter(m => g.mealIds.includes(m.id))
-      return {
-        id: g.id,
-        name: g.name,
-        calories: Math.round(gMeals.reduce((s, m) => s + m.calories, 0)),
-        protein: Math.round(gMeals.reduce((s, m) => s + m.protein, 0) * 10) / 10,
-        batchWeightG: g.batchWeightG ?? null,
-      }
+      // Prefer live meal sum; fall back to stored totals when meals were deleted (portion mode)
+      const calories = gMeals.length > 0
+        ? Math.round(gMeals.reduce((s, m) => s + m.calories, 0))
+        : (g.totalCalories ?? 0)
+      const protein = gMeals.length > 0
+        ? Math.round(gMeals.reduce((s, m) => s + m.protein, 0) * 10) / 10
+        : (g.totalProtein ?? 0)
+      return { id: g.id, name: g.name, calories, protein, batchWeightG: g.batchWeightG ?? null }
     }).filter(e => e.name),
   [composedGroups, meals])
 

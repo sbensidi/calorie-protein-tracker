@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase } from '../lib/supabase'
-import type { ComposedGroup } from '../types'
+import type { ComposedGroup, RecipeIngredient } from '../types'
 
 // localStorage fallback key (used for migration + offline cache)
 const LS_KEY = 'composed-groups'
@@ -19,6 +19,7 @@ interface DbRow {
   batch_weight_g: number | null
   total_calories: number | null
   total_protein:  number | null
+  ingredients:    RecipeIngredient[] | null
 }
 
 function rowToGroup(row: DbRow): ComposedGroup {
@@ -29,6 +30,7 @@ function rowToGroup(row: DbRow): ComposedGroup {
     batchWeightG:  row.batch_weight_g  ?? null,
     totalCalories: row.total_calories  ?? null,
     totalProtein:  row.total_protein   ?? null,
+    ingredients:   row.ingredients     ?? null,
   }
 }
 
@@ -41,7 +43,7 @@ export function useComposedGroups(userId: string | null) {
     if (!userId) return
     const { data, error: err } = await supabase
       .from('composed_groups')
-      .select('id, name, meal_ids, batch_weight_g, total_calories, total_protein')
+      .select('id, name, meal_ids, batch_weight_g, total_calories, total_protein, ingredients')
       .eq('user_id', userId)
     if (err) { if (import.meta.env.DEV) console.error('fetch composed_groups:', err); setError(err.message); return }
     const loaded = ((data ?? []) as DbRow[]).map(rowToGroup)
@@ -81,6 +83,7 @@ export function useComposedGroups(userId: string | null) {
       batch_weight_g: group.batchWeightG  ?? null,
       total_calories: group.totalCalories ?? null,
       total_protein:  group.totalProtein  ?? null,
+      ingredients:    group.ingredients   ?? null,
       updated_at:     new Date().toISOString(),
     })
     if (err) { if (import.meta.env.DEV) console.error('upsert composed_group:', err); setError(err.message) }
@@ -108,7 +111,8 @@ export function useComposedGroups(userId: string | null) {
 
     const next = current
       .map(g => ({ ...g, mealIds: g.mealIds.filter(id => id !== mealId) }))
-      .filter(g => g.mealIds.length > 0)
+      // Keep groups that still have meals OR have an ingredient snapshot (recipe template)
+      .filter(g => g.mealIds.length > 0 || g.ingredients?.length || g.batchWeightG)
 
     groupsRef.current = next
     setGroups(next)
@@ -117,7 +121,8 @@ export function useComposedGroups(userId: string | null) {
     if (!userId) return
     const results = await Promise.all(affected.map(g => {
       const nextIds = g.mealIds.filter(id => id !== mealId)
-      return nextIds.length === 0
+      const keepAsTemplate = nextIds.length === 0 && (g.ingredients?.length || g.batchWeightG)
+      return nextIds.length === 0 && !keepAsTemplate
         ? supabase.from('composed_groups').delete().eq('id', g.id).eq('user_id', userId)
         : supabase.from('composed_groups').update({ meal_ids: nextIds }).eq('id', g.id).eq('user_id', userId)
     }))

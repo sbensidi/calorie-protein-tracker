@@ -413,19 +413,31 @@ export function TodayTab({
     const totalCalories = Math.round(allSel.reduce((s, m) => s + m.calories, 0))
     const totalProtein  = Math.round(allSel.reduce((s, m) => s + m.protein, 0) * 10) / 10
 
+    // Permanent ingredient snapshot — persists regardless of whether original meals are deleted
+    const ingredients = allSel.map(m => ({
+      name:     m.name,
+      grams:    m.grams,
+      calories: Math.round(m.calories),
+      protein:  Math.round(m.protein * 10) / 10,
+    }))
+
     const portionG = parseFloat(composePortion)
     const loggingPortion = portionG > 0 && batchWeightG > 0 && totalCalories > 0
+
+    // Pre-generate portion meal ID so the group can reference it before the meal is inserted
+    const portionMealId = loggingPortion ? crypto.randomUUID() : undefined
 
     const newGroup: ComposedGroup = {
       id: crypto.randomUUID(),
       name,
-      // When logging a portion, original meals will be deleted — store empty mealIds so
-      // they don't get double-counted if the group is later dissolved.
-      mealIds: loggingPortion ? [] : [...sel],
+      // Portion mode: group references the single portion meal (not the ingredient meals)
+      mealIds: loggingPortion ? [portionMealId!] : [...sel],
       batchWeightG:  batchWeightG > 0 ? batchWeightG : null,
       totalCalories,
       totalProtein,
+      ingredients,
     }
+    // Optimistic update first — group card appears before meals are inserted/deleted
     onUpsertGroup(newGroup)
 
     if (loggingPortion) {
@@ -450,7 +462,7 @@ export function TodayTab({
         fluid_excluded: false,
         display_unit:   null,
         display_amount: null,
-      })
+      }, portionMealId)
     }
 
     clearSelection(mealType)
@@ -989,12 +1001,32 @@ export function TodayTab({
     return (
       <div className="compose-modal-backdrop" onClick={() => setComposeModal(null)}>
         <div ref={composeModalRef} className="compose-modal" role="dialog" aria-modal="true" aria-label={t(lang, 'composeMealLabel')} onClick={e => e.stopPropagation()}>
-          {/* Title */}
+          {/* Title + Name input (at top) */}
           <div>
-            <p style={{ fontSize: 16, fontWeight: 800, textAlign: 'center', margin: 0 }}>{t(lang, 'dishName')}</p>
-            <p style={{ fontSize: 12, color: 'var(--text-3)', textAlign: 'center', margin: '4px 0 0' }}>
+            <p style={{ fontSize: 12, color: 'var(--text-3)', textAlign: 'center', margin: '0 0 10px' }}>
               {t(lang, 'fromNPrefix')}{sel.size} {t(lang, 'items')}
             </p>
+            <div style={{ position: 'relative' }}>
+              <input
+                className="inp"
+                style={{ borderColor: 'var(--composed-border-hi)', paddingInlineEnd: composeName ? 32 : 12, fontSize: 16, fontWeight: 700 }}
+                placeholder={t(lang, 'dishName') + '...'}
+                value={composeName}
+                onChange={e => setComposeName(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') handleCompose() }}
+                autoFocus
+                dir={dir(lang)}
+              />
+              {composeName && (
+                <button
+                  onMouseDown={e => { e.preventDefault(); setComposeName('') }}
+                  tabIndex={-1}
+                  style={{ position: 'absolute', insetInlineEnd: 0, top: 0, bottom: 0, width: 32, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                >
+                  <span className="icon icon-sm">close</span>
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Totals summary */}
@@ -1105,34 +1137,11 @@ export function TodayTab({
             </div>
           )}
 
-          {/* Name input */}
-          <div style={{ position: 'relative' }}>
-            <input
-              className="inp"
-              style={{ borderColor: 'var(--composed-border-hi)', paddingInlineEnd: composeName ? 32 : 12 }}
-              placeholder={t(lang, 'dishName') + '...'}
-              value={composeName}
-              onChange={e => setComposeName(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter') handleCompose() }}
-              autoFocus
-              dir={dir(lang)}
-            />
-            {composeName && (
-              <button
-                onMouseDown={e => { e.preventDefault(); setComposeName('') }}
-                tabIndex={-1}
-                style={{ position: 'absolute', insetInlineEnd: 0, top: 0, bottom: 0, width: 32, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-              >
-                <span className="icon icon-sm">close</span>
-              </button>
-            )}
-          </div>
-
           {/* Buttons */}
           <div style={{ display: 'flex', gap: 8 }}>
             <button className="btn-confirm" style={{ flex: 1 }} onClick={handleCompose}>
               <span className="icon icon-sm">set_meal</span>
-              {t(lang, 'mergeMeals')}
+              {t(lang, 'saveDish')}
             </button>
             <button className="btn-ghost" style={{ flex: 1 }} onClick={() => setComposeModal(null)}>
               {t(lang, 'cancel')}

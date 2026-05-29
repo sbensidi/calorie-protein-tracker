@@ -115,12 +115,20 @@ export interface PendingOperation {
   queuedAt: number
 }
 
-/** Client-side only — persisted in localStorage, not Supabase */
+/** One ingredient row in a saved recipe snapshot */
+export interface RecipeIngredient {
+  name:     string
+  grams:    number
+  calories: number
+  protein:  number
+}
+
 export interface ComposedGroup {
   id: string
   name: string
-  mealIds: string[]       // ordered list of Meal.id values that belong to this group
-  batchWeightG?: number | null   // estimated cooked weight (g); set → scalable recipe
-  totalCalories?: number | null  // cached at save time
-  totalProtein?: number | null   // cached at save time
+  mealIds: string[]              // today's meal IDs (ingredients or single portion meal)
+  batchWeightG?: number | null   // total cooked weight (g); set → scalable recipe
+  totalCalories?: number | null  // cached at save time (full batch)
+  totalProtein?: number | null   // cached at save time (full batch)
+  ingredients?: RecipeIngredient[] | null  // permanent snapshot — always visible
 }

@@ -38,9 +38,17 @@ export function ComposedMealCard({
   const [editingName, setEditingName] = useState(false)
   const [nameInput, setNameInput] = useState(group.name)
   const { styleMode } = useAppContext()
+  const [compOpen, setCompOpen] = useState(false)
 
   const totalCal  = Math.round(meals.reduce((s, m) => s + m.calories, 0))
   const totalProt = Math.round(meals.reduce((s, m) => s + m.protein, 0) * 10) / 10
+
+  // Portion mode: one meal (the logged portion) + ingredient snapshot available
+  const isPortionMode = !!(
+    group.ingredients?.length &&
+    meals.length > 0 &&
+    meals.length < group.ingredients.length
+  )
 
   const saveName = () => {
     const trimmed = nameInput.trim()
@@ -387,20 +395,68 @@ export function ComposedMealCard({
             />
           ))}
 
-          {/* ── Add ingredient button ── */}
-          <button
-            onClick={onAddIngredient}
-            style={{
-              marginTop: 4, width: '100%', background: 'transparent',
-              border: '1px dashed var(--composed-glow)', borderRadius: 8,
-              padding: '6px 10px', fontFamily: 'inherit',
-              fontSize: 11, fontWeight: 600, color: 'var(--composed)',
-              cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5,
-            }}
-          >
-            <span className="icon" style={{ fontSize: 14 }}>add</span>
-            {t(lang, 'addIngredient')}
-          </button>
+          {/* ── Recipe composition (snapshot) — shown in portion mode ── */}
+          {isPortionMode && group.ingredients && (
+            <div style={{ marginTop: 6 }}>
+              <button
+                onClick={() => setCompOpen(o => !o)}
+                style={{
+                  width: '100%', background: 'transparent',
+                  border: '1px solid var(--composed-border)', borderRadius: 8,
+                  padding: '5px 10px', fontFamily: 'inherit',
+                  fontSize: 11, fontWeight: 600, color: 'var(--composed)',
+                  cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5,
+                }}
+              >
+                <span className="icon" style={{ fontSize: 14 }}>
+                  {compOpen ? 'expand_less' : 'expand_more'}
+                </span>
+                {t(lang, 'recipeComposition')}
+                {group.batchWeightG && (
+                  <span style={{ color: 'var(--text-3)', fontWeight: 400 }}>
+                    &nbsp;·&nbsp;{group.batchWeightG}g
+                  </span>
+                )}
+              </button>
+              {compOpen && (
+                <div style={{ padding: '6px 4px 2px', display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  {group.ingredients.map((ing, i) => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'baseline', gap: 6, padding: '3px 6px' }}>
+                      <span style={{ flex: 1, fontSize: 12, color: 'var(--text-2)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {ing.name}
+                      </span>
+                      <span style={{ fontSize: 11, color: 'var(--text-3)', whiteSpace: 'nowrap' }}>
+                        {ing.grams}g
+                      </span>
+                      <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--accent-hi)', whiteSpace: 'nowrap' }}>
+                        {ing.calories} {t(lang, 'caloriesUnit')}
+                      </span>
+                      <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--positive-hi)', whiteSpace: 'nowrap' }}>
+                        {ing.protein}{t(lang, 'proteinUnit')}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── Add ingredient button — hidden in portion mode ── */}
+          {!isPortionMode && (
+            <button
+              onClick={onAddIngredient}
+              style={{
+                marginTop: 4, width: '100%', background: 'transparent',
+                border: '1px dashed var(--composed-glow)', borderRadius: 8,
+                padding: '6px 10px', fontFamily: 'inherit',
+                fontSize: 11, fontWeight: 600, color: 'var(--composed)',
+                cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5,
+              }}
+            >
+              <span className="icon" style={{ fontSize: 14 }}>add</span>
+              {t(lang, 'addIngredient')}
+            </button>
+          )}
         </div>
       )}
     </div>
