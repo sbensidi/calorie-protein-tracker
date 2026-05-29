@@ -466,6 +466,7 @@ export default function App() {
           onUpdateHistory={updateHistory}
           composedGroups={composedGroups}
           onRemoveGroup={removeGroup}
+          onSaveComposedGroup={upsertGroup}
           meals={meals}
           onUpdateMeal={updateMeal}
           weightLogEntries={weightLogEntries}

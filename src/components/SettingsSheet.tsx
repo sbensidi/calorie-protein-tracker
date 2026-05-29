@@ -7,7 +7,7 @@ import type { Lang, DayKey, TranslationKey } from '../lib/i18n'
 import { t, dir, DAY_KEYS, DAY_SHORT_HE, DAY_SHORT_EN } from '../lib/i18n'
 import { toWeekIndex } from '../lib/utils'
 import type { Toast } from '../hooks/useToast'
-import type { Goal, FoodHistory, ComposedGroup, Meal, UserFoodItem } from '../types'
+import type { Goal, FoodHistory, ComposedGroup, Meal, UserFoodItem, RecipeIngredient } from '../types'
 import type { UserProfile } from '../hooks/useProfile'
 import { useFoodLibrary } from '../hooks/useFoodLibrary'
 import { UNITS, toBase, fromBase, mlToGrams } from '../lib/units'
@@ -16,6 +16,7 @@ import type { UnitId } from '../lib/units'
 import { fuzzyScore } from '../lib/fuzzyMatch'
 import { useAppContext } from '../context/AppContext'
 import { calcBMR, calcDailyTdee, calcProjectedDays, calcBMI, calcBMICategory, calcSuggestedFluidMl } from '../lib/calculations'
+import { EditRecipeModal } from './EditRecipeModal'
 
 const SEARCH_THRESHOLD = 0.45
 
@@ -1430,16 +1431,17 @@ function GoalsScreen({ lang, profile, goals, onSave, onSaveProfile, onSaveFluidG
 
 // ── Food History Screen ───────────────────────────────────────────────────────
 
-function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onRestore, onUpdate, onRemoveGroup, showToast }: {
-  lang:            Lang
-  history:         FoodHistory[]
-  composedGroups:  ComposedGroup[]
-  meals:           Meal[]
-  onDelete:        (id: string) => void
-  onRestore?:      (item: Pick<FoodHistory, 'name' | 'grams' | 'calories' | 'protein' | 'fluid_ml'>) => void
-  onUpdate:        (id: string, updates: Partial<Pick<FoodHistory, 'name' | 'grams' | 'calories' | 'protein' | 'fluid_ml'>>) => void
-  onRemoveGroup:   (id: string) => void
-  showToast:       (msg: string, type: 'success' | 'error' | 'info', options?: { action?: { label: string; onClick: () => void }; durationMs?: number }) => void
+function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onRestore, onUpdate, onRemoveGroup, onSaveComposedGroup, showToast }: {
+  lang:                   Lang
+  history:                FoodHistory[]
+  composedGroups:         ComposedGroup[]
+  meals:                  Meal[]
+  onDelete:               (id: string) => void
+  onRestore?:             (item: Pick<FoodHistory, 'name' | 'grams' | 'calories' | 'protein' | 'fluid_ml'>) => void
+  onUpdate:               (id: string, updates: Partial<Pick<FoodHistory, 'name' | 'grams' | 'calories' | 'protein' | 'fluid_ml'>>) => void
+  onRemoveGroup:          (id: string) => void
+  onSaveComposedGroup?:   (group: ComposedGroup) => void
+  showToast:              (msg: string, type: 'success' | 'error' | 'info', options?: { action?: { label: string; onClick: () => void }; durationMs?: number }) => void
 }) {
   const { styleMode } = useAppContext()
   const minimal = styleMode === 'minimal'
@@ -1481,6 +1483,17 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onR
   const editRatios = useRef({ calPerBase: 0, protPerBase: 0 })
   const [expandedGroupId, setExpandedGroupId]           = useState<string | null>(null)
   const [expandedHistoryGroup, setExpandedHistoryGroup] = useState<string | null>(null)
+  const [editingRecipeGroup, setEditingRecipeGroup] = useState<ComposedGroup | null>(null)
+  const getHistorySuggestions = useCallback((q: string) => {
+    const lq = q.trim().toLowerCase()
+    return lq ? history.filter(h => h.name.toLowerCase().includes(lq)).slice(0, 10) : []
+  }, [history])
+  const openRecipeEditor = (group: ComposedGroup, groupMeals: Meal[]) => {
+    const withIngredients = group.ingredients?.length
+      ? group
+      : { ...group, ingredients: groupMeals.map<RecipeIngredient>(m => ({ name: m.name, grams: Math.abs(m.grams), calories: Math.round(m.calories), protein: Math.round(m.protein * 10) / 10 })) }
+    setEditingRecipeGroup(withIngredients)
+  }
 
   const q = search.trim().toLowerCase()
   useEffect(() => { setVisibleGroupCount(HIST_PAGE) }, [q, filter])
@@ -1585,6 +1598,7 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onR
   const inputSm: React.CSSProperties = { height: 42, fontSize: 16, padding: '0 8px', borderRadius: 8 }
 
   return (
+    <>
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       {/* Sticky top: title + search + filter chips */}
       <div style={{ flexShrink: 0, padding: '12px 16px 0', background: 'var(--bg)' }}>
@@ -1942,44 +1956,65 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onR
                     ? { borderBottom: isExpanded ? 'none' : '1px dashed var(--border)' }
                     : { marginBottom: 8 }
                   }>
-                    {/* Group header — tap to expand/collapse */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: minimal ? 6 : 10,
-                      padding: minimal ? '8px 0' : '10px 12px',
-                    }}>
-                      {!minimal && (
-                        <div style={{ width: 28, height: 28, borderRadius: 8, flexShrink: 0, background: 'var(--composed-tint)', border: '1px solid var(--composed-glow)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <span className="icon icon-sm" style={{ color: 'var(--composed)', fontSize: 15 }}>restaurant</span>
+                    {/* Group header — 2-row layout matching regular history items */}
+                    <div
+                      role="button" tabIndex={0}
+                      onClick={() => setExpandedGroupId(isExpanded ? null : group.id)}
+                      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setExpandedGroupId(isExpanded ? null : group.id) } }}
+                      style={{ display: 'flex', alignItems: 'center', gap: minimal ? 6 : 10, padding: minimal ? '8px 0' : '10px 12px', cursor: 'pointer', userSelect: 'none' }}
+                    >
+                      {/* Icon */}
+                      {minimal
+                        ? <span className="icon icon-sm" style={{ color: 'var(--composed)', flexShrink: 0 }}>restaurant</span>
+                        : <div style={{ width: 28, height: 28, borderRadius: 8, flexShrink: 0, background: 'var(--composed-tint)', border: '1px solid var(--composed-glow)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <span className="icon icon-sm" style={{ color: 'var(--composed)', fontSize: 15 }}>restaurant</span>
+                          </div>
+                      }
+                      {/* Name + stats (2 rows) */}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'baseline', gap: 5, overflow: 'hidden' }}>
+                          <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>{group.name}</span>
+                          <span style={{ fontSize: 11, color: 'var(--text-3)', whiteSpace: 'nowrap', flexShrink: 0 }}>{groupMeals.length} {t(lang, 'ingredientsUnit')}</span>
                         </div>
-                      )}
+                        <div style={{ display: 'flex', gap: 5, direction: dir(lang), alignItems: 'baseline', marginTop: 2, fontSize: 11, color: 'var(--text-3)' }}>
+                          <span style={{ display: 'inline-flex', gap: 4, alignItems: 'baseline', whiteSpace: 'nowrap' }}>
+                            <span style={{ fontWeight: 600, color: 'var(--accent-hi)' }}>{totalCal}</span>
+                            <span style={{ fontSize: 10 }}>{t(lang, 'caloriesUnit')}</span>
+                          </span>
+                          <span style={{ color: 'var(--border)' }}>|</span>
+                          <span style={{ display: 'inline-flex', gap: 4, alignItems: 'baseline', whiteSpace: 'nowrap' }}>
+                            <span style={{ fontWeight: 600, color: 'var(--positive-hi)' }}>{totalProt}</span>
+                            <span style={{ fontSize: 10 }}>{t(lang, 'proteinUnit')}</span>
+                          </span>
+                        </div>
+                      </div>
+                      {/* Expand chevron */}
                       <button
-                        onClick={() => setExpandedGroupId(isExpanded ? null : group.id)}
-                        style={{ flex: 1, display: 'flex', alignItems: 'center', gap: minimal ? 6 : 10, background: 'none', border: 'none', cursor: 'pointer', padding: 0, minWidth: 0, textAlign: 'start' }}
+                        onClick={e => { e.stopPropagation(); setExpandedGroupId(isExpanded ? null : group.id) }}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: minimal ? 4 : 6, display: 'flex', borderRadius: 8, flexShrink: 0 }}
+                        aria-label={isExpanded ? t(lang, 'collapseGroup') : t(lang, 'expandGroup')}
                       >
-                        {minimal && <span className="icon icon-sm" style={{ color: 'var(--composed)', flexShrink: 0 }}>restaurant</span>}
-                        <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>{group.name}</span>
-                        <span style={{ fontSize: 11, color: 'var(--text-3)', whiteSpace: 'nowrap', flexShrink: 0 }}>{groupMeals.length} {t(lang, 'ingredientsUnit')}</span>
-                        <span style={{ flex: 1 }} />
-                        <span style={{ display: 'flex', alignItems: 'baseline', gap: 4, flexShrink: 0, fontSize: 11 }}>
-                          <span style={{ fontWeight: 600, color: 'var(--accent-hi)' }}>{totalCal}</span>
-                          <span style={{ fontWeight: 400, color: 'var(--text-3)' }}>{t(lang, 'caloriesUnit')}</span>
-                          <span style={{ color: 'var(--border)', padding: '0 2px' }}>|</span>
-                          <span style={{ fontWeight: 600, color: 'var(--positive-hi)' }}>{totalProt}</span>
-                          <span style={{ fontWeight: 400, color: 'var(--text-3)' }}>{t(lang, 'proteinUnit')}</span>
-                        </span>
-                        <span className="icon icon-chevron" style={{ color: 'var(--text-3)', flexShrink: 0, transition: 'transform .2s', transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>expand_more</span>
+                        <span className="icon icon-chevron" style={{ transition: 'transform .2s', transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>expand_more</span>
                       </button>
-                      <button onClick={() => handleRemoveGroup(group.id, group.name)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--danger)', padding: minimal ? 4 : 6, display: 'flex', borderRadius: 8, flexShrink: 0 }}>
+                      {/* Delete */}
+                      <button
+                        onClick={e => { e.stopPropagation(); handleRemoveGroup(group.id, group.name) }}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--danger)', padding: minimal ? 4 : 6, display: 'flex', borderRadius: 8, flexShrink: 0 }}
+                        aria-label={t(lang, 'delete')}
+                      >
                         <span className="icon icon-sm">delete</span>
                       </button>
                     </div>
-                    {/* Individual meals — shown only when expanded */}
+                    {/* Expanded ingredient list */}
                     {isExpanded && (
                       <div style={{
                         background: 'var(--composed-tint)',
                         borderTop: '1px solid var(--border)',
                         borderBottom: minimal ? '1px solid var(--border)' : undefined,
                         marginInline: minimal ? -16 : -12,
-                        paddingInline: minimal ? 16 : 12,
+                        paddingInlineStart: minimal ? 24 : 20,
+                        paddingInlineEnd: minimal ? 16 : 12,
+                        paddingBlock: '0 8px',
                       }}>
                         {groupMeals.map((meal, mi) => (
                           <div key={meal.id} style={{ borderTop: mi === 0 ? 'none' : '1px dashed var(--border)', padding: '6px 0' }}>
@@ -2011,6 +2046,22 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onR
                             </div>
                           </div>
                         ))}
+                        {/* Edit/add button */}
+                        {onSaveComposedGroup && (
+                          <button
+                            onClick={() => openRecipeEditor(group, groupMeals)}
+                            style={{
+                              marginTop: 6, width: '100%', background: 'transparent',
+                              border: '1px dashed var(--composed-glow)', borderRadius: 8,
+                              padding: '6px 10px', fontFamily: 'inherit',
+                              fontSize: 11, fontWeight: 600, color: 'var(--composed)',
+                              cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5,
+                            }}
+                          >
+                            <span className="icon" style={{ fontSize: 14 }}>edit</span>
+                            {group.ingredients?.length ? t(lang, 'editRecipe') : t(lang, 'addIngredient')}
+                          </button>
+                        )}
                       </div>
                     )}
                   </div>
@@ -2049,6 +2100,19 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onR
       </div>{/* /scroll inner */}
       </div>{/* /scroll wrapper with fades */}
     </div>
+
+    {/* Edit recipe modal — opened from composed group rows */}
+    {editingRecipeGroup && onSaveComposedGroup && (
+      <EditRecipeModal
+        group={editingRecipeGroup}
+        lang={lang}
+        history={history}
+        getSuggestions={getHistorySuggestions}
+        onSave={updated => { onSaveComposedGroup(updated); setEditingRecipeGroup(null) }}
+        onClose={() => setEditingRecipeGroup(null)}
+      />
+    )}
+    </>
   )
 }
 
@@ -2621,10 +2685,11 @@ interface SettingsSheetProps {
   onDeleteHistory:    (id: string) => void
   onRestoreHistory?:  (item: Pick<FoodHistory, 'name' | 'grams' | 'calories' | 'protein' | 'fluid_ml'>) => void
   onUpdateHistory:    (id: string, updates: Partial<Pick<FoodHistory, 'name' | 'grams' | 'calories' | 'protein' | 'fluid_ml'>>) => void
-  composedGroups:  ComposedGroup[]
-  onRemoveGroup:   (id: string) => void
-  meals:           Meal[]
-  onUpdateMeal:    (id: string, updates: Partial<Meal>) => void
+  composedGroups:        ComposedGroup[]
+  onRemoveGroup:         (id: string) => void
+  onSaveComposedGroup?:  (group: ComposedGroup) => void
+  meals:                 Meal[]
+  onUpdateMeal:          (id: string, updates: Partial<Meal>) => void
   weightLogEntries?: import('../types').WeightLog[]
   onLogWeight?:      (weight_kg: number, date?: string) => Promise<void>
   onDeleteWeightEntry?: (id: string) => Promise<void>
@@ -2636,7 +2701,7 @@ interface SettingsSheetProps {
 
 export function SettingsSheet({
   isOpen, onClose, lang, connected, profile, onSaveProfile, goals, onSaveGoals, onToggleLang, onSignOut, onLinkGoogle, hasGoogleLinked, theme, styleMode, onToggleTheme, onSelectStyleMode, showToast,
-  history, onDeleteHistory, onRestoreHistory, onUpdateHistory, composedGroups, onRemoveGroup, meals,
+  history, onDeleteHistory, onRestoreHistory, onUpdateHistory, composedGroups, onRemoveGroup, onSaveComposedGroup, meals,
   weightLogEntries = [], onLogWeight, onDeleteWeightEntry, onExportCsv,
   userFoodItems = [], onAddUserFood, onDeleteUserFood,
 }: SettingsSheetProps) {
@@ -2848,6 +2913,7 @@ export function SettingsSheet({
             onRestore={onRestoreHistory}
             onUpdate={onUpdateHistory}
             onRemoveGroup={onRemoveGroup}
+            onSaveComposedGroup={onSaveComposedGroup}
             showToast={showToast}
           />
         )}
