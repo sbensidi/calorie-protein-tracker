@@ -3,7 +3,7 @@ import { useLockBodyScroll } from '../hooks/useLockBodyScroll'
 import { useFocusTrap } from '../hooks/useFocusTrap'
 import { useSheetScroll } from '../hooks/useSheetScroll'
 import { SheetHandle } from './SheetHandle'
-import type { Meal, FoodHistory, FoodLibraryItem, ComposedGroup, PendingMeal, PendingOperation } from '../types'
+import type { Meal, FoodHistory, FoodLibraryItem, ComposedGroup, PendingMeal, PendingOperation, RecipeIngredient } from '../types'
 import type { Lang, MealTypeKey } from '../lib/i18n'
 import { t, dir, today, currentTime } from '../lib/i18n'
 import { FoodEntryForm } from './FoodEntryForm'
@@ -378,6 +378,15 @@ export function TodayTab({
   const [composePortion, setComposePortion] = useState('')
   const [composeBreakdown, setComposeBreakdown] = useState<import('../lib/calculations').CookingBreakdownItem[]>([])
 
+  // ── Edit recipe modal ────────────────────────────────────────
+  const [editRecipeModal, setEditRecipeModal] = useState<{ group: ComposedGroup } | null>(null)
+  const [editIngredients, setEditIngredients] = useState<RecipeIngredient[]>([])
+  const [newIngName, setNewIngName] = useState('')
+  const [newIngGrams, setNewIngGrams] = useState('')
+  const [newIngCal, setNewIngCal] = useState('')
+  const [newIngProt, setNewIngProt] = useState('')
+  const editRecipeModalRef = useRef<HTMLDivElement>(null)
+
   const openComposeModal = (mealType: MealType) => {
     setComposeName('')
     setComposePortion('')
@@ -617,16 +626,18 @@ export function TodayTab({
   const entrySheetRef         = useRef<HTMLDivElement>(null)
   const composeModalRef       = useRef<HTMLDivElement>(null)
   const addIngredientModalRef = useRef<HTMLDivElement>(null)
-  const anyModalOpen = entryOpen || !!composeModal || !!addIngredientModal
+  const anyModalOpen = entryOpen || !!composeModal || !!addIngredientModal || !!editRecipeModal
   useLockBodyScroll(anyModalOpen)
   useFocusTrap(entrySheetRef,         entryOpen)
   useFocusTrap(composeModalRef,       !!composeModal)
   useFocusTrap(addIngredientModalRef, !!addIngredientModal)
+  useFocusTrap(editRecipeModalRef,    !!editRecipeModal)
 
   // Escape key closes the topmost open modal
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return
+      if (editRecipeModal) { setEditRecipeModal(null); return }
       if (addIngredientModal) { setAddIngredientModal(null); return }
       if (composeModal) { setComposeModal(null); return }
       if (entryOpen) { setEntryOpen(false); return }
@@ -853,6 +864,7 @@ export function TodayTab({
                   onDeleteGroup={() => dissolveGroup(group.id)}
                   onDuplicate={() => duplicateGroup(group)}
                   onAddIngredient={() => setAddIngredientModal({ groupId: group.id, mealType: type })}
+                  onEditRecipe={() => { setEditIngredients(group.ingredients ? group.ingredients.map(i => ({ ...i })) : []); setNewIngName(''); setNewIngGrams(''); setNewIngCal(''); setNewIngProt(''); setEditRecipeModal({ group }) }}
                   onChangeMealType={newType => groupMeals.forEach(m => onEditMeal(m.id, { meal_type: newType }))}
                   open={openComposedIds.has(group.id)}
                   onToggleOpen={() => toggleComposedOpen(group.id)}
@@ -1223,6 +1235,136 @@ export function TodayTab({
       {items}
 
       {composeModalEl}
+
+      {/* ── Edit recipe modal ─────────────────────────────────── */}
+      {editRecipeModal && (() => {
+        const totalCal  = Math.round(editIngredients.reduce((s, i) => s + i.calories, 0))
+        const totalProt = Math.round(editIngredients.reduce((s, i) => s + i.protein,  0) * 10) / 10
+
+        const scaleIngredient = (idx: number, newGrams: number) => {
+          setEditIngredients(prev => prev.map((ing, i) => {
+            if (i !== idx) return ing
+            const ratio = ing.grams > 0 ? newGrams / ing.grams : 0
+            return { ...ing, grams: newGrams, calories: Math.round(ing.calories * ratio), protein: Math.round(ing.protein * ratio * 10) / 10 }
+          }))
+        }
+        const updateName = (idx: number, name: string) =>
+          setEditIngredients(prev => prev.map((ing, i) => i === idx ? { ...ing, name } : ing))
+        const removeRow = (idx: number) =>
+          setEditIngredients(prev => prev.filter((_, i) => i !== idx))
+        const addRow = () => {
+          const g = parseFloat(newIngGrams), c = parseFloat(newIngCal), p = parseFloat(newIngProt)
+          if (!newIngName.trim() || !(g > 0) || isNaN(c) || isNaN(p)) return
+          setEditIngredients(prev => [...prev, { name: newIngName.trim(), grams: g, calories: c, protein: p }])
+          setNewIngName(''); setNewIngGrams(''); setNewIngCal(''); setNewIngProt('')
+        }
+        const save = () => {
+          onUpsertGroup({ ...editRecipeModal.group, ingredients: editIngredients, totalCalories: totalCal, totalProtein: totalProt })
+          setEditRecipeModal(null)
+          showToast(t(lang, 'recipeUpdated'), 'success')
+        }
+
+        return (
+          <div className="compose-modal-backdrop" onClick={() => setEditRecipeModal(null)}>
+            <div ref={editRecipeModalRef} className="compose-modal" role="dialog" aria-modal="true" aria-label={t(lang, 'editRecipe')} onClick={e => e.stopPropagation()}>
+              <p style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', margin: '0 0 12px', textAlign: 'center' }}>
+                {t(lang, 'editRecipe')} — {editRecipeModal.group.name}
+              </p>
+
+              {/* Editable ingredient rows */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {editIngredients.map((ing, i) => (
+                  <div key={i} style={{ display: 'flex', gap: 5, alignItems: 'center' }}>
+                    <input
+                      className="inp"
+                      style={{ flex: 2, fontSize: 16, height: 36 }}
+                      value={ing.name}
+                      onChange={e => updateName(i, e.target.value)}
+                      dir={dir(lang)}
+                    />
+                    <div style={{ position: 'relative', width: 72 }}>
+                      <input
+                        type="number"
+                        inputMode="decimal"
+                        className="inp"
+                        style={{ height: 36, fontSize: 16, paddingInlineEnd: 20, textAlign: 'end', width: '100%' }}
+                        value={ing.grams > 0 ? ing.grams : ''}
+                        onChange={e => scaleIngredient(i, parseFloat(e.target.value) || 0)}
+                      />
+                      <span style={{ position: 'absolute', insetInlineEnd: 5, top: '50%', transform: 'translateY(-50%)', fontSize: 10, color: 'var(--text-3)', pointerEvents: 'none' }}>g</span>
+                    </div>
+                    <span style={{ fontSize: 11, color: 'var(--text-3)', whiteSpace: 'nowrap', minWidth: 48, textAlign: 'end' }}>
+                      {ing.calories}<span style={{ fontSize: 9, opacity: 0.8 }}>{t(lang, 'caloriesUnit')}</span>
+                    </span>
+                    <button className="icon-btn" onClick={() => removeRow(i)} aria-label={t(lang, 'delete')}>
+                      <span className="icon icon-sm" style={{ color: 'var(--danger-hi)', fontSize: 16 }}>delete</span>
+                    </button>
+                  </div>
+                ))}
+              </div>
+
+              {/* Add ingredient row */}
+              <div style={{ marginTop: 10, padding: '8px 10px', background: 'var(--surface-2)', borderRadius: 10 }}>
+                <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, color: 'var(--text-3)' }}>
+                  {t(lang, 'addIngredient')}
+                </p>
+                <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', alignItems: 'center' }}>
+                  <input className="inp" style={{ flex: 2, minWidth: 80, fontSize: 16, height: 36 }}
+                    placeholder={t(lang, 'dishName')} value={newIngName}
+                    onChange={e => setNewIngName(e.target.value)} dir={dir(lang)} />
+                  <div style={{ position: 'relative', width: 64 }}>
+                    <input type="number" inputMode="decimal" className="inp"
+                      style={{ height: 36, fontSize: 16, paddingInlineEnd: 18, width: '100%', textAlign: 'end' }}
+                      placeholder="0" value={newIngGrams} onChange={e => setNewIngGrams(e.target.value)} />
+                    <span style={{ position: 'absolute', insetInlineEnd: 5, top: '50%', transform: 'translateY(-50%)', fontSize: 10, color: 'var(--text-3)', pointerEvents: 'none' }}>g</span>
+                  </div>
+                  <div style={{ position: 'relative', width: 58 }}>
+                    <input type="number" inputMode="decimal" className="inp"
+                      style={{ height: 36, fontSize: 16, paddingInlineEnd: 22, width: '100%', textAlign: 'end' }}
+                      placeholder="0" value={newIngCal} onChange={e => setNewIngCal(e.target.value)} />
+                    <span style={{ position: 'absolute', insetInlineEnd: 4, top: '50%', transform: 'translateY(-50%)', fontSize: 9, color: 'var(--text-3)', pointerEvents: 'none' }}>{t(lang, 'caloriesUnit')}</span>
+                  </div>
+                  <div style={{ position: 'relative', width: 54 }}>
+                    <input type="number" inputMode="decimal" className="inp"
+                      style={{ height: 36, fontSize: 16, paddingInlineEnd: 18, width: '100%', textAlign: 'end' }}
+                      placeholder="0" value={newIngProt} onChange={e => setNewIngProt(e.target.value)} />
+                    <span style={{ position: 'absolute', insetInlineEnd: 4, top: '50%', transform: 'translateY(-50%)', fontSize: 9, color: 'var(--text-3)', pointerEvents: 'none' }}>{t(lang, 'proteinUnit')}</span>
+                  </div>
+                  <button
+                    className="icon-btn"
+                    onClick={addRow}
+                    aria-label={t(lang, 'addIngredient')}
+                    style={{ background: 'var(--accent-tint)', border: '1px solid var(--accent-border)' }}
+                  >
+                    <span className="icon icon-sm" style={{ color: 'var(--accent-hi)' }}>add</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Total */}
+              <div className="compose-modal-summary">
+                <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)', flex: 1 }}>{t(lang, 'total')}</span>
+                <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--accent-hi)', display: 'flex', alignItems: 'baseline', gap: 2 }}>
+                  {totalCal} <span style={{ fontSize: 10, opacity: 0.7 }}>{t(lang, 'caloriesUnit')}</span>
+                </span>
+                <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--positive-hi)', display: 'flex', alignItems: 'baseline', gap: 2, marginInlineStart: 12 }}>
+                  {totalProt} <span style={{ fontSize: 10, opacity: 0.7 }}>{t(lang, 'proteinUnit')}</span>
+                </span>
+              </div>
+
+              {/* Buttons */}
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button className="btn-confirm" style={{ flex: 1 }} onClick={save}>
+                  {t(lang, 'save')}
+                </button>
+                <button className="btn-ghost" style={{ flex: 1 }} onClick={() => setEditRecipeModal(null)}>
+                  {t(lang, 'cancel')}
+                </button>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
 
       {/* ── Add ingredient modal ──────────────────────────────── */}
       {addIngredientModal && (

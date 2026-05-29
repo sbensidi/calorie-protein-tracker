@@ -19,6 +19,7 @@ interface ComposedMealCardProps {
   onDeleteGroup: () => void  // dissolves the group (meals remain as standalones)
   onDuplicate: () => void
   onAddIngredient: () => void  // signals TodayTab to open the FoodEntryForm modal
+  onEditRecipe?: () => void   // signals TodayTab to open the edit-recipe modal
   onChangeMealType: (type: MealType) => void
   open?: boolean
   onToggleOpen?: () => void
@@ -26,7 +27,7 @@ interface ComposedMealCardProps {
 
 export function ComposedMealCard({
   group, meals, lang, selected, onToggleSelect,
-  onEditMeal, onDeleteMeal, onRename, onDeleteGroup, onDuplicate, onAddIngredient, onChangeMealType,
+  onEditMeal, onDeleteMeal, onRename, onDeleteGroup, onDuplicate, onAddIngredient, onEditRecipe, onChangeMealType,
   open: openProp, onToggleOpen,
 }: ComposedMealCardProps) {
   // open state: controlled from parent (Today tab) to survive group collapse/expand
@@ -201,23 +202,63 @@ export function ComposedMealCard({
         {open && (
           <div style={{ background: 'var(--composed-tint)', margin: '0 -4px', padding: '0 16px 10px' }}>
             {isPortionMode && group.ingredients ? (
-              group.ingredients.map((ing, i) => (
-                <div
-                  key={i}
-                  style={{ display: 'flex', alignItems: 'center', gap: 6, borderTop: i === 0 ? 'none' : '1px dashed var(--border)', padding: '6px 0' }}
-                >
-                  <span style={{ flex: 1, fontSize: 12, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {ing.name}
-                  </span>
-                  <span style={{ fontSize: 11, color: 'var(--text-3)', whiteSpace: 'nowrap' }}>{ing.grams}g</span>
-                  <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent-hi)', whiteSpace: 'nowrap' }}>
-                    {ing.calories}<span style={{ fontSize: 10, opacity: 0.7, marginInlineStart: 1 }}>{t(lang, 'caloriesUnit')}</span>
-                  </span>
-                  <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--positive-hi)', whiteSpace: 'nowrap' }}>
-                    {ing.protein}<span style={{ fontSize: 10, opacity: 0.7, marginInlineStart: 1 }}>{t(lang, 'proteinUnit')}</span>
-                  </span>
-                </div>
-              ))
+              <>
+                {group.ingredients.map((ing, i) => (
+                  <div
+                    key={i}
+                    style={{ display: 'flex', alignItems: 'center', gap: 6, borderTop: i === 0 ? 'none' : '1px dashed var(--border)', padding: '6px 0' }}
+                  >
+                    <span style={{ flex: 1, fontSize: 12, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {ing.name}
+                    </span>
+                    <span style={{ fontSize: 11, color: 'var(--text-3)', whiteSpace: 'nowrap' }}>{ing.grams}g</span>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent-hi)', whiteSpace: 'nowrap' }}>
+                      {ing.calories}<span style={{ fontSize: 10, opacity: 0.7, marginInlineStart: 1 }}>{t(lang, 'caloriesUnit')}</span>
+                    </span>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--positive-hi)', whiteSpace: 'nowrap' }}>
+                      {ing.protein}<span style={{ fontSize: 10, opacity: 0.7, marginInlineStart: 1 }}>{t(lang, 'proteinUnit')}</span>
+                    </span>
+                  </div>
+                ))}
+                {/* Edit recipe */}
+                {onEditRecipe && (
+                  <button
+                    onClick={onEditRecipe}
+                    style={{
+                      margin: '4px 0 2px', width: '100%', background: 'transparent',
+                      border: '1px dashed var(--composed-glow)', borderRadius: 8,
+                      padding: '6px 10px', fontFamily: 'inherit',
+                      fontSize: 11, fontWeight: 600, color: 'var(--composed)',
+                      cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5,
+                    }}
+                  >
+                    <span className="icon" style={{ fontSize: 14 }}>edit</span>
+                    {t(lang, 'editRecipe')}
+                  </button>
+                )}
+                {/* Portion meal — editable */}
+                {meals[0] && (
+                  <>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '6px 0 2px', borderTop: '1px solid var(--border)', marginTop: 4 }}>
+                      <span className="icon" style={{ fontSize: 12, color: 'var(--text-3)' }}>dining</span>
+                      <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                        {t(lang, 'portionEaten')}
+                      </span>
+                    </div>
+                    <MealCard
+                      meal={meals[0]}
+                      lang={lang}
+                      showCheckbox={false}
+                      selected={false}
+                      onToggleSelect={() => {}}
+                      onEdit={onEditMeal}
+                      onDelete={onDeleteMeal}
+                      enableWeightScaling
+                      listStyle
+                    />
+                  </>
+                )}
+              </>
             ) : (
               <>
                 {meals.map((meal, idx) => (
@@ -409,30 +450,70 @@ export function ComposedMealCard({
       {open && (
         <div className="composed-children">
           {isPortionMode && group.ingredients ? (
-            /* Portion mode: show snapshot ingredient rows (read-only) */
-            group.ingredients.map((ing, i) => (
-              <div
-                key={i}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 8,
-                  padding: '8px 12px',
-                  borderTop: i === 0 ? 'none' : '1px solid var(--border)',
-                }}
-              >
-                <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {ing.name}
-                </span>
-                <span style={{ fontSize: 12, color: 'var(--text-3)', whiteSpace: 'nowrap' }}>
-                  {ing.grams}g
-                </span>
-                <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent-hi)', whiteSpace: 'nowrap' }}>
-                  {ing.calories}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.7, marginInlineStart: 1 }}>{t(lang, 'caloriesUnit')}</span>
-                </span>
-                <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--positive-hi)', whiteSpace: 'nowrap' }}>
-                  {ing.protein}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.7, marginInlineStart: 1 }}>{t(lang, 'proteinUnit')}</span>
-                </span>
-              </div>
-            ))
+            /* Portion mode: snapshot ingredient rows + edit button + portion MealCard */
+            <>
+              {group.ingredients.map((ing, i) => (
+                <div
+                  key={i}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 8,
+                    padding: '8px 12px',
+                    borderTop: i === 0 ? 'none' : '1px solid var(--border)',
+                  }}
+                >
+                  <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {ing.name}
+                  </span>
+                  <span style={{ fontSize: 12, color: 'var(--text-3)', whiteSpace: 'nowrap' }}>
+                    {ing.grams}g
+                  </span>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent-hi)', whiteSpace: 'nowrap' }}>
+                    {ing.calories}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.7, marginInlineStart: 1 }}>{t(lang, 'caloriesUnit')}</span>
+                  </span>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--positive-hi)', whiteSpace: 'nowrap' }}>
+                    {ing.protein}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.7, marginInlineStart: 1 }}>{t(lang, 'proteinUnit')}</span>
+                  </span>
+                </div>
+              ))}
+              {/* Edit recipe button */}
+              {onEditRecipe && (
+                <button
+                  onClick={onEditRecipe}
+                  style={{
+                    margin: '6px 8px 2px', background: 'transparent',
+                    border: '1px dashed var(--composed-glow)', borderRadius: 8,
+                    padding: '6px 10px', fontFamily: 'inherit',
+                    fontSize: 11, fontWeight: 600, color: 'var(--composed)',
+                    cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5,
+                    width: 'calc(100% - 16px)',
+                  }}
+                >
+                  <span className="icon" style={{ fontSize: 14 }}>edit</span>
+                  {t(lang, 'editRecipe')}
+                </button>
+              )}
+              {/* Portion meal — editable */}
+              {meals[0] && (
+                <>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '8px 12px 2px', borderTop: '1px solid var(--border)', marginTop: 4 }}>
+                    <span className="icon" style={{ fontSize: 13, color: 'var(--text-3)' }}>dining</span>
+                    <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                      {t(lang, 'portionEaten')}
+                    </span>
+                  </div>
+                  <MealCard
+                    meal={meals[0]}
+                    lang={lang}
+                    showCheckbox={false}
+                    selected={false}
+                    onToggleSelect={() => {}}
+                    onEdit={onEditMeal}
+                    onDelete={onDeleteMeal}
+                    enableWeightScaling
+                  />
+                </>
+              )}
+            </>
           ) : (
             /* Normal mode: editable meal records */
             <>
