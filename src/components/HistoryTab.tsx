@@ -707,29 +707,36 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
 
             return (
               <div key={row.group.id} style={{ borderBottom: expanded || isLast ? 'none' : '1px dashed var(--border)' }}>
-                {/* Group header — one-line layout matching ComposedMealCard minimal mode */}
+                {/* Group header — 2-row layout matching SettingsSheet food history */}
                 <div
                   role="button"
                   tabIndex={0}
                   onClick={() => toggleGroupExpand(row.group.id)}
                   onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') toggleGroupExpand(row.group.id) }}
-                  style={{ padding: '8px 0', minHeight: 40, display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', userSelect: 'none' }}
+                  style={{ padding: '8px 0', display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', userSelect: 'none' }}
                 >
                   <span className="icon icon-sm" style={{ color: 'var(--composed)', fontSize: 14, flexShrink: 0 }}>restaurant</span>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>
-                    {row.group.name}
-                  </span>
-                  <span style={{ fontSize: 11, color: 'var(--text-3)', whiteSpace: 'nowrap', flexShrink: 0 }}>
-                    {row.meals.length} {t(lang, 'ingredients')}
-                  </span>
-                  <span style={{ flex: 1 }} />
-                  <span style={{ display: 'flex', alignItems: 'baseline', gap: 4, flexShrink: 0, fontSize: 11 }}>
-                    <span style={{ fontWeight: 600, color: 'var(--accent-hi)' }}>{gCal}</span>
-                    <span style={{ fontWeight: 400, color: 'var(--text-3)' }}>{t(lang, 'caloriesUnit')}</span>
-                    <span style={{ color: 'var(--border)', padding: '0 2px' }}>|</span>
-                    <span style={{ fontWeight: 600, color: 'var(--positive-hi)' }}>{gProt}</span>
-                    <span style={{ fontWeight: 400, color: 'var(--text-3)' }}>{t(lang, 'proteinUnit')}</span>
-                  </span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 5, overflow: 'hidden' }}>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>
+                        {row.group.name}
+                      </span>
+                      <span style={{ fontSize: 11, color: 'var(--text-3)', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                        {row.meals.length} {t(lang, 'ingredientsUnit')}
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', gap: 5, direction: dir(lang), alignItems: 'baseline', marginTop: 2, fontSize: 11, color: 'var(--text-3)' }}>
+                      <span style={{ display: 'inline-flex', gap: 4, alignItems: 'baseline', whiteSpace: 'nowrap' }}>
+                        <span style={{ fontWeight: 600, color: 'var(--accent-hi)' }}>{gCal}</span>
+                        <span style={{ fontSize: 10 }}>{t(lang, 'caloriesUnit')}</span>
+                      </span>
+                      <span style={{ color: 'var(--border)' }}>|</span>
+                      <span style={{ display: 'inline-flex', gap: 4, alignItems: 'baseline', whiteSpace: 'nowrap' }}>
+                        <span style={{ fontWeight: 600, color: 'var(--positive-hi)' }}>{gProt}</span>
+                        <span style={{ fontSize: 10 }}>{t(lang, 'proteinUnit')}</span>
+                      </span>
+                    </div>
+                  </div>
                   {row.group.ingredients && row.group.ingredients.length > 0 && onUpsertGroup && (
                     <button
                       className="icon-btn"
