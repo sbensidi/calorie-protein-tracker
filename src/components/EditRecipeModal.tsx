@@ -112,11 +112,11 @@ export function EditRecipeModal({
                 <div style={{ position: 'relative', width: 76 }}>
                   <input
                     type="number" inputMode="decimal" className="inp"
-                    style={{ height: 36, fontSize: 16, paddingInlineStart: 26, textAlign: 'start', width: '100%' }}
+                    style={{ height: 36, fontSize: 16, paddingInlineEnd: 26, textAlign: 'start', width: '100%' }}
                     value={ing.grams > 0 ? ing.grams : ''}
                     onChange={e => scaleIngredient(i, parseFloat(e.target.value) || 0)}
                   />
-                  <span style={{ position: 'absolute', insetInlineStart: 5, top: '50%', transform: 'translateY(-50%)', fontSize: 10, color: 'var(--text-3)', pointerEvents: 'none' }}>{t(lang, 'gramsUnit')}</span>
+                  <span style={{ position: 'absolute', insetInlineEnd: 5, top: '50%', transform: 'translateY(-50%)', fontSize: 10, color: 'var(--text-3)', pointerEvents: 'none' }}>{t(lang, 'gramsUnit')}</span>
                 </div>
                 {/* Calories — readonly, visually distinct */}
                 <div style={{ position: 'relative', width: 76 }}>
@@ -125,14 +125,14 @@ export function EditRecipeModal({
                     className="inp"
                     style={{
                       height: 36, fontSize: 16, fontWeight: 700,
-                      paddingInlineStart: 30, textAlign: 'start', width: '100%',
+                      paddingInlineEnd: 30, textAlign: 'start', width: '100%',
                       background: 'var(--accent-fill)', borderColor: 'transparent',
                       color: 'var(--accent-hi)', cursor: 'default',
                     }}
                     value={ing.calories}
                     tabIndex={-1}
                   />
-                  <span style={{ position: 'absolute', insetInlineStart: 4, top: '50%', transform: 'translateY(-50%)', fontSize: 9, color: 'var(--accent-hi)', opacity: 0.7, pointerEvents: 'none' }}>
+                  <span style={{ position: 'absolute', insetInlineEnd: 4, top: '50%', transform: 'translateY(-50%)', fontSize: 9, color: 'var(--accent-hi)', opacity: 0.7, pointerEvents: 'none' }}>
                     {t(lang, 'caloriesUnit')}
                   </span>
                 </div>
