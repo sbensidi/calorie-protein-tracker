@@ -177,7 +177,7 @@ interface TodayTabProps {
   defaultWeightUnit?: 'g' | 'oz'
   defaultVolumeUnit?: 'ml' | 'cup' | 'tbsp' | 'tsp' | 'fl_oz'
   onAddMeal: (meal: Omit<Meal, 'id' | 'user_id' | 'created_at'>) => void
-  onAddMealWithId: (meal: Omit<Meal, 'id' | 'user_id' | 'created_at'>) => Promise<string | null>
+  onAddMealWithId: (meal: Omit<Meal, 'id' | 'user_id' | 'created_at'>, preAssignedId?: string) => Promise<string | null>
   onEditMeal: (id: string, updates: Partial<Meal>) => void
   onDeleteMeal: (id: string) => void
   onDuplicateMeal: (meal: Meal) => void
@@ -481,27 +481,28 @@ export function TodayTab({
 
   const duplicateGroup = useCallback(async (group: ComposedGroup) => {
     const groupMeals = todayMeals.filter(m => group.mealIds.includes(m.id))
-    const newIds: string[] = []
-    for (const m of groupMeals) {
-      const newId = await onAddMealWithId({
+    if (groupMeals.length === 0) return
+    // Pre-generate IDs so we can create the group first (optimistic update is
+    // synchronous in upsert, so the group card appears before the meals arrive)
+    const newMealIds = groupMeals.map(() => crypto.randomUUID())
+    onUpsertGroup({
+      id: crypto.randomUUID(),
+      name: group.name,
+      mealIds: newMealIds,
+      batchWeightG:  group.batchWeightG,
+      totalCalories: group.totalCalories,
+      totalProtein:  group.totalProtein,
+    })
+    for (let i = 0; i < groupMeals.length; i++) {
+      const m = groupMeals[i]
+      await onAddMealWithId({
         date: today(), meal_type: m.meal_type, name: m.name,
         grams: m.grams, calories: m.calories, protein: m.protein,
         fat: m.fat ?? null, carbs: m.carbs ?? null, notes: m.notes ?? null,
         fluid_ml: m.fluid_ml ?? null, fluid_excluded: m.fluid_excluded ?? false,
         display_unit: m.display_unit ?? null, display_amount: m.display_amount ?? null,
         time_logged: currentTime(),
-      })
-      if (newId) newIds.push(newId)
-    }
-    if (newIds.length > 0) {
-      await onUpsertGroup({
-        id: crypto.randomUUID(),
-        name: group.name,
-        mealIds: newIds,
-        batchWeightG:  group.batchWeightG,
-        totalCalories: group.totalCalories,
-        totalProtein:  group.totalProtein,
-      })
+      }, newMealIds[i])
     }
     showToast(`${t(lang, 'duplicatedPrefix')}1 ${t(lang, 'item')}`, 'success')
   }, [todayMeals, onAddMealWithId, onUpsertGroup, lang])
@@ -514,30 +515,32 @@ export function TodayTab({
     mealsByType[type]
       .filter(m => sel.has(m.id))
       .forEach(m => { onDuplicateMeal(m); count++ })
-    // Duplicate composed groups — preserve group structure
+    // Duplicate composed groups — preserve group structure.
+    // Create the group first (optimistic update is synchronous) so meals
+    // appear inside the group card as they arrive, not as standalone flashes.
     for (const g of composedGroups.filter(g => sel.has(g.id))) {
       const groupMeals = todayMeals.filter(m => g.mealIds.includes(m.id))
-      const newIds: string[] = []
-      for (const m of groupMeals) {
-        const newId = await onAddMealWithId({
-          date: today(), meal_type: m.meal_type, name: m.name,
-          grams: m.grams, calories: m.calories, protein: m.protein,
-          fat: m.fat ?? null, carbs: m.carbs ?? null, notes: m.notes ?? null,
-          fluid_ml: m.fluid_ml ?? null, fluid_excluded: m.fluid_excluded ?? false,
-          display_unit: m.display_unit ?? null, display_amount: m.display_amount ?? null,
-          time_logged: currentTime(),
-        })
-        if (newId) newIds.push(newId)
-      }
-      if (newIds.length > 0) {
-        await onUpsertGroup({
+      if (groupMeals.length > 0) {
+        const newMealIds = groupMeals.map(() => crypto.randomUUID())
+        onUpsertGroup({
           id: crypto.randomUUID(),
           name: g.name,
-          mealIds: newIds,
+          mealIds: newMealIds,
           batchWeightG:  g.batchWeightG,
           totalCalories: g.totalCalories,
           totalProtein:  g.totalProtein,
         })
+        for (let i = 0; i < groupMeals.length; i++) {
+          const m = groupMeals[i]
+          await onAddMealWithId({
+            date: today(), meal_type: m.meal_type, name: m.name,
+            grams: m.grams, calories: m.calories, protein: m.protein,
+            fat: m.fat ?? null, carbs: m.carbs ?? null, notes: m.notes ?? null,
+            fluid_ml: m.fluid_ml ?? null, fluid_excluded: m.fluid_excluded ?? false,
+            display_unit: m.display_unit ?? null, display_amount: m.display_amount ?? null,
+            time_logged: currentTime(),
+          }, newMealIds[i])
+        }
       }
       count++
     }

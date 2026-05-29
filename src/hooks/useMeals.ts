@@ -200,10 +200,10 @@ export function useMeals(userId: string | null) {
     else fetchMeals()
   }, [userId, fetchMeals, pendingMeals, savePending])
 
-  const addMealWithId = useCallback(async (meal: Omit<Meal, 'id' | 'user_id' | 'created_at'>): Promise<string | null> => {
+  const addMealWithId = useCallback(async (meal: Omit<Meal, 'id' | 'user_id' | 'created_at'>, preAssignedId?: string): Promise<string | null> => {
     if (!userId) return null
     setError(null)
-    const id = crypto.randomUUID()
+    const id = preAssignedId ?? crypto.randomUUID()
     const { error: err } = await supabase.from('meals').insert({
       ...meal,
       id,

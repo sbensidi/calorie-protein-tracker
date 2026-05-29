@@ -115,7 +115,7 @@ export function FoodHistoryModal({
             onClear={() => onSearchChange('')}
             startIcon="search"
             isRTL={isRTL}
-            style={{ height: 40, fontSize: 13 }}
+            style={{ height: 40, fontSize: 16 }}
             placeholder={t(lang, 'search')}
             dir={isRTL ? 'rtl' : 'ltr'}
           />
