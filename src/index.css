@@ -738,7 +738,7 @@ details[open] summary .chevron-rotate {
 }
 .composed-children {
   border-top: 1px solid var(--composed-tint);
-  background: var(--depth-1);
+  background: var(--composed-tint);
   padding: 6px 8px 8px;
   display: flex; flex-direction: column; gap: 3px;
 }

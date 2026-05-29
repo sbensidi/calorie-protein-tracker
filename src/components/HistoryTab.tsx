@@ -786,10 +786,11 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                       <div key={row.key} style={{ padding: '8px 0', borderTop: row.isFirst ? 'none' : '1px dashed var(--border)' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, overflow: 'hidden' }}>
                           <div style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--composed-border-hi)', flexShrink: 0 }} />
-                          <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>
+                          <span style={{ flexShrink: 1, minWidth: 0, fontSize: 13, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                             {row.name}
                           </span>
                           <span style={{ fontSize: 12, color: 'var(--text-3)', whiteSpace: 'nowrap', flexShrink: 0 }}>{row.qty}</span>
+                          <span style={{ flex: 1 }} />
                         </div>
                         <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginTop: 3, paddingInlineStart: 11 }}>
                           <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent-hi)', display: 'inline-flex', alignItems: 'baseline', gap: 2 }}>
@@ -1022,19 +1023,19 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                   title={t(lang, 'foodHistory')}
                   style={{
                     position: 'absolute',
-                    ...(isRTL ? { left: 0 } : { right: 0 }),
+                    insetInlineEnd: 0,
                     top: 0, bottom: 0, width: 42,
                     background: 'none', border: 'none', cursor: 'pointer',
                     color: 'var(--text-3)', padding: 0,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    ...(isRTL ? { borderRight: '1px solid var(--border)' } : { borderLeft: '1px solid var(--border)' }),
+                    borderInlineStart: '1px solid var(--border)',
                   }}
                 >
                   <span className="icon icon-sm">manage_search</span>
                 </button>
                 <span className="icon" style={{
                   position: 'absolute',
-                  ...(isRTL ? { right: 10 } : { left: 52 }),
+                  insetInlineStart: 10,
                   top: '50%', transform: 'translateY(-50%)',
                   color: 'var(--text-3)', fontSize: 18, pointerEvents: 'none',
                 }}>search</span>
@@ -1050,7 +1051,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                     if (!searchDropdownRef.current?.contains(document.activeElement)) setDropdownOpen(false)
                   }, 150)}
                   placeholder={t(lang, 'searchFood')}
-                  style={{ paddingInlineStart: 36, paddingInlineEnd: search ? 78 : 46 }}
+                  style={{ paddingInlineStart: 36, paddingInlineEnd: search ? 80 : 48 }}
                 />
                 {search && (
                   <button
@@ -1058,7 +1059,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                     aria-label={t(lang, 'clearSearch')}
                     style={{
                       position: 'absolute',
-                      ...(isRTL ? { left: 42 } : { right: 42 }),
+                      insetInlineEnd: 44,
                       top: '50%', transform: 'translateY(-50%)',
                       background: 'none', border: 'none', cursor: 'pointer',
                       color: 'var(--text-3)', padding: 2, display: 'flex',
