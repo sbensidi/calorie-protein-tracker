@@ -1945,16 +1945,16 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onR
               {composedGroups.length === 0 && <p style={{ fontSize: 12, margin: '4px 0 0', opacity: 0.7 }}>{t(lang, 'noComposedDishesSub')}</p>}
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: minimal ? 0 : 10 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: minimal ? 0 : 6 }}>
             {filteredGroups.map(group => {
                 const groupMeals = meals.filter(m => group.mealIds.includes(m.id))
                 const totalCal   = Math.round(groupMeals.reduce((s, m) => s + m.calories, 0))
                 const totalProt  = Math.round(groupMeals.reduce((s, m) => s + m.protein, 0) * 10) / 10
                 const isExpanded = expandedGroupId === group.id
                 return (
-                  <div key={group.id} className={minimal ? undefined : 'composed-card'} style={minimal
+                  <div key={group.id} style={minimal
                     ? { borderBottom: isExpanded ? 'none' : '1px dashed var(--border)' }
-                    : { marginBottom: 8 }
+                    : { background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }
                   }>
                     {/* Group header — 2-row layout matching regular history items */}
                     <div
@@ -2012,8 +2012,8 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onR
                         borderTop: '1px solid var(--border)',
                         borderBottom: minimal ? '1px solid var(--border)' : undefined,
                         marginInline: minimal ? -16 : -12,
-                        paddingInlineStart: minimal ? 24 : 20,
-                        paddingInlineEnd: minimal ? 24 : 20,
+                        paddingInlineStart: minimal ? 28 : 24,
+                        paddingInlineEnd: minimal ? 28 : 24,
                         paddingBlock: '0 8px',
                       }}>
                         {groupMeals.map((meal, mi) => (
