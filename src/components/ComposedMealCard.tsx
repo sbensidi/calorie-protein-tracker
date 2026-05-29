@@ -2,7 +2,6 @@ import { useState } from 'react'
 import type { Meal, ComposedGroup } from '../types'
 import type { Lang } from '../lib/i18n'
 import { t, dir } from '../lib/i18n'
-import { MealCard } from './MealCard'
 import { useAppContext } from '../context/AppContext'
 
 type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'beverage'
@@ -27,7 +26,7 @@ interface ComposedMealCardProps {
 
 export function ComposedMealCard({
   group, meals, lang, selected, onToggleSelect,
-  onEditMeal, onDeleteMeal, onRename, onDeleteGroup, onDuplicate, onAddIngredient, onEditRecipe, onChangeMealType,
+  onEditMeal, onRename, onDeleteGroup, onDuplicate, onAddIngredient, onEditRecipe, onChangeMealType,
   open: openProp, onToggleOpen,
 }: ComposedMealCardProps) {
   // open state: controlled from parent (Today tab) to survive group collapse/expand
@@ -41,7 +40,6 @@ export function ComposedMealCard({
   const [editingPortion, setEditingPortion] = useState(false)
   const [portionName, setPortionName] = useState('')
   const [portionGrams, setPortionGrams] = useState('')
-  const [editingMealId, setEditingMealId] = useState<string | null>(null)
   const { styleMode } = useAppContext()
 
   const totalCal  = Math.round(meals.reduce((s, m) => s + m.calories, 0))
@@ -321,45 +319,33 @@ export function ComposedMealCard({
             ) : (
               <>
                 {meals.map((meal, idx) => (
-                  <div key={meal.id} style={{ borderTop: idx === 0 ? 'none' : '1px dashed var(--border)' }}>
-                    {editingMealId === meal.id ? (
-                      <MealCard
-                        meal={meal}
-                        lang={lang}
-                        showCheckbox={false}
-                        selected={false}
-                        onToggleSelect={() => {}}
-                        onEdit={(id, updates) => { onEditMeal(id, updates); setEditingMealId(null) }}
-                        onDelete={id => { onDeleteMeal(id); setEditingMealId(null) }}
-                        enableWeightScaling
-                        listStyle
-                      />
-                    ) : (
-                      <div style={{ padding: '6px 0' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 5, overflow: 'hidden' }}>
-                          <div style={{ width: 4, height: 4, borderRadius: '50%', background: 'var(--composed-border-hi)', flexShrink: 0 }} />
-                          <span style={{ flexShrink: 1, minWidth: 0, fontSize: 12, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{meal.name}</span>
-                          <span style={{ fontSize: 11, color: 'var(--text-3)', whiteSpace: 'nowrap', flexShrink: 0 }}>
-                            {meal.fluid_ml && !meal.fluid_excluded ? `${Math.round(meal.fluid_ml)}ml` : `${Math.abs(meal.grams)}${t(lang, 'gramsUnit')}`}
-                          </span>
-                          <span style={{ flex: 1 }} />
-                          <button className="icon-btn" onClick={() => setEditingMealId(meal.id)} aria-label={t(lang, 'edit')}>
-                            <span className="icon icon-sm">edit</span>
-                          </button>
-                          <button className="icon-btn" onClick={() => onDeleteMeal(meal.id)} aria-label={t(lang, 'delete')}>
-                            <span className="icon icon-sm" style={{ color: 'var(--danger-hi)', fontSize: 16 }}>delete</span>
-                          </button>
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginTop: 2, paddingInlineStart: 9 }}>
-                          <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent-hi)', display: 'inline-flex', alignItems: 'baseline', gap: 1 }}>
-                            {Math.round(meal.calories)}<span style={{ fontSize: 9, fontWeight: 400, opacity: 0.7 }}>{t(lang, 'caloriesUnit')}</span>
-                          </span>
-                          <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--positive-hi)', display: 'inline-flex', alignItems: 'baseline', gap: 1 }}>
-                            {Math.round(meal.protein * 10) / 10}<span style={{ fontSize: 9, fontWeight: 400, opacity: 0.7 }}>{t(lang, 'proteinUnit')}</span>
-                          </span>
-                        </div>
-                      </div>
-                    )}
+                  <div key={meal.id} style={{ borderTop: idx === 0 ? 'none' : '1px dashed var(--border)', padding: '6px 0' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 5, overflow: 'hidden' }}>
+                      <div style={{ width: 4, height: 4, borderRadius: '50%', background: 'var(--composed-border-hi)', flexShrink: 0 }} />
+                      <span style={{ flexShrink: 1, minWidth: 0, fontSize: 12, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{meal.name}</span>
+                      <span style={{ fontSize: 11, color: 'var(--text-3)', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                        {meal.fluid_ml && !meal.fluid_excluded ? `${Math.round(meal.fluid_ml)}ml` : `${Math.abs(meal.grams)}${t(lang, 'gramsUnit')}`}
+                      </span>
+                      <span style={{ flex: 1 }} />
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginTop: 2, paddingInlineStart: 9 }}>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent-hi)', display: 'inline-flex', alignItems: 'baseline', gap: 1 }}>
+                        {Math.round(meal.calories)}<span style={{ fontSize: 9, fontWeight: 400, opacity: 0.7 }}>{t(lang, 'caloriesUnit')}</span>
+                      </span>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--positive-hi)', display: 'inline-flex', alignItems: 'baseline', gap: 1 }}>
+                        {Math.round(meal.protein * 10) / 10}<span style={{ fontSize: 9, fontWeight: 400, opacity: 0.7 }}>{t(lang, 'proteinUnit')}</span>
+                      </span>
+                      {meal.fat != null && (
+                        <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--warning-hi)', opacity: 0.85, display: 'inline-flex', alignItems: 'baseline', gap: 1 }}>
+                          {meal.fat}{t(lang, 'fatUnit')}<span style={{ fontSize: 9, fontWeight: 400, opacity: 0.7 }}>{t(lang, 'fat')}</span>
+                        </span>
+                      )}
+                      {meal.carbs != null && (
+                        <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--library-hi)', opacity: 0.85, display: 'inline-flex', alignItems: 'baseline', gap: 1 }}>
+                          {meal.carbs}{t(lang, 'carbsUnit')}<span style={{ fontSize: 9, fontWeight: 400, opacity: 0.7 }}>{t(lang, 'carbs')}</span>
+                        </span>
+                      )}
+                    </div>
                   </div>
                 ))}
 
@@ -624,21 +610,9 @@ export function ComposedMealCard({
               )}
             </>
           ) : (
-            /* Normal mode: editable meal records */
+            /* Normal mode: meal records */
             <>
-              {meals.map((meal, i) => editingMealId === meal.id ? (
-                <MealCard
-                  key={meal.id}
-                  meal={meal}
-                  lang={lang}
-                  showCheckbox={false}
-                  selected={false}
-                  onToggleSelect={() => {}}
-                  onEdit={(id, updates) => { onEditMeal(id, updates); setEditingMealId(null) }}
-                  onDelete={id => { onDeleteMeal(id); setEditingMealId(null) }}
-                  enableWeightScaling
-                />
-              ) : (
+              {meals.map((meal, i) => (
                 <div key={meal.id} style={{ padding: '8px 12px', borderTop: i === 0 ? 'none' : '1px dashed var(--border)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, overflow: 'hidden' }}>
                     <div style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--composed-border-hi)', flexShrink: 0 }} />
@@ -647,12 +621,6 @@ export function ComposedMealCard({
                       {meal.fluid_ml && !meal.fluid_excluded ? `${Math.round(meal.fluid_ml)}ml` : `${Math.abs(meal.grams)}${t(lang, 'gramsUnit')}`}
                     </span>
                     <span style={{ flex: 1 }} />
-                    <button className="icon-btn" onClick={() => setEditingMealId(meal.id)} aria-label={t(lang, 'edit')}>
-                      <span className="icon icon-sm">edit</span>
-                    </button>
-                    <button className="icon-btn" onClick={() => onDeleteMeal(meal.id)} aria-label={t(lang, 'delete')}>
-                      <span className="icon icon-sm" style={{ color: 'var(--danger-hi)', fontSize: 16 }}>delete</span>
-                    </button>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginTop: 3, paddingInlineStart: 11 }}>
                     <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent-hi)', display: 'inline-flex', alignItems: 'baseline', gap: 2 }}>
@@ -661,6 +629,16 @@ export function ComposedMealCard({
                     <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--positive-hi)', display: 'inline-flex', alignItems: 'baseline', gap: 2 }}>
                       {Math.round(meal.protein * 10) / 10}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.7 }}>{t(lang, 'proteinUnit')}</span>
                     </span>
+                    {meal.fat != null && (
+                      <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--warning-hi)', opacity: 0.85, display: 'inline-flex', alignItems: 'baseline', gap: 2 }}>
+                        {meal.fat}{t(lang, 'fatUnit')}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.7 }}>{t(lang, 'fat')}</span>
+                      </span>
+                    )}
+                    {meal.carbs != null && (
+                      <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--library-hi)', opacity: 0.85, display: 'inline-flex', alignItems: 'baseline', gap: 2 }}>
+                        {meal.carbs}{t(lang, 'carbsUnit')}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.7 }}>{t(lang, 'carbs')}</span>
+                      </span>
+                    )}
                   </div>
                 </div>
               ))}

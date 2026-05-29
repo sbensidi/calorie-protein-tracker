@@ -13,7 +13,6 @@ import { useFoodLibrary } from '../hooks/useFoodLibrary'
 import { UNITS, toBase, fromBase, mlToGrams } from '../lib/units'
 import { useNutritionAmountEditor } from '../hooks/useNutritionAmountEditor'
 import type { UnitId } from '../lib/units'
-import { MealCard } from './MealCard'
 import { fuzzyScore } from '../lib/fuzzyMatch'
 import { useAppContext } from '../context/AppContext'
 import { calcBMR, calcDailyTdee, calcProjectedDays, calcBMI, calcBMICategory, calcSuggestedFluidMl } from '../lib/calculations'
@@ -1431,7 +1430,7 @@ function GoalsScreen({ lang, profile, goals, onSave, onSaveProfile, onSaveFluidG
 
 // ── Food History Screen ───────────────────────────────────────────────────────
 
-function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onRestore, onUpdate, onUpdateMeal, onRemoveGroup, showToast }: {
+function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onRestore, onUpdate, onRemoveGroup, showToast }: {
   lang:            Lang
   history:         FoodHistory[]
   composedGroups:  ComposedGroup[]
@@ -1439,7 +1438,6 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onR
   onDelete:        (id: string) => void
   onRestore?:      (item: Pick<FoodHistory, 'name' | 'grams' | 'calories' | 'protein' | 'fluid_ml'>) => void
   onUpdate:        (id: string, updates: Partial<Pick<FoodHistory, 'name' | 'grams' | 'calories' | 'protein' | 'fluid_ml'>>) => void
-  onUpdateMeal:    (id: string, updates: Partial<Meal>) => void
   onRemoveGroup:   (id: string) => void
   showToast:       (msg: string, type: 'success' | 'error' | 'info', options?: { action?: { label: string; onClick: () => void }; durationMs?: number }) => void
 }) {
@@ -1482,7 +1480,6 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onR
   // Ratios per base unit (grams or ml) — used for proportional scaling when amount changes
   const editRatios = useRef({ calPerBase: 0, protPerBase: 0 })
   const [expandedGroupId, setExpandedGroupId]           = useState<string | null>(null)
-  const [editingMealId,   setEditingMealId]             = useState<string | null>(null)
   const [expandedHistoryGroup, setExpandedHistoryGroup] = useState<string | null>(null)
 
   const q = search.trim().toLowerCase()
@@ -1985,55 +1982,33 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onR
                         paddingInline: minimal ? 16 : 12,
                       }}>
                         {groupMeals.map((meal, mi) => (
-                          <div key={meal.id} style={{ borderTop: mi === 0 ? 'none' : '1px dashed var(--border)' }}>
-                            {editingMealId === meal.id ? (
-                              <MealCard
-                                meal={meal}
-                                lang={lang}
-                                showCheckbox={false}
-                                selected={false}
-                                onToggleSelect={() => {}}
-                                onEdit={(id, updates) => {
-                                  onUpdateMeal(id, updates)
-                                  showToast(t(lang, 'saved'), 'success')
-                                  setEditingMealId(null)
-                                }}
-                                enableWeightScaling
-                                listStyle
-                              />
-                            ) : (
-                              <div style={{ padding: '6px 0' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 5, overflow: 'hidden' }}>
-                                  <div style={{ width: 4, height: 4, borderRadius: '50%', background: 'var(--composed-border-hi)', flexShrink: 0 }} />
-                                  <span style={{ flexShrink: 1, minWidth: 0, fontSize: 12, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{meal.name}</span>
-                                  <span style={{ fontSize: 11, color: 'var(--text-3)', whiteSpace: 'nowrap', flexShrink: 0 }}>
-                                    {meal.fluid_ml && !meal.fluid_excluded ? `${Math.round(meal.fluid_ml)}ml` : `${Math.abs(meal.grams)}${t(lang, 'gramsUnit')}`}
-                                  </span>
-                                  <span style={{ flex: 1 }} />
-                                  <button className="icon-btn" onClick={() => setEditingMealId(meal.id)} aria-label={t(lang, 'edit')}>
-                                    <span className="icon icon-sm">edit</span>
-                                  </button>
-                                </div>
-                                <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginTop: 2, paddingInlineStart: 9 }}>
-                                  <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent-hi)', display: 'inline-flex', alignItems: 'baseline', gap: 1 }}>
-                                    {Math.round(meal.calories)}<span style={{ fontSize: 9, fontWeight: 400, opacity: 0.7 }}>{t(lang, 'caloriesUnit')}</span>
-                                  </span>
-                                  <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--positive-hi)', display: 'inline-flex', alignItems: 'baseline', gap: 1 }}>
-                                    {Math.round(meal.protein * 10) / 10}<span style={{ fontSize: 9, fontWeight: 400, opacity: 0.7 }}>{t(lang, 'proteinUnit')}</span>
-                                  </span>
-                                  {meal.fat != null && (
-                                    <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--warning-hi)', opacity: 0.85, display: 'inline-flex', alignItems: 'baseline', gap: 1 }}>
-                                      {meal.fat}{t(lang, 'fatUnit')}<span style={{ fontSize: 9, fontWeight: 400, opacity: 0.7 }}>{t(lang, 'fat')}</span>
-                                    </span>
-                                  )}
-                                  {meal.carbs != null && (
-                                    <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--library-hi)', opacity: 0.85, display: 'inline-flex', alignItems: 'baseline', gap: 1 }}>
-                                      {meal.carbs}{t(lang, 'carbsUnit')}<span style={{ fontSize: 9, fontWeight: 400, opacity: 0.7 }}>{t(lang, 'carbs')}</span>
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                            )}
+                          <div key={meal.id} style={{ borderTop: mi === 0 ? 'none' : '1px dashed var(--border)', padding: '6px 0' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 5, overflow: 'hidden' }}>
+                              <div style={{ width: 4, height: 4, borderRadius: '50%', background: 'var(--composed-border-hi)', flexShrink: 0 }} />
+                              <span style={{ flexShrink: 1, minWidth: 0, fontSize: 12, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{meal.name}</span>
+                              <span style={{ fontSize: 11, color: 'var(--text-3)', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                                {meal.fluid_ml && !meal.fluid_excluded ? `${Math.round(meal.fluid_ml)}ml` : `${Math.abs(meal.grams)}${t(lang, 'gramsUnit')}`}
+                              </span>
+                              <span style={{ flex: 1 }} />
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginTop: 2, paddingInlineStart: 9 }}>
+                              <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent-hi)', display: 'inline-flex', alignItems: 'baseline', gap: 1 }}>
+                                {Math.round(meal.calories)}<span style={{ fontSize: 9, fontWeight: 400, opacity: 0.7 }}>{t(lang, 'caloriesUnit')}</span>
+                              </span>
+                              <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--positive-hi)', display: 'inline-flex', alignItems: 'baseline', gap: 1 }}>
+                                {Math.round(meal.protein * 10) / 10}<span style={{ fontSize: 9, fontWeight: 400, opacity: 0.7 }}>{t(lang, 'proteinUnit')}</span>
+                              </span>
+                              {meal.fat != null && (
+                                <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--warning-hi)', opacity: 0.85, display: 'inline-flex', alignItems: 'baseline', gap: 1 }}>
+                                  {meal.fat}{t(lang, 'fatUnit')}<span style={{ fontSize: 9, fontWeight: 400, opacity: 0.7 }}>{t(lang, 'fat')}</span>
+                                </span>
+                              )}
+                              {meal.carbs != null && (
+                                <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--library-hi)', opacity: 0.85, display: 'inline-flex', alignItems: 'baseline', gap: 1 }}>
+                                  {meal.carbs}{t(lang, 'carbsUnit')}<span style={{ fontSize: 9, fontWeight: 400, opacity: 0.7 }}>{t(lang, 'carbs')}</span>
+                                </span>
+                              )}
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -2661,7 +2636,7 @@ interface SettingsSheetProps {
 
 export function SettingsSheet({
   isOpen, onClose, lang, connected, profile, onSaveProfile, goals, onSaveGoals, onToggleLang, onSignOut, onLinkGoogle, hasGoogleLinked, theme, styleMode, onToggleTheme, onSelectStyleMode, showToast,
-  history, onDeleteHistory, onRestoreHistory, onUpdateHistory, composedGroups, onRemoveGroup, meals, onUpdateMeal,
+  history, onDeleteHistory, onRestoreHistory, onUpdateHistory, composedGroups, onRemoveGroup, meals,
   weightLogEntries = [], onLogWeight, onDeleteWeightEntry, onExportCsv,
   userFoodItems = [], onAddUserFood, onDeleteUserFood,
 }: SettingsSheetProps) {
@@ -2872,7 +2847,6 @@ export function SettingsSheet({
             onDelete={onDeleteHistory}
             onRestore={onRestoreHistory}
             onUpdate={onUpdateHistory}
-            onUpdateMeal={onUpdateMeal}
             onRemoveGroup={onRemoveGroup}
             showToast={showToast}
           />

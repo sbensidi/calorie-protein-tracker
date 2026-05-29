@@ -5,6 +5,7 @@ import type { ComposedGroup, RecipeIngredient, FoodHistory, FoodLibraryItem, Mea
 import type { Lang } from '../lib/i18n'
 import { t, dir } from '../lib/i18n'
 import { FoodEntryForm } from './FoodEntryForm'
+import { FoodHistoryModal } from './FoodHistoryModal'
 
 interface EditRecipeModalProps {
   group: ComposedGroup
@@ -36,6 +37,8 @@ export function EditRecipeModal({
     () => group.ingredients ? group.ingredients.map(i => ({ ...i })) : []
   )
   const [addingIngredient, setAddingIngredient] = useState(false)
+  const [searchingRow, setSearchingRow] = useState<number | null>(null)
+  const [historySearch, setHistorySearch] = useState('')
 
   const modalRef    = useRef<HTMLDivElement>(null)
   const subModalRef = useRef<HTMLDivElement>(null)
@@ -78,6 +81,22 @@ export function EditRecipeModal({
     setAddingIngredient(false)
   }
 
+  const handleHistorySelect = (item: FoodHistory) => {
+    if (searchingRow === null) return
+    setIngredients(prev => prev.map((ing, i) => {
+      if (i !== searchingRow) return ing
+      const ratio = item.grams > 0 ? ing.grams / item.grams : 0
+      return {
+        ...ing,
+        name:     item.name,
+        calories: Math.round(item.calories * ratio),
+        protein:  Math.round(item.protein * ratio * 10) / 10,
+      }
+    }))
+    setSearchingRow(null)
+    setHistorySearch('')
+  }
+
   const save = () => {
     const totalCalories = Math.round(ingredients.reduce((s, i) => s + i.calories, 0))
     const totalProtein  = Math.round(ingredients.reduce((s, i) => s + i.protein,  0) * 10) / 10
@@ -100,19 +119,30 @@ export function EditRecipeModal({
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             {ingredients.map((ing, i) => (
               <div key={i} style={{ display: 'flex', gap: 5, alignItems: 'center' }}>
-                {/* Name input */}
-                <input
-                  className="inp"
-                  style={{ flex: 2, fontSize: 16, height: 36 }}
-                  value={ing.name}
-                  onChange={e => updateName(i, e.target.value)}
-                  dir={dir(lang)}
-                />
+                {/* Name input + history search button */}
+                <div style={{ position: 'relative', flex: 2 }}>
+                  <input
+                    className="inp"
+                    style={{ width: '100%', fontSize: 16, height: 36, paddingInlineEnd: 34 }}
+                    value={ing.name}
+                    onChange={e => updateName(i, e.target.value)}
+                    dir={dir(lang)}
+                  />
+                  <button
+                    className="icon-btn"
+                    tabIndex={-1}
+                    onClick={() => { setSearchingRow(i); setHistorySearch('') }}
+                    aria-label={t(lang, 'foodHistory')}
+                    style={{ position: 'absolute', insetInlineEnd: 0, top: 0, bottom: 0, width: 34, padding: 0, borderRadius: '0 8px 8px 0' }}
+                  >
+                    <span className="icon icon-sm" style={{ fontSize: 16, color: 'var(--text-3)' }}>manage_search</span>
+                  </button>
+                </div>
                 {/* Grams input */}
                 <div style={{ position: 'relative', width: 76 }}>
                   <input
                     type="number" inputMode="decimal" className="inp"
-                    style={{ height: 36, fontSize: 16, paddingInlineEnd: 26, textAlign: 'start', width: '100%' }}
+                    style={{ height: 36, fontSize: 16, paddingInlineEnd: 26, textAlign: 'end', width: '100%' }}
                     value={ing.grams > 0 ? ing.grams : ''}
                     onChange={e => scaleIngredient(i, parseFloat(e.target.value) || 0)}
                   />
@@ -125,7 +155,7 @@ export function EditRecipeModal({
                     className="inp"
                     style={{
                       height: 36, fontSize: 16, fontWeight: 700,
-                      paddingInlineEnd: 30, textAlign: 'start', width: '100%',
+                      paddingInlineEnd: 30, textAlign: 'end', width: '100%',
                       background: 'var(--accent-fill)', borderColor: 'transparent',
                       color: 'var(--accent-hi)', cursor: 'default',
                     }}
@@ -216,6 +246,18 @@ export function EditRecipeModal({
             />
           </div>
         </div>
+      )}
+
+      {/* Food history sub-modal — replaces ingredient name/nutrition from history */}
+      {searchingRow !== null && (
+        <FoodHistoryModal
+          lang={lang}
+          history={history}
+          search={historySearch}
+          onSearchChange={setHistorySearch}
+          onClose={() => { setSearchingRow(null); setHistorySearch('') }}
+          onSelectHistory={handleHistorySelect}
+        />
       )}
     </>
   )
