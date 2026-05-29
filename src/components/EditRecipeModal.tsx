@@ -153,7 +153,7 @@ export function EditRecipeModal({
                   <div style={{ position: 'relative', flex: 1, minWidth: 0 }}>
                     <input
                       className="inp"
-                      style={{ width: '100%', fontSize: 16, height: 36, paddingInlineEnd: 34 }}
+                      style={{ width: '100%', fontSize: 16, height: 36, paddingInlineEnd: 34, textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}
                       value={ing.name}
                       onChange={e => updateName(i, e.target.value)}
                       onFocus={() => setFocusedNameRow(i)}
