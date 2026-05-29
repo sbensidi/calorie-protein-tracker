@@ -138,31 +138,42 @@ export function EditRecipeModal({
                     <span className="icon icon-sm" style={{ fontSize: 16, color: 'var(--text-3)' }}>manage_search</span>
                   </button>
                 </div>
-                {/* Grams input */}
-                <div style={{ position: 'relative', width: 76 }}>
+                {/* Grams input — flex row: unit adjacent to number, direction flips for RTL */}
+                <div
+                  className="inp"
+                  style={{
+                    height: 36, display: 'inline-flex', alignItems: 'center', gap: 2,
+                    flexDirection: lang === 'he' ? 'row-reverse' : 'row',
+                    padding: '0 7px', flexShrink: 0, cursor: 'text', width: 'auto',
+                  }}
+                  onClick={e => (e.currentTarget.querySelector('input') as HTMLInputElement | null)?.focus()}
+                >
                   <input
-                    type="number" inputMode="decimal" className="inp"
-                    style={{ height: 36, fontSize: 16, paddingInlineEnd: 26, textAlign: 'end', width: '100%' }}
+                    type="number" inputMode="decimal"
+                    style={{
+                      border: 'none', background: 'transparent', outline: 'none',
+                      fontSize: 16, color: 'var(--text)', fontFamily: 'inherit',
+                      width: `${Math.max(2, String(Math.round(Math.abs(ing.grams)) || '').length + 1)}ch`,
+                      minWidth: '2ch', padding: 0, margin: 0, lineHeight: 1,
+                    }}
                     value={ing.grams > 0 ? ing.grams : ''}
                     onChange={e => scaleIngredient(i, parseFloat(e.target.value) || 0)}
                   />
-                  <span style={{ position: 'absolute', insetInlineEnd: 5, top: '50%', transform: 'translateY(-50%)', fontSize: 10, color: 'var(--text-3)', pointerEvents: 'none' }}>{t(lang, 'gramsUnit')}</span>
+                  <span style={{ fontSize: 10, color: 'var(--text-3)', flexShrink: 0, lineHeight: 1, userSelect: 'none' }}>
+                    {t(lang, 'gramsUnit')}
+                  </span>
                 </div>
-                {/* Calories — readonly, visually distinct */}
-                <div style={{ position: 'relative', width: 76 }}>
-                  <input
-                    readOnly
-                    className="inp"
-                    style={{
-                      height: 36, fontSize: 16, fontWeight: 700,
-                      paddingInlineEnd: 30, textAlign: 'end', width: '100%',
-                      background: 'var(--accent-fill)', borderColor: 'transparent',
-                      color: 'var(--accent-hi)', cursor: 'default',
-                    }}
-                    value={ing.calories}
-                    tabIndex={-1}
-                  />
-                  <span style={{ position: 'absolute', insetInlineEnd: 4, top: '50%', transform: 'translateY(-50%)', fontSize: 9, color: 'var(--accent-hi)', opacity: 0.7, pointerEvents: 'none' }}>
+                {/* Calories — readonly display, same adjacent-unit pattern */}
+                <div style={{
+                  height: 36, display: 'inline-flex', alignItems: 'center', gap: 2,
+                  flexDirection: lang === 'he' ? 'row-reverse' : 'row',
+                  background: 'var(--accent-fill)', borderRadius: 8,
+                  padding: '0 8px', flexShrink: 0,
+                }}>
+                  <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--accent-hi)', lineHeight: 1 }}>
+                    {ing.calories}
+                  </span>
+                  <span style={{ fontSize: 9, color: 'var(--accent-hi)', opacity: 0.7, flexShrink: 0, lineHeight: 1, userSelect: 'none' }}>
                     {t(lang, 'caloriesUnit')}
                   </span>
                 </div>
