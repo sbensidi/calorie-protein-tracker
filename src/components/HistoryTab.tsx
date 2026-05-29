@@ -762,36 +762,45 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                   </div>
                 </div>
 
-                {/* Expanded ingredient rows — solid top/bottom border frames the group */}
+                {/* Expanded ingredient rows — prefer ingredients snapshot when available */}
                 {expanded && (
                   <div style={{ borderTop: '1px solid var(--border)', borderBottom: isLast ? 'none' : '1px solid var(--border)', marginBottom: isLast ? 0 : 8, background: 'var(--composed-tint)', marginInline: -14, paddingInline: 14 }}>
-                    {row.meals.map((meal, idx) => {
-                      const iQty = meal.fluid_ml != null && !meal.fluid_excluded
-                        ? (meal.fluid_ml >= 1000 ? `${(meal.fluid_ml / 1000).toFixed(1)}${t(lang, 'litersUnit')}` : `${Math.round(meal.fluid_ml)}ml`)
-                        : meal.grams < 0
-                          ? `${Math.abs(meal.grams)} ${unitLabel}`
-                          : `${meal.grams}g`
-                      const isIngFirst = idx === 0
-                      return (
-                        <div key={meal.id} style={{ padding: '6px 0 6px 16px', borderTop: isIngFirst ? 'none' : '1px dashed var(--border)' }}>
-                          <div style={{ display: 'flex', alignItems: 'baseline', gap: 5, overflow: 'hidden' }}>
-                            <div style={{ width: 4, height: 4, borderRadius: '50%', background: 'var(--composed-border-hi)', flexShrink: 0, alignSelf: 'center' }} />
-                            <span style={{ fontSize: 12, color: 'var(--text-2)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>
-                              {meal.name}
-                            </span>
-                            <span style={{ fontSize: 10, color: 'var(--text-3)', whiteSpace: 'nowrap', flexShrink: 0 }}>{iQty}</span>
-                          </div>
-                          <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginTop: 2, paddingInlineStart: 12 }}>
-                            <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--accent-hi)', display: 'inline-flex', alignItems: 'baseline', gap: 2 }}>
-                              {Math.round(meal.calories)}<span style={{ fontSize: 9, fontWeight: 400, opacity: 0.8 }}>{t(lang, 'caloriesUnit')}</span>
-                            </span>
-                            <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--positive-hi)', display: 'inline-flex', alignItems: 'baseline', gap: 2 }}>
-                              {Math.round(meal.protein * 10) / 10}<span style={{ fontSize: 9, fontWeight: 400, opacity: 0.8 }}>{t(lang, 'gProteinLabel')}</span>
-                            </span>
-                          </div>
+                    {(row.group.ingredients && row.group.ingredients.length > 0
+                      ? row.group.ingredients.map((ing, idx) => ({
+                          key: `ing-${idx}`,
+                          name: ing.name,
+                          qty: `${ing.grams}${t(lang, 'gramsUnit')}`,
+                          cal: ing.calories,
+                          prot: ing.protein,
+                          isFirst: idx === 0,
+                        }))
+                      : row.meals.map((meal, idx) => {
+                          const qty = meal.fluid_ml != null && !meal.fluid_excluded
+                            ? (meal.fluid_ml >= 1000 ? `${(meal.fluid_ml / 1000).toFixed(1)}${t(lang, 'litersUnit')}` : `${Math.round(meal.fluid_ml)}ml`)
+                            : meal.grams < 0
+                              ? `${Math.abs(meal.grams)} ${unitLabel}`
+                              : `${meal.grams}${t(lang, 'gramsUnit')}`
+                          return { key: meal.id, name: meal.name, qty, cal: Math.round(meal.calories), prot: Math.round(meal.protein * 10) / 10, isFirst: idx === 0 }
+                        })
+                    ).map(row => (
+                      <div key={row.key} style={{ padding: '6px 0 6px 16px', borderTop: row.isFirst ? 'none' : '1px dashed var(--border)' }}>
+                        <div style={{ display: 'flex', alignItems: 'baseline', gap: 5, overflow: 'hidden' }}>
+                          <div style={{ width: 4, height: 4, borderRadius: '50%', background: 'var(--composed-border-hi)', flexShrink: 0, alignSelf: 'center' }} />
+                          <span style={{ fontSize: 12, color: 'var(--text-2)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>
+                            {row.name}
+                          </span>
+                          <span style={{ fontSize: 10, color: 'var(--text-3)', whiteSpace: 'nowrap', flexShrink: 0 }}>{row.qty}</span>
                         </div>
-                      )
-                    })}
+                        <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginTop: 2, paddingInlineStart: 12 }}>
+                          <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--accent-hi)', display: 'inline-flex', alignItems: 'baseline', gap: 2 }}>
+                            {row.cal}<span style={{ fontSize: 9, fontWeight: 400, opacity: 0.8 }}>{t(lang, 'caloriesUnit')}</span>
+                          </span>
+                          <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--positive-hi)', display: 'inline-flex', alignItems: 'baseline', gap: 2 }}>
+                            {row.prot}<span style={{ fontSize: 9, fontWeight: 400, opacity: 0.8 }}>{t(lang, 'gProteinLabel')}</span>
+                          </span>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>

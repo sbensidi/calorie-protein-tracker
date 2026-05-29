@@ -145,7 +145,7 @@ export function ComposedMealCard({
                   onChange={e => setPortionGrams(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter') savePortion() }}
                 />
-                <span style={{ position: 'absolute', insetInlineEnd: 5, top: '50%', transform: 'translateY(-50%)', fontSize: 10, color: 'var(--text-3)', pointerEvents: 'none' }}>g</span>
+                <span style={{ position: 'absolute', insetInlineEnd: 5, top: '50%', transform: 'translateY(-50%)', fontSize: 10, color: 'var(--text-3)', pointerEvents: 'none' }}>{t(lang, 'gramsUnit')}</span>
               </div>
             </div>
           </div>
@@ -454,7 +454,7 @@ export function ComposedMealCard({
                   onChange={e => setPortionGrams(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter') savePortion() }}
                 />
-                <span style={{ position: 'absolute', insetInlineEnd: 6, top: '50%', transform: 'translateY(-50%)', fontSize: 10, color: 'var(--text-3)', pointerEvents: 'none' }}>g</span>
+                <span style={{ position: 'absolute', insetInlineEnd: 6, top: '50%', transform: 'translateY(-50%)', fontSize: 10, color: 'var(--text-3)', pointerEvents: 'none' }}>{t(lang, 'gramsUnit')}</span>
               </div>
             </div>
           </div>

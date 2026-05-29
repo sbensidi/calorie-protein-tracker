@@ -116,7 +116,7 @@ export function EditRecipeModal({
                     value={ing.grams > 0 ? ing.grams : ''}
                     onChange={e => scaleIngredient(i, parseFloat(e.target.value) || 0)}
                   />
-                  <span style={{ position: 'absolute', insetInlineEnd: 5, top: '50%', transform: 'translateY(-50%)', fontSize: 10, color: 'var(--text-3)', pointerEvents: 'none' }}>g</span>
+                  <span style={{ position: 'absolute', insetInlineEnd: 5, top: '50%', transform: 'translateY(-50%)', fontSize: 10, color: 'var(--text-3)', pointerEvents: 'none' }}>{t(lang, 'gramsUnit')}</span>
                 </div>
                 {/* Calories — readonly, visually distinct */}
                 <div style={{ position: 'relative', width: 60 }}>
@@ -186,7 +186,7 @@ export function EditRecipeModal({
       {addingIngredient && (
         <div
           className="compose-modal-backdrop"
-          style={{ zIndex: 101 }}
+          style={{ zIndex: 201 }}
           onClick={() => setAddingIngredient(false)}
         >
           <div
