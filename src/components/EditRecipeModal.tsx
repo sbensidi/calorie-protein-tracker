@@ -124,7 +124,7 @@ export function EditRecipeModal({
                     readOnly
                     className="inp"
                     style={{
-                      height: 36, fontSize: 13, fontWeight: 700,
+                      height: 36, fontSize: 16, fontWeight: 700,
                       paddingInlineEnd: 20, textAlign: 'end', width: '100%',
                       background: 'var(--accent-fill)', borderColor: 'transparent',
                       color: 'var(--accent-hi)', cursor: 'default',
