@@ -1596,7 +1596,7 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onR
         </h2>
 
         <div style={{ position: 'relative', marginBottom: 10 }}>
-          <span className="icon" style={{ position: 'absolute', top: '50%', transform: 'translateY(-50%)', insetInlineStart: 10, color: 'var(--text-3)', fontSize: 18, pointerEvents: 'none' }}>search</span>
+          <span className="icon" style={{ position: 'absolute', top: '50%', transform: 'translateY(-50%)', ...(lang === 'he' ? { right: 10 } : { left: 10 }), color: 'var(--text-3)', fontSize: 18, pointerEvents: 'none' }}>search</span>
           <input className="inp" type="text" value={search} onChange={e => setSearch(e.target.value)}
             placeholder={t(lang, 'search')}
             dir={dir(lang)}
@@ -1941,68 +1941,51 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onR
                 const totalProt  = Math.round(groupMeals.reduce((s, m) => s + m.protein, 0) * 10) / 10
                 const isExpanded = expandedGroupId === group.id
                 return (
-                  <div key={group.id} style={minimal
+                  <div key={group.id} className={minimal ? undefined : 'composed-card'} style={minimal
                     ? { borderBottom: isExpanded ? 'none' : '1px dashed var(--border)' }
-                    : { background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }
+                    : { marginBottom: 8 }
                   }>
                     {/* Group header — tap to expand/collapse */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10,
+                    <div style={{ display: 'flex', alignItems: 'center', gap: minimal ? 6 : 10,
                       padding: minimal ? '8px 0' : '10px 12px',
-                      borderBottom: isExpanded && groupMeals.length > 0 && !minimal ? '1px solid var(--border)' : undefined,
                     }}>
+                      {!minimal && (
+                        <div style={{ width: 28, height: 28, borderRadius: 8, flexShrink: 0, background: 'var(--composed-tint)', border: '1px solid var(--composed-glow)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <span className="icon icon-sm" style={{ color: 'var(--composed)', fontSize: 15 }}>restaurant</span>
+                        </div>
+                      )}
                       <button
                         onClick={() => setExpandedGroupId(isExpanded ? null : group.id)}
-                        style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 10, background: 'none', border: 'none', cursor: 'pointer', padding: 0, minWidth: 0, textAlign: 'start' }}
+                        style={{ flex: 1, display: 'flex', alignItems: 'center', gap: minimal ? 6 : 10, background: 'none', border: 'none', cursor: 'pointer', padding: 0, minWidth: 0, textAlign: 'start' }}
                       >
-                        <span className="icon icon-sm" style={{ color: 'var(--composed)', flexShrink: 0 }}>restaurant</span>
-                        {minimal ? (
-                          <>
-                            <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>{group.name}</span>
-                            <span style={{ fontSize: 11, color: 'var(--text-3)', whiteSpace: 'nowrap', flexShrink: 0 }}>{groupMeals.length} {t(lang, 'ingredientsUnit')}</span>
-                            <span style={{ flex: 1 }} />
-                            <span style={{ display: 'flex', alignItems: 'baseline', gap: 4, flexShrink: 0, fontSize: 11 }}>
-                              <span style={{ fontWeight: 600, color: 'var(--accent-hi)' }}>{totalCal}</span>
-                              <span style={{ fontWeight: 400, color: 'var(--text-3)' }}>{t(lang, 'caloriesUnit')}</span>
-                              <span style={{ color: 'var(--border)', padding: '0 2px' }}>|</span>
-                              <span style={{ fontWeight: 600, color: 'var(--positive-hi)' }}>{totalProt}</span>
-                              <span style={{ fontWeight: 400, color: 'var(--text-3)' }}>{t(lang, 'proteinUnit')}</span>
-                            </span>
-                          </>
-                        ) : (
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{group.name}</p>
-                          <div style={{ display: 'flex', flexDirection: 'row', direction: dir(lang), gap: 5, alignItems: 'baseline', margin: '2px 0 0', fontSize: 11, color: 'var(--text-3)' }}>
-                            <span style={{ display: 'inline-flex', gap: 4, alignItems: 'baseline', whiteSpace: 'nowrap' }}>
-                              <span style={{ color: 'var(--accent-hi)', fontWeight: 600 }}>{totalCal}</span><span style={{ fontSize: 10 }}>{t(lang, 'caloriesUnit')}</span>
-                            </span>
-                            <span style={{ color: 'var(--border)' }}>·</span>
-                            <span style={{ display: 'inline-flex', gap: 4, alignItems: 'baseline', whiteSpace: 'nowrap' }}>
-                              <span style={{ color: 'var(--positive-hi)', fontWeight: 600 }}>{totalProt}</span><span style={{ fontSize: 10 }}>{t(lang, 'proteinUnit')}</span>
-                            </span>
-                            <span style={{ color: 'var(--border)' }}>·</span>
-                            <span style={{ display: 'inline-flex', gap: 4, alignItems: 'baseline', whiteSpace: 'nowrap' }}>
-                              <span>{groupMeals.length}</span><span style={{ fontSize: 10 }}>{t(lang, 'ingredientsUnit')}</span>
-                            </span>
-                          </div>
-                        </div>
-                        )}
+                        {minimal && <span className="icon icon-sm" style={{ color: 'var(--composed)', flexShrink: 0 }}>restaurant</span>}
+                        <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>{group.name}</span>
+                        <span style={{ fontSize: 11, color: 'var(--text-3)', whiteSpace: 'nowrap', flexShrink: 0 }}>{groupMeals.length} {t(lang, 'ingredientsUnit')}</span>
+                        <span style={{ flex: 1 }} />
+                        <span style={{ display: 'flex', alignItems: 'baseline', gap: 4, flexShrink: 0, fontSize: 11 }}>
+                          <span style={{ fontWeight: 600, color: 'var(--accent-hi)' }}>{totalCal}</span>
+                          <span style={{ fontWeight: 400, color: 'var(--text-3)' }}>{t(lang, 'caloriesUnit')}</span>
+                          <span style={{ color: 'var(--border)', padding: '0 2px' }}>|</span>
+                          <span style={{ fontWeight: 600, color: 'var(--positive-hi)' }}>{totalProt}</span>
+                          <span style={{ fontWeight: 400, color: 'var(--text-3)' }}>{t(lang, 'proteinUnit')}</span>
+                        </span>
                         <span className="icon icon-chevron" style={{ color: 'var(--text-3)', flexShrink: 0, transition: 'transform .2s', transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>expand_more</span>
                       </button>
-                      <button onClick={() => handleRemoveGroup(group.id, group.name)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--danger)', padding: 6, display: 'flex', borderRadius: 8, flexShrink: 0 }}>
+                      <button onClick={() => handleRemoveGroup(group.id, group.name)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--danger)', padding: minimal ? 4 : 6, display: 'flex', borderRadius: 8, flexShrink: 0 }}>
                         <span className="icon icon-sm">delete</span>
                       </button>
                     </div>
                     {/* Individual meals — shown only when expanded */}
                     {isExpanded && (
-                      <div style={minimal ? {
+                      <div style={{
                         background: 'var(--composed-tint)',
                         borderTop: '1px solid var(--border)',
-                        borderBottom: '1px solid var(--border)',
-                        marginInline: -16,
-                        paddingInline: 16,
-                      } : {}}>
+                        borderBottom: minimal ? '1px solid var(--border)' : undefined,
+                        marginInline: minimal ? -16 : -12,
+                        paddingInline: minimal ? 16 : 12,
+                      }}>
                         {groupMeals.map((meal, mi) => (
-                          <div key={meal.id} style={{ borderTop: mi === 0 ? 'none' : (minimal ? '1px dashed var(--border)' : '1px solid var(--border-subtle, var(--border))') }}>
+                          <div key={meal.id} style={{ borderTop: mi === 0 ? 'none' : '1px dashed var(--border)' }}>
                             {editingMealId === meal.id ? (
                               <MealCard
                                 meal={meal}
@@ -2016,9 +1999,9 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onR
                                   setEditingMealId(null)
                                 }}
                                 enableWeightScaling
-                                listStyle={minimal}
+                                listStyle
                               />
-                            ) : minimal ? (
+                            ) : (
                               <div style={{ padding: '6px 0' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 5, overflow: 'hidden' }}>
                                   <div style={{ width: 4, height: 4, borderRadius: '50%', background: 'var(--composed-border-hi)', flexShrink: 0 }} />
@@ -2038,21 +2021,18 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onR
                                   <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--positive-hi)', display: 'inline-flex', alignItems: 'baseline', gap: 1 }}>
                                     {Math.round(meal.protein * 10) / 10}<span style={{ fontSize: 9, fontWeight: 400, opacity: 0.7 }}>{t(lang, 'proteinUnit')}</span>
                                   </span>
+                                  {meal.fat != null && (
+                                    <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--warning-hi)', opacity: 0.85, display: 'inline-flex', alignItems: 'baseline', gap: 1 }}>
+                                      {meal.fat}{t(lang, 'fatUnit')}<span style={{ fontSize: 9, fontWeight: 400, opacity: 0.7 }}>{t(lang, 'fat')}</span>
+                                    </span>
+                                  )}
+                                  {meal.carbs != null && (
+                                    <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--library-hi)', opacity: 0.85, display: 'inline-flex', alignItems: 'baseline', gap: 1 }}>
+                                      {meal.carbs}{t(lang, 'carbsUnit')}<span style={{ fontSize: 9, fontWeight: 400, opacity: 0.7 }}>{t(lang, 'carbs')}</span>
+                                    </span>
+                                  )}
                                 </div>
                               </div>
-                            ) : (
-                              <MealCard
-                                meal={meal}
-                                lang={lang}
-                                showCheckbox={false}
-                                selected={false}
-                                onToggleSelect={() => {}}
-                                onEdit={(id, updates) => {
-                                  onUpdateMeal(id, updates)
-                                  showToast(t(lang, 'saved'), 'success')
-                                }}
-                                enableWeightScaling
-                              />
                             )}
                           </div>
                         ))}

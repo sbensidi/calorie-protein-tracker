@@ -135,7 +135,7 @@ export function ComposedMealCard({
             <div style={{ position: 'relative', width: 70, flexShrink: 0 }}>
               <input
                 type="number" inputMode="decimal" className="inp"
-                style={{ height: 36, fontSize: 16, paddingInlineEnd: 22, textAlign: 'start', width: '100%' }}
+                style={{ height: 36, fontSize: 16, paddingInlineEnd: 22, textAlign: 'end', width: '100%' }}
                 value={portionGrams}
                 onChange={e => setPortionGrams(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter') savePortion() }}
@@ -463,7 +463,7 @@ export function ComposedMealCard({
             <div style={{ position: 'relative', width: 70, flexShrink: 0 }}>
               <input
                 type="number" inputMode="decimal" className="inp"
-                style={{ height: 38, fontSize: 16, paddingInlineEnd: 22, textAlign: 'start', width: '100%' }}
+                style={{ height: 38, fontSize: 16, paddingInlineEnd: 22, textAlign: 'end', width: '100%' }}
                 value={portionGrams}
                 onChange={e => setPortionGrams(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter') savePortion() }}
