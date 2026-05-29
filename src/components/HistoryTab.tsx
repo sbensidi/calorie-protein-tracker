@@ -4,7 +4,7 @@ import { useLockBodyScroll } from '../hooks/useLockBodyScroll'
 import { useFocusTrap } from '../hooks/useFocusTrap'
 import { useAppContext } from '../context/AppContext'
 import type { Meal, FoodHistory, ComposedGroup, FoodLibraryItem, UserFoodItem } from '../types'
-import type { Lang, MealTypeKey } from '../lib/i18n'
+import type { Lang } from '../lib/i18n'
 import { t, dir, formatDate, today, HE_MONTHS, EN_MONTHS, HE_WEEK_SHORT, EN_WEEK_SHORT } from '../lib/i18n'
 import { DonutProgress } from './DonutProgress'
 import type { ComposedEntry } from './FoodEntryForm'
@@ -705,62 +705,44 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
             const gProt    = Math.round(row.meals.reduce((s, m) => s + m.protein, 0) * 10) / 10
             const expanded = expandedGroupIds.has(row.group.id)
 
-            const groupMealType = row.meals[0]?.meal_type
             return (
               <div key={row.group.id} style={{ borderBottom: expanded || isLast ? 'none' : '1px dashed var(--border)' }}>
-                {/* Group header row — clickable, same 2-line layout as meal rows */}
+                {/* Group header — one-line layout matching ComposedMealCard minimal mode */}
                 <div
                   role="button"
                   tabIndex={0}
                   onClick={() => toggleGroupExpand(row.group.id)}
                   onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') toggleGroupExpand(row.group.id) }}
-                  style={{ padding: '8px 0', cursor: 'pointer', userSelect: 'none' }}
+                  style={{ padding: '8px 0', minHeight: 40, display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', userSelect: 'none' }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <span className="icon icon-sm" style={{ color: 'var(--composed)', fontSize: 14, flexShrink: 0 }}>restaurant</span>
-                    {/* Two-line content */}
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      {/* Line 1: name · count | meal type */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 5, overflow: 'hidden' }}>
-                        <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>
-                          {row.group.name}
-                        </span>
-                        <span style={{ fontSize: 11, color: 'var(--text-3)', whiteSpace: 'nowrap', flexShrink: 0 }}>
-                          {row.meals.length} {t(lang, 'ingredients')}
-                        </span>
-                        {groupMealType && (
-                          <>
-                            <span style={{ fontSize: 11, color: 'var(--text-3)', flexShrink: 0 }}>|</span>
-                            <span style={{ fontSize: 11, color: 'var(--text-3)', whiteSpace: 'nowrap', flexShrink: 0 }}>{t(lang, groupMealType as MealTypeKey)}</span>
-                          </>
-                        )}
-                      </div>
-                      {/* Line 2: calories | protein */}
-                      <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginTop: 3 }}>
-                        <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--accent-hi)', display: 'inline-flex', alignItems: 'baseline', gap: 2 }}>
-                          {gCal}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.8 }}>{t(lang, 'caloriesUnit')}</span>
-                        </span>
-                        <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--positive-hi)', display: 'inline-flex', alignItems: 'baseline', gap: 2 }}>
-                          {gProt}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.8 }}>{t(lang, 'gProteinLabel')}</span>
-                        </span>
-                      </div>
-                    </div>
-                    {/* Edit ingredients button */}
-                    {row.group.ingredients && row.group.ingredients.length > 0 && onUpsertGroup && (
-                      <button
-                        className="icon-btn"
-                        onClick={e => { e.stopPropagation(); setEditRecipeModal({ group: row.group }) }}
-                        aria-label={t(lang, 'editRecipe')}
-                        style={{ flexShrink: 0 }}
-                      >
-                        <span className="icon icon-sm" style={{ color: 'var(--composed)', fontSize: 16 }}>edit</span>
-                      </button>
-                    )}
-                    {/* Chevron — centered to full header height */}
-                    <span className="icon icon-chevron" style={{ color: 'var(--text-3)', flexShrink: 0, transition: 'transform .2s', transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>
-                      expand_more
-                    </span>
-                  </div>
+                  <span className="icon icon-sm" style={{ color: 'var(--composed)', fontSize: 14, flexShrink: 0 }}>restaurant</span>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>
+                    {row.group.name}
+                  </span>
+                  <span style={{ fontSize: 11, color: 'var(--text-3)', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                    {row.meals.length} {t(lang, 'ingredients')}
+                  </span>
+                  <span style={{ flex: 1 }} />
+                  <span style={{ display: 'flex', alignItems: 'baseline', gap: 4, flexShrink: 0, fontSize: 11 }}>
+                    <span style={{ fontWeight: 600, color: 'var(--accent-hi)' }}>{gCal}</span>
+                    <span style={{ fontWeight: 400, color: 'var(--text-3)' }}>{t(lang, 'caloriesUnit')}</span>
+                    <span style={{ color: 'var(--border)', padding: '0 2px' }}>|</span>
+                    <span style={{ fontWeight: 600, color: 'var(--positive-hi)' }}>{gProt}</span>
+                    <span style={{ fontWeight: 400, color: 'var(--text-3)' }}>{t(lang, 'proteinUnit')}</span>
+                  </span>
+                  {row.group.ingredients && row.group.ingredients.length > 0 && onUpsertGroup && (
+                    <button
+                      className="icon-btn"
+                      onClick={e => { e.stopPropagation(); setEditRecipeModal({ group: row.group }) }}
+                      aria-label={t(lang, 'editRecipe')}
+                      style={{ flexShrink: 0 }}
+                    >
+                      <span className="icon icon-sm" style={{ color: 'var(--composed)', fontSize: 16 }}>edit</span>
+                    </button>
+                  )}
+                  <span className="icon icon-chevron" style={{ color: 'var(--text-3)', flexShrink: 0, transition: 'transform .2s', transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>
+                    expand_more
+                  </span>
                 </div>
 
                 {/* Expanded ingredient rows — prefer ingredients snapshot when available */}
@@ -784,21 +766,21 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                           return { key: meal.id, name: meal.name, qty, cal: Math.round(meal.calories), prot: Math.round(meal.protein * 10) / 10, isFirst: idx === 0 }
                         })
                     ).map(row => (
-                      <div key={row.key} style={{ padding: '8px 0', borderTop: row.isFirst ? 'none' : '1px dashed var(--border)' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, overflow: 'hidden' }}>
-                          <div style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--composed-border-hi)', flexShrink: 0 }} />
-                          <span style={{ flexShrink: 1, minWidth: 0, fontSize: 13, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <div key={row.key} style={{ padding: '6px 0', borderTop: row.isFirst ? 'none' : '1px dashed var(--border)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 5, overflow: 'hidden' }}>
+                          <div style={{ width: 4, height: 4, borderRadius: '50%', background: 'var(--composed-border-hi)', flexShrink: 0 }} />
+                          <span style={{ flexShrink: 1, minWidth: 0, fontSize: 12, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                             {row.name}
                           </span>
-                          <span style={{ fontSize: 12, color: 'var(--text-3)', whiteSpace: 'nowrap', flexShrink: 0 }}>{row.qty}</span>
+                          <span style={{ fontSize: 11, color: 'var(--text-3)', whiteSpace: 'nowrap', flexShrink: 0 }}>{row.qty}</span>
                           <span style={{ flex: 1 }} />
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginTop: 3, paddingInlineStart: 11 }}>
-                          <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent-hi)', display: 'inline-flex', alignItems: 'baseline', gap: 2 }}>
-                            {row.cal}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.7 }}>{t(lang, 'caloriesUnit')}</span>
+                        <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginTop: 2, paddingInlineStart: 9 }}>
+                          <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent-hi)', display: 'inline-flex', alignItems: 'baseline', gap: 1 }}>
+                            {row.cal}<span style={{ fontSize: 9, fontWeight: 400, opacity: 0.7 }}>{t(lang, 'caloriesUnit')}</span>
                           </span>
-                          <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--positive-hi)', display: 'inline-flex', alignItems: 'baseline', gap: 2 }}>
-                            {row.prot}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.7 }}>{t(lang, 'proteinUnit')}</span>
+                          <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--positive-hi)', display: 'inline-flex', alignItems: 'baseline', gap: 1 }}>
+                            {row.prot}<span style={{ fontSize: 9, fontWeight: 400, opacity: 0.7 }}>{t(lang, 'proteinUnit')}</span>
                           </span>
                         </div>
                       </div>
