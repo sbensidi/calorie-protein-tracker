@@ -120,7 +120,7 @@ export function EditRecipeModal({
             {ingredients.map((ing, i) => (
               <div key={i} style={{ display: 'flex', gap: 5, alignItems: 'center' }}>
                 {/* Name input + history search button */}
-                <div style={{ position: 'relative', flex: 2 }}>
+                <div style={{ position: 'relative', flex: 1, minWidth: 0 }}>
                   <input
                     className="inp"
                     style={{ width: '100%', fontSize: 16, height: 36, paddingInlineEnd: 34 }}
@@ -138,13 +138,14 @@ export function EditRecipeModal({
                     <span className="icon icon-sm" style={{ fontSize: 16, color: 'var(--text-3)' }}>manage_search</span>
                   </button>
                 </div>
-                {/* Grams input — flex row: unit adjacent to number, direction flips for RTL */}
+                {/* Grams input — fixed width, content right-aligned in RTL */}
                 <div
                   className="inp"
                   style={{
-                    height: 36, display: 'inline-flex', alignItems: 'center', gap: 2,
-                    flexDirection: lang === 'he' ? 'row-reverse' : 'row',
-                    padding: '0 7px', flexShrink: 0, cursor: 'text', width: 'auto',
+                    height: 36, display: 'flex', alignItems: 'center', gap: 3,
+                    justifyContent: lang === 'he' ? 'flex-start' : 'flex-end',
+                    padding: '0 8px', flexShrink: 0, cursor: 'text',
+                    width: 76, boxSizing: 'border-box',
                   }}
                   onClick={e => (e.currentTarget.querySelector('input') as HTMLInputElement | null)?.focus()}
                 >
@@ -163,12 +164,13 @@ export function EditRecipeModal({
                     {t(lang, 'gramsUnit')}
                   </span>
                 </div>
-                {/* Calories — readonly display, same adjacent-unit pattern */}
+                {/* Calories — fixed width, same alignment pattern */}
                 <div style={{
-                  height: 36, display: 'inline-flex', alignItems: 'center', gap: 2,
-                  flexDirection: lang === 'he' ? 'row-reverse' : 'row',
+                  height: 36, display: 'flex', alignItems: 'center', gap: 3,
+                  justifyContent: lang === 'he' ? 'flex-start' : 'flex-end',
                   background: 'var(--accent-fill)', borderRadius: 8,
                   padding: '0 8px', flexShrink: 0,
+                  width: 76, boxSizing: 'border-box',
                 }}>
                   <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--accent-hi)', lineHeight: 1 }}>
                     {ing.calories}

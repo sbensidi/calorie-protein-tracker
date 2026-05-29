@@ -730,8 +730,8 @@ details[open] summary .chevron-rotate {
 
 /* ── Composed meal card ─────────────────────────────────────────── */
 .composed-card {
-  background: var(--depth-2);
-  border: 1px solid var(--composed-tint);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
   border-radius: 11px;
   overflow: hidden;
   margin-bottom: 4px;
