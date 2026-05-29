@@ -2013,7 +2013,7 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onR
                         borderBottom: minimal ? '1px solid var(--border)' : undefined,
                         marginInline: minimal ? -16 : -12,
                         paddingInlineStart: minimal ? 24 : 20,
-                        paddingInlineEnd: minimal ? 16 : 12,
+                        paddingInlineEnd: minimal ? 24 : 20,
                         paddingBlock: '0 8px',
                       }}>
                         {groupMeals.map((meal, mi) => (
