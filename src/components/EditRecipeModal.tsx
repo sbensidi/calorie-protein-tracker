@@ -39,6 +39,7 @@ export function EditRecipeModal({
   const [addingIngredient, setAddingIngredient] = useState(false)
   const [searchingRow, setSearchingRow] = useState<number | null>(null)
   const [historySearch, setHistorySearch] = useState('')
+  const [focusedNameRow, setFocusedNameRow] = useState<number | null>(null)
 
   const modalRef    = useRef<HTMLDivElement>(null)
   const subModalRef = useRef<HTMLDivElement>(null)
@@ -145,6 +146,7 @@ export function EditRecipeModal({
                               : hasDisplay ? (unitMap[ing.display_unit!] ?? ing.display_unit!)
                               : isFluid    ? t(lang, 'unitOptMl')
                               : t(lang, 'gramsUnit')
+              const nameFocused = focusedNameRow === i
               return (
                 <div key={i} style={{ display: 'flex', gap: 5, alignItems: 'center' }}>
                   {/* Name input + history search button */}
@@ -154,6 +156,8 @@ export function EditRecipeModal({
                       style={{ width: '100%', fontSize: 16, height: 36, paddingInlineEnd: 34 }}
                       value={ing.name}
                       onChange={e => updateName(i, e.target.value)}
+                      onFocus={() => setFocusedNameRow(i)}
+                      onBlur={() => setFocusedNameRow(null)}
                       dir={dir(lang)}
                     />
                     <button
@@ -161,52 +165,59 @@ export function EditRecipeModal({
                       tabIndex={-1}
                       onClick={() => { setSearchingRow(i); setHistorySearch('') }}
                       aria-label={t(lang, 'foodHistory')}
-                      style={{ position: 'absolute', insetInlineEnd: 0, top: 0, bottom: 0, width: 34, padding: 0, borderRadius: '0 8px 8px 0' }}
+                      style={{
+                        position: 'absolute', insetInlineEnd: 0, top: 0, bottom: 0,
+                        width: 34, padding: 0, borderRadius: '0 8px 8px 0',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      }}
                     >
                       <span className="icon icon-sm" style={{ fontSize: 16, color: 'var(--text-3)' }}>manage_search</span>
                     </button>
                   </div>
-                  {/* Amount input — fixed width, unit reflects original entry (g or ml) */}
-                  <div
-                    className="inp"
-                    style={{
-                      height: 36, display: 'flex', alignItems: 'center', gap: 3,
-                      justifyContent: lang === 'he' ? 'flex-start' : 'flex-end',
-                      padding: '0 8px', flexShrink: 0, cursor: 'text',
-                      width: 76, boxSizing: 'border-box',
-                    }}
-                    onClick={e => (e.currentTarget.querySelector('input') as HTMLInputElement | null)?.focus()}
-                  >
-                    <input
-                      type="number" inputMode="decimal"
-                      style={{
-                        border: 'none', background: 'transparent', outline: 'none',
-                        fontSize: 16, color: 'var(--text)', fontFamily: 'inherit',
-                        width: `${Math.max(2, String(Math.round(Math.abs(displayAmt)) || '').length + 1)}ch`,
-                        minWidth: '2ch', padding: 0, margin: 0, lineHeight: 1,
-                      }}
-                      value={displayAmt > 0 ? displayAmt : ''}
-                      onChange={e => scaleIngredient(i, parseFloat(e.target.value) || 0)}
-                    />
-                    <span style={{ fontSize: 10, color: 'var(--text-3)', flexShrink: 0, lineHeight: 1, userSelect: 'none' }}>
-                      {unitLabel}
-                    </span>
-                  </div>
-                  {/* Calories — fixed width, same alignment pattern */}
-                  <div style={{
-                    height: 36, display: 'flex', alignItems: 'center', gap: 3,
-                    justifyContent: lang === 'he' ? 'flex-start' : 'flex-end',
-                    background: 'var(--accent-fill)', borderRadius: 8,
-                    padding: '0 8px', flexShrink: 0,
-                    width: 76, boxSizing: 'border-box',
-                  }}>
-                    <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--accent-hi)', lineHeight: 1 }}>
-                      {ing.calories}
-                    </span>
-                    <span style={{ fontSize: 9, color: 'var(--accent-hi)', opacity: 0.7, flexShrink: 0, lineHeight: 1, userSelect: 'none' }}>
-                      {t(lang, 'caloriesUnit')}
-                    </span>
-                  </div>
+                  {/* Amount + Calories — hidden while name field is focused */}
+                  {!nameFocused && (
+                    <>
+                      <div
+                        className="inp"
+                        style={{
+                          height: 36, display: 'flex', alignItems: 'center', gap: 3,
+                          justifyContent: lang === 'he' ? 'flex-start' : 'flex-end',
+                          padding: '0 8px', flexShrink: 0, cursor: 'text',
+                          width: 76, boxSizing: 'border-box',
+                        }}
+                        onClick={e => (e.currentTarget.querySelector('input') as HTMLInputElement | null)?.focus()}
+                      >
+                        <input
+                          type="number" inputMode="decimal"
+                          style={{
+                            border: 'none', background: 'transparent', outline: 'none',
+                            fontSize: 16, color: 'var(--text)', fontFamily: 'inherit',
+                            width: `${Math.max(2, String(Math.round(Math.abs(displayAmt)) || '').length + 1)}ch`,
+                            minWidth: '2ch', padding: 0, margin: 0, lineHeight: 1,
+                          }}
+                          value={displayAmt > 0 ? displayAmt : ''}
+                          onChange={e => scaleIngredient(i, parseFloat(e.target.value) || 0)}
+                        />
+                        <span style={{ fontSize: 10, color: 'var(--text-3)', flexShrink: 0, lineHeight: 1, userSelect: 'none' }}>
+                          {unitLabel}
+                        </span>
+                      </div>
+                      <div style={{
+                        height: 36, display: 'flex', alignItems: 'center', gap: 3,
+                        justifyContent: lang === 'he' ? 'flex-start' : 'flex-end',
+                        background: 'var(--accent-fill)', borderRadius: 8,
+                        padding: '0 8px', flexShrink: 0,
+                        width: 76, boxSizing: 'border-box',
+                      }}>
+                        <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--accent-hi)', lineHeight: 1 }}>
+                          {ing.calories}
+                        </span>
+                        <span style={{ fontSize: 9, color: 'var(--accent-hi)', opacity: 0.7, flexShrink: 0, lineHeight: 1, userSelect: 'none' }}>
+                          {t(lang, 'caloriesUnit')}
+                        </span>
+                      </div>
+                    </>
+                  )}
                   {/* Delete */}
                   <button className="icon-btn" onClick={() => removeRow(i)} aria-label={t(lang, 'delete')}>
                     <span className="icon icon-sm" style={{ color: 'var(--danger-hi)', fontSize: 16 }}>delete</span>
