@@ -336,15 +336,36 @@ export function MealCard({ meal, lang, weightUnit = 'g', showCheckbox, selected,
                   : (fmtDisplayUnit(meal, lang) ?? formatWeight(meal.grams, weightUnit, lang))}
             </span>
           </div>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginTop: 2 }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginTop: 2, flexWrap: 'wrap' }}>
             <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--accent-hi)', lineHeight: 1 }}>
               {Math.round(meal.calories)}
               <span style={{ fontSize: 10, fontWeight: 400, opacity: 0.65, marginInlineStart: 2 }}>{t(lang, 'caloriesUnit')}</span>
             </span>
-            <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--positive-hi)', lineHeight: 1 }}>
-              {Math.round(meal.protein * 10) / 10}
-              <span style={{ fontSize: 10, fontWeight: 400, opacity: 0.65, marginInlineStart: 2 }}>{t(lang, 'gProteinLabel')}</span>
+            <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--positive-hi)', lineHeight: 1, display: 'inline-flex', alignItems: 'baseline', gap: 2 }}>
+              {isRTL ? (
+                <>{Math.round(meal.protein * 10) / 10}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.65 }}>{t(lang, 'proteinUnit')}</span><span style={{ fontSize: 10, fontWeight: 400, opacity: 0.6, marginInlineStart: 3 }}>{t(lang, 'protein')}</span></>
+              ) : (
+                <><span style={{ fontSize: 10, fontWeight: 400, opacity: 0.6, marginInlineEnd: 3 }}>{t(lang, 'protein')}</span>{Math.round(meal.protein * 10) / 10}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.65 }}>{t(lang, 'proteinUnit')}</span></>
+              )}
             </span>
+            {meal.fat != null && (
+              <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--warning-hi)', opacity: 0.85, display: 'inline-flex', alignItems: 'baseline', gap: 1 }}>
+                {isRTL ? (
+                  <>{meal.fat}<span style={{ fontSize: 10, fontWeight: 500, opacity: 0.8 }}>{t(lang, 'fatUnit')}</span><span style={{ fontSize: 10, fontWeight: 400, opacity: 0.75, marginInlineStart: 3 }}>{t(lang, 'fat')}</span></>
+                ) : (
+                  <><span style={{ fontSize: 10, fontWeight: 400, opacity: 0.75, marginInlineEnd: 3 }}>{t(lang, 'fat')}</span>{meal.fat}<span style={{ fontSize: 10, fontWeight: 500, opacity: 0.8 }}>{t(lang, 'fatUnit')}</span></>
+                )}
+              </span>
+            )}
+            {meal.carbs != null && (
+              <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--library-hi)', opacity: 0.85, display: 'inline-flex', alignItems: 'baseline', gap: 1 }}>
+                {isRTL ? (
+                  <>{meal.carbs}<span style={{ fontSize: 10, fontWeight: 500, opacity: 0.8 }}>{t(lang, 'carbsUnit')}</span><span style={{ fontSize: 10, fontWeight: 400, opacity: 0.75, marginInlineStart: 3 }}>{t(lang, 'carbs')}</span></>
+                ) : (
+                  <><span style={{ fontSize: 10, fontWeight: 400, opacity: 0.75, marginInlineEnd: 3 }}>{t(lang, 'carbs')}</span>{meal.carbs}<span style={{ fontSize: 10, fontWeight: 500, opacity: 0.8 }}>{t(lang, 'carbsUnit')}</span></>
+                )}
+              </span>
+            )}
           </div>
         </div>
         <button
