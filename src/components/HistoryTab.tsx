@@ -785,9 +785,9 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                             'cup': t(lang, 'unitOptCup'), 'tbsp': t(lang, 'unitOptTbsp'),
                             'tsp': t(lang, 'unitOptTsp'), 'fl_oz': t(lang, 'unitOptFlOz'),
                           }
-                          const ingUnit = ingIsPcs ? unitLabel
+                          const ingUnit = ingIsPcs ? t(lang, 'unitOptPcs')
                                         : ingHasDisplay ? (ingUnitMap[ing.display_unit!] ?? ing.display_unit!)
-                                        : ingIsFluid    ? 'ml'
+                                        : ingIsFluid    ? t(lang, 'unitOptMl')
                                         : t(lang, 'gramsUnit')
                           return {
                             key: `ing-${idx}`,
