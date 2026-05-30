@@ -868,7 +868,23 @@ export function TodayTab({
                   onDeleteGroup={() => dissolveGroup(group.id)}
                   onDuplicate={() => duplicateGroup(group)}
                   onAddIngredient={() => setAddIngredientModal({ groupId: group.id, mealType: type })}
-                  onEditRecipe={() => setEditRecipeModal({ group })}
+                  onEditRecipe={() => {
+                    const groupForEdit = group.ingredients
+                      ? group
+                      : {
+                          ...group,
+                          ingredients: groupMeals.map(m => ({
+                            name:           m.name,
+                            grams:          m.grams,
+                            calories:       Math.round(m.calories),
+                            protein:        Math.round(m.protein * 10) / 10,
+                            fluid_ml:       m.fluid_ml ?? null,
+                            display_unit:   m.display_unit ?? null,
+                            display_amount: m.display_amount ?? null,
+                          })),
+                        }
+                    setEditRecipeModal({ group: groupForEdit })
+                  }}
                   onChangeMealType={newType => groupMeals.forEach(m => onEditMeal(m.id, { meal_type: newType }))}
                   open={openComposedIds.has(group.id)}
                   onToggleOpen={() => toggleComposedOpen(group.id)}

@@ -349,20 +349,36 @@ export function ComposedMealCard({
                   </div>
                 ))}
 
-                {/* Add ingredient */}
-                <button
-                  onClick={onAddIngredient}
-                  style={{
-                    margin: '4px 0 4px', width: '100%', background: 'transparent',
-                    border: '1px dashed var(--composed-glow)', borderRadius: 8,
-                    padding: '6px 10px', fontFamily: 'inherit',
-                    fontSize: 11, fontWeight: 600, color: 'var(--composed)',
-                    cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5,
-                  }}
-                >
-                  <span className="icon" style={{ fontSize: 14 }}>add</span>
-                  {t(lang, 'addIngredient')}
-                </button>
+                {/* Edit recipe / Add ingredient */}
+                {onEditRecipe ? (
+                  <button
+                    onClick={onEditRecipe}
+                    style={{
+                      margin: '4px 0 4px', width: '100%', background: 'transparent',
+                      border: '1px dashed var(--composed-glow)', borderRadius: 8,
+                      padding: '6px 10px', fontFamily: 'inherit',
+                      fontSize: 11, fontWeight: 600, color: 'var(--composed)',
+                      cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5,
+                    }}
+                  >
+                    <span className="icon" style={{ fontSize: 14 }}>edit</span>
+                    {t(lang, 'editRecipe')}
+                  </button>
+                ) : (
+                  <button
+                    onClick={onAddIngredient}
+                    style={{
+                      margin: '4px 0 4px', width: '100%', background: 'transparent',
+                      border: '1px dashed var(--composed-glow)', borderRadius: 8,
+                      padding: '6px 10px', fontFamily: 'inherit',
+                      fontSize: 11, fontWeight: 600, color: 'var(--composed)',
+                      cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5,
+                    }}
+                  >
+                    <span className="icon" style={{ fontSize: 14 }}>add</span>
+                    {t(lang, 'addIngredient')}
+                  </button>
+                )}
               </>
             )}
           </div>
@@ -642,19 +658,35 @@ export function ComposedMealCard({
                   </div>
                 </div>
               ))}
-              <button
-                onClick={onAddIngredient}
-                style={{
-                  marginTop: 4, width: '100%', background: 'transparent',
-                  border: '1px dashed var(--composed-glow)', borderRadius: 8,
-                  padding: '6px 10px', fontFamily: 'inherit',
-                  fontSize: 11, fontWeight: 600, color: 'var(--composed)',
-                  cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5,
-                }}
-              >
-                <span className="icon" style={{ fontSize: 14 }}>add</span>
-                {t(lang, 'addIngredient')}
-              </button>
+              {onEditRecipe ? (
+                <button
+                  onClick={onEditRecipe}
+                  style={{
+                    marginTop: 4, width: '100%', background: 'transparent',
+                    border: '1px dashed var(--composed-glow)', borderRadius: 8,
+                    padding: '6px 10px', fontFamily: 'inherit',
+                    fontSize: 11, fontWeight: 600, color: 'var(--composed)',
+                    cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5,
+                  }}
+                >
+                  <span className="icon" style={{ fontSize: 14 }}>edit</span>
+                  {t(lang, 'editRecipe')}
+                </button>
+              ) : (
+                <button
+                  onClick={onAddIngredient}
+                  style={{
+                    marginTop: 4, width: '100%', background: 'transparent',
+                    border: '1px dashed var(--composed-glow)', borderRadius: 8,
+                    padding: '6px 10px', fontFamily: 'inherit',
+                    fontSize: 11, fontWeight: 600, color: 'var(--composed)',
+                    cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5,
+                  }}
+                >
+                  <span className="icon" style={{ fontSize: 14 }}>add</span>
+                  {t(lang, 'addIngredient')}
+                </button>
+              )}
             </>
           )}
         </div>
