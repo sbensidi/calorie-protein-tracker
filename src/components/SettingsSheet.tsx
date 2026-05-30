@@ -2265,7 +2265,7 @@ function LibraryScreen({ lang }: { lang: Lang }) {
               <div
                 key={item.id}
                 style={{
-                  display: 'flex', alignItems: 'center', gap: 10,
+                  display: 'flex', alignItems: 'flex-start', gap: 10,
                   padding: '10px 4px',
                   borderBottom: i < filtered.length - 1 ? '1px solid var(--border)' : 'none',
                 }}
