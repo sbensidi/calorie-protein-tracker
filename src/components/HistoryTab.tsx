@@ -10,6 +10,7 @@ import { DonutProgress } from './DonutProgress'
 import type { ComposedEntry } from './FoodEntryForm'
 import { FoodEntryForm } from './FoodEntryForm'
 import { calcMealTypeDistribution, calcMacroBreakdown, calcDatesAverage, calcGoalMetPct, calcFluidAvgMl, calcFluidGoalPct } from '../lib/calculations'
+import { formatIngredientDisplay } from '../lib/units'
 import { MealCard } from './MealCard'
 import { SheetHandle } from './SheetHandle'
 import { EditRecipeModal } from './EditRecipeModal'
@@ -776,23 +777,11 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                   <div style={{ borderTop: '1px solid var(--border)', borderBottom: isLast ? 'none' : '1px solid var(--border)', marginBottom: isLast ? 0 : 8, background: 'var(--composed-tint)', marginInline: -14, paddingInline: 14 }}>
                     {(row.group.ingredients && row.group.ingredients.length > 0
                       ? row.group.ingredients.map((ing, idx) => {
-                          const ingIsPcs      = ing.grams < 0
-                          const ingHasDisplay = !ingIsPcs && ing.display_amount != null && ing.display_amount > 0
-                          const ingIsFluid    = !ingIsPcs && !ingHasDisplay && ing.fluid_ml != null && ing.fluid_ml > 0
-                          const ingAmt        = ingIsPcs ? Math.abs(ing.grams) : ingHasDisplay ? ing.display_amount! : ingIsFluid ? ing.fluid_ml! : ing.grams
-                          const ingUnitMap: Record<string, string> = {
-                            'oz': t(lang, 'unitOptOz'), 'ml': t(lang, 'unitOptMl'),
-                            'cup': t(lang, 'unitOptCup'), 'tbsp': t(lang, 'unitOptTbsp'),
-                            'tsp': t(lang, 'unitOptTsp'), 'fl_oz': t(lang, 'unitOptFlOz'),
-                          }
-                          const ingUnit = ingIsPcs ? t(lang, 'unitOptPcs')
-                                        : ingHasDisplay ? (ingUnitMap[ing.display_unit!] ?? ing.display_unit!)
-                                        : ingIsFluid    ? t(lang, 'unitOptMl')
-                                        : t(lang, 'gramsUnit')
+                          const { amount, unit } = formatIngredientDisplay(ing, lang)
                           return {
                             key: `ing-${idx}`,
                             name: ing.name,
-                            qty: `${ingAmt}${ingUnit}`,
+                            qty: `${amount}${unit}`,
                             cal: ing.calories,
                             prot: ing.protein,
                             isFirst: idx === 0,

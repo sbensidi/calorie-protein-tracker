@@ -4,6 +4,7 @@ import { useLockBodyScroll } from '../hooks/useLockBodyScroll'
 import type { ComposedGroup, RecipeIngredient, FoodHistory, FoodLibraryItem, Meal, UserFoodItem } from '../types'
 import type { Lang } from '../lib/i18n'
 import { t, dir } from '../lib/i18n'
+import { formatIngredientDisplay } from '../lib/units'
 import { FoodEntryForm } from './FoodEntryForm'
 import { FoodHistoryModal } from './FoodHistoryModal'
 
@@ -142,19 +143,7 @@ export function EditRecipeModal({
           {/* Editable ingredient rows */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             {ingredients.map((ing, i) => {
-              const isPcs      = ing.grams < 0
-              const hasDisplay = !isPcs && ing.display_amount != null && ing.display_amount > 0
-              const isFluid    = !isPcs && !hasDisplay && ing.fluid_ml != null && ing.fluid_ml > 0
-              const displayAmt = isPcs ? Math.abs(ing.grams) : hasDisplay ? ing.display_amount! : isFluid ? ing.fluid_ml! : ing.grams
-              const unitMap: Record<string, string> = {
-                'oz': t(lang, 'unitOptOz'), 'ml': t(lang, 'unitOptMl'),
-                'cup': t(lang, 'unitOptCup'), 'tbsp': t(lang, 'unitOptTbsp'),
-                'tsp': t(lang, 'unitOptTsp'), 'fl_oz': t(lang, 'unitOptFlOz'),
-              }
-              const unitLabel = isPcs      ? t(lang, 'unitOptPcs')
-                              : hasDisplay ? (unitMap[ing.display_unit!] ?? ing.display_unit!)
-                              : isFluid    ? t(lang, 'unitOptMl')
-                              : t(lang, 'gramsUnit')
+              const { amount: displayAmt, unit: unitLabel } = formatIngredientDisplay(ing, lang)
               const nameFocused = focusedNameRow === i
               return (
                 <div key={i} style={{ display: 'flex', gap: 5, alignItems: 'center' }}>

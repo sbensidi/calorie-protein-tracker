@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { Meal, ComposedGroup } from '../types'
 import type { Lang } from '../lib/i18n'
 import { t, dir } from '../lib/i18n'
+import { formatIngredientDisplay } from '../lib/units'
 import { useAppContext } from '../context/AppContext'
 
 type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'beverage'
@@ -280,19 +281,7 @@ export function ComposedMealCard({
             {isPortionMode && group.ingredients ? (
               <>
                 {group.ingredients.map((ing, i) => {
-                  const ingIsPcs      = ing.grams < 0
-                  const ingHasDisplay = !ingIsPcs && ing.display_amount != null && ing.display_amount > 0
-                  const ingIsFluid    = !ingIsPcs && !ingHasDisplay && ing.fluid_ml != null && ing.fluid_ml > 0
-                  const ingAmt        = ingIsPcs ? Math.abs(ing.grams) : ingHasDisplay ? ing.display_amount! : ingIsFluid ? ing.fluid_ml! : ing.grams
-                  const ingUnitMap: Record<string, string> = {
-                    'oz': t(lang, 'unitOptOz'), 'ml': t(lang, 'unitOptMl'),
-                    'cup': t(lang, 'unitOptCup'), 'tbsp': t(lang, 'unitOptTbsp'),
-                    'tsp': t(lang, 'unitOptTsp'), 'fl_oz': t(lang, 'unitOptFlOz'),
-                  }
-                  const ingUnit = ingIsPcs ? t(lang, 'unitOptPcs')
-                                : ingHasDisplay ? (ingUnitMap[ing.display_unit!] ?? ing.display_unit!)
-                                : ingIsFluid    ? t(lang, 'unitOptMl')
-                                : t(lang, 'gramsUnit')
+                  const { amount: ingAmt, unit: ingUnit } = formatIngredientDisplay(ing, lang)
                   return (
                   <div key={i} style={{ borderTop: i === 0 ? 'none' : '1px dashed var(--border)', padding: '6px 0' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 5, overflow: 'hidden' }}>
@@ -603,19 +592,7 @@ export function ComposedMealCard({
             /* Portion mode: snapshot ingredient rows + edit button + portion MealCard */
             <>
               {group.ingredients.map((ing, i) => {
-                const ingIsPcs      = ing.grams < 0
-                const ingHasDisplay = !ingIsPcs && ing.display_amount != null && ing.display_amount > 0
-                const ingIsFluid    = !ingIsPcs && !ingHasDisplay && ing.fluid_ml != null && ing.fluid_ml > 0
-                const ingAmt        = ingIsPcs ? Math.abs(ing.grams) : ingHasDisplay ? ing.display_amount! : ingIsFluid ? ing.fluid_ml! : ing.grams
-                const ingUnitMap: Record<string, string> = {
-                  'oz': t(lang, 'unitOptOz'), 'ml': t(lang, 'unitOptMl'),
-                  'cup': t(lang, 'unitOptCup'), 'tbsp': t(lang, 'unitOptTbsp'),
-                  'tsp': t(lang, 'unitOptTsp'), 'fl_oz': t(lang, 'unitOptFlOz'),
-                }
-                const ingUnit = ingIsPcs ? t(lang, 'unitOptPcs')
-                              : ingHasDisplay ? (ingUnitMap[ing.display_unit!] ?? ing.display_unit!)
-                              : ingIsFluid    ? t(lang, 'unitOptMl')
-                              : t(lang, 'gramsUnit')
+                const { amount: ingAmt, unit: ingUnit } = formatIngredientDisplay(ing, lang)
                 return (
                 <div key={i} style={{ padding: '8px 12px', borderTop: i === 0 ? 'none' : '1px dashed var(--border)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, overflow: 'hidden' }}>

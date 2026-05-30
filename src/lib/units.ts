@@ -64,6 +64,28 @@ export function formatAmount(amount: number, unit: UnitId, lang: 'he' | 'en' = '
   return `${rounded} ${abbr}`
 }
 
+import type { RecipeIngredient } from '../types'
+import { t, type TranslationKey, type Lang } from './i18n'
+
+const DISPLAY_UNIT_KEYS: Record<string, TranslationKey> = {
+  oz: 'unitOptOz', ml: 'unitOptMl', cup: 'unitOptCup',
+  tbsp: 'unitOptTbsp', tsp: 'unitOptTsp', fl_oz: 'unitOptFlOz',
+}
+
+/** Returns the display amount and i18n unit label for an ingredient row. */
+export function formatIngredientDisplay(ing: RecipeIngredient, lang: Lang): { amount: number; unit: string } {
+  const isPcs      = ing.grams < 0
+  const hasDisplay = !isPcs && ing.display_amount != null && ing.display_amount > 0
+  const isFluid    = !isPcs && !hasDisplay && ing.fluid_ml != null && ing.fluid_ml > 0
+  const amount     = isPcs ? Math.abs(ing.grams) : hasDisplay ? ing.display_amount! : isFluid ? ing.fluid_ml! : ing.grams
+  const unitKey    = ing.display_unit ? DISPLAY_UNIT_KEYS[ing.display_unit] : undefined
+  const unit       = isPcs      ? t(lang, 'unitOptPcs')
+                   : hasDisplay ? (unitKey ? t(lang, unitKey) : (ing.display_unit ?? ''))
+                   : isFluid    ? t(lang, 'unitOptMl')
+                   : t(lang, 'gramsUnit')
+  return { amount, unit }
+}
+
 export const WEIGHT_UNITS: WeightUnit[] = ['g', 'oz']
 export const VOLUME_UNITS: VolumeUnit[] = ['ml', 'cup', 'tbsp', 'tsp', 'fl_oz']
 export const ALL_ENTRY_UNITS: UnitId[]  = ['g', 'oz', 'ml', 'cup', 'tbsp', 'tsp', 'fl_oz']
