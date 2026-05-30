@@ -2270,46 +2270,54 @@ function LibraryScreen({ lang }: { lang: Lang }) {
                   borderBottom: i < filtered.length - 1 ? '1px solid var(--border)' : 'none',
                 }}
               >
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {isRTL ? item.name_he : item.name_en}
-                  </p>
-                  <p style={{ fontSize: 11, color: 'var(--text-3)', margin: '2px 0 0' }}>
-                    {catLabels[item.category] ?? item.category}
-                  </p>
-                </div>
-                <div dir="ltr" style={{ display: 'flex', gap: 6, alignItems: 'center', flexShrink: 0 }}>
-                  {(() => {
-                    const ss   = item.serving_size ?? 100
-                    const su   = (item.serving_unit ?? 'g') as UnitId
-                    const isVolume = su in UNITS && UNITS[su].type === 'volume'
-                    const isWeight = su === 'g' || su === 'oz'
-                    const grams = isVolume
-                      ? mlToGrams(toBase(ss, su), item.density ?? 1)
-                      : isWeight
-                        ? toBase(ss, su)
-                        : ss
-                    const cal  = Math.round(item.calories_per_100g * grams / 100)
-                    const prot = Math.round(item.protein_per_100g  * grams / 100 * 10) / 10
-                    const perLabel = isWeight
-                      ? '/100g'
-                      : su === 'cup'   ? `/${ss} cup`
-                      : su === 'ml'    ? `/${ss}ml`
-                      : su === 'fl_oz' ? `/${ss}fl.oz`
-                      : su === 'tbsp'  ? `/${ss}tbsp`
-                      : su === 'tsp'   ? `/${ss}tsp`
-                      : `/${ss}${su}`
-                    return (
-                      <>
-                        <span style={{ fontSize: 11, color: 'var(--accent-hi)', fontWeight: 700 }}>{cal}<span style={{ fontSize: 10, fontWeight: 500, marginInlineStart: 2, opacity: 0.8 }}>kcal</span></span>
+                {(() => {
+                  const ss       = item.serving_size ?? 100
+                  const su       = (item.serving_unit ?? 'g') as UnitId
+                  const isVolume = su in UNITS && UNITS[su].type === 'volume'
+                  const isWeight = su === 'g' || su === 'oz'
+                  const grams    = isVolume
+                    ? mlToGrams(toBase(ss, su), item.density ?? 1)
+                    : isWeight ? toBase(ss, su) : ss
+                  const cal   = Math.round(item.calories_per_100g * grams / 100)
+                  const prot  = Math.round(item.protein_per_100g  * grams / 100 * 10) / 10
+                  const fat   = item.fat_per_100g   != null ? Math.round(item.fat_per_100g   * grams / 100 * 10) / 10 : null
+                  const carbs = item.carbs_per_100g != null ? Math.round(item.carbs_per_100g * grams / 100 * 10) / 10 : null
+                  const servingUnitLabel = isWeight
+                    ? t(lang, 'gramsUnit')
+                    : su === 'cup'   ? t(lang, 'unitOptCup')
+                    : su === 'ml'    ? t(lang, 'unitOptMl')
+                    : su === 'fl_oz' ? t(lang, 'unitOptFlOz')
+                    : su === 'tbsp'  ? t(lang, 'unitOptTbsp')
+                    : su === 'tsp'   ? t(lang, 'unitOptTsp')
+                    : su === 'oz'    ? t(lang, 'unitOptOz')
+                    : su
+                  return (
+                    <>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {isRTL ? item.name_he : item.name_en}
+                          <span style={{ fontSize: 11, fontWeight: 400, color: 'var(--text-3)', marginInlineStart: 5 }}>· {ss}{servingUnitLabel}</span>
+                        </p>
+                        <p style={{ fontSize: 11, color: 'var(--text-3)', margin: '2px 0 0' }}>
+                          {catLabels[item.category] ?? item.category}
+                        </p>
+                      </div>
+                      <div dir="ltr" style={{ display: 'flex', gap: 5, alignItems: 'center', flexShrink: 0, flexWrap: 'wrap', justifyContent: 'flex-end', maxWidth: 160 }}>
+                        <span style={{ fontSize: 11, color: 'var(--accent-hi)', fontWeight: 700, whiteSpace: 'nowrap' }}>{cal}<span style={{ fontSize: 10, fontWeight: 500, marginInlineStart: 2, opacity: 0.8 }}>{t(lang, 'caloriesUnit')}</span></span>
                         <span style={{ fontSize: 10, color: 'var(--text-3)' }}>·</span>
-                        <span style={{ fontSize: 11, color: 'var(--positive-hi)', fontWeight: 700 }}>{prot}<span style={{ fontSize: 10, fontWeight: 500, marginInlineStart: 2, opacity: 0.8 }}>g prot</span></span>
-                        <span style={{ fontSize: 10, color: 'var(--text-3)' }}>·</span>
-                        <span style={{ fontSize: 10, color: 'var(--text-3)' }}>{perLabel}</span>
-                      </>
-                    )
-                  })()}
-                </div>
+                        <span style={{ fontSize: 11, color: 'var(--positive-hi)', fontWeight: 700, whiteSpace: 'nowrap' }}>{prot}<span style={{ fontSize: 10, fontWeight: 500, marginInlineStart: 2, opacity: 0.8 }}>{t(lang, 'proteinUnit')}</span></span>
+                        {fat != null && <>
+                          <span style={{ fontSize: 10, color: 'var(--text-3)' }}>·</span>
+                          <span style={{ fontSize: 11, color: 'var(--warning-hi)', fontWeight: 700, whiteSpace: 'nowrap' }}>{fat}<span style={{ fontSize: 10, fontWeight: 500, marginInlineStart: 2, opacity: 0.8 }}>{t(lang, 'fatUnit')}</span></span>
+                        </>}
+                        {carbs != null && <>
+                          <span style={{ fontSize: 10, color: 'var(--text-3)' }}>·</span>
+                          <span style={{ fontSize: 11, color: 'var(--library-hi)', fontWeight: 700, whiteSpace: 'nowrap' }}>{carbs}<span style={{ fontSize: 10, fontWeight: 500, marginInlineStart: 2, opacity: 0.8 }}>{t(lang, 'carbsUnit')}</span></span>
+                        </>}
+                      </div>
+                    </>
+                  )
+                })()}
               </div>
             ))}
           </div>
