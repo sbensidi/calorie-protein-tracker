@@ -339,26 +339,26 @@ export function ComposedMealCard({
                       </span>
                       <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--positive-hi)', display: 'inline-flex', alignItems: 'baseline', gap: 1 }}>
                         {isRTL ? (
-                          <>{Math.round(meal.protein * 10) / 10}<span style={{ fontSize: 9, fontWeight: 400, opacity: 0.7 }}>{t(lang, 'proteinUnit')}</span>{' '}<span style={{ fontSize: 9, fontWeight: 400, opacity: 0.65 }}>{t(lang, 'protein')}</span></>
+                          <>{Math.round(meal.protein * 10) / 10}<span style={{ fontSize: 9, fontWeight: 400, opacity: 0.7 }}>{t(lang, 'proteinUnit')}</span><span style={{ fontSize: 9, fontWeight: 400, opacity: 0.65, marginInlineStart: 3 }}>{t(lang, 'protein')}</span></>
                         ) : (
-                          <><span style={{ fontSize: 9, fontWeight: 400, opacity: 0.65 }}>{t(lang, 'protein')}</span>{' '}{Math.round(meal.protein * 10) / 10}<span style={{ fontSize: 9, fontWeight: 400, opacity: 0.7 }}>{t(lang, 'proteinUnit')}</span></>
+                          <><span style={{ fontSize: 9, fontWeight: 400, opacity: 0.65, marginInlineEnd: 3 }}>{t(lang, 'protein')}</span>{Math.round(meal.protein * 10) / 10}<span style={{ fontSize: 9, fontWeight: 400, opacity: 0.7 }}>{t(lang, 'proteinUnit')}</span></>
                         )}
                       </span>
                       {meal.fat != null && (
                         <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--warning-hi)', opacity: 0.85, display: 'inline-flex', alignItems: 'baseline', gap: 1 }}>
                           {isRTL ? (
-                            <>{meal.fat}<span style={{ fontSize: 9, fontWeight: 400, opacity: 0.7 }}>{t(lang, 'fatUnit')}</span>{' '}<span style={{ fontSize: 9, fontWeight: 400, opacity: 0.65 }}>{t(lang, 'fat')}</span></>
+                            <>{meal.fat}<span style={{ fontSize: 9, fontWeight: 400, opacity: 0.7 }}>{t(lang, 'fatUnit')}</span><span style={{ fontSize: 9, fontWeight: 400, opacity: 0.65, marginInlineStart: 3 }}>{t(lang, 'fat')}</span></>
                           ) : (
-                            <><span style={{ fontSize: 9, fontWeight: 400, opacity: 0.65 }}>{t(lang, 'fat')}</span>{' '}{meal.fat}<span style={{ fontSize: 9, fontWeight: 400, opacity: 0.7 }}>{t(lang, 'fatUnit')}</span></>
+                            <><span style={{ fontSize: 9, fontWeight: 400, opacity: 0.65, marginInlineEnd: 3 }}>{t(lang, 'fat')}</span>{meal.fat}<span style={{ fontSize: 9, fontWeight: 400, opacity: 0.7 }}>{t(lang, 'fatUnit')}</span></>
                           )}
                         </span>
                       )}
                       {meal.carbs != null && (
                         <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--library-hi)', opacity: 0.85, display: 'inline-flex', alignItems: 'baseline', gap: 1 }}>
                           {isRTL ? (
-                            <>{meal.carbs}<span style={{ fontSize: 9, fontWeight: 400, opacity: 0.7 }}>{t(lang, 'carbsUnit')}</span>{' '}<span style={{ fontSize: 9, fontWeight: 400, opacity: 0.65 }}>{t(lang, 'carbs')}</span></>
+                            <>{meal.carbs}<span style={{ fontSize: 9, fontWeight: 400, opacity: 0.7 }}>{t(lang, 'carbsUnit')}</span><span style={{ fontSize: 9, fontWeight: 400, opacity: 0.65, marginInlineStart: 3 }}>{t(lang, 'carbs')}</span></>
                           ) : (
-                            <><span style={{ fontSize: 9, fontWeight: 400, opacity: 0.65 }}>{t(lang, 'carbs')}</span>{' '}{meal.carbs}<span style={{ fontSize: 9, fontWeight: 400, opacity: 0.7 }}>{t(lang, 'carbsUnit')}</span></>
+                            <><span style={{ fontSize: 9, fontWeight: 400, opacity: 0.65, marginInlineEnd: 3 }}>{t(lang, 'carbs')}</span>{meal.carbs}<span style={{ fontSize: 9, fontWeight: 400, opacity: 0.7 }}>{t(lang, 'carbsUnit')}</span></>
                           )}
                         </span>
                       )}
@@ -664,26 +664,26 @@ export function ComposedMealCard({
                     </span>
                     <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--positive-hi)', display: 'inline-flex', alignItems: 'baseline', gap: 2 }}>
                       {isRTL ? (
-                        <>{Math.round(meal.protein * 10) / 10}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.7 }}>{t(lang, 'proteinUnit')}</span>{' '}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.65 }}>{t(lang, 'protein')}</span></>
+                        <>{Math.round(meal.protein * 10) / 10}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.7 }}>{t(lang, 'proteinUnit')}</span><span style={{ fontSize: 10, fontWeight: 400, opacity: 0.65, marginInlineStart: 3 }}>{t(lang, 'protein')}</span></>
                       ) : (
-                        <><span style={{ fontSize: 10, fontWeight: 400, opacity: 0.65 }}>{t(lang, 'protein')}</span>{' '}{Math.round(meal.protein * 10) / 10}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.7 }}>{t(lang, 'proteinUnit')}</span></>
+                        <><span style={{ fontSize: 10, fontWeight: 400, opacity: 0.65, marginInlineEnd: 3 }}>{t(lang, 'protein')}</span>{Math.round(meal.protein * 10) / 10}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.7 }}>{t(lang, 'proteinUnit')}</span></>
                       )}
                     </span>
                     {meal.fat != null && (
                       <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--warning-hi)', opacity: 0.85, display: 'inline-flex', alignItems: 'baseline', gap: 2 }}>
                         {isRTL ? (
-                          <>{meal.fat}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.7 }}>{t(lang, 'fatUnit')}</span>{' '}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.65 }}>{t(lang, 'fat')}</span></>
+                          <>{meal.fat}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.7 }}>{t(lang, 'fatUnit')}</span><span style={{ fontSize: 10, fontWeight: 400, opacity: 0.65, marginInlineStart: 3 }}>{t(lang, 'fat')}</span></>
                         ) : (
-                          <><span style={{ fontSize: 10, fontWeight: 400, opacity: 0.65 }}>{t(lang, 'fat')}</span>{' '}{meal.fat}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.7 }}>{t(lang, 'fatUnit')}</span></>
+                          <><span style={{ fontSize: 10, fontWeight: 400, opacity: 0.65, marginInlineEnd: 3 }}>{t(lang, 'fat')}</span>{meal.fat}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.7 }}>{t(lang, 'fatUnit')}</span></>
                         )}
                       </span>
                     )}
                     {meal.carbs != null && (
                       <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--library-hi)', opacity: 0.85, display: 'inline-flex', alignItems: 'baseline', gap: 2 }}>
                         {isRTL ? (
-                          <>{meal.carbs}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.7 }}>{t(lang, 'carbsUnit')}</span>{' '}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.65 }}>{t(lang, 'carbs')}</span></>
+                          <>{meal.carbs}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.7 }}>{t(lang, 'carbsUnit')}</span><span style={{ fontSize: 10, fontWeight: 400, opacity: 0.65, marginInlineStart: 3 }}>{t(lang, 'carbs')}</span></>
                         ) : (
-                          <><span style={{ fontSize: 10, fontWeight: 400, opacity: 0.65 }}>{t(lang, 'carbs')}</span>{' '}{meal.carbs}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.7 }}>{t(lang, 'carbsUnit')}</span></>
+                          <><span style={{ fontSize: 10, fontWeight: 400, opacity: 0.65, marginInlineEnd: 3 }}>{t(lang, 'carbs')}</span>{meal.carbs}<span style={{ fontSize: 10, fontWeight: 400, opacity: 0.7 }}>{t(lang, 'carbsUnit')}</span></>
                         )}
                       </span>
                     )}
