@@ -65,12 +65,21 @@ export function EditRecipeModal({
       const hasDisplay = !isPcs && ing.display_amount != null && ing.display_amount > 0
       const isFluid    = !isPcs && !hasDisplay && ing.fluid_ml != null && ing.fluid_ml > 0
       const current    = isPcs ? Math.abs(ing.grams) : hasDisplay ? ing.display_amount! : isFluid ? ing.fluid_ml! : ing.grams
-      const ratio      = current > 0 ? newAmount / current : 0
+      if (current === 0) {
+        // Can't derive a ratio from zero — set dimension directly, preserve existing nutrition
+        return {
+          ...ing,
+          grams:          isPcs ? -newAmount : isFluid || hasDisplay ? ing.grams : Math.round(newAmount),
+          fluid_ml:       isFluid && ing.fluid_ml != null ? Math.round(newAmount) : ing.fluid_ml,
+          display_amount: hasDisplay ? newAmount : ing.display_amount,
+        }
+      }
+      const ratio = newAmount / current
       return {
         ...ing,
-        grams:          isPcs      ? -newAmount                                               : Math.round(ing.grams * ratio),
-        fluid_ml:       ing.fluid_ml != null                                                  ? Math.round(ing.fluid_ml * ratio) : null,
-        display_amount: hasDisplay ? newAmount                                                 : ing.display_amount,
+        grams:          isPcs      ? -newAmount                     : Math.round(ing.grams * ratio),
+        fluid_ml:       ing.fluid_ml != null                        ? Math.round(ing.fluid_ml * ratio) : null,
+        display_amount: hasDisplay ? newAmount                       : ing.display_amount,
         calories:       Math.round(ing.calories * ratio),
         protein:        Math.round(ing.protein * ratio * 10) / 10,
       }
@@ -197,7 +206,7 @@ export function EditRecipeModal({
                             width: `${Math.max(2, String(Math.round(Math.abs(displayAmt)) || '').length + 1)}ch`,
                             minWidth: '2ch', padding: 0, margin: 0, lineHeight: 1,
                           }}
-                          value={displayAmt > 0 ? displayAmt : ''}
+                          value={displayAmt >= 0 ? displayAmt : ''}
                           onChange={e => scaleIngredient(i, parseFloat(e.target.value) || 0)}
                         />
                         <span style={{ fontSize: 10, color: 'var(--text-3)', flexShrink: 0, lineHeight: 1, userSelect: 'none' }}>

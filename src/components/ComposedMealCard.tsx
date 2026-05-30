@@ -279,14 +279,28 @@ export function ComposedMealCard({
           <div style={{ background: 'var(--composed-tint)', margin: '0 -4px', padding: '0 16px 10px' }}>
             {isPortionMode && group.ingredients ? (
               <>
-                {group.ingredients.map((ing, i) => (
+                {group.ingredients.map((ing, i) => {
+                  const ingIsPcs      = ing.grams < 0
+                  const ingHasDisplay = !ingIsPcs && ing.display_amount != null && ing.display_amount > 0
+                  const ingIsFluid    = !ingIsPcs && !ingHasDisplay && ing.fluid_ml != null && ing.fluid_ml > 0
+                  const ingAmt        = ingIsPcs ? Math.abs(ing.grams) : ingHasDisplay ? ing.display_amount! : ingIsFluid ? ing.fluid_ml! : ing.grams
+                  const ingUnitMap: Record<string, string> = {
+                    'oz': t(lang, 'unitOptOz'), 'ml': t(lang, 'unitOptMl'),
+                    'cup': t(lang, 'unitOptCup'), 'tbsp': t(lang, 'unitOptTbsp'),
+                    'tsp': t(lang, 'unitOptTsp'), 'fl_oz': t(lang, 'unitOptFlOz'),
+                  }
+                  const ingUnit = ingIsPcs ? t(lang, 'unitOptPcs')
+                                : ingHasDisplay ? (ingUnitMap[ing.display_unit!] ?? ing.display_unit!)
+                                : ingIsFluid    ? t(lang, 'unitOptMl')
+                                : t(lang, 'gramsUnit')
+                  return (
                   <div key={i} style={{ borderTop: i === 0 ? 'none' : '1px dashed var(--border)', padding: '6px 0' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 5, overflow: 'hidden' }}>
                       <div style={{ width: 4, height: 4, borderRadius: '50%', background: 'var(--composed-border-hi)', flexShrink: 0 }} />
                       <span style={{ flexShrink: 1, minWidth: 0, fontSize: 12, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {ing.name}
                       </span>
-                      <span style={{ fontSize: 11, color: 'var(--text-3)', whiteSpace: 'nowrap', flexShrink: 0 }}>{ing.grams}{t(lang, 'gramsUnit')}</span>
+                      <span style={{ fontSize: 11, color: 'var(--text-3)', whiteSpace: 'nowrap', flexShrink: 0 }}>{ingAmt}{ingUnit}</span>
                       <span style={{ flex: 1 }} />
                     </div>
                     <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginTop: 2, paddingInlineStart: 9 }}>
@@ -298,7 +312,8 @@ export function ComposedMealCard({
                       </span>
                     </div>
                   </div>
-                ))}
+                  )
+                })}
                 {/* Edit recipe */}
                 {onEditRecipe && (
                   <button
@@ -587,14 +602,28 @@ export function ComposedMealCard({
           {isPortionMode && group.ingredients ? (
             /* Portion mode: snapshot ingredient rows + edit button + portion MealCard */
             <>
-              {group.ingredients.map((ing, i) => (
+              {group.ingredients.map((ing, i) => {
+                const ingIsPcs      = ing.grams < 0
+                const ingHasDisplay = !ingIsPcs && ing.display_amount != null && ing.display_amount > 0
+                const ingIsFluid    = !ingIsPcs && !ingHasDisplay && ing.fluid_ml != null && ing.fluid_ml > 0
+                const ingAmt        = ingIsPcs ? Math.abs(ing.grams) : ingHasDisplay ? ing.display_amount! : ingIsFluid ? ing.fluid_ml! : ing.grams
+                const ingUnitMap: Record<string, string> = {
+                  'oz': t(lang, 'unitOptOz'), 'ml': t(lang, 'unitOptMl'),
+                  'cup': t(lang, 'unitOptCup'), 'tbsp': t(lang, 'unitOptTbsp'),
+                  'tsp': t(lang, 'unitOptTsp'), 'fl_oz': t(lang, 'unitOptFlOz'),
+                }
+                const ingUnit = ingIsPcs ? t(lang, 'unitOptPcs')
+                              : ingHasDisplay ? (ingUnitMap[ing.display_unit!] ?? ing.display_unit!)
+                              : ingIsFluid    ? t(lang, 'unitOptMl')
+                              : t(lang, 'gramsUnit')
+                return (
                 <div key={i} style={{ padding: '8px 12px', borderTop: i === 0 ? 'none' : '1px dashed var(--border)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, overflow: 'hidden' }}>
                     <div style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--composed-border-hi)', flexShrink: 0 }} />
                     <span style={{ flexShrink: 1, minWidth: 0, fontSize: 13, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {ing.name}
                     </span>
-                    <span style={{ fontSize: 12, color: 'var(--text-3)', whiteSpace: 'nowrap', flexShrink: 0 }}>{ing.grams}{t(lang, 'gramsUnit')}</span>
+                    <span style={{ fontSize: 12, color: 'var(--text-3)', whiteSpace: 'nowrap', flexShrink: 0 }}>{ingAmt}{ingUnit}</span>
                     <span style={{ flex: 1 }} />
                   </div>
                   <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginTop: 3, paddingInlineStart: 11 }}>
@@ -606,7 +635,8 @@ export function ComposedMealCard({
                     </span>
                   </div>
                 </div>
-              ))}
+                )
+              })}
               {/* Edit recipe button */}
               {onEditRecipe && (
                 <button
