@@ -1025,7 +1025,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                 </button>
                 <span className="icon" style={{
                   position: 'absolute',
-                  insetInlineStart: 10,
+                  right: 10,
                   top: '50%', transform: 'translateY(-50%)',
                   color: 'var(--text-3)', fontSize: 18, pointerEvents: 'none',
                 }}>search</span>
@@ -1241,7 +1241,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                         dir={dir(lang)}
                       />
                       <span className="icon icon-sm" style={{
-                        position: 'absolute', insetInlineStart: 10, top: '50%', transform: 'translateY(-50%)',
+                        position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)',
                         color: 'var(--text-3)', pointerEvents: 'none',
                       }}>search</span>
                       {historySearch && (
