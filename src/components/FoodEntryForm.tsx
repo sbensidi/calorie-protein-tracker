@@ -174,7 +174,8 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, se
       : []
     const combined = [...userItems, ...histItems, ...libItems]
     setSuggestions(combined)
-    setDropdownOpen(combined.length > 0)
+    const hasComposed = composedEntries?.some(e => !q || e.name.toLowerCase().includes(q)) ?? false
+    setDropdownOpen(combined.length > 0 || hasComposed)
   }
 
   // Debounced fuzzy match: prepend best-guess library item into the dropdown so
