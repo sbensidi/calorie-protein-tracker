@@ -1023,12 +1023,12 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                 >
                   <span className="icon icon-sm">manage_search</span>
                 </button>
-                <span className="icon" style={{
-                  position: 'absolute',
-                  ...(lang === 'he' ? { right: 10 } : { left: 10 }),
-                  top: '50%', transform: 'translateY(-50%)',
-                  color: 'var(--text-3)', fontSize: 18, pointerEvents: 'none',
-                }}>search</span>
+                <span style={{
+                  position: 'absolute', insetInlineStart: 10,
+                  top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none',
+                }}>
+                  <span className="icon" style={{ fontSize: 18, color: 'var(--text-3)', display: 'block', lineHeight: 1 }}>search</span>
+                </span>
                 <input
                   ref={searchInputRef}
                   type="text"
@@ -1240,10 +1240,11 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                         value={historySearch} onChange={e => setHistorySearch(e.target.value)}
                         dir={dir(lang)}
                       />
-                      <span className="icon icon-sm" style={{
-                        position: 'absolute', ...(lang === 'he' ? { right: 10 } : { left: 10 }), top: '50%', transform: 'translateY(-50%)',
-                        color: 'var(--text-3)', pointerEvents: 'none',
-                      }}>search</span>
+                      <span style={{
+                        position: 'absolute', insetInlineStart: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none',
+                      }}>
+                        <span className="icon icon-sm" style={{ color: 'var(--text-3)', display: 'block', lineHeight: 1 }}>search</span>
+                      </span>
                       {historySearch && (
                         <button onClick={() => setHistorySearch('')} style={{
                           position: 'absolute', insetInlineEnd: 0, top: 0, bottom: 0, width: 32,
