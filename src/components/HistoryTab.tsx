@@ -737,10 +737,27 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                       </span>
                     </div>
                   </div>
-                  {row.group.ingredients && row.group.ingredients.length > 0 && onUpsertGroup && (
+                  {onUpsertGroup && (
                     <button
                       className="icon-btn"
-                      onClick={e => { e.stopPropagation(); setEditRecipeModal({ group: row.group }) }}
+                      onClick={e => {
+                        e.stopPropagation()
+                        const groupForEdit = row.group.ingredients && row.group.ingredients.length > 0
+                          ? row.group
+                          : {
+                              ...row.group,
+                              ingredients: row.meals.map(m => ({
+                                name:           m.name,
+                                grams:          m.grams,
+                                calories:       Math.round(m.calories),
+                                protein:        Math.round(m.protein * 10) / 10,
+                                fluid_ml:       m.fluid_ml ?? null,
+                                display_unit:   m.display_unit ?? null,
+                                display_amount: m.display_amount ?? null,
+                              })),
+                            }
+                        setEditRecipeModal({ group: groupForEdit })
+                      }}
                       aria-label={t(lang, 'editRecipe')}
                     >
                       <span className="icon icon-sm">edit</span>
@@ -758,14 +775,29 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                 {expanded && (
                   <div style={{ borderTop: '1px solid var(--border)', borderBottom: isLast ? 'none' : '1px solid var(--border)', marginBottom: isLast ? 0 : 8, background: 'var(--composed-tint)', marginInline: -14, paddingInline: 14 }}>
                     {(row.group.ingredients && row.group.ingredients.length > 0
-                      ? row.group.ingredients.map((ing, idx) => ({
-                          key: `ing-${idx}`,
-                          name: ing.name,
-                          qty: `${ing.grams}${t(lang, 'gramsUnit')}`,
-                          cal: ing.calories,
-                          prot: ing.protein,
-                          isFirst: idx === 0,
-                        }))
+                      ? row.group.ingredients.map((ing, idx) => {
+                          const ingIsPcs      = ing.grams < 0
+                          const ingHasDisplay = !ingIsPcs && ing.display_amount != null && ing.display_amount > 0
+                          const ingIsFluid    = !ingIsPcs && !ingHasDisplay && ing.fluid_ml != null && ing.fluid_ml > 0
+                          const ingAmt        = ingIsPcs ? Math.abs(ing.grams) : ingHasDisplay ? ing.display_amount! : ingIsFluid ? ing.fluid_ml! : ing.grams
+                          const ingUnitMap: Record<string, string> = {
+                            'oz': t(lang, 'unitOptOz'), 'ml': t(lang, 'unitOptMl'),
+                            'cup': t(lang, 'unitOptCup'), 'tbsp': t(lang, 'unitOptTbsp'),
+                            'tsp': t(lang, 'unitOptTsp'), 'fl_oz': t(lang, 'unitOptFlOz'),
+                          }
+                          const ingUnit = ingIsPcs ? unitLabel
+                                        : ingHasDisplay ? (ingUnitMap[ing.display_unit!] ?? ing.display_unit!)
+                                        : ingIsFluid    ? 'ml'
+                                        : t(lang, 'gramsUnit')
+                          return {
+                            key: `ing-${idx}`,
+                            name: ing.name,
+                            qty: `${ingAmt}${ingUnit}`,
+                            cal: ing.calories,
+                            prot: ing.protein,
+                            isFirst: idx === 0,
+                          }
+                        })
                       : row.meals.map((meal, idx) => {
                           const qty = meal.fluid_ml != null && !meal.fluid_excluded
                             ? (meal.fluid_ml >= 1000 ? `${(meal.fluid_ml / 1000).toFixed(1)}${t(lang, 'litersUnit')}` : `${Math.round(meal.fluid_ml)}ml`)
