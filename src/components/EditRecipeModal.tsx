@@ -168,7 +168,7 @@ export function EditRecipeModal({
                       aria-label={t(lang, 'foodHistory')}
                       style={{
                         position: 'absolute', insetInlineEnd: 0, top: 0,
-                        width: 34, height: '100%', padding: 0, borderRadius: '0 8px 8px 0',
+                        width: 34, height: '100%', padding: 0, borderRadius: 0,
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         borderInlineStart: '1px solid var(--border)',
                       }}
