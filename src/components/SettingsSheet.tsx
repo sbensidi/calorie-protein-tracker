@@ -2322,6 +2322,7 @@ function LibraryScreen({ lang }: { lang: Lang }) {
                             </>}
                             <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--positive-hi)' }}>{prot}</span>
                             <span style={{ fontSize: 10, fontWeight: 500, opacity: 0.8, color: 'var(--positive-hi)' }}>{t(lang, 'proteinUnit')}</span>
+                            <span style={{ fontSize: 10, fontWeight: 400, opacity: 0.75, color: 'var(--positive-hi)' }}>{t(lang, 'protein')}</span>
                             <span style={{ fontSize: 10, color: 'var(--text-3)', margin: '0 2px' }}>·</span>
                             <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent-hi)' }}>{cal}</span>
                             <span style={{ fontSize: 10, fontWeight: 500, opacity: 0.8, color: 'var(--accent-hi)' }}>{t(lang, 'caloriesUnit')}</span>
@@ -2333,6 +2334,7 @@ function LibraryScreen({ lang }: { lang: Lang }) {
                             <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent-hi)' }}>{cal}</span>
                             <span style={{ fontSize: 10, fontWeight: 500, opacity: 0.8, color: 'var(--accent-hi)' }}>{t(lang, 'caloriesUnit')}</span>
                             <span style={{ fontSize: 10, color: 'var(--text-3)', margin: '0 2px' }}>·</span>
+                            <span style={{ fontSize: 10, fontWeight: 400, opacity: 0.75, color: 'var(--positive-hi)' }}>{t(lang, 'protein')}</span>
                             <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--positive-hi)' }}>{prot}</span>
                             <span style={{ fontSize: 10, fontWeight: 500, opacity: 0.8, color: 'var(--positive-hi)' }}>{t(lang, 'proteinUnit')}</span>
                             {fat != null && <>
