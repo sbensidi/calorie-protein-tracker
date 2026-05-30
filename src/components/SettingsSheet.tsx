@@ -2303,7 +2303,7 @@ function LibraryScreen({ lang }: { lang: Lang }) {
                           {catLabels[item.category] ?? item.category}
                         </p>
                       </div>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3, alignItems: 'center', flexShrink: 0 }}>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3, alignItems: 'center', flexShrink: 0, maxWidth: 'calc(100% - 80px)' }}>
                         {isRTL ? (
                           // Hebrew LTR visual order: carbs · fat · protein · calories
                           // Within each group: number · unit · label
