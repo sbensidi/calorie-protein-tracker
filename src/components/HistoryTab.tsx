@@ -56,7 +56,7 @@ interface HistoryTabProps {
   defaultWeightUnit?:   'g' | 'oz'
   fluidThresholdMl?:    number
   fluidZeroCalOnly?:    boolean
-  onUpsertHistory?:     (item: Pick<FoodHistory, 'name' | 'grams' | 'calories' | 'protein' | 'fluid_ml'>) => void
+  onUpsertHistory?:     (item: Pick<FoodHistory, 'name' | 'grams' | 'calories' | 'protein' | 'fat' | 'carbs' | 'fluid_ml'>) => void
   onTouchHistory?:      (id: string) => void
   onUpsertGroup?:       (group: ComposedGroup) => void
 }

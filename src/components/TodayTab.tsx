@@ -182,7 +182,7 @@ interface TodayTabProps {
   onEditMeal: (id: string, updates: Partial<Meal>) => void
   onDeleteMeal: (id: string) => void
   onDuplicateMeal: (meal: Meal) => void
-  onUpsertHistory: (item: Pick<FoodHistory, 'name' | 'grams' | 'calories' | 'protein' | 'fluid_ml'>) => void
+  onUpsertHistory: (item: Pick<FoodHistory, 'name' | 'grams' | 'calories' | 'protein' | 'fat' | 'carbs' | 'fluid_ml'>) => void
   onTouchHistory?: (id: string) => void
   onDeleteHistory?: (id: string) => void
   composedEntries: ComposedEntry[]

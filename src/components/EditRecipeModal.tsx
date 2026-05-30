@@ -23,7 +23,7 @@ interface EditRecipeModalProps {
   defaultVolumeUnit?: 'ml' | 'cup' | 'tbsp' | 'tsp' | 'fl_oz'
   fluidThresholdMl?: number
   fluidZeroCalOnly?: boolean
-  onUpsertHistory?: (item: Pick<FoodHistory, 'name' | 'grams' | 'calories' | 'protein' | 'fluid_ml'>) => void
+  onUpsertHistory?: (item: Pick<FoodHistory, 'name' | 'grams' | 'calories' | 'protein' | 'fat' | 'carbs' | 'fluid_ml'>) => void
   onTouchHistory?: (id: string) => void
 }
 

@@ -11,7 +11,7 @@ vi.mock('../lib/supabase', () => ({
 function makeHistory(overrides: Partial<FoodHistory> = {}): FoodHistory {
   return {
     id: 'h-1', user_id: 'u-1', name: 'Chicken', grams: 100,
-    calories: 165, protein: 31, fluid_ml: null,
+    calories: 165, protein: 31, fat: null, carbs: null, fluid_ml: null,
     use_count: 3, last_used: '2026-04-26T12:00:00Z',
     ...overrides,
   }

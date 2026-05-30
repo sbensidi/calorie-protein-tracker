@@ -1437,7 +1437,7 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onR
   composedGroups:         ComposedGroup[]
   meals:                  Meal[]
   onDelete:               (id: string) => void
-  onRestore?:             (item: Pick<FoodHistory, 'name' | 'grams' | 'calories' | 'protein' | 'fluid_ml'>) => void
+  onRestore?:             (item: Pick<FoodHistory, 'name' | 'grams' | 'calories' | 'protein' | 'fat' | 'carbs' | 'fluid_ml'>) => void
   onUpdate:               (id: string, updates: Partial<Pick<FoodHistory, 'name' | 'grams' | 'calories' | 'protein' | 'fluid_ml'>>) => void
   onRemoveGroup:          (id: string) => void
   onSaveComposedGroup?:   (group: ComposedGroup) => void
@@ -1584,7 +1584,7 @@ function FoodHistoryScreen({ lang, history, composedGroups, meals, onDelete, onR
     showToast(t(lang, 'saved'), 'success')
   }
   const handleDelete = (item: FoodHistory) => {
-    const snapshot = { name: item.name, grams: item.grams, calories: item.calories, protein: item.protein, fluid_ml: item.fluid_ml }
+    const snapshot = { name: item.name, grams: item.grams, calories: item.calories, protein: item.protein, fat: item.fat, carbs: item.carbs, fluid_ml: item.fluid_ml }
     onDelete(item.id)
     showToast(`"${item.name}${t(lang, 'itemDeletedSuffix')}`, 'info', {
       action: onRestore ? { label: t(lang, 'undo'), onClick: () => onRestore(snapshot) } : undefined,
@@ -2728,7 +2728,7 @@ interface SettingsSheetProps {
   showToast:          (message: string, type: Toast['type']) => void
   history:            FoodHistory[]
   onDeleteHistory:    (id: string) => void
-  onRestoreHistory?:  (item: Pick<FoodHistory, 'name' | 'grams' | 'calories' | 'protein' | 'fluid_ml'>) => void
+  onRestoreHistory?:  (item: Pick<FoodHistory, 'name' | 'grams' | 'calories' | 'protein' | 'fat' | 'carbs' | 'fluid_ml'>) => void
   onUpdateHistory:    (id: string, updates: Partial<Pick<FoodHistory, 'name' | 'grams' | 'calories' | 'protein' | 'fluid_ml'>>) => void
   composedGroups:        ComposedGroup[]
   onRemoveGroup:         (id: string) => void

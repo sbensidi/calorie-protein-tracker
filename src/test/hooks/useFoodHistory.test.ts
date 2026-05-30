@@ -92,7 +92,7 @@ describe('useFoodHistory', () => {
     await waitFor(() => expect(result.current.history).toBeDefined())
 
     await act(async () => {
-      await result.current.upsertHistory({ name: 'Apple', grams: 100, calories: 52, protein: 0.3, fluid_ml: null })
+      await result.current.upsertHistory({ name: 'Apple', grams: 100, calories: 52, protein: 0.3, fat: null, carbs: null, fluid_ml: null })
     })
 
     expect(insertChain.insert).toHaveBeenCalled()
@@ -114,7 +114,7 @@ describe('useFoodHistory', () => {
     await waitFor(() => expect(result.current.history).toBeDefined())
 
     await act(async () => {
-      await result.current.upsertHistory({ name: 'Apple', grams: 100, calories: 52, protein: 0.3, fluid_ml: null })
+      await result.current.upsertHistory({ name: 'Apple', grams: 100, calories: 52, protein: 0.3, fat: null, carbs: null, fluid_ml: null })
     })
 
     expect(updateChain.update).toHaveBeenCalledWith(

@@ -55,7 +55,7 @@ interface FoodEntryFormProps {
   defaultWeightUnit?: 'g' | 'oz'
   defaultVolumeUnit?: 'ml' | 'cup' | 'tbsp' | 'tsp' | 'fl_oz'
   onAdd: (meal: Omit<Meal, 'id' | 'user_id' | 'created_at'>) => void
-  onUpsertHistory: (item: Pick<FoodHistory, 'name' | 'grams' | 'calories' | 'protein' | 'fluid_ml'>) => void
+  onUpsertHistory: (item: Pick<FoodHistory, 'name' | 'grams' | 'calories' | 'protein' | 'fat' | 'carbs' | 'fluid_ml'>) => void
   onTouchHistory?: (id: string) => void
   defaultMealType?: MealType
   composedEntries?: ComposedEntry[]
@@ -509,7 +509,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, se
       display_unit:   null,
       display_amount: null,
     })
-    onUpsertHistory({ name: scanProduct.name, grams, calories, protein, fluid_ml: null })
+    onUpsertHistory({ name: scanProduct.name, grams, calories, protein, fat: scanProduct.fatPer100g != null ? Math.round(scanProduct.fatPer100g * grams / 100 * 10) / 10 : null, carbs: scanProduct.carbsPer100g != null ? Math.round(scanProduct.carbsPer100g * grams / 100 * 10) / 10 : null, fluid_ml: null })
     // Reset scan state
     setScanProduct(null)
     setScanGrams('100')
@@ -603,7 +603,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, se
     } else {
       const historyGrams = storedGrams
       if (historyGrams !== 0) {
-        onUpsertHistory({ name: foodName, grams: historyGrams, calories: numCalories, protein: numProtein, fluid_ml: isFluid && !fluidExcluded ? detectedFluidMl : null })
+        onUpsertHistory({ name: foodName, grams: historyGrams, calories: numCalories, protein: numProtein, fat: editFat, carbs: editCarbs, fluid_ml: isFluid && !fluidExcluded ? detectedFluidMl : null })
       }
     }
     // Reset

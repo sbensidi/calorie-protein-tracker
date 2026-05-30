@@ -50,7 +50,7 @@ export function useFoodHistory(userId: string | null) {
     return () => { supabase.removeChannel(channel) }
   }, [userId, fetchHistory])
 
-  const upsertHistory = useCallback(async (item: Pick<FoodHistory, 'name' | 'grams' | 'calories' | 'protein' | 'fluid_ml'>) => {
+  const upsertHistory = useCallback(async (item: Pick<FoodHistory, 'name' | 'grams' | 'calories' | 'protein' | 'fat' | 'carbs' | 'fluid_ml'>) => {
     if (!userId) return
     setError(null)
     // Match on name + grams (+ fluid_ml when it's a fluid, to distinguish e.g. 240ml vs 240g)
@@ -68,13 +68,15 @@ export function useFoodHistory(userId: string | null) {
     if (existing) {
       const { error: err } = await supabase
         .from('food_history')
-        .update({ use_count: existing.use_count + 1, last_used: new Date().toISOString(), calories: item.calories, protein: item.protein, fluid_ml: item.fluid_ml ?? null })
+        .update({ use_count: existing.use_count + 1, last_used: new Date().toISOString(), calories: item.calories, protein: item.protein, fat: item.fat ?? null, carbs: item.carbs ?? null, fluid_ml: item.fluid_ml ?? null })
         .eq('id', existing.id)
       if (err) { if (import.meta.env.DEV) console.error('upsert food_history (update):', err); setError(err.message); return }
     } else {
       const { error: err } = await supabase.from('food_history').insert({
         user_id: userId,
         ...item,
+        fat:      item.fat      ?? null,
+        carbs:    item.carbs    ?? null,
         fluid_ml: item.fluid_ml ?? null,
         use_count: 1,
         last_used: new Date().toISOString(),
