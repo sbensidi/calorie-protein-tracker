@@ -477,6 +477,17 @@ export function TodayTab({
     const group = composedGroups.find(g => g.id === composedId)
     if (!group?.batchWeightG || !group.totalCalories || !group.totalProtein) return
     const ratio = portionG / group.batchWeightG
+    const portionMealId = crypto.randomUUID()
+    // Create a group for today's portion so it shows with ingredient list + edit recipe button
+    onUpsertGroup({
+      id:            crypto.randomUUID(),
+      name:          group.name,
+      mealIds:       [portionMealId],
+      batchWeightG:  group.batchWeightG,
+      totalCalories: group.totalCalories,
+      totalProtein:  group.totalProtein,
+      ingredients:   group.ingredients ?? null,
+    })
     await onAddMealWithId({
       date:           today(),
       meal_type:      mealType,
@@ -492,8 +503,8 @@ export function TodayTab({
       fluid_excluded: false,
       display_unit:   null,
       display_amount: null,
-    })
-  }, [composedGroups, onAddMealWithId])
+    }, portionMealId)
+  }, [composedGroups, onAddMealWithId, onUpsertGroup])
 
   const duplicateGroup = useCallback(async (group: ComposedGroup) => {
     const groupMeals = todayMeals.filter(m => group.mealIds.includes(m.id))
