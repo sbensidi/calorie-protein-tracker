@@ -2305,44 +2305,50 @@ function LibraryScreen({ lang }: { lang: Lang }) {
                       </div>
                       <div style={{ display: 'flex', gap: 3, alignItems: 'center', flexShrink: 0 }}>
                         {isRTL ? (
-                          <><bdi style={{ fontSize: 10, fontWeight: 500, opacity: 0.8, color: 'var(--accent-hi)' }}>{t(lang, 'caloriesUnit')}</bdi>
-                            <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent-hi)' }}>{cal}</span></>
-                        ) : (
-                          <><span style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent-hi)' }}>{cal}</span>
-                            <bdi style={{ fontSize: 10, fontWeight: 500, opacity: 0.8, color: 'var(--accent-hi)' }}>{t(lang, 'caloriesUnit')}</bdi></>
-                        )}
-                        <span style={{ fontSize: 10, color: 'var(--text-3)', margin: '0 2px' }}>·</span>
-                        {isRTL ? (
-                          <><bdi style={{ fontSize: 10, fontWeight: 500, opacity: 0.8, color: 'var(--positive-hi)' }}>{t(lang, 'proteinUnit')}</bdi>
-                            <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--positive-hi)' }}>{prot}</span></>
-                        ) : (
-                          <><span style={{ fontSize: 11, fontWeight: 700, color: 'var(--positive-hi)' }}>{prot}</span>
-                            <bdi style={{ fontSize: 10, fontWeight: 500, opacity: 0.8, color: 'var(--positive-hi)' }}>{t(lang, 'proteinUnit')}</bdi></>
-                        )}
-                        {fat != null && <>
-                          <span style={{ fontSize: 10, color: 'var(--text-3)', margin: '0 2px' }}>·</span>
-                          {isRTL ? (
-                            <><bdi style={{ fontSize: 10, fontWeight: 400, opacity: 0.75, color: 'var(--warning-hi)' }}>{t(lang, 'fat')}</bdi>
-                              <bdi style={{ fontSize: 10, fontWeight: 500, opacity: 0.8, color: 'var(--warning-hi)' }}>{t(lang, 'fatUnit')}</bdi>
-                              <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--warning-hi)' }}>{fat}</span></>
-                          ) : (
-                            <><bdi style={{ fontSize: 10, fontWeight: 400, opacity: 0.75, color: 'var(--warning-hi)' }}>{t(lang, 'fat')}</bdi>
-                              <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--warning-hi)' }}>{fat}</span>
-                              <bdi style={{ fontSize: 10, fontWeight: 500, opacity: 0.8, color: 'var(--warning-hi)' }}>{t(lang, 'fatUnit')}</bdi></>
-                          )}
-                        </>}
-                        {carbs != null && <>
-                          <span style={{ fontSize: 10, color: 'var(--text-3)', margin: '0 2px' }}>·</span>
-                          {isRTL ? (
-                            <><bdi style={{ fontSize: 10, fontWeight: 400, opacity: 0.75, color: 'var(--library-hi)' }}>{t(lang, 'carbs')}</bdi>
-                              <bdi style={{ fontSize: 10, fontWeight: 500, opacity: 0.8, color: 'var(--library-hi)' }}>{t(lang, 'carbsUnit')}</bdi>
-                              <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--library-hi)' }}>{carbs}</span></>
-                          ) : (
-                            <><bdi style={{ fontSize: 10, fontWeight: 400, opacity: 0.75, color: 'var(--library-hi)' }}>{t(lang, 'carbs')}</bdi>
+                          // Hebrew LTR visual order: carbs · fat · protein · calories
+                          // Within each group: number · unit · label
+                          <>
+                            {carbs != null && <>
                               <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--library-hi)' }}>{carbs}</span>
-                              <bdi style={{ fontSize: 10, fontWeight: 500, opacity: 0.8, color: 'var(--library-hi)' }}>{t(lang, 'carbsUnit')}</bdi></>
-                          )}
-                        </>}
+                              <span style={{ fontSize: 10, fontWeight: 500, opacity: 0.8, color: 'var(--library-hi)' }}>{t(lang, 'carbsUnit')}</span>
+                              <span style={{ fontSize: 10, fontWeight: 400, opacity: 0.75, color: 'var(--library-hi)' }}>{t(lang, 'carbs')}</span>
+                              <span style={{ fontSize: 10, color: 'var(--text-3)', margin: '0 2px' }}>·</span>
+                            </>}
+                            {fat != null && <>
+                              <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--warning-hi)' }}>{fat}</span>
+                              <span style={{ fontSize: 10, fontWeight: 500, opacity: 0.8, color: 'var(--warning-hi)' }}>{t(lang, 'fatUnit')}</span>
+                              <span style={{ fontSize: 10, fontWeight: 400, opacity: 0.75, color: 'var(--warning-hi)' }}>{t(lang, 'fat')}</span>
+                              <span style={{ fontSize: 10, color: 'var(--text-3)', margin: '0 2px' }}>·</span>
+                            </>}
+                            <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--positive-hi)' }}>{prot}</span>
+                            <span style={{ fontSize: 10, fontWeight: 500, opacity: 0.8, color: 'var(--positive-hi)' }}>{t(lang, 'proteinUnit')}</span>
+                            <span style={{ fontSize: 10, color: 'var(--text-3)', margin: '0 2px' }}>·</span>
+                            <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent-hi)' }}>{cal}</span>
+                            <span style={{ fontSize: 10, fontWeight: 500, opacity: 0.8, color: 'var(--accent-hi)' }}>{t(lang, 'caloriesUnit')}</span>
+                          </>
+                        ) : (
+                          // English LTR visual order: calories · protein · fat · carbs
+                          // Within each group: number · unit (cal/prot), label · number · unit (fat/carbs)
+                          <>
+                            <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent-hi)' }}>{cal}</span>
+                            <span style={{ fontSize: 10, fontWeight: 500, opacity: 0.8, color: 'var(--accent-hi)' }}>{t(lang, 'caloriesUnit')}</span>
+                            <span style={{ fontSize: 10, color: 'var(--text-3)', margin: '0 2px' }}>·</span>
+                            <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--positive-hi)' }}>{prot}</span>
+                            <span style={{ fontSize: 10, fontWeight: 500, opacity: 0.8, color: 'var(--positive-hi)' }}>{t(lang, 'proteinUnit')}</span>
+                            {fat != null && <>
+                              <span style={{ fontSize: 10, color: 'var(--text-3)', margin: '0 2px' }}>·</span>
+                              <span style={{ fontSize: 10, fontWeight: 400, opacity: 0.75, color: 'var(--warning-hi)' }}>{t(lang, 'fat')}</span>
+                              <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--warning-hi)' }}>{fat}</span>
+                              <span style={{ fontSize: 10, fontWeight: 500, opacity: 0.8, color: 'var(--warning-hi)' }}>{t(lang, 'fatUnit')}</span>
+                            </>}
+                            {carbs != null && <>
+                              <span style={{ fontSize: 10, color: 'var(--text-3)', margin: '0 2px' }}>·</span>
+                              <span style={{ fontSize: 10, fontWeight: 400, opacity: 0.75, color: 'var(--library-hi)' }}>{t(lang, 'carbs')}</span>
+                              <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--library-hi)' }}>{carbs}</span>
+                              <span style={{ fontSize: 10, fontWeight: 500, opacity: 0.8, color: 'var(--library-hi)' }}>{t(lang, 'carbsUnit')}</span>
+                            </>}
+                          </>
+                        )}
                       </div>
                     </>
                   )
