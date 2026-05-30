@@ -2296,7 +2296,8 @@ function LibraryScreen({ lang }: { lang: Lang }) {
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {isRTL ? item.name_he : item.name_en}
-                          <span style={{ fontSize: 11, fontWeight: 400, color: 'var(--text-3)', marginInlineStart: 5 }}>· {ss}{servingUnitLabel}</span>
+                          {/* dir=ltr keeps number before unit in RTL layout */}
+                          <span dir="ltr" style={{ fontSize: 11, fontWeight: 400, color: 'var(--text-3)', marginInlineStart: 5 }}>· {ss}{servingUnitLabel}</span>
                         </p>
                         <p style={{ fontSize: 11, color: 'var(--text-3)', margin: '2px 0 0' }}>
                           {catLabels[item.category] ?? item.category}
@@ -2308,11 +2309,11 @@ function LibraryScreen({ lang }: { lang: Lang }) {
                         <span style={{ fontSize: 11, color: 'var(--positive-hi)', fontWeight: 700, whiteSpace: 'nowrap' }}>{prot}<span style={{ fontSize: 10, fontWeight: 500, marginInlineStart: 2, opacity: 0.8 }}>{t(lang, 'proteinUnit')}</span></span>
                         {fat != null && <>
                           <span style={{ fontSize: 10, color: 'var(--text-3)' }}>·</span>
-                          <span style={{ fontSize: 11, color: 'var(--warning-hi)', fontWeight: 700, whiteSpace: 'nowrap' }}>{fat}<span style={{ fontSize: 10, fontWeight: 500, marginInlineStart: 2, opacity: 0.8 }}>{t(lang, 'fatUnit')}</span></span>
+                          <span style={{ fontSize: 11, color: 'var(--warning-hi)', fontWeight: 700, whiteSpace: 'nowrap' }}>{fat}{t(lang, 'fatUnit')}<span style={{ fontSize: 10, fontWeight: 400, marginInlineStart: 2, opacity: 0.75 }}>{t(lang, 'fat')}</span></span>
                         </>}
                         {carbs != null && <>
                           <span style={{ fontSize: 10, color: 'var(--text-3)' }}>·</span>
-                          <span style={{ fontSize: 11, color: 'var(--library-hi)', fontWeight: 700, whiteSpace: 'nowrap' }}>{carbs}<span style={{ fontSize: 10, fontWeight: 500, marginInlineStart: 2, opacity: 0.8 }}>{t(lang, 'carbsUnit')}</span></span>
+                          <span style={{ fontSize: 11, color: 'var(--library-hi)', fontWeight: 700, whiteSpace: 'nowrap' }}>{carbs}{t(lang, 'carbsUnit')}<span style={{ fontSize: 10, fontWeight: 400, marginInlineStart: 2, opacity: 0.75 }}>{t(lang, 'carbs')}</span></span>
                         </>}
                       </div>
                     </>
