@@ -1013,19 +1013,19 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                   title={t(lang, 'foodHistory')}
                   style={{
                     position: 'absolute',
-                    insetInlineStart: 0,
+                    insetInlineEnd: 0,
                     top: 0, bottom: 0, width: 42,
                     background: 'none', border: 'none', cursor: 'pointer',
                     color: 'var(--text-3)', padding: 0,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    borderInlineEnd: '1px solid var(--border)',
+                    borderInlineStart: '1px solid var(--border)',
                   }}
                 >
                   <span className="icon icon-sm">manage_search</span>
                 </button>
                 <span className="icon" style={{
                   position: 'absolute',
-                  insetInlineEnd: 10,
+                  insetInlineStart: 10,
                   top: '50%', transform: 'translateY(-50%)',
                   color: 'var(--text-3)', fontSize: 18, pointerEvents: 'none',
                 }}>search</span>
@@ -1041,7 +1041,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                     if (!searchDropdownRef.current?.contains(document.activeElement)) setDropdownOpen(false)
                   }, 150)}
                   placeholder={t(lang, 'searchFood')}
-                  style={{ paddingInlineStart: search ? 80 : 48, paddingInlineEnd: 36 }}
+                  style={{ paddingInlineStart: 36, paddingInlineEnd: search ? 80 : 48 }}
                 />
                 {search && (
                   <button
@@ -1049,7 +1049,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                     aria-label={t(lang, 'clearSearch')}
                     style={{
                       position: 'absolute',
-                      insetInlineStart: 44,
+                      insetInlineEnd: 44,
                       top: '50%', transform: 'translateY(-50%)',
                       background: 'none', border: 'none', cursor: 'pointer',
                       color: 'var(--text-3)', padding: 2, display: 'flex',
