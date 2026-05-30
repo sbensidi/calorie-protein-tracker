@@ -2296,24 +2296,52 @@ function LibraryScreen({ lang }: { lang: Lang }) {
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {isRTL ? item.name_he : item.name_en}
-                          {/* dir=ltr keeps number before unit in RTL layout */}
-                          <span dir="ltr" style={{ fontSize: 11, fontWeight: 400, color: 'var(--text-3)', marginInlineStart: 5 }}>· {ss}{servingUnitLabel}</span>
+                          {' · '}
+                          <span style={{ display: 'inline-flex', alignItems: 'baseline', fontSize: 11, fontWeight: 400, color: 'var(--text-3)', direction: 'ltr' }}>{ss}{servingUnitLabel}</span>
                         </p>
                         <p style={{ fontSize: 11, color: 'var(--text-3)', margin: '2px 0 0' }}>
                           {catLabels[item.category] ?? item.category}
                         </p>
                       </div>
-                      <div style={{ display: 'flex', gap: 5, alignItems: 'center', flexShrink: 0, flexWrap: 'wrap', justifyContent: 'flex-end', maxWidth: 160 }}>
-                        <span style={{ fontSize: 11, color: 'var(--accent-hi)', fontWeight: 700, whiteSpace: 'nowrap' }}>{cal}<span style={{ fontSize: 10, fontWeight: 500, marginInlineStart: 2, opacity: 0.8 }}>{t(lang, 'caloriesUnit')}</span></span>
-                        <span style={{ fontSize: 10, color: 'var(--text-3)' }}>·</span>
-                        <span style={{ fontSize: 11, color: 'var(--positive-hi)', fontWeight: 700, whiteSpace: 'nowrap' }}>{prot}<span style={{ fontSize: 10, fontWeight: 500, marginInlineStart: 2, opacity: 0.8 }}>{t(lang, 'proteinUnit')}</span></span>
+                      <div style={{ display: 'flex', gap: 3, alignItems: 'center', flexShrink: 0 }}>
+                        {isRTL ? (
+                          <><bdi style={{ fontSize: 10, fontWeight: 500, opacity: 0.8, color: 'var(--accent-hi)' }}>{t(lang, 'caloriesUnit')}</bdi>
+                            <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent-hi)' }}>{cal}</span></>
+                        ) : (
+                          <><span style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent-hi)' }}>{cal}</span>
+                            <bdi style={{ fontSize: 10, fontWeight: 500, opacity: 0.8, color: 'var(--accent-hi)' }}>{t(lang, 'caloriesUnit')}</bdi></>
+                        )}
+                        <span style={{ fontSize: 10, color: 'var(--text-3)', margin: '0 2px' }}>·</span>
+                        {isRTL ? (
+                          <><bdi style={{ fontSize: 10, fontWeight: 500, opacity: 0.8, color: 'var(--positive-hi)' }}>{t(lang, 'proteinUnit')}</bdi>
+                            <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--positive-hi)' }}>{prot}</span></>
+                        ) : (
+                          <><span style={{ fontSize: 11, fontWeight: 700, color: 'var(--positive-hi)' }}>{prot}</span>
+                            <bdi style={{ fontSize: 10, fontWeight: 500, opacity: 0.8, color: 'var(--positive-hi)' }}>{t(lang, 'proteinUnit')}</bdi></>
+                        )}
                         {fat != null && <>
-                          <span style={{ fontSize: 10, color: 'var(--text-3)' }}>·</span>
-                          <span style={{ fontSize: 11, color: 'var(--warning-hi)', fontWeight: 700, whiteSpace: 'nowrap' }}>{t(lang, 'fat')} {fat}<span style={{ fontSize: 10, fontWeight: 500, marginInlineStart: 2, opacity: 0.8 }}>{t(lang, 'fatUnit')}</span></span>
+                          <span style={{ fontSize: 10, color: 'var(--text-3)', margin: '0 2px' }}>·</span>
+                          {isRTL ? (
+                            <><bdi style={{ fontSize: 10, fontWeight: 400, opacity: 0.75, color: 'var(--warning-hi)' }}>{t(lang, 'fat')}</bdi>
+                              <bdi style={{ fontSize: 10, fontWeight: 500, opacity: 0.8, color: 'var(--warning-hi)' }}>{t(lang, 'fatUnit')}</bdi>
+                              <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--warning-hi)' }}>{fat}</span></>
+                          ) : (
+                            <><bdi style={{ fontSize: 10, fontWeight: 400, opacity: 0.75, color: 'var(--warning-hi)' }}>{t(lang, 'fat')}</bdi>
+                              <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--warning-hi)' }}>{fat}</span>
+                              <bdi style={{ fontSize: 10, fontWeight: 500, opacity: 0.8, color: 'var(--warning-hi)' }}>{t(lang, 'fatUnit')}</bdi></>
+                          )}
                         </>}
                         {carbs != null && <>
-                          <span style={{ fontSize: 10, color: 'var(--text-3)' }}>·</span>
-                          <span style={{ fontSize: 11, color: 'var(--library-hi)', fontWeight: 700, whiteSpace: 'nowrap' }}>{t(lang, 'carbs')} {carbs}<span style={{ fontSize: 10, fontWeight: 500, marginInlineStart: 2, opacity: 0.8 }}>{t(lang, 'carbsUnit')}</span></span>
+                          <span style={{ fontSize: 10, color: 'var(--text-3)', margin: '0 2px' }}>·</span>
+                          {isRTL ? (
+                            <><bdi style={{ fontSize: 10, fontWeight: 400, opacity: 0.75, color: 'var(--library-hi)' }}>{t(lang, 'carbs')}</bdi>
+                              <bdi style={{ fontSize: 10, fontWeight: 500, opacity: 0.8, color: 'var(--library-hi)' }}>{t(lang, 'carbsUnit')}</bdi>
+                              <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--library-hi)' }}>{carbs}</span></>
+                          ) : (
+                            <><bdi style={{ fontSize: 10, fontWeight: 400, opacity: 0.75, color: 'var(--library-hi)' }}>{t(lang, 'carbs')}</bdi>
+                              <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--library-hi)' }}>{carbs}</span>
+                              <bdi style={{ fontSize: 10, fontWeight: 500, opacity: 0.8, color: 'var(--library-hi)' }}>{t(lang, 'carbsUnit')}</bdi></>
+                          )}
                         </>}
                       </div>
                     </>
