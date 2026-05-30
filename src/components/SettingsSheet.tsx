@@ -2297,7 +2297,7 @@ function LibraryScreen({ lang }: { lang: Lang }) {
                         <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {isRTL ? item.name_he : item.name_en}
                           {' · '}
-                          <span style={{ display: 'inline-flex', alignItems: 'baseline', fontSize: 11, fontWeight: 400, color: 'var(--text-3)', direction: 'ltr' }}><span>{ss}</span><span>{servingUnitLabel}</span></span>
+                          <span dir="ltr" style={{ display: 'inline-flex', alignItems: 'baseline', fontSize: 11, fontWeight: 400, color: 'var(--text-3)' }}><span>{ss}</span><span>{servingUnitLabel}</span></span>
                         </p>
                         <p style={{ fontSize: 11, color: 'var(--text-3)', margin: '2px 0 0' }}>
                           {catLabels[item.category] ?? item.category}
