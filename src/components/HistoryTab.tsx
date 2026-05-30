@@ -713,7 +713,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                   tabIndex={0}
                   onClick={() => toggleGroupExpand(row.group.id)}
                   onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') toggleGroupExpand(row.group.id) }}
-                  style={{ padding: '8px 0', display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', userSelect: 'none' }}
+                  style={{ padding: '8px 0', display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', userSelect: 'none' }}
                 >
                   <span className="icon icon-sm" style={{ color: 'var(--composed)', fontSize: 14, flexShrink: 0 }}>restaurant</span>
                   <div style={{ flex: 1, minWidth: 0 }}>
@@ -742,12 +742,14 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                       className="icon-btn"
                       onClick={e => { e.stopPropagation(); setEditRecipeModal({ group: row.group }) }}
                       aria-label={t(lang, 'editRecipe')}
-                      style={{ flexShrink: 0 }}
                     >
-                      <span className="icon icon-sm" style={{ color: 'var(--composed)', fontSize: 16 }}>edit</span>
+                      <span className="icon icon-sm">edit</span>
                     </button>
                   )}
-                  <span className="icon icon-chevron" style={{ color: 'var(--text-3)', flexShrink: 0, transition: 'transform .2s', transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>
+                  <span className="icon icon-chevron" style={{
+                    width: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                    color: 'var(--text-3)', transition: 'transform .2s', transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                  }}>
                     expand_more
                   </span>
                 </div>
