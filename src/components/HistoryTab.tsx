@@ -84,7 +84,7 @@ const STATUS_COLOR: Record<DayData['status'], { badge: string; text: string; ico
 }
 
 // ── PeriodBalanceCard ─────────────────────────────────────────────────
-function PeriodBalanceCard({ lang, totalDays, daysElapsed, consumed, target, showDots, headerKey, progressKey }: {
+function PeriodBalanceCard({ lang, totalDays, daysElapsed, consumed, target, showDots, headerKey, progressKey, dayStatuses }: {
   lang:        Lang
   totalDays:   number
   daysElapsed: number
@@ -93,6 +93,7 @@ function PeriodBalanceCard({ lang, totalDays, daysElapsed, consumed, target, sho
   showDots:    boolean
   headerKey:   'weeklyBalance' | 'monthlyBalance'
   progressKey: 'weeklyProgressLabel' | 'monthlyProgressLabel'
+  dayStatuses?: (boolean | null)[]   // true=met goal, false=exceeded, null=no data
 }) {
   const balance    = target - consumed           // positive = under = good
   const isGood     = balance >= 0
@@ -148,9 +149,11 @@ function PeriodBalanceCard({ lang, totalDays, daysElapsed, consumed, target, sho
         </div>
         {showDots ? (
           <div style={{ display: 'flex', gap: 3 }}>
-            {Array.from({ length: totalDays }, (_, i) => (
-              <div key={i} style={{ flex: 1, height: 5, borderRadius: 3, background: i < daysElapsed ? color : 'var(--border)', transition: 'background 0.2s' }} />
-            ))}
+            {Array.from({ length: totalDays }, (_, i) => {
+              const status = dayStatuses?.[i] ?? null
+              const dotColor = status === true ? 'var(--positive-hi)' : status === false ? 'var(--warning)' : 'var(--border)'
+              return <div key={i} style={{ flex: 1, height: 5, borderRadius: 3, background: dotColor, transition: 'background 0.2s' }} />
+            })}
           </div>
         ) : (
           <div style={{ height: 4, background: 'var(--border)', borderRadius: 2, overflow: 'hidden' }}>
@@ -1710,6 +1713,7 @@ export function HistoryTab({ lang, meals, history, getGoalForDate, composedEntri
                       showDots={true}
                       headerKey="weeklyBalance"
                       progressKey="weeklyProgressLabel"
+                      dayStatuses={barDays.map(b => b.hasData ? b.cal <= b.goalCal : null)}
                     />
                   )}
 
