@@ -502,8 +502,8 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, se
       grams,
       calories,
       protein,
-      fat:            scanProduct.fatPer100g    != null ? Math.round(scanProduct.fatPer100g    * grams / 100 * 10) / 10 : null,
-      carbs:          scanProduct.carbsPer100g  != null ? Math.round(scanProduct.carbsPer100g  * grams / 100 * 10) / 10 : null,
+      fat:            Math.round((scanProduct.fatPer100g   ?? 0) * grams / 100 * 10) / 10,
+      carbs:          Math.round((scanProduct.carbsPer100g ?? 0) * grams / 100 * 10) / 10,
       notes:          null,
       time_logged:    currentTime(),
       fluid_ml:       null,
@@ -511,7 +511,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, se
       display_unit:   null,
       display_amount: null,
     })
-    onUpsertHistory({ name: scanProduct.name, grams, calories, protein, fat: scanProduct.fatPer100g != null ? Math.round(scanProduct.fatPer100g * grams / 100 * 10) / 10 : null, carbs: scanProduct.carbsPer100g != null ? Math.round(scanProduct.carbsPer100g * grams / 100 * 10) / 10 : null, fluid_ml: null })
+    onUpsertHistory({ name: scanProduct.name, grams, calories, protein, fat: Math.round((scanProduct.fatPer100g ?? 0) * grams / 100 * 10) / 10, carbs: Math.round((scanProduct.carbsPer100g ?? 0) * grams / 100 * 10) / 10, fluid_ml: null })
     // Reset scan state
     setScanProduct(null)
     setScanGrams('100')
@@ -667,8 +667,8 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, se
   const scanG    = Number(scanGrams) || 0
   const scanCal  = scanProduct ? Math.round(scanProduct.caloriesPer100g * scanG / 100) : 0
   const scanProt = scanProduct ? Math.round(scanProduct.proteinPer100g  * scanG / 100 * 10) / 10 : 0
-  const scanFat  = scanProduct?.fatPer100g   != null ? Math.round(scanProduct.fatPer100g   * scanG / 100 * 10) / 10 : null
-  const scanCarb = scanProduct?.carbsPer100g != null ? Math.round(scanProduct.carbsPer100g * scanG / 100 * 10) / 10 : null
+  const scanFat  = scanProduct ? Math.round((scanProduct.fatPer100g   ?? 0) * scanG / 100 * 10) / 10 : null
+  const scanCarb = scanProduct ? Math.round((scanProduct.carbsPer100g ?? 0) * scanG / 100 * 10) / 10 : null
 
   return (
     <>
@@ -909,24 +909,18 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, se
                   <p style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 2 }}>{t(lang, 'proteinUnit')}</p>
                 </div>
               </div>
-              {(scanProduct.fatPer100g != null || scanProduct.carbsPer100g != null) && (
-                <div style={{ display: 'flex', gap: 8 }}>
-                  {scanProduct.fatPer100g != null && (
-                    <div style={{ flex: 1, background: 'var(--warning-fill)', border: '1px solid color-mix(in srgb, var(--warning) 14%, transparent)', borderRadius: 10, padding: '10px 12px' }}>
-                      <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--warning-hi)', letterSpacing: '0.04em', marginBottom: 3 }}>{t(lang, 'fat').toUpperCase()}</p>
-                      <p style={{ fontSize: 20, fontWeight: 800, color: 'var(--text)', margin: 0, lineHeight: 1 }}>{scanProduct.fatPer100g}</p>
-                      <p style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 2 }}>{t(lang, 'fatUnit')}</p>
-                    </div>
-                  )}
-                  {scanProduct.carbsPer100g != null && (
-                    <div style={{ flex: 1, background: 'var(--accent-fill)', border: '1px solid color-mix(in srgb, var(--accent) 14%, transparent)', borderRadius: 10, padding: '10px 12px' }}>
-                      <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--accent-hi)', letterSpacing: '0.04em', marginBottom: 3 }}>{t(lang, 'carbs').toUpperCase()}</p>
-                      <p style={{ fontSize: 20, fontWeight: 800, color: 'var(--text)', margin: 0, lineHeight: 1 }}>{scanProduct.carbsPer100g}</p>
-                      <p style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 2 }}>{t(lang, 'carbsUnit')}</p>
-                    </div>
-                  )}
+              <div style={{ display: 'flex', gap: 8 }}>
+                <div style={{ flex: 1, background: 'var(--warning-fill)', border: '1px solid color-mix(in srgb, var(--warning) 14%, transparent)', borderRadius: 10, padding: '10px 12px' }}>
+                  <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--warning-hi)', letterSpacing: '0.04em', marginBottom: 3 }}>{t(lang, 'fat').toUpperCase()}</p>
+                  <p style={{ fontSize: 20, fontWeight: 800, color: 'var(--text)', margin: 0, lineHeight: 1 }}>{scanProduct.fatPer100g ?? 0}</p>
+                  <p style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 2 }}>{t(lang, 'fatUnit')}</p>
                 </div>
-              )}
+                <div style={{ flex: 1, background: 'var(--accent-fill)', border: '1px solid color-mix(in srgb, var(--accent) 14%, transparent)', borderRadius: 10, padding: '10px 12px' }}>
+                  <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--accent-hi)', letterSpacing: '0.04em', marginBottom: 3 }}>{t(lang, 'carbs').toUpperCase()}</p>
+                  <p style={{ fontSize: 20, fontWeight: 800, color: 'var(--text)', margin: 0, lineHeight: 1 }}>{scanProduct.carbsPer100g ?? 0}</p>
+                  <p style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 2 }}>{t(lang, 'carbsUnit')}</p>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -983,20 +977,16 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, se
                 <span style={{ fontSize: 10, fontWeight: 600, opacity: 0.7 }}>{t(lang, 'proteinUnit')}</span>
                 <span style={{ fontSize: 10, fontWeight: 500, opacity: 0.55 }}>{t(lang, 'protein')}</span>
               </span>
-              {scanFat != null && (
-                <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 2, fontSize: 15, fontWeight: 800, color: 'var(--warning-hi)', marginInlineStart: 8 }}>
-                  {scanFat}
-                  <span style={{ fontSize: 10, fontWeight: 600, opacity: 0.7 }}>{t(lang, 'fatUnit')}</span>
-                  <span style={{ fontSize: 10, fontWeight: 500, opacity: 0.55 }}>{t(lang, 'fat')}</span>
-                </span>
-              )}
-              {scanCarb != null && (
-                <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 2, fontSize: 15, fontWeight: 800, color: 'var(--accent-hi)', marginInlineStart: 8 }}>
-                  {scanCarb}
-                  <span style={{ fontSize: 10, fontWeight: 600, opacity: 0.7 }}>{t(lang, 'carbsUnit')}</span>
-                  <span style={{ fontSize: 10, fontWeight: 500, opacity: 0.55 }}>{t(lang, 'carbs')}</span>
-                </span>
-              )}
+              <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 2, fontSize: 15, fontWeight: 800, color: 'var(--warning-hi)', marginInlineStart: 8 }}>
+                {scanFat}
+                <span style={{ fontSize: 10, fontWeight: 600, opacity: 0.7 }}>{t(lang, 'fatUnit')}</span>
+                <span style={{ fontSize: 10, fontWeight: 500, opacity: 0.55 }}>{t(lang, 'fat')}</span>
+              </span>
+              <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 2, fontSize: 15, fontWeight: 800, color: 'var(--accent-hi)', marginInlineStart: 8 }}>
+                {scanCarb}
+                <span style={{ fontSize: 10, fontWeight: 600, opacity: 0.7 }}>{t(lang, 'carbsUnit')}</span>
+                <span style={{ fontSize: 10, fontWeight: 500, opacity: 0.55 }}>{t(lang, 'carbs')}</span>
+              </span>
             </div>
           )}
 
