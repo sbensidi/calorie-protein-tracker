@@ -909,24 +909,22 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, se
                   <p style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 2 }}>{t(lang, 'proteinUnit')}</p>
                 </div>
               </div>
-              {(scanProduct.fatPer100g != null || scanProduct.carbsPer100g != null) && (
-                <div style={{ display: 'flex', gap: 8 }}>
-                  {scanProduct.fatPer100g != null && (
-                    <div style={{ flex: 1, background: 'var(--warning-fill)', border: '1px solid color-mix(in srgb, var(--warning) 14%, transparent)', borderRadius: 10, padding: '10px 12px' }}>
-                      <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--warning-hi)', letterSpacing: '0.04em', marginBottom: 3 }}>{t(lang, 'fat').toUpperCase()}</p>
-                      <p style={{ fontSize: 20, fontWeight: 800, color: 'var(--text)', margin: 0, lineHeight: 1 }}>{scanProduct.fatPer100g}</p>
-                      <p style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 2 }}>{t(lang, 'fatUnit')}</p>
-                    </div>
-                  )}
-                  {scanProduct.carbsPer100g != null && (
-                    <div style={{ flex: 1, background: 'var(--accent-fill)', border: '1px solid color-mix(in srgb, var(--accent) 14%, transparent)', borderRadius: 10, padding: '10px 12px' }}>
-                      <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--accent-hi)', letterSpacing: '0.04em', marginBottom: 3 }}>{t(lang, 'carbs').toUpperCase()}</p>
-                      <p style={{ fontSize: 20, fontWeight: 800, color: 'var(--text)', margin: 0, lineHeight: 1 }}>{scanProduct.carbsPer100g}</p>
-                      <p style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 2 }}>{t(lang, 'carbsUnit')}</p>
-                    </div>
-                  )}
+              <div style={{ display: 'flex', gap: 8 }}>
+                <div style={{ flex: 1, background: 'var(--warning-fill)', border: '1px solid color-mix(in srgb, var(--warning) 14%, transparent)', borderRadius: 10, padding: '10px 12px' }}>
+                  <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--warning-hi)', letterSpacing: '0.04em', marginBottom: 3 }}>{t(lang, 'fat').toUpperCase()}</p>
+                  {scanProduct.fatPer100g != null
+                    ? <><p style={{ fontSize: 20, fontWeight: 800, color: 'var(--text)', margin: 0, lineHeight: 1 }}>{scanProduct.fatPer100g}</p><p style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 2 }}>{t(lang, 'fatUnit')}</p></>
+                    : <p style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-3)', margin: 0, marginTop: 2 }}>{t(lang, 'noDataShort')}</p>
+                  }
                 </div>
-              )}
+                <div style={{ flex: 1, background: 'var(--accent-fill)', border: '1px solid color-mix(in srgb, var(--accent) 14%, transparent)', borderRadius: 10, padding: '10px 12px' }}>
+                  <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--accent-hi)', letterSpacing: '0.04em', marginBottom: 3 }}>{t(lang, 'carbs').toUpperCase()}</p>
+                  {scanProduct.carbsPer100g != null
+                    ? <><p style={{ fontSize: 20, fontWeight: 800, color: 'var(--text)', margin: 0, lineHeight: 1 }}>{scanProduct.carbsPer100g}</p><p style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 2 }}>{t(lang, 'carbsUnit')}</p></>
+                    : <p style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-3)', margin: 0, marginTop: 2 }}>{t(lang, 'noDataShort')}</p>
+                  }
+                </div>
+              </div>
             </div>
           </div>
 
