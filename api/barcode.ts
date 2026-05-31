@@ -34,6 +34,8 @@ interface BarcodeProduct {
   barcode: string
   caloriesPer100g: number
   proteinPer100g: number
+  fatPer100g:   number | null
+  carbsPer100g: number | null
   source: 'openfoodfacts' | 'usda'
 }
 
@@ -57,6 +59,8 @@ async function lookupRaw(barcode: string): Promise<BarcodeProduct | null> {
           n['energy-kcal_100g'] ??
           (n['energy_100g'] ? Math.round(n['energy_100g'] / 4.184) : 0)
         const protein = n['proteins_100g'] ?? 0
+        const fat   = n['fat_100g']           != null ? Math.round(n['fat_100g']           * 10) / 10 : null
+        const carbs = n['carbohydrates_100g'] != null ? Math.round(n['carbohydrates_100g'] * 10) / 10 : null
         if (name && (calories > 0 || protein > 0)) {
           return {
             name: name.trim(),
@@ -64,6 +68,8 @@ async function lookupRaw(barcode: string): Promise<BarcodeProduct | null> {
             barcode,
             caloriesPer100g: Math.round(calories),
             proteinPer100g:  Math.round(protein * 10) / 10,
+            fatPer100g:   fat,
+            carbsPer100g: carbs,
             source: 'openfoodfacts',
           }
         }
