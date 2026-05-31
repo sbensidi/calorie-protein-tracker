@@ -318,6 +318,8 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, se
     setNutrition({ calories: item.calories, protein: item.protein })
     editor.setCalories(item.calories || '')
     editor.setProtein(item.protein   || '')
+    setEditFat(item.fat   ?? null)
+    setEditCarbs(item.carbs ?? null)
     setDropdownOpen(false)
 
     setAiError(null)
@@ -1610,7 +1612,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, se
             </div>
           )}
 
-          {/* Fat / Carbs chips — shown when AI returned them */}
+          {/* Fat / Carbs chips — shown when available (AI, library, barcode, or history) */}
           {(editFat != null || editCarbs != null) && (
             <div style={{ display: 'flex', gap: 6, marginBottom: 10, flexWrap: 'wrap' }}>
               {editFat != null && (
