@@ -698,7 +698,12 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, se
           {/* Header */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
             <span className="icon icon-sm" style={{ color: 'var(--composed)' }}>restaurant</span>
-            <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', flex: 1 }}>{pendingComposed.name}</span>
+            <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', flex: 1 }}>
+              {pendingComposed.name}
+              {isRecipe && pendingComposed.batchWeightG != null && (
+                <span style={{ fontSize: 12, fontWeight: 400, color: 'var(--text-3)', marginInlineStart: 5 }}>({pendingComposed.batchWeightG}{t(lang, 'proteinUnit')})</span>
+              )}
+            </span>
             {isRecipe && (
               <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--composed)', background: 'var(--composed-tint)', border: '1px solid var(--composed-border)', borderRadius: 6, padding: '2px 6px' }}>
                 {t(lang, 'recipeLabel')}
