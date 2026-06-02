@@ -95,6 +95,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, se
   const [scanProduct,  setScanProduct]  = useState<BarcodeProduct | null>(null)
   const [scanNotFound, setScanNotFound] = useState<string | null>(null) // barcode that wasn't found
   const [scanGrams,    setScanGrams]  = useState('100')
+  const [scanUnit,     setScanUnit]   = useState<'g' | 'ml'>('g')
   const [scanMealType, setScanMealType] = useState<MealType>(() => mealTypeByTime())
 
   const [foodName, setFoodName]       = useState('')
@@ -483,6 +484,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, se
   const handleScanResult = useCallback((product: BarcodeProduct) => {
     setScanProduct(product)
     setScanGrams('100')
+    setScanUnit('g')
   }, [])
 
   const handleScanNotFound = useCallback((barcode: string) => {
@@ -492,9 +494,12 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, se
 
   const handleScanAdd = () => {
     if (!scanProduct) return
-    const grams = Number(scanGrams) || 100
+    const grams   = Number(scanGrams) || 100
+    const fluidMl = scanUnit === 'ml' ? grams : null
     const calories = Math.round(scanProduct.caloriesPer100g * grams / 100)
     const protein  = Math.round(scanProduct.proteinPer100g  * grams / 100 * 10) / 10
+    const fat      = scanProduct.fatPer100g   != null ? Math.round(scanProduct.fatPer100g   * grams / 100 * 10) / 10 : null
+    const carbs    = scanProduct.carbsPer100g != null ? Math.round(scanProduct.carbsPer100g * grams / 100 * 10) / 10 : null
     onAdd({
       date:           dateOverride ?? today(),
       meal_type:      scanMealType,
@@ -502,25 +507,27 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, se
       grams,
       calories,
       protein,
-      fat:            scanProduct.fatPer100g   != null ? Math.round(scanProduct.fatPer100g   * grams / 100 * 10) / 10 : null,
-      carbs:          scanProduct.carbsPer100g != null ? Math.round(scanProduct.carbsPer100g * grams / 100 * 10) / 10 : null,
+      fat,
+      carbs,
       notes:          null,
       time_logged:    currentTime(),
-      fluid_ml:       null,
+      fluid_ml:       fluidMl,
       fluid_excluded: false,
-      display_unit:   null,
-      display_amount: null,
+      display_unit:   scanUnit === 'ml' ? 'ml' : null,
+      display_amount: scanUnit === 'ml' ? grams : null,
     })
-    onUpsertHistory({ name: scanProduct.name, grams, calories, protein, fat: scanProduct.fatPer100g != null ? Math.round(scanProduct.fatPer100g * grams / 100 * 10) / 10 : null, carbs: scanProduct.carbsPer100g != null ? Math.round(scanProduct.carbsPer100g * grams / 100 * 10) / 10 : null, fluid_ml: null })
+    onUpsertHistory({ name: scanProduct.name, grams, calories, protein, fat, carbs, fluid_ml: fluidMl })
     // Reset scan state
     setScanProduct(null)
     setScanGrams('100')
+    setScanUnit('g')
     setMode('manual')
   }
 
   const handleScanAgain = () => {
     setScanProduct(null)
     setScanNotFound(null)
+    setScanUnit('g')
     scannerRef.current?.reset()
   }
 
@@ -899,7 +906,7 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, se
           {/* Per-100g nutrition chips */}
           <div>
             <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 6 }}>
-              {t(lang, 'per100g')}
+              {scanUnit === 'ml' ? t(lang, 'per100ml') : t(lang, 'per100g')}
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               <div style={{ display: 'flex', gap: 8 }}>
@@ -942,17 +949,23 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, se
                 type="number"
                 inputMode="decimal"
                 className="inp"
-                style={{ textAlign: 'center', paddingInlineEnd: 28, fontSize: 16 }}
+                style={{ textAlign: 'center', paddingInlineEnd: 34, fontSize: 16 }}
                 value={scanGrams}
                 onFocus={e => e.target.select()}
                 onChange={e => setScanGrams(e.target.value)}
               />
-              <span style={{
-                position: 'absolute', insetInlineEnd: 10, top: '50%', transform: 'translateY(-50%)',
-                fontSize: 11, fontWeight: 600, color: 'var(--text-3)', pointerEvents: 'none',
-              }}>
-                {t(lang, 'proteinUnit')}
-              </span>
+              <button
+                type="button"
+                onClick={() => setScanUnit(u => u === 'g' ? 'ml' : 'g')}
+                style={{
+                  position: 'absolute', insetInlineEnd: 6, top: '50%', transform: 'translateY(-50%)',
+                  fontSize: 10, fontWeight: 700, color: 'var(--accent-hi)',
+                  background: 'var(--accent-tint)', border: 'none', borderRadius: 5,
+                  padding: '2px 5px', cursor: 'pointer', lineHeight: 1.4,
+                }}
+              >
+                {scanUnit === 'g' ? t(lang, 'proteinUnit') : t(lang, 'mlUnit')}
+              </button>
             </div>
             <select
               className="inp"
