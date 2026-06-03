@@ -942,31 +942,26 @@ export function FoodEntryForm({ lang, history, getSuggestions, searchLibrary, se
 
           <div style={{ height: 1, background: 'var(--border)' }} />
 
-          {/* Weight + meal type row */}
+          {/* Weight + unit + meal type row */}
           <div style={{ display: 'flex', gap: 8 }}>
-            <div style={{ position: 'relative', width: 110, flexShrink: 0 }}>
-              <input
-                type="number"
-                inputMode="decimal"
-                className="inp"
-                style={{ textAlign: 'center', paddingInlineEnd: 34, fontSize: 16 }}
-                value={scanGrams}
-                onFocus={e => e.target.select()}
-                onChange={e => setScanGrams(e.target.value)}
-              />
-              <button
-                type="button"
-                onClick={() => setScanUnit(u => u === 'g' ? 'ml' : 'g')}
-                style={{
-                  position: 'absolute', insetInlineEnd: 6, top: '50%', transform: 'translateY(-50%)',
-                  fontSize: 10, fontWeight: 700, color: 'var(--accent-hi)',
-                  background: 'var(--accent-tint)', border: 'none', borderRadius: 5,
-                  padding: '2px 5px', cursor: 'pointer', lineHeight: 1.4,
-                }}
-              >
-                {scanUnit === 'g' ? t(lang, 'proteinUnit') : t(lang, 'mlUnit')}
-              </button>
-            </div>
+            <input
+              type="number"
+              inputMode="decimal"
+              className="inp"
+              style={{ width: 90, flexShrink: 0, textAlign: 'center', fontSize: 16 }}
+              value={scanGrams}
+              onFocus={e => e.target.select()}
+              onChange={e => setScanGrams(e.target.value)}
+            />
+            <select
+              className="inp"
+              style={{ width: 80, flexShrink: 0, fontSize: 16, fontWeight: 700, cursor: 'pointer' }}
+              value={scanUnit}
+              onChange={e => setScanUnit(e.target.value as 'g' | 'ml')}
+            >
+              <option value="g">{t(lang, 'unitOptG')}</option>
+              <option value="ml">{t(lang, 'unitOptMl')}</option>
+            </select>
             <select
               className="inp"
               style={{ flex: 1, fontSize: 16 }}
